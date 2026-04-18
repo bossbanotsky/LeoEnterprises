@@ -3,8 +3,8 @@ import { collection, onSnapshot, query, where, doc, setDoc, orderBy, deleteField
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { Employee, Attendance as AttendanceType, PakyawJob } from '../types';
-import { format, parseISO, eachDayOfInterval, startOfWeek, endOfWeek } from 'date-fns';
-import { ChevronDown, ChevronUp, Check, X } from 'lucide-react';
+import { format, parseISO, eachDayOfInterval, startOfWeek, endOfWeek, addDays, subDays } from 'date-fns';
+import { ChevronDown, ChevronUp, Check, X, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 
@@ -19,6 +19,11 @@ export default function Attendance() {
   const [attendanceData, setAttendanceData] = useState<Record<string, Partial<AttendanceType>>>({});
   const [error, setError] = useState<string | null>(null);
   const [expandedEmp, setExpandedEmp] = useState<string | null>(null);
+
+  useEffect(() => {
+    localStorage.setItem('attendanceStartDate', startDate);
+    localStorage.setItem('attendanceEndDate', endDate);
+  }, [startDate, endDate]);
 
   useEffect(() => {
     if (!user) return;
@@ -40,6 +45,14 @@ export default function Attendance() {
     }, (error) => { setError('Failed to load employees'); handleFirestoreError(error, OperationType.GET, 'employees'); });
     return () => unsubscribe();
   }, [user]);
+
+  const handlePrevDate = () => {
+    setSingleDate(prev => format(subDays(parseISO(prev), 1), 'yyyy-MM-dd'));
+  };
+
+  const handleNextDate = () => {
+    setSingleDate(prev => format(addDays(parseISO(prev), 1), 'yyyy-MM-dd'));
+  };
 
   const queryStart = activeTab === 'mark' ? singleDate : startDate;
   const queryEnd = activeTab === 'mark' ? singleDate : endDate;
@@ -185,14 +198,31 @@ export default function Attendance() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 shrink-0">
         {activeTab === 'mark' ? (
-          <div className="bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm max-w-sm">
-            <Label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1 block leading-none">Selected Date</Label>
-            <Input 
-              type="date" 
-              value={singleDate} 
-              onChange={e => setSingleDate(e.target.value)} 
-              className="rounded-lg h-9 w-full font-semibold bg-slate-50 dark:bg-slate-900 border-0 text-sm mt-0.5" 
-            />
+          <div className="bg-white dark:bg-slate-800 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center gap-1 max-w-sm group">
+            <button 
+              onClick={handlePrevDate}
+              className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-colors text-slate-500"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <div className="flex-1 bg-slate-50 dark:bg-slate-900 px-3 py-1.5 rounded-xl flex items-center gap-2">
+              <Calendar className="w-3.5 h-3.5 text-blue-500" />
+              <div className="flex flex-col flex-1">
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider leading-none">Selected Date</span>
+                <Input 
+                  type="date" 
+                  value={singleDate} 
+                  onChange={e => setSingleDate(e.target.value)} 
+                  className="rounded-none h-6 w-full font-black bg-transparent border-0 text-xs p-0 focus-visible:ring-0 focus-visible:ring-offset-0" 
+                />
+              </div>
+            </div>
+            <button 
+              onClick={handleNextDate}
+              className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-colors text-slate-500"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
           </div>
         ) : (
           <div className="col-span-full grid grid-cols-2 gap-2 bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
@@ -241,14 +271,35 @@ export default function Attendance() {
                   </div>
                   
                   {(isPresent || isUT) && (
-                    <div className="grid grid-cols-2 gap-3 mb-4 pt-2 border-t border-slate-100 dark:border-slate-700">
-                      <div className="space-y-1">
-                        <Label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Time In</Label>
-                        <Input type="time" value={att?.timeIn || '07:00'} onChange={e => handleAttendanceChange(emp.id, singleDate, 'timeIn', e.target.value)} className="h-8 rounded-lg bg-slate-50 dark:bg-slate-900 border-0 font-mono text-xs p-2" />
+                    <div className="space-y-3 mb-4 pt-2 border-t border-slate-100 dark:border-slate-700">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Time In</Label>
+                          <Input type="time" value={att?.timeIn || '07:00'} onChange={e => handleAttendanceChange(emp.id, singleDate, 'timeIn', e.target.value)} className="h-8 rounded-lg bg-slate-50 dark:bg-slate-900 border-0 font-mono text-xs p-2" />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Time Out</Label>
+                          <Input type="time" value={att?.timeOut || '16:00'} onChange={e => handleAttendanceChange(emp.id, singleDate, 'timeOut', e.target.value)} className="h-8 rounded-lg bg-slate-50 dark:bg-slate-900 border-0 font-mono text-xs p-2" />
+                        </div>
                       </div>
-                      <div className="space-y-1">
-                        <Label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Time Out</Label>
-                        <Input type="time" value={att?.timeOut || '16:00'} onChange={e => handleAttendanceChange(emp.id, singleDate, 'timeOut', e.target.value)} className="h-8 rounded-lg bg-slate-50 dark:bg-slate-900 border-0 font-mono text-xs p-2" />
+
+                      <div className="flex items-center gap-2 p-2 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-100 dark:border-slate-800">
+                        <div className="flex-1 text-center border-r border-slate-100 dark:border-slate-800 last:border-0">
+                          <div className="text-[8px] font-bold text-slate-400 uppercase">Regular</div>
+                          <div className="text-xs font-black text-slate-900 dark:text-white">{att.regularHours || 0}h</div>
+                        </div>
+                        <div className="flex-1 text-center border-r border-slate-100 dark:border-slate-800 last:border-0">
+                          <div className="text-[8px] font-bold text-emerald-500 uppercase">Overtime</div>
+                          <div className="text-xs font-black text-emerald-600 dark:text-emerald-400">{(att.otHours || 0).toFixed(1)}h</div>
+                        </div>
+                        {(isUT || (att.regularHours || 0) < 8) && (
+                          <div className="flex-1 text-center">
+                            <div className="text-[8px] font-bold text-amber-500 uppercase">Undertime</div>
+                            <div className="text-xs font-black text-amber-600 dark:text-amber-400">
+                              {Math.max(0, 8 - (att.regularHours || 0)).toFixed(1)}h
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}

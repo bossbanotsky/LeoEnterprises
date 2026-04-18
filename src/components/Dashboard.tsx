@@ -10,7 +10,7 @@ import { Input } from './ui/input';
 export default function Dashboard() {
   const { user } = useAuth();
   const { companyInfo } = useCompanyInfo();
-  const [selectedDate, setSelectedDate] = useState(() => format(new Date(), 'yyyy-MM-dd'));
+  const [selectedDate, setSelectedDate] = useState(() => localStorage.getItem('dashSelectedDate') || format(new Date(), 'yyyy-MM-dd'));
   const [stats, setStats] = useState({
     totalEmployees: 0,
     present: 0,
@@ -18,6 +18,10 @@ export default function Dashboard() {
     ut: 0,
     pakyaw: 0
   });
+
+  useEffect(() => {
+    localStorage.setItem('dashSelectedDate', selectedDate);
+  }, [selectedDate]);
 
   const handlePrevDate = () => {
     setSelectedDate(prev => format(subDays(parseISO(prev), 1), 'yyyy-MM-dd'));
