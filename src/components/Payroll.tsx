@@ -339,6 +339,15 @@ export default function Payroll() {
       const allCa: CashAdvance[] = [];
       caSnapshot.forEach(doc => allCa.push({ id: doc.id, ...doc.data() } as CashAdvance));
 
+      const pjQuery = query(
+        collection(db, 'pakyawJobs'),
+        where('startDate', '>=', startDate),
+        where('startDate', '<=', endDate)
+      );
+      const pjSnapshot = await getDocs(pjQuery);
+      const allPj: any[] = [];
+      pjSnapshot.forEach(doc => allPj.push({ id: doc.id, ...doc.data() }));
+
       const dateRange = eachDayOfInterval({
         start: parseISO(startDate),
         end: parseISO(endDate)
@@ -350,6 +359,7 @@ export default function Payroll() {
       for (const emp of targetEmployees) {
         const empAtts = allAtts.filter(a => a.employeeId === emp.id);
         const empCa = allCa.filter(ca => ca.employeeId === emp.id);
+        const empPjw = allPj.filter(pj => pj.employeeIds.includes(emp.id));
         
         let totalPresent = 0;
         let totalUndertimeDays = 0;
@@ -360,24 +370,93 @@ export default function Payroll() {
         let totalRegularHours = 0;
         let totalOtHours = 0;
         let cashAdvanceDeduction = 0;
+        let totalPakyawPay = 0;
+        let pakyawDetails: string[] = [];
 
         empCa.forEach(ca => cashAdvanceDeduction += ca.amount);
+        
+        empPjw.forEach(pj => {
+          const splitAmount = pj.totalPrice / Math.max(1, pj.employeeIds.length);
+          if (pj.status === 'completed') {
+            totalPakyawPay += splitAmount;
+            pakyawDetails.push(`${pj.description}: ₱${splitAmount.toFixed(2)}`);
+          } else {
+            pakyawDetails.push(`${pj.description}: PENDING (Not Finished)`);
+          }
+        });
 
         dateRange.forEach(date => {
           const att = empAtts.find(a => a.date === date);
-          if (att && att.status === 'present') {
-            totalRegularHours += att.regularHours;
-            totalOtHours += att.otHours;
-            
-            if (att.regularHours >= 8) {
-              totalPresent++;
+          
+          if (att) {
+            let regHrs = 0;
+            let otHrs = 0;
+
+            // ALWAYS re-calculate from times if they exist to keep payroll in sync with latest rules
+            if (att.timeIn && att.timeOut && (att.status === 'present' || att.status === 'ut')) {
+               const [inH, inM] = att.timeIn.split(':').map(Number);
+               const [outH, outM] = att.timeOut.split(':').map(Number);
+               const start = inH + inM / 60;
+               let end = outH + outM / 60;
+               if (end < start) end += 24;
+
+               const breakStart = 12.0;
+               const breakEnd = 13.0;
+               const otCutoff = 16.0;
+
+               const regRangeEnd = Math.min(end, otCutoff);
+               let regDuration = Math.max(0, regRangeEnd - start);
+               const overlapStart = Math.max(start, breakStart);
+               const overlapEnd = Math.min(regRangeEnd, breakEnd);
+               const breakOverlap = Math.max(0, overlapEnd - overlapStart);
+               regDuration -= breakOverlap;
+
+               const otRangeStart = Math.max(start, otCutoff);
+               const otDuration = Math.max(0, end - otRangeStart);
+
+               regHrs = parseFloat(regDuration.toFixed(2));
+               otHrs = parseFloat(otDuration.toFixed(2));
             } else {
-              totalUndertimeDays++;
-              const utHrs = att.regularHours;
-              totalUndertimeHours += utHrs;
-              undertimeDetails.push(`${format(parseISO(date), 'MMM dd')} (${utHrs.toFixed(1)} hrs)`);
+               // Fallback for missing times or other statuses (absent, pakyaw)
+               if (att.regularHours !== undefined) {
+                 regHrs = att.regularHours;
+               } else if (att.status === 'present') {
+                 regHrs = 8;
+               } else if (att.status === 'ut') {
+                 regHrs = 5; // Default to 5 hours (7-12) if status is UT but hours are missing
+               } else {
+                 regHrs = 0;
+               }
+               otHrs = att.otHours || 0;
+            }
+
+            const dailyWorkLog = `${format(parseISO(date), 'MMM dd')}: ${regHrs}h Reg${otHrs ? `, ${otHrs}h OT` : ''}`;
+
+            if (att.status === 'present' || att.status === 'ut') {
+              // Check for Undertime (total worked hours < 8)
+              if ((regHrs + otHrs) < 8) {
+                totalUndertimeDays++;
+                totalUndertimeHours += regHrs;
+                totalRegularHours += regHrs;
+                undertimeDetails.push(dailyWorkLog);
+              } else {
+                // IT IS FULL DAY OR MORE
+                totalPresent++;
+                totalRegularHours += regHrs;
+                // Add to details too
+                undertimeDetails.push(dailyWorkLog);
+              }
+              
+              // Always add OT if present
+              totalOtHours += otHrs;
+            } else if (att.status === 'pakyaw') {
+              // Logged as pakyaw, ignore for regular time calculation
+            } else if (att.status === 'absent') {
+              totalAbsent++;
+              absentDates.push(format(parseISO(date), 'MMM dd'));
             }
           } else {
+            // Not logged: Treat as absent
             totalAbsent++;
             absentDates.push(format(parseISO(date), 'MMM dd'));
           }
@@ -386,7 +465,7 @@ export default function Payroll() {
         const hourlyRate = emp.dailySalary / 8;
         const regularPay = totalRegularHours * hourlyRate;
         const otPay = totalOtHours * hourlyRate;
-        const totalGrossPay = regularPay + otPay;
+        const totalGrossPay = regularPay + otPay + totalPakyawPay;
         const totalPay = totalGrossPay - cashAdvanceDeduction;
 
         bulkTotalPay += totalPay;
@@ -405,6 +484,8 @@ export default function Payroll() {
           totalOtHours,
           regularPay,
           otPay,
+          totalPakyawPay,
+          pakyawDetails,
           totalGrossPay,
           cashAdvanceDeduction,
           totalPay,
@@ -810,6 +891,12 @@ export default function Payroll() {
                       <span className="text-slate-600">Overtime Pay ({selectedPayslip.totalOtHours} hrs)</span>
                       <span className="font-medium text-green-600">₱ {selectedPayslip.otPay.toFixed(2)}</span>
                     </div>
+                    {selectedPayslip.totalPakyawPay > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-slate-600">Pakyaw Contracts</span>
+                        <span className="font-medium text-indigo-600">₱ {selectedPayslip.totalPakyawPay.toFixed(2)}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between border-t border-slate-100 pt-2 mt-2 font-bold">
                       <span className="text-slate-900">Gross Pay</span>
                       <span className="text-slate-900">₱ {selectedPayslip.totalGrossPay.toFixed(2)}</span>
@@ -848,8 +935,8 @@ export default function Payroll() {
                   </div>
                   <div className="bg-amber-50 p-3 rounded-xl text-center border border-amber-100">
                     <div className="text-[10px] text-amber-600 mb-1 uppercase font-bold tracking-tight">Undertime</div>
-                    <div className="font-bold text-amber-700">{selectedPayslip.totalUndertimeDays} days</div>
-                    <div className="text-[10px] text-amber-500">({selectedPayslip.totalUndertimeHours?.toFixed(1) || '0.0'} hrs worked)</div>
+                    <div className="font-bold text-amber-700">{selectedPayslip.totalUndertimeHours?.toFixed(1) || '0.0'} hrs</div>
+                    <div className="text-[10px] text-amber-500">total worked</div>
                   </div>
                   <div className="bg-red-50 p-3 rounded-xl text-center">
                     <div className="text-[10px] text-red-500 mb-1 uppercase font-bold tracking-tight">Absent</div>
@@ -870,6 +957,16 @@ export default function Payroll() {
                   <div className="text-[11px] text-slate-500 mt-2 bg-red-50/50 p-2 rounded-lg border border-red-100/50">
                     <span className="font-bold text-red-700">Absent Dates: </span>
                     {selectedPayslip.absentDates.join(', ')}
+                  </div>
+                )}
+                {selectedPayslip.pakyawDetails && selectedPayslip.pakyawDetails.length > 0 && (
+                  <div className="text-[11px] text-slate-500 mt-2 bg-indigo-50/50 p-2 rounded-lg border border-indigo-100/50">
+                    <span className="font-bold text-indigo-700">Pakyaw Jobs: </span>
+                    <ul className="list-disc pl-4 mt-1">
+                      {selectedPayslip.pakyawDetails.map((detail: string, i: number) => (
+                        <li key={i}>{detail}</li>
+                      ))}
+                    </ul>
                   </div>
                 )}
               </div>

@@ -16,9 +16,10 @@ export interface Attendance {
   date: string;
   timeIn: string;
   timeOut: string;
-  status: 'present' | 'absent';
+  status: 'present' | 'absent' | 'pakyaw' | 'ut';
   regularHours: number;
   otHours: number;
+  pakyawJobId?: string; // Add this
   createdAt: string;
   userId: string;
 }
@@ -28,6 +29,17 @@ export interface CashAdvance {
   employeeId: string;
   date: string;
   amount: number;
+  createdAt: string;
+  uid: string;
+}
+
+export interface PakyawJob {
+  id: string;
+  description: string;
+  startDate: string;
+  status: 'pending' | 'completed';
+  totalPrice: number;
+  employeeIds: string[];
   createdAt: string;
   uid: string;
 }
@@ -47,6 +59,8 @@ export interface Payroll {
   totalOtHours: number;
   regularPay: number;
   otPay: number;
+  totalPakyawPay: number;
+  pakyawDetails: string[];
   totalGrossPay: number;
   cashAdvanceDeduction: number;
   totalPay: number;

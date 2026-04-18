@@ -35,7 +35,7 @@
         "date": { "type": "string", "format": "date" },
         "timeIn": { "type": "string" },
         "timeOut": { "type": "string" },
-        "status": { "type": "string", "enum": ["present", "absent"] },
+        "status": { "type": "string", "enum": ["present", "absent", "pakyaw"] },
         "regularHours": { "type": "number" },
         "otHours": { "type": "number" },
         "createdAt": { "type": "string", "format": "date-time" },
@@ -95,6 +95,23 @@
       },
       "required": ["employeeId", "date", "amount", "createdAt", "uid"]
     },
+    "PakyawJob": {
+      "title": "Pakyaw Job",
+      "description": "Piece-rate contract for a job split among employees",
+      "type": "object",
+      "properties": {
+        "description": { "type": "string" },
+        "startDate": { "type": "string", "format": "date" },
+        "totalPrice": { "type": "number" },
+        "employeeIds": { 
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "uid": { "type": "string" }
+      },
+      "required": ["description", "startDate", "totalPrice", "employeeIds", "createdAt", "uid"]
+    },
     "Log": {
       "title": "Log",
       "description": "System log or error record",
@@ -133,6 +150,10 @@
     "/cashAdvances/{cashAdvanceId}": {
       "schema": { "$ref": "#/entities/CashAdvance" },
       "description": "Cash advance records"
+    },
+    "/pakyawJobs/{pakyawJobId}": {
+      "schema": { "$ref": "#/entities/PakyawJob" },
+      "description": "Piece-rate contract records"
     },
     "/logs/{logId}": {
       "schema": { "$ref": "#/entities/Log" },

@@ -1,6 +1,6 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { LayoutDashboard, Users, Calculator, Clock, Settings, Wallet } from 'lucide-react';
+import { LayoutDashboard, Users, Calculator, Clock, Settings, Wallet, Hammer } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useCompanyInfo } from '../hooks/useCompanyInfo';
 
@@ -10,12 +10,13 @@ export default function Layout() {
   const { companyInfo } = useCompanyInfo();
 
   const navItems = [
-    { path: '/', label: 'Dashboard', icon: LayoutDashboard },
-    { path: '/employees', label: 'Employees', icon: Users },
-    { path: '/attendance', label: 'Attendance', icon: Clock },
-    { path: '/cash-advance', label: 'Advances', icon: Wallet },
+    { path: '/', label: 'Dash', icon: LayoutDashboard },
+    { path: '/employees', label: 'Staff', icon: Users },
+    { path: '/attendance', label: 'Attend', icon: Clock },
+    { path: '/pakyaw', label: 'Pakyaw', icon: Hammer },
+    { path: '/cash-advance', label: 'Advance', icon: Wallet },
     { path: '/payroll', label: 'Payroll', icon: Calculator },
-    { path: '/settings', label: 'Settings', icon: Settings },
+    { path: '/settings', label: 'Gear', icon: Settings },
   ];
 
   return (

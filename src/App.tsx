@@ -7,6 +7,7 @@ import Dashboard from './components/Dashboard';
 import Employees from './components/Employees';
 import Attendance from './components/Attendance';
 import CashAdvance from './components/CashAdvance';
+import Pakyaw from './components/Pakyaw';
 import Payroll from './components/Payroll';
 import Settings from './components/Settings';
 import Logs from './components/Logs';
@@ -31,6 +32,7 @@ export default function App() {
               <Route path="employees" element={<Employees />} />
               <Route path="attendance" element={<Attendance />} />
               <Route path="cash-advance" element={<CashAdvance />} />
+              <Route path="pakyaw" element={<Pakyaw />} />
               <Route path="payroll" element={<Payroll />} />
               <Route path="settings" element={<Settings />} />
               <Route path="settings/logs" element={<Logs />} />

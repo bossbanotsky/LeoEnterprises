@@ -67,7 +67,7 @@ service cloud.firestore {
       return hasOnlyAllowedFields(['employeeId', 'date', 'timeIn', 'timeOut', 'status', 'regularHours', 'otHours', 'createdAt', 'userId']) &&
              data.employeeId is string && data.employeeId.size() > 0 &&
              isValidSimpleDateString(data.date) &&
-             data.status in ['present', 'absent'] &&
+             data.status in ['present', 'absent', 'pakyaw'] &&
              (!('timeIn' in data) || data.timeIn is string) &&
              (!('timeOut' in data) || data.timeOut is string) &&
              (!('regularHours' in data) || data.regularHours is number && data.regularHours >= 0) &&
@@ -75,6 +75,16 @@ service cloud.firestore {
              isValidDateString(data.createdAt) &&
              data.userId is string &&
              data.userId == request.auth.uid;
+    }
+
+    function isValidPakyawJob(data) {
+      return hasOnlyAllowedFields(['description', 'date', 'totalPrice', 'employeeIds', 'createdAt', 'uid']) &&
+             data.description is string && data.description.size() > 0 &&
+             isValidSimpleDateString(data.date) &&
+             data.totalPrice is number && data.totalPrice >= 0 &&
+             data.employeeIds is list &&
+             isValidDateString(data.createdAt) &&
+             data.uid is string;
     }
 
     function isValidPayroll(data) {
