@@ -863,7 +863,7 @@ export default function Payroll() {
                   <div className="text-sm text-slate-600 mt-1">
                     {format(parseISO(startDate), 'MMM dd')} - {format(parseISO(endDate), 'MMM dd, yyyy')}
                   </div>
-                  <div className="font-medium text-slate-900 mt-2">{selectedPayslip.employee.fullName}</div>
+                  <div className="text-2xl font-black text-slate-900 mt-2 uppercase tracking-tight">{selectedPayslip.employee.fullName}</div>
                   <div className="text-xs text-slate-500">
                     {selectedPayslip.employee.customId ? `${selectedPayslip.employee.customId} • ` : ''}{selectedPayslip.employee.position || 'Staff'}
                   </div>

@@ -4,7 +4,7 @@ import { db, handleFirestoreError, OperationType } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { Employee, Attendance as AttendanceType, PakyawJob } from '../types';
 import { format, parseISO, eachDayOfInterval, startOfWeek, endOfWeek, addDays, subDays } from 'date-fns';
-import { ChevronDown, ChevronUp, Check, X, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
+import { ChevronDown, ChevronUp, Check, X, ChevronLeft, ChevronRight, Calendar, Calculator } from 'lucide-react';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 
@@ -56,6 +56,57 @@ export default function Attendance() {
 
   const queryStart = activeTab === 'mark' ? singleDate : startDate;
   const queryEnd = activeTab === 'mark' ? singleDate : endDate;
+
+  const calculateDailyPay = (emp: Employee, attKey: string) => {
+    const att = attendanceData[attKey];
+    const date = attKey.split('_')[1];
+    
+    if (!att || att.status === 'absent') return 0;
+    
+    let totalPay = 0;
+
+    // 1. Calculate Regular/OT Pay if applicable
+    if (att.status === 'present' || att.status === 'ut') {
+      const hourlyRate = emp.dailySalary / 8;
+      const regPay = (att.regularHours || 0) * hourlyRate;
+      const otPay = (att.otHours || 0) * hourlyRate;
+      totalPay += regPay + otPay;
+    }
+    
+    // 2. Calculate Pakyaw Pay (Sum of all completed pakyaw jobs for this employee on this date)
+    const dailyPakyawJobs = pakyawJobs.filter(j => 
+      j.startDate === date && 
+      j.employeeIds.includes(emp.id)
+    );
+
+    if (dailyPakyawJobs.length > 0) {
+      dailyPakyawJobs.forEach(job => {
+        if (job.status === 'completed') {
+          totalPay += job.totalPrice / Math.max(1, job.employeeIds.length);
+        }
+      });
+    } else if (att.status === 'pakyaw' && att.pakyawJobId) {
+      // Fallback for the specifically linked job
+      const job = pakyawJobs.find(j => j.id === att.pakyawJobId);
+      if (job && job.status === 'completed') {
+        totalPay += job.totalPrice / Math.max(1, job.employeeIds.length);
+      }
+    }
+    
+    return totalPay;
+  };
+
+  const calculatePeriodTotal = (emp: Employee) => {
+    return dates.reduce((total, date) => {
+      return total + calculateDailyPay(emp, `${emp.id}_${date}`);
+    }, 0);
+  };
+
+  const calculateGrandTotal = () => {
+    return employees.reduce((total, emp) => {
+      return total + calculatePeriodTotal(emp);
+    }, 0);
+  };
 
   useEffect(() => {
     if (!user || !queryStart || !queryEnd) return;
@@ -255,7 +306,10 @@ export default function Attendance() {
                         {emp.fullName.charAt(0).toUpperCase()}
                       </div>
                       <div className="min-w-0">
-                        <h3 className="font-bold text-slate-900 dark:text-white truncate">{emp.fullName}</h3>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-bold text-slate-900 dark:text-white truncate">{emp.fullName}</h3>
+                          <span className="text-[10px] text-slate-400 font-medium">Rate: ₱{emp.dailySalary}</span>
+                        </div>
                         <div className="flex gap-1 mt-0.5">
                           <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider ${
                             isPresent ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
@@ -268,9 +322,13 @@ export default function Attendance() {
                         </div>
                       </div>
                     </div>
+                    <div className="text-right">
+                      <div className="text-sm font-black text-blue-600 dark:text-blue-400">₱{calculateDailyPay(emp, `${emp.id}_${singleDate}`).toLocaleString()}</div>
+                      <div className="text-[8px] text-slate-400 uppercase font-bold tracking-tighter">Earned Today</div>
+                    </div>
                   </div>
                   
-                  {(isPresent || isUT) && (
+                   {(isPresent || isUT) && (
                     <div className="space-y-3 mb-4 pt-2 border-t border-slate-100 dark:border-slate-700">
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1">
@@ -293,24 +351,60 @@ export default function Attendance() {
                           <div className="text-xs font-black text-emerald-600 dark:text-emerald-400">{(att.otHours || 0).toFixed(1)}h</div>
                         </div>
                         {(isUT || (att.regularHours || 0) < 8) && (
-                          <div className="flex-1 text-center">
+                          <div className="flex-1 text-center border-r border-slate-100 dark:border-slate-800 last:border-0">
                             <div className="text-[8px] font-bold text-amber-500 uppercase">Undertime</div>
                             <div className="text-xs font-black text-amber-600 dark:text-amber-400">
                               {Math.max(0, 8 - (att.regularHours || 0)).toFixed(1)}h
                             </div>
                           </div>
                         )}
+                        <div className="flex-1 text-center">
+                          <div className="text-[8px] font-bold text-blue-500 uppercase tracking-tight">Daily Pay</div>
+                          <div className="text-xs font-black text-blue-600 dark:text-blue-400">
+                            ₱{calculateDailyPay(emp, `${emp.id}_${singleDate}`).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   )}
                   
                   {isPakyaw && (
-                    <div className="mb-4 pt-2 border-t border-slate-100 dark:border-slate-700">
-                       <Label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">Contract Job</Label>
-                       <select value={att?.pakyawJobId || ''} onChange={(e) => handleAttendanceChange(emp.id, singleDate, 'pakyawJobId', e.target.value)} className="w-full h-9 px-3 rounded-lg border-0 bg-slate-50 dark:bg-slate-900 text-xs font-semibold">
-                        <option value="">-- Select Job --</option>
-                        {pakyawJobs.map(job => <option key={job.id} value={job.id}>{job.description}</option>)}
-                      </select>
+                    <div className="space-y-3 mb-4 pt-2 border-t border-slate-100 dark:border-slate-700">
+                       <div className="space-y-1">
+                         <Label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">Assigned Contracts (This Date)</Label>
+                         {pakyawJobs.filter(j => j.startDate === singleDate && j.employeeIds.includes(emp.id)).length > 0 ? (
+                           <div className="space-y-1">
+                             {pakyawJobs.filter(j => j.startDate === singleDate && j.employeeIds.includes(emp.id)).map(job => (
+                               <div key={job.id} className="flex justify-between items-center text-[10px] px-2.5 py-1.5 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-100 dark:border-slate-800">
+                                 <div className="flex flex-col">
+                                   <span className="text-slate-700 dark:text-slate-300 font-bold truncate max-w-[140px] leading-tight">{job.description}</span>
+                                   <span className="text-[8px] text-slate-400 font-medium uppercase">{job.status}</span>
+                                 </div>
+                                 <span className={`font-black ${job.status === 'completed' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'}`}>
+                                   ₱{(job.totalPrice / Math.max(1, job.employeeIds.length)).toLocaleString()}
+                                 </span>
+                               </div>
+                             ))}
+                           </div>
+                         ) : (
+                           <div className="text-[10px] text-slate-400 italic px-2 py-1">No contracts found for this date.</div>
+                         )}
+                       </div>
+
+                       <div>
+                         <Label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">Primary Reference Job</Label>
+                         <select value={att?.pakyawJobId || ''} onChange={(e) => handleAttendanceChange(emp.id, singleDate, 'pakyawJobId', e.target.value)} className="w-full h-9 px-3 rounded-lg border-0 bg-slate-50 dark:bg-slate-900 text-xs font-semibold">
+                          <option value="">-- Select Job --</option>
+                          {pakyawJobs.map(job => <option key={job.id} value={job.id}>{job.description}</option>)}
+                        </select>
+                       </div>
+
+                       <div className="flex items-center justify-between p-2 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-100 dark:border-amber-900/30">
+                          <span className="text-[9px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">Estimated Pakyaw Pay</span>
+                          <span className="text-sm font-black text-amber-700 dark:text-amber-300">
+                            ₱{calculateDailyPay(emp, `${emp.id}_${singleDate}`).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          </span>
+                       </div>
                     </div>
                   )}
 
@@ -345,7 +439,32 @@ export default function Attendance() {
             })}
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-4">
+            {employees.length > 0 && (
+              <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-4 sm:p-5 text-white shadow-lg shadow-blue-200 dark:shadow-none mb-2">
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-2 opacity-80 uppercase tracking-widest text-[10px] font-bold">
+                    <Calculator className="w-3 h-3" />
+                    Period Overview
+                  </div>
+                  <span className="text-[10px] font-medium bg-white/20 px-2 py-0.5 rounded-full backdrop-blur-sm">
+                    {format(parseISO(startDate), 'MMM dd')} - {format(parseISO(endDate), 'MMM dd')}
+                  </span>
+                </div>
+                <div className="flex items-end justify-between">
+                  <div>
+                    <div className="text-3xl font-black tracking-tight">₱{calculateGrandTotal().toLocaleString()}</div>
+                    <div className="text-[10px] font-bold uppercase tracking-wider opacity-70">Grand Total Earnings</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-lg font-bold leading-tight">{employees.length}</div>
+                    <div className="text-[9px] font-medium uppercase tracking-wider opacity-70">Employees</div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            <div className="space-y-3">
             {employees.map(emp => (
               <div key={emp.id} className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm hover:border-blue-300 transition-colors">
                 <div 
@@ -357,7 +476,10 @@ export default function Attendance() {
                       {emp.fullName.charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-slate-900 dark:text-white truncate">{emp.fullName}</h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-bold text-slate-900 dark:text-white truncate">{emp.fullName}</h3>
+                        <span className="text-[10px] text-slate-400 font-medium">Rate: ₱{emp.dailySalary}</span>
+                      </div>
                       <div className="flex flex-wrap gap-1 mt-1">
                           <span className="text-[8px] font-bold text-emerald-700 bg-emerald-50 dark:bg-emerald-900/20 dark:text-emerald-400 px-1.5 py-0.5 rounded uppercase tracking-wider">
                             {dates.filter(d => {
@@ -380,8 +502,14 @@ export default function Attendance() {
                       </div>
                     </div>
                   </div>
-                  <div className="p-1.5 bg-slate-50 dark:bg-slate-900 rounded-lg ml-4">
-                    {expandedEmp === emp.id ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+                  <div className="flex items-center gap-2 ml-2 sm:ml-4">
+                    <div className="text-right">
+                      <div className="text-[11px] sm:text-xs font-black text-blue-600 dark:text-blue-400">₱{calculatePeriodTotal(emp).toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                      <div className="text-[8px] text-slate-400 uppercase font-bold tracking-tighter leading-none">Total Period</div>
+                    </div>
+                    <div className="p-1 sm:p-1.5 bg-slate-50 dark:bg-slate-900 rounded-lg">
+                      {expandedEmp === emp.id ? <ChevronUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400" /> : <ChevronDown className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400" />}
+                    </div>
                   </div>
                 </div>
                 
@@ -403,11 +531,28 @@ export default function Attendance() {
                                     <span className="text-slate-500">Reg: {att.regularHours || 0}h</span>
                                     {att.otHours ? <span className="text-emerald-600">OT: {att.otHours.toFixed(1)}h</span> : null}
                                     {isUT_detail ? <span className="text-amber-600">UT: {(8 - (att.regularHours || 0)).toFixed(1)}h</span> : null}
+                                    <span className="text-blue-600 dark:text-blue-400 border-l border-slate-200 dark:border-slate-700 ml-1 pl-2">₱{calculateDailyPay(emp, `${emp.id}_${date}`).toLocaleString()}</span>
                                   </>
                                )}
                                {isAbs_detail && <span className="text-rose-600">Absent</span>}
-                               {att?.status === 'pakyaw' && <span className="text-amber-600">Pakyaw</span>}
+                               {att?.status === 'pakyaw' && (
+                                 <>
+                                   <span className="text-amber-600">Pakyaw</span>
+                                   <span className="text-blue-600 dark:text-blue-400 border-l border-slate-200 dark:border-slate-700 ml-1 pl-2 font-black">
+                                     ₱{calculateDailyPay(emp, `${emp.id}_${date}`).toLocaleString()}
+                                   </span>
+                                 </>
+                               )}
                             </div>
+                            {att?.status === 'pakyaw' && (
+                              <div className="flex flex-wrap gap-1 mt-2">
+                                {pakyawJobs.filter(j => j.startDate === date && j.employeeIds.includes(emp.id)).map(job => (
+                                  <span key={job.id} className="text-[8px] bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded border border-amber-100 dark:border-amber-900/30">
+                                    {job.description}: ₱{(job.totalPrice / Math.max(1, job.employeeIds.length)).toLocaleString()}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
                           </div>
 
                           <div className="flex gap-2 mb-3">
@@ -431,8 +576,9 @@ export default function Attendance() {
               </div>
             ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
-  );
+  </div>
+);
 }
