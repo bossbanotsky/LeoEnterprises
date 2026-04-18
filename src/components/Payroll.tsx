@@ -6,6 +6,7 @@ import { useCompanyInfo } from '../hooks/useCompanyInfo';
 import { Employee, Attendance, CashAdvance } from '../types';
 import { format, parseISO, eachDayOfInterval } from 'date-fns';
 import { Calendar, ChevronRight, FileText, Download, Trash2, Loader2, Users, CreditCard, CheckCircle, Search } from 'lucide-react';
+import { SmartText } from './ui/SmartText';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -610,30 +611,32 @@ export default function Payroll() {
       </div>
       
       {viewMode === 'process' && (
-        <div className="bento-card flex-col bg-white dark:bg-slate-800 p-4 mb-4 shrink-0">
+        <div className="bento-card flex-col bg-white p-4 mb-4 shrink-0 border-black/5 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
-            <Calendar className="w-5 h-5 text-blue-600" />
-            <h2 className="font-bold text-slate-900 dark:text-white">Pay Period</h2>
-          </div>
-          <div className="grid grid-cols-2 gap-3 mb-4">
-            <div className="space-y-1">
-              <Label className="text-xs text-slate-500">Start Date</Label>
-              <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="rounded-xl h-10" />
+            <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center border border-blue-100">
+              <Calendar className="w-5 h-5 text-blue-600" />
             </div>
-            <div className="space-y-1">
-              <Label className="text-xs text-slate-500">End Date</Label>
-              <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="rounded-xl h-10" />
+            <SmartText className="font-black text-slate-900 uppercase tracking-widest text-xs">Pay Period</SmartText>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+            <div className="space-y-1.5 px-1">
+              <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Start Date</Label>
+              <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="rounded-xl h-11 bg-slate-50 border-black/5 text-slate-900 font-black" />
+            </div>
+            <div className="space-y-1.5 px-1">
+              <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">End Date</Label>
+              <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="rounded-xl h-11 bg-slate-50 border-black/5 text-slate-900 font-black" />
             </div>
           </div>
-          <div className="space-y-1 mb-4">
-            <Label className="text-xs text-slate-500">Employee Selection</Label>
+          <div className="space-y-1.5 mb-5 px-1">
+            <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Employee Selection</Label>
             <select 
               value={selectedEmployeeId} 
               onChange={e => {
                 setSelectedEmployeeId(e.target.value);
                 setSelectedBulkId(null);
               }}
-              className="flex h-10 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 dark:border-slate-800 dark:bg-slate-950 dark:ring-offset-slate-950 dark:focus-visible:ring-slate-300"
+              className="flex h-11 w-full rounded-xl border border-black/5 bg-white px-4 py-2 text-sm font-black text-slate-900 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20"
             >
               <option value="all">Bulk Payroll (All Employees)</option>
               {employees
@@ -687,9 +690,9 @@ export default function Payroll() {
                       ) : (
                         <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded uppercase leading-none">Pending</span>
                       )}
-                      <span className="font-bold text-slate-900 dark:text-white text-sm truncate">
+                      <SmartText className="font-bold text-slate-900 dark:text-white text-sm truncate block">
                         {format(parseISO(bulk.generatedAt), 'MMM dd, yyyy')}
-                      </span>
+                      </SmartText>
                     </div>
                     <div className="flex items-center gap-3 text-[11px] text-slate-500">
                       <div className="flex items-center gap-1">
@@ -793,7 +796,7 @@ export default function Payroll() {
                 className="bento-card flex-col bg-white dark:bg-slate-800 p-4 cursor-pointer hover:border-blue-300 transition-colors"
               >
                 <div className="flex justify-between items-center mb-3">
-                  <div className="font-bold text-slate-900 dark:text-white">{data.employee.fullName}</div>
+                  <SmartText className="font-bold text-slate-900 dark:text-white block">{data.employee.fullName}</SmartText>
                   <ChevronRight className="w-5 h-5 text-slate-400" />
                 </div>
                 <div className="grid grid-cols-4 gap-2 text-sm">
@@ -859,11 +862,11 @@ export default function Payroll() {
             >
               <div className="flex justify-between border-b-2 border-slate-800 pb-4 mb-4">
                 <div>
-                  <h2 className="text-xl font-bold text-slate-900">PAYSLIP</h2>
-                  <div className="text-sm text-slate-600 mt-1">
+                  <SmartText as="h2" className="text-xl font-bold text-slate-900 block leading-tight">PAYSLIP</SmartText>
+                  <SmartText className="text-sm text-slate-600 mt-1 block">
                     {format(parseISO(startDate), 'MMM dd')} - {format(parseISO(endDate), 'MMM dd, yyyy')}
-                  </div>
-                  <div className="text-2xl font-black text-slate-900 mt-2 uppercase tracking-tight">{selectedPayslip.employee.fullName}</div>
+                  </SmartText>
+                  <SmartText as="div" className="text-2xl font-black text-slate-900 mt-2 uppercase tracking-tight block leading-tight">{selectedPayslip.employee.fullName}</SmartText>
                   <div className="text-xs text-slate-500">
                     {selectedPayslip.employee.customId ? `${selectedPayslip.employee.customId} • ` : ''}{selectedPayslip.employee.position || 'Staff'}
                   </div>
@@ -1010,10 +1013,10 @@ export default function Payroll() {
                   return (
                     <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                       <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">
-                        {emp?.fullName}
-                        <div className="text-[10px] text-slate-400 font-normal">
+                        <SmartText className="block leading-tight">{emp?.fullName}</SmartText>
+                        <SmartText className="text-[10px] text-slate-400 font-normal block leading-none">
                           {p.totalPresent}d present, {p.totalAbsent}d absent
-                        </div>
+                        </SmartText>
                       </td>
                       <td className="px-6 py-4 text-center font-medium text-slate-700 dark:text-slate-300">
                         ₱{p.totalGrossPay.toLocaleString(undefined, { minimumFractionDigits: 2 })}

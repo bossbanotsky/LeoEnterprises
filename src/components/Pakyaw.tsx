@@ -4,6 +4,7 @@ import { db, handleFirestoreError, OperationType } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { Employee, PakyawJob } from '../types';
 import { Search, Plus, Hammer, Trash2, Edit2, CheckSquare, Square } from 'lucide-react';
+import { SmartText } from './ui/SmartText';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -138,16 +139,19 @@ export default function Pakyaw() {
     <div className="h-full flex flex-col relative w-full pt-2">
       <div className="mb-4 shrink-0">
         <div className="flex items-center justify-between mb-4">
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Pakyaw Contracts</h1>
-          <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl shrink-0">
+          <div>
+            <SmartText as="h1" className="text-2xl font-bold text-slate-900">Pakyaw Contracts</SmartText>
+            <SmartText className="text-slate-500 text-sm">Manage piece-rate work and distributions</SmartText>
+          </div>
+          <div className="flex bg-slate-100 p-1 rounded-xl shrink-0 border border-black/5 shadow-sm">
             <Button 
               variant={viewMode === 'active' ? 'secondary' : 'ghost'} 
-              className="h-8 text-[11px] px-3 rounded-lg font-bold"
+              className={`h-8 text-[11px] px-4 rounded-lg font-bold transition-all ${viewMode === 'active' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
               onClick={() => setViewMode('active')}
             >Active</Button>
             <Button 
               variant={viewMode === 'archives' ? 'secondary' : 'ghost'} 
-              className="h-8 text-[11px] px-3 rounded-lg font-bold"
+              className={`h-8 text-[11px] px-4 rounded-lg font-bold transition-all ${viewMode === 'archives' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
               onClick={() => setViewMode('archives')}
             >Archives</Button>
           </div>
@@ -156,7 +160,7 @@ export default function Pakyaw() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
           <Input 
             placeholder="Search container / job name..." 
-            className="pl-10 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl h-12"
+            className="pl-10 bg-white border-slate-200 rounded-xl h-12"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -167,38 +171,38 @@ export default function Pakyaw() {
         {filteredJobs.map(job => {
           const splitAmount = job.totalPrice / (job.employeeIds.length || 1);
           return (
-            <div key={job.id} className="bento-card bg-white dark:bg-slate-800 p-4 flex flex-col gap-3 group relative overflow-hidden">
+            <div key={job.id} className="bento-card bg-white p-4 flex flex-col gap-3 group relative overflow-hidden border-black/5">
               {job.status === 'completed' && (
-                <div className="absolute top-0 right-0 py-1 px-3 bg-green-500 text-white text-[9px] font-bold uppercase tracking-widest rounded-bl-xl shadow-sm">
-                  Completed
+                <div className="absolute top-0 right-0 py-1 px-3 bg-emerald-500 text-white text-[9px] font-bold uppercase tracking-widest rounded-bl-xl shadow-sm z-10 italic">
+                  COMPLETED
                 </div>
               )}
               <div className="flex flex-row items-center gap-4">
-                <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-full flex items-center justify-center font-bold shrink-0">
+                <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center font-bold shrink-0 border border-indigo-100 shadow-inner">
                   <Hammer className="w-6 h-6" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-bold text-slate-900 dark:text-white truncate">{job.description}</h3>
-                  <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    {format(parseISO(job.startDate), 'MMM dd, yyyy')} • {job.employeeIds.length} worker{job.employeeIds.length !== 1 ? 's' : ''}
-                  </div>
+                  <SmartText as="h3" className="font-bold text-slate-900 truncate block leading-tight text-base tracking-tight">{job.description}</SmartText>
+                  <SmartText className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1 block">
+                    {format(parseISO(job.startDate), 'MMM dd, yyyy')} • {job.employeeIds.length} WORKERS
+                  </SmartText>
                 </div>
                 <div className="shrink-0 text-right">
-                  <div className="font-black text-lg text-slate-900 dark:text-white">
-                    ₱{job.totalPrice.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
-                  </div>
-                  <div className="text-[10px] uppercase font-bold tracking-wider text-indigo-600 mt-0.5">
-                    ₱{splitAmount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} each
-                  </div>
+                  <SmartText className="font-black text-lg text-slate-900">
+                    ₱{job.totalPrice.toLocaleString(undefined, {minimumFractionDigits: 2})}
+                  </SmartText>
+                  <SmartText className="text-[10px] uppercase font-bold tracking-widest text-indigo-600 mt-0.5 opacity-80">
+                    ₱{splitAmount.toLocaleString(undefined, {minimumFractionDigits: 2})} SHARE
+                  </SmartText>
                 </div>
               </div>
               
-              <div className="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-3 text-xs text-slate-600 dark:text-slate-400 border border-slate-100 dark:border-slate-800/50">
-                <span className="font-semibold text-slate-900 dark:text-slate-300">Workers: </span>
+              <div className="bg-slate-50 rounded-xl p-3 text-[11px] text-slate-600 border border-slate-100/50 leading-relaxed italic">
+                <span className="font-bold text-slate-400 not-italic uppercase tracking-wider text-[9px] mr-2 opacity-70">Team:</span>
                 {job.employeeIds.map(id => {
                   const e = employees.find(emp => emp.id === id);
                   return e ? e.fullName : 'Unknown';
-                }).join(', ')}
+                }).join(' • ')}
               </div>
 
               <div className="flex justify-end gap-3 mt-1">

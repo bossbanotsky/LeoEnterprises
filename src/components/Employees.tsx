@@ -4,6 +4,7 @@ import { db, handleFirestoreError, OperationType } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { Employee } from '../types';
 import { Search, Plus, Briefcase, ChevronRight, Edit2, Trash2 } from 'lucide-react';
+import { SmartText } from './ui/SmartText';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -104,12 +105,12 @@ export default function Employees() {
   return (
     <div className="h-full flex flex-col relative">
       <div className="mb-4">
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">Employees</h1>
+        <SmartText as="h1" className="text-2xl font-bold text-slate-900 mb-4">Employees</SmartText>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
           <Input 
             placeholder="Search employees..." 
-            className="pl-10 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl h-12"
+            className="pl-10 bg-white border-slate-200 rounded-xl h-12"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -121,26 +122,26 @@ export default function Employees() {
           <div 
             key={emp.id} 
             onClick={() => setSelectedEmployee(emp)}
-            className="bento-card bg-white dark:bg-slate-800 p-4 flex flex-row items-center gap-4 cursor-pointer hover:border-blue-300 transition-colors"
+            className="bento-card bg-white p-4 flex flex-row items-center gap-4 cursor-pointer hover:border-blue-300 transition-colors"
           >
-            <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center font-bold text-lg shrink-0">
-              {emp.fullName.charAt(0).toUpperCase()}
+            <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center font-bold text-lg shrink-0 border border-blue-100">
+              <SmartText>{emp.fullName.charAt(0).toUpperCase()}</SmartText>
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <h3 className="font-bold text-slate-900 dark:text-white truncate">{emp.fullName}</h3>
+                <SmartText as="h3" className="font-bold text-slate-900 truncate leading-tight block">{emp.fullName}</SmartText>
                 {emp.customId && (
-                  <span className="text-[9px] font-bold text-slate-400 bg-slate-100 dark:bg-slate-700 px-1 rounded uppercase tracking-tighter">
+                  <span className="text-[9px] font-bold text-slate-400 bg-slate-50 px-1 rounded uppercase tracking-tighter border border-slate-100">
                     {emp.customId}
                   </span>
                 )}
               </div>
               <div className="flex items-center gap-4 text-xs mt-1">
-                <div className="flex items-center gap-1 text-slate-500 dark:text-slate-400 truncate">
+                <div className="flex items-center gap-1 text-slate-500 truncate">
                   <Briefcase className="w-3 h-3" />
                   <span className="truncate">{emp.position || 'Staff'}</span>
                 </div>
-                <div className="font-bold text-blue-600 dark:text-blue-400 flex items-center gap-0.5 whitespace-nowrap">
+                <div className="font-bold text-blue-600 flex items-center gap-0.5 whitespace-nowrap">
                   <span className="text-[10px] opacity-70">₱</span>
                   <span>{emp.dailySalary.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                 </div>
@@ -149,18 +150,18 @@ export default function Employees() {
             <div className="shrink-0 flex items-center gap-2">
               <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
                 emp.status === 'active' || !emp.status 
-                  ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' 
-                  : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400'
+                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' 
+                  : 'bg-slate-50 text-slate-600 border border-slate-100'
               }`}>
                 {emp.status || 'Active'}
               </span>
-              <ChevronRight className="w-4 h-4 text-slate-400" />
+              <ChevronRight className="w-4 h-4 text-slate-300" />
             </div>
           </div>
         ))}
         {filteredEmployees.length === 0 && (
-          <div className="text-center py-10 text-slate-500 dark:text-slate-400">
-            No employees found.
+          <div className="text-center py-10 text-slate-400 italic text-sm">
+            No employees found matching the search.
           </div>
         )}
       </div>
@@ -212,53 +213,53 @@ export default function Employees() {
             <div className="space-y-6 mt-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center font-bold text-2xl shrink-0">
-                    {selectedEmployee.fullName.charAt(0).toUpperCase()}
+                  <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center font-bold text-2xl shrink-0 border border-blue-100">
+                    <SmartText>{selectedEmployee.fullName.charAt(0).toUpperCase()}</SmartText>
                   </div>
                   <div>
-                    <h3 className="font-bold text-xl text-slate-900 dark:text-white">{selectedEmployee.fullName}</h3>
-                    <p className="text-slate-500 dark:text-slate-400">
+                    <SmartText as="h3" className="font-bold text-xl text-slate-900 leading-tight block">{selectedEmployee.fullName}</SmartText>
+                    <SmartText className="text-slate-500">
                       {selectedEmployee.customId ? `${selectedEmployee.customId} • ` : ''}{selectedEmployee.position || 'Staff'}
-                    </p>
+                    </SmartText>
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <Button variant="outline" size="icon" onClick={() => openEdit(selectedEmployee)} className="rounded-full w-10 h-10">
+                  <Button variant="outline" size="icon" onClick={() => openEdit(selectedEmployee)} className="rounded-full w-10 h-10 border-slate-200">
                     <Edit2 className="w-4 h-4 text-slate-600" />
                   </Button>
-                  <Button variant="outline" size="icon" onClick={() => handleDeleteEmployee(selectedEmployee.id)} className="rounded-full w-10 h-10 border-red-200 hover:bg-red-50">
-                    <Trash2 className="w-4 h-4 text-red-500" />
+                  <Button variant="outline" size="icon" onClick={() => handleDeleteEmployee(selectedEmployee.id)} className="rounded-full w-10 h-10 border-red-100 hover:bg-red-50 text-red-500">
+                    <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
               </div>
               
               <div className="grid grid-cols-2 gap-4">
-                <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded-xl col-span-2">
-                  <div className="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold mb-1">Employee ID</div>
-                  <div className="font-bold text-slate-900 dark:text-white">{selectedEmployee.customId || 'No ID assigned'}</div>
+                <div className="bg-slate-50 p-3 rounded-xl col-span-2 border border-black/5">
+                  <div className="text-xs text-slate-400 uppercase font-semibold mb-1">Employee ID</div>
+                  <div className="font-bold text-slate-900">{selectedEmployee.customId || 'No ID assigned'}</div>
                 </div>
-                <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded-xl">
-                  <div className="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold mb-1">Daily Salary</div>
-                  <div className="font-bold text-slate-900 dark:text-white">₱ {selectedEmployee.dailySalary.toFixed(2)}</div>
+                <div className="bg-slate-50 p-3 rounded-xl border border-black/5">
+                  <div className="text-xs text-slate-400 uppercase font-semibold mb-1">Daily Salary</div>
+                  <div className="font-bold text-slate-900">₱ {selectedEmployee.dailySalary.toFixed(2)}</div>
                 </div>
-                <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded-xl">
-                  <div className="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold mb-1">Hourly Rate</div>
-                  <div className="font-bold text-slate-900 dark:text-white">₱ {selectedEmployee.hourlyRate.toFixed(2)}</div>
+                <div className="bg-slate-50 p-3 rounded-xl border border-black/5">
+                  <div className="text-xs text-slate-400 uppercase font-semibold mb-1">Hourly Rate</div>
+                  <div className="font-bold text-slate-900">₱ {selectedEmployee.hourlyRate.toFixed(2)}</div>
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-slate-100 dark:border-slate-700">
+              <div className="pt-4 border-t border-slate-100">
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="font-medium text-slate-900 dark:text-white">Account Status</div>
-                    <div className="text-sm text-slate-500 dark:text-slate-400">
+                    <SmartText className="font-medium text-slate-900">Account Status</SmartText>
+                    <SmartText className="text-sm text-slate-500">
                       Currently {selectedEmployee.status || 'active'}
-                    </div>
+                    </SmartText>
                   </div>
                   <Button 
                     variant={selectedEmployee.status === 'active' || !selectedEmployee.status ? 'destructive' : 'default'}
                     onClick={() => handleUpdateStatus(selectedEmployee)}
-                    className="rounded-xl"
+                    className="rounded-xl px-6"
                   >
                     {selectedEmployee.status === 'active' || !selectedEmployee.status ? 'Deactivate' : 'Activate'}
                   </Button>
