@@ -1,0 +1,142 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Admin user of the payroll system",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "format": "email" },
+        "role": { "type": "string", "enum": ["admin"] }
+      },
+      "required": ["email", "role"]
+    },
+    "Employee": {
+      "title": "Employee",
+      "description": "Employee record",
+      "type": "object",
+      "properties": {
+        "customId": { "type": "string" },
+        "fullName": { "type": "string" },
+        "position": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "inactive"] },
+        "dailySalary": { "type": "number" },
+        "hourlyRate": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "uid": { "type": "string" }
+      },
+      "required": ["fullName", "dailySalary", "hourlyRate", "createdAt", "uid"]
+    },
+    "Attendance": {
+      "title": "Attendance",
+      "description": "Daily attendance record for an employee",
+      "type": "object",
+      "properties": {
+        "employeeId": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "timeIn": { "type": "string" },
+        "timeOut": { "type": "string" },
+        "status": { "type": "string", "enum": ["present", "absent"] },
+        "regularHours": { "type": "number" },
+        "otHours": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "uid": { "type": "string" }
+      },
+      "required": ["employeeId", "date", "status", "createdAt", "uid"]
+    },
+    "Payroll": {
+      "title": "Payroll",
+      "description": "Payroll record for an employee for a specific period",
+      "type": "object",
+      "properties": {
+        "employeeId": { "type": "string" },
+        "startDate": { "type": "string", "format": "date" },
+        "endDate": { "type": "string", "format": "date" },
+        "totalPresent": { "type": "number" },
+        "totalAbsent": { "type": "number" },
+        "absentDates": {
+          "type": "array",
+          "items": { "type": "string", "format": "date" }
+        },
+        "totalRegularHours": { "type": "number" },
+        "totalOtHours": { "type": "number" },
+        "regularPay": { "type": "number" },
+        "otPay": { "type": "number" },
+        "cashAdvanceDeduction": { "type": "number" },
+        "totalPay": { "type": "number" },
+        "bulkId": { "type": "string" },
+        "generatedAt": { "type": "string", "format": "date-time" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "uid": { "type": "string" }
+      },
+      "required": ["employeeId", "startDate", "endDate", "totalPresent", "totalAbsent", "absentDates", "totalRegularHours", "totalOtHours", "regularPay", "otPay", "totalPay", "createdAt", "uid"]
+    },
+    "BulkPayroll": {
+      "title": "Bulk Payroll",
+      "description": "A record representing a bulk payroll generation run",
+      "type": "object",
+      "properties": {
+        "startDate": { "type": "string", "format": "date" },
+        "endDate": { "type": "string", "format": "date" },
+        "generatedAt": { "type": "string", "format": "date-time" },
+        "userId": { "type": "string" }
+      },
+      "required": ["startDate", "endDate", "generatedAt", "userId"]
+    },
+    "CashAdvance": {
+      "title": "Cash Advance",
+      "description": "Cash advance record for an employee",
+      "type": "object",
+      "properties": {
+        "employeeId": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "amount": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "uid": { "type": "string" }
+      },
+      "required": ["employeeId", "date", "amount", "createdAt", "uid"]
+    },
+    "Log": {
+      "title": "Log",
+      "description": "System log or error record",
+      "type": "object",
+      "properties": {
+        "message": { "type": "string" },
+        "level": { "type": "string", "enum": ["info", "error"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "uid": { "type": "string" },
+        "details": { "type": "string" }
+      },
+      "required": ["message", "level", "createdAt", "uid"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Admin users"
+    },
+    "/employees/{employeeId}": {
+      "schema": { "$ref": "#/entities/Employee" },
+      "description": "Employee records"
+    },
+    "/attendance/{attendanceId}": {
+      "schema": { "$ref": "#/entities/Attendance" },
+      "description": "Attendance records"
+    },
+    "/payrolls/{payrollId}": {
+      "schema": { "$ref": "#/entities/Payroll" },
+      "description": "Payroll records"
+    },
+    "/bulkPayrolls/{bulkId}": {
+      "schema": { "$ref": "#/entities/BulkPayroll" },
+      "description": "Bulk payroll generation runs"
+    },
+    "/cashAdvances/{cashAdvanceId}": {
+      "schema": { "$ref": "#/entities/CashAdvance" },
+      "description": "Cash advance records"
+    },
+    "/logs/{logId}": {
+      "schema": { "$ref": "#/entities/Log" },
+      "description": "System logs"
+    }
+  }
+}
