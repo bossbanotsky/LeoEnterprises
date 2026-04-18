@@ -26,9 +26,11 @@ export default function Settings() {
   const toggleDarkMode = () => {
     if (isDarkMode) {
       document.documentElement.classList.remove('dark');
+      localStorage.theme = 'light';
       setIsDarkMode(false);
     } else {
       document.documentElement.classList.add('dark');
+      localStorage.theme = 'dark';
       setIsDarkMode(true);
     }
   };
