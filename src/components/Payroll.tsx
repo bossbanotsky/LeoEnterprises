@@ -36,6 +36,15 @@ export default function Payroll() {
   const [isExporting, setIsExporting] = useState(false);
   const [viewMode, setViewMode] = useState<'process' | 'archives'>('process');
   const [archivedBulkRuns, setArchivedBulkRuns] = useState<any[]>([]);
+  
+  // NEW PREVIEW STATE
+  const [previewData, setPreviewData] = useState<{
+    payrollsToSave: any[],
+    bulkTotalPay: number,
+    targetEmployees: Employee[]
+  } | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  
   const payslipRef = useRef<HTMLDivElement>(null);
 
   const handleMarkAsPaid = async (bulkId: string) => {
@@ -304,7 +313,7 @@ export default function Payroll() {
     return () => unsub();
   }, [user, employees, viewMode, selectedBulkId]);
 
-  const handleGeneratePayroll = async () => {
+  const handlePreviewPayroll = async () => {
     if (!startDate || !endDate || employees.length === 0) return;
     setIsLoading(true);
     try {
@@ -335,12 +344,10 @@ export default function Payroll() {
         end: parseISO(endDate)
       }).map(d => format(d, 'yyyy-MM-dd'));
 
-      let bulkId = null;
       let bulkTotalPay = 0;
       const payrollsToSave: any[] = [];
 
       for (const emp of targetEmployees) {
-        // ... calculation logic ...
         const empAtts = allAtts.filter(a => a.employeeId === emp.id);
         const empCa = allCa.filter(ca => ca.employeeId === emp.id);
         
@@ -401,24 +408,44 @@ export default function Payroll() {
           totalGrossPay,
           cashAdvanceDeduction,
           totalPay,
-          uid: user.uid,
+          uid: user!.uid,
           generatedAt: new Date().toISOString()
         });
       }
 
-      if (selectedEmployeeId === 'all' && user) {
+      setPreviewData({
+        payrollsToSave,
+        bulkTotalPay,
+        targetEmployees
+      });
+      setIsPreviewOpen(true);
+      
+    } catch (error) {
+      handleFirestoreError(error, OperationType.GET, 'attendance');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const confirmAndGeneratePayroll = async () => {
+    if (!previewData || !user) return;
+    setIsLoading(true);
+    try {
+      let bulkId = null;
+
+      if (selectedEmployeeId === 'all') {
         const bulkDoc = await addDoc(collection(db, 'bulkPayrolls'), {
           startDate,
           endDate,
-          totalCashRequired: bulkTotalPay,
-          employeeCount: targetEmployees.length,
+          totalCashRequired: previewData.bulkTotalPay,
+          employeeCount: previewData.targetEmployees.length,
           generatedAt: new Date().toISOString(),
           userId: user.uid
         });
         bulkId = bulkDoc.id;
       }
 
-      for (const payload of payrollsToSave) {
+      for (const payload of previewData.payrollsToSave) {
         const finalPayload = { ...payload, bulkId };
         const existingQ = query(
           collection(db, 'payrolls'),
@@ -437,8 +464,10 @@ export default function Payroll() {
           await updateDoc(doc(db, 'payrolls', existingSnap.docs[0].id), finalPayload);
         }
       }
+      setIsPreviewOpen(false);
+      setPreviewData(null);
     } catch (error) {
-      handleFirestoreError(error, OperationType.GET, 'attendance');
+      handleFirestoreError(error, OperationType.UPDATE, 'payrolls');
     } finally {
       setIsLoading(false);
     }
@@ -535,11 +564,11 @@ export default function Payroll() {
             </select>
           </div>
           <Button 
-            onClick={handleGeneratePayroll} 
+            onClick={handlePreviewPayroll} 
             disabled={isLoading}
             className="w-full rounded-xl h-12 bg-blue-600 hover:bg-blue-700 font-bold"
           >
-            {isLoading ? 'Generating...' : (selectedEmployeeId === 'all' ? 'Generate Bulk Payroll' : 'Generate Individual')}
+            {isLoading ? 'Generating...' : (selectedEmployeeId === 'all' ? 'Preview Bulk Payroll' : 'Preview Individual')}
           </Button>
         </div>
       )}
@@ -846,6 +875,82 @@ export default function Payroll() {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+      <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+        <DialogContent className="sm:max-w-[700px] bg-white dark:bg-slate-900 border-none rounded-3xl p-0 overflow-hidden shadow-2xl">
+          <div className="bg-slate-50 dark:bg-slate-800 p-6 flex flex-col items-center justify-center border-b border-slate-100 dark:border-slate-800">
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Payroll Preview</h2>
+            <div className="text-sm text-slate-500 dark:text-slate-400">
+              {format(parseISO(startDate), 'MMM dd, yyyy')} - {format(parseISO(endDate), 'MMM dd, yyyy')}
+            </div>
+            
+            <div className="mt-6 bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 w-full flex items-center justify-between">
+              <div>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Total Payout</p>
+                <p className="text-3xl font-black text-blue-600">₱{previewData?.bulkTotalPay.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Employees</p>
+                <p className="text-xl font-bold text-slate-700 dark:text-slate-300">{previewData?.targetEmployees.length || 0}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="p-0 max-h-[50vh] overflow-y-auto">
+            <table className="w-full text-sm text-left">
+              <thead className="text-[10px] text-slate-400 uppercase bg-slate-50/50 dark:bg-slate-800/50 sticky top-0 z-10 font-bold tracking-wider">
+                <tr>
+                  <th className="px-6 py-3">Employee</th>
+                  <th className="px-6 py-3 text-center">Gross Pay</th>
+                  <th className="px-6 py-3 text-center text-red-500">Deductions</th>
+                  <th className="px-6 py-3 text-right text-blue-500">Net Pay</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
+                {previewData?.payrollsToSave.map((p, idx) => {
+                  const emp = previewData.targetEmployees.find(e => e.id === p.employeeId);
+                  return (
+                    <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                      <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">
+                        {emp?.fullName}
+                        <div className="text-[10px] text-slate-400 font-normal">
+                          {p.totalPresent}d present, {p.totalAbsent}d absent
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-center font-medium text-slate-700 dark:text-slate-300">
+                        ₱{p.totalGrossPay.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      </td>
+                      <td className="px-6 py-4 text-center font-medium text-red-600 dark:text-red-400">
+                        ₱{p.cashAdvanceDeduction.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      </td>
+                      <td className="px-6 py-4 text-right font-black text-blue-600 dark:text-blue-400">
+                        ₱{p.totalPay.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="p-6 bg-slate-50 dark:bg-slate-800 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-3">
+            <Button
+              variant="ghost"
+              className="px-6 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700"
+              onClick={() => setIsPreviewOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="px-8 rounded-xl bg-blue-600 hover:bg-blue-700 font-bold shadow-md shadow-blue-500/20"
+              onClick={confirmAndGeneratePayroll}
+              disabled={isLoading}
+            >
+              {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle className="w-5 h-5 mr-2" />}
+              {isLoading ? 'Processing...' : 'Confirm & Run Payroll'}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
