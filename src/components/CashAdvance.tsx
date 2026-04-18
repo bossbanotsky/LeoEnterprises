@@ -4,7 +4,6 @@ import { db, handleFirestoreError, OperationType } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { Employee, CashAdvance as CashAdvanceType } from '../types';
 import { Search, Plus, Wallet, Trash2, Edit2 } from 'lucide-react';
-import { SmartText } from './ui/SmartText';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -93,48 +92,48 @@ export default function CashAdvance() {
   });
 
   return (
-    <div className="h-full flex flex-col relative w-full">
+    <div className="h-full flex flex-col relative">
       <div className="mb-4">
-        <SmartText as="h1" className="text-2xl font-bold text-slate-900 mb-4 tracking-tight uppercase">Cash Advances</SmartText>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">Cash Advances</h1>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
           <Input 
             placeholder="Search by employee name..." 
-            className="pl-10 bg-white border-slate-200 rounded-xl h-12"
+            className="pl-10 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl h-12"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto space-y-3 pb-20 w-full pr-1">
+      <div className="flex-1 overflow-y-auto space-y-3 pb-20">
         {filteredAdvances.map(ca => {
           const emp = employees.find(e => e.id === ca.employeeId);
           return (
-            <div key={ca.id} className="bento-card bg-white p-4 flex flex-row items-center gap-4 border-black/5">
-              <div className="w-12 h-12 bg-orange-50 text-orange-600 rounded-full flex items-center justify-center font-bold shrink-0 border border-orange-100 shadow-inner">
+            <div key={ca.id} className="bento-card bg-white dark:bg-slate-800 p-4 flex flex-row items-center gap-4">
+              <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded-full flex items-center justify-center font-bold shrink-0">
                 <Wallet className="w-6 h-6" />
               </div>
               <div className="flex-1 min-w-0">
-                <SmartText as="h3" className="font-bold text-slate-900 truncate block leading-tight text-base tracking-tight">{emp?.fullName || 'Unknown Employee'}</SmartText>
-                <SmartText className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1 block opacity-70 italic">
-                  {format(parseISO(ca.date), 'MMMM dd, yyyy')}
-                </SmartText>
+                <h3 className="font-bold text-slate-900 dark:text-white truncate">{emp?.fullName || 'Unknown Employee'}</h3>
+                <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  {format(parseISO(ca.date), 'MMM dd, yyyy')}
+                </div>
               </div>
               <div className="shrink-0 text-right">
-                <SmartText className="font-black text-lg text-slate-900 tracking-tighter">
-                  ₱{ca.amount.toLocaleString(undefined, {minimumFractionDigits: 2})}
-                </SmartText>
-                <div className="flex justify-end gap-3 mt-2">
+                <div className="font-bold text-slate-900 dark:text-white">
+                  ₱{ca.amount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                </div>
+                <div className="flex justify-end gap-2 mt-2">
                   <button 
                     onClick={() => openEdit(ca)}
-                    className="text-[10px] text-blue-500 hover:text-blue-700 flex items-center gap-1 font-bold uppercase tracking-widest"
+                    className="text-xs text-blue-500 hover:text-blue-700 flex items-center gap-1"
                   >
                     <Edit2 className="w-3 h-3" /> Edit
                   </button>
                   <button 
                     onClick={() => handleDelete(ca.id)}
-                    className="text-[10px] text-red-500 hover:text-red-700 flex items-center gap-1 font-bold uppercase tracking-widest"
+                    className="text-xs text-red-500 hover:text-red-700 flex items-center gap-1"
                   >
                     <Trash2 className="w-3 h-3" /> Delete
                   </button>
@@ -144,8 +143,8 @@ export default function CashAdvance() {
           );
         })}
         {filteredAdvances.length === 0 && (
-          <div className="text-center py-10 text-slate-400 italic text-sm">
-            No cash advance records found for this period.
+          <div className="text-center py-10 text-slate-500 dark:text-slate-400">
+            No cash advances found.
           </div>
         )}
       </div>
