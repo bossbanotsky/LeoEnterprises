@@ -6,8 +6,24 @@ export interface Employee {
   status: 'active' | 'inactive';
   dailySalary: number;
   hourlyRate: number;
+  email?: string;
   createdAt: string;
   uid: string;
+  
+  // Personal & Government Details (Optional)
+  birthday?: string;
+  sex?: 'Male' | 'Female' | 'Other' | '';
+  civilStatus?: 'Single' | 'Married' | 'Widowed' | 'Divorced' | 'Separated' | '';
+  religion?: string;
+  sssNumber?: string;
+  philhealthNumber?: string;
+  pagibigNumber?: string;
+  tinNumber?: string;
+
+  // Emergency Contact
+  emergencyContactName?: string;
+  emergencyContactRelation?: string;
+  emergencyContactPhone?: string;
 }
 
 export interface Attendance {
@@ -29,6 +45,7 @@ export interface CashAdvance {
   employeeId: string;
   date: string;
   amount: number;
+  notes?: string;
   createdAt: string;
   uid: string;
 }
@@ -63,8 +80,10 @@ export interface Payroll {
   pakyawDetails: string[];
   totalGrossPay: number;
   cashAdvanceDeduction: number;
+  cashAdvanceDetails?: string[];
   totalPay: number;
   bulkId: string | null;
+  status?: 'paid';
   uid: string;
   generatedAt: string;
   createdAt: string;

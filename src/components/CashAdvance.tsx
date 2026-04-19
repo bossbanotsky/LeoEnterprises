@@ -17,7 +17,7 @@ export default function CashAdvance() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState({ employeeId: '', date: format(new Date(), 'yyyy-MM-dd'), amount: '' });
+  const [form, setForm] = useState({ employeeId: '', date: format(new Date(), 'yyyy-MM-dd'), amount: '', notes: '' });
 
   useEffect(() => {
     if (!user) return;
@@ -48,7 +48,8 @@ export default function CashAdvance() {
         await updateDoc(doc(db, 'cashAdvances', editingId), {
           employeeId: form.employeeId,
           date: form.date,
-          amount: parseFloat(form.amount)
+          amount: parseFloat(form.amount),
+          notes: form.notes || ''
         });
         setEditingId(null);
       } else {
@@ -56,12 +57,13 @@ export default function CashAdvance() {
           employeeId: form.employeeId,
           date: form.date,
           amount: parseFloat(form.amount),
+          notes: form.notes || '',
           createdAt: new Date().toISOString(),
           uid: user.uid
         });
       }
       setIsAddOpen(false);
-      setForm({ employeeId: '', date: format(new Date(), 'yyyy-MM-dd'), amount: '' });
+      setForm({ employeeId: '', date: format(new Date(), 'yyyy-MM-dd'), amount: '', notes: '' });
     } catch (error) {
       handleFirestoreError(error, editingId ? OperationType.UPDATE : OperationType.CREATE, 'cashAdvances');
     }
@@ -72,7 +74,8 @@ export default function CashAdvance() {
     setForm({
       employeeId: ca.employeeId,
       date: ca.date,
-      amount: ca.amount.toString()
+      amount: ca.amount.toString(),
+      notes: ca.notes || ''
     });
     setIsAddOpen(true);
   };
@@ -118,6 +121,7 @@ export default function CashAdvance() {
                 <h3 className="font-bold text-slate-900 dark:text-white truncate">{emp?.fullName || 'Unknown Employee'}</h3>
                 <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                   {format(parseISO(ca.date), 'MMM dd, yyyy')}
+                  {ca.notes && <span className="ml-2 italic opacity-80 decoration-slate-300">• {ca.notes}</span>}
                 </div>
               </div>
               <div className="shrink-0 text-right">
@@ -153,7 +157,7 @@ export default function CashAdvance() {
         setIsAddOpen(open);
         if (!open) {
           setEditingId(null);
-          setForm({ employeeId: '', date: format(new Date(), 'yyyy-MM-dd'), amount: '' });
+          setForm({ employeeId: '', date: format(new Date(), 'yyyy-MM-dd'), amount: '', notes: '' });
         }
       }}>
         <DialogTrigger render={<button className="absolute bottom-6 right-2 w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg flex items-center justify-center transition-transform active:scale-95 z-10" />}>
@@ -188,6 +192,10 @@ export default function CashAdvance() {
             <div className="space-y-2">
               <Label>Amount (Php)</Label>
               <Input required type="number" step="0.01" value={form.amount} onChange={e => setForm({...form, amount: e.target.value})} className="rounded-xl h-12" />
+            </div>
+            <div className="space-y-2">
+              <Label>Notes / Reason (e.g. Grocery, Rice)</Label>
+              <Input value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} placeholder="What's this for?" className="rounded-xl h-12" />
             </div>
             <Button type="submit" className="w-full rounded-xl h-12 bg-blue-600 hover:bg-blue-700">
               {editingId ? 'Update Cash Advance' : 'Save Cash Advance'}

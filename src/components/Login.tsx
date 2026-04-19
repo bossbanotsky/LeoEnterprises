@@ -8,14 +8,15 @@ import { LogIn, Mail, Lock, Loader2 } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
 
 export default function Login() {
-  const { user, loginWithEmail, registerWithEmail, loginWithGoogleContext } = useAuth();
+  const { user, userData, loading, loginWithEmail, loginWithGoogleContext } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isLoginView, setIsLoginView] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  if (user) {
+  // IMPORTANT: Wait for both auth state and user profile (role) to be ready before redirecting.
+  // This prevents the "blank" or "wrong portal" redirect issue for admins.
+  if (user && !loading && userData) {
     return <Navigate to="/" />;
   }
 
@@ -29,11 +30,7 @@ export default function Login() {
     try {
       setError(null);
       setIsLoading(true);
-      if (isLoginView) {
-        await loginWithEmail(email, password);
-      } else {
-        await registerWithEmail(email, password);
-      }
+      await loginWithEmail(email, password);
     } catch (err: any) {
       console.error(err);
       setError(err.code === 'auth/invalid-credential' 
@@ -122,7 +119,7 @@ export default function Login() {
               className="w-full h-14 rounded-2xl flex items-center justify-center space-x-2 bg-slate-900 hover:bg-slate-800 text-white shadow-lg transition-all active:scale-95 font-bold text-lg mt-2"
               disabled={isLoading}
             >
-              {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <span>{isLoginView ? 'Sign In' : 'Create Account'}</span>}
+              {isLoading || (user && !userData) ? <Loader2 className="w-5 h-5 animate-spin" /> : <span>Sign In</span>}
             </Button>
           </form>
 
@@ -139,7 +136,7 @@ export default function Login() {
             variant="outline"
             size="lg" 
             className="w-full h-12 rounded-2xl flex items-center justify-center space-x-3 transition-all font-semibold"
-            disabled={isLoading}
+            disabled={isLoading || (user && !userData)}
           >
             <svg viewBox="0 0 24 24" className="w-5 h-5">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
@@ -148,22 +145,8 @@ export default function Login() {
               <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
               <path d="M1 1h22v22H1z" fill="none" />
             </svg>
-            <span>Continue with Google</span>
+            <span>{user && !userData ? 'Identifying Admin...' : 'Continue with Google'}</span>
           </Button>
-          
-          <div className="mt-4 text-sm text-center font-medium text-slate-500">
-            {isLoginView ? "Don't have an account? " : "Already have an account? "}
-            <button 
-              type="button" 
-              onClick={() => {
-                setIsLoginView(!isLoginView);
-                setError(null);
-              }} 
-              className="text-blue-600 hover:underline font-bold"
-            >
-              {isLoginView ? 'Register' : 'Sign in'}
-            </button>
-          </div>
         </CardContent>
       </Card>
     </div>

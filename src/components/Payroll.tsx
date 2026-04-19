@@ -53,6 +53,45 @@ export default function Payroll() {
         status: 'paid',
         paidAt: new Date().toISOString()
       });
+      
+      // Send emails to employees who have them
+      const payrollsQ = query(collection(db, 'payrolls'), where('bulkId', '==', bulkId));
+      const payrollsSnap = await getDocs(payrollsQ);
+      
+      await Promise.all(payrollsSnap.docs.map(async (payrollDoc) => {
+        try {
+          // Also stamp the individual payroll doc as paid so employees can safely query it without reading bulkPayrolls
+          await updateDoc(doc(db, 'payrolls', payrollDoc.id), {
+            status: 'paid'
+          });
+        } catch (updateError) {
+          console.error("Failed to update individual payroll status:", updateError);
+        }
+
+        const pData = payrollDoc.data();
+        const emp = employees.find(e => e.id === pData.employeeId);
+        if (emp?.email && emp.email.trim() !== '') {
+          console.log(`Sending payslip email to ${emp.fullName} at ${emp.email}`);
+          try {
+            await fetch('/api/send-payslip', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                email: emp.email,
+                employeeName: emp.fullName,
+                period: `${format(parseISO(startDate), 'MMM dd')} - ${format(parseISO(endDate), 'MMM dd, yyyy')}`,
+                totalPay: pData.totalPay,
+                deduction: pData.cashAdvanceDeduction,
+                grossPay: pData.totalGrossPay,
+                companyName: companyInfo.name
+              })
+            });
+          } catch (e) {
+            console.error('Failed to send email:', e);
+          }
+        }
+      }));
+
       setSelectedBulkId(null);
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, 'bulkPayrolls');
@@ -305,6 +344,12 @@ export default function Payroll() {
       const fetchedPayrolls: any[] = [];
       snapshot.forEach(docSnap => {
         const data = docSnap.data();
+        
+        // AUTO-FIX: If the bulk run is closed but individual payrolls don't have the status tag, fix it here
+        if (data.status !== 'paid') {
+          updateDoc(doc(db, 'payrolls', docSnap.id), { status: 'paid' }).catch(console.error);
+        }
+        
         const emp = employees.find(e => e.id === data.employeeId);
         if (emp) fetchedPayrolls.push({ id: docSnap.id, employee: emp, ...data });
       });
@@ -370,10 +415,14 @@ export default function Payroll() {
         let totalRegularHours = 0;
         let totalOtHours = 0;
         let cashAdvanceDeduction = 0;
+        let cashAdvanceDetails: string[] = [];
         let totalPakyawPay = 0;
         let pakyawDetails: string[] = [];
 
-        empCa.forEach(ca => cashAdvanceDeduction += ca.amount);
+        empCa.forEach(ca => {
+          cashAdvanceDeduction += ca.amount;
+          cashAdvanceDetails.push(`${format(parseISO(ca.date), 'MMM dd')}: ₱${ca.amount.toFixed(2)}${ca.notes ? ' (' + ca.notes + ')' : ''}`);
+        });
         
         empPjw.forEach(pj => {
           const splitAmount = pj.totalPrice / Math.max(1, pj.employeeIds.length);
@@ -443,8 +492,6 @@ export default function Payroll() {
                 // IT IS FULL DAY OR MORE
                 totalPresent++;
                 totalRegularHours += regHrs;
-                // Add to details too
-                undertimeDetails.push(dailyWorkLog);
               }
               
               // Always add OT if present
@@ -488,6 +535,7 @@ export default function Payroll() {
           pakyawDetails,
           totalGrossPay,
           cashAdvanceDeduction,
+          cashAdvanceDetails,
           totalPay,
           uid: user!.uid,
           generatedAt: new Date().toISOString()
@@ -908,10 +956,19 @@ export default function Payroll() {
                   <h3 className="font-bold text-slate-900 border-b border-slate-200 pb-2 mb-3 text-sm">DEDUCTIONS</h3>
                   <div className="space-y-2 text-sm">
                     {selectedPayslip.cashAdvanceDeduction > 0 ? (
-                      <div className="flex justify-between">
-                        <span className="text-slate-600">Cash Advance</span>
-                        <span className="font-medium text-red-600">- ₱ {selectedPayslip.cashAdvanceDeduction.toFixed(2)}</span>
-                      </div>
+                      <>
+                        <div className="flex justify-between font-medium text-red-600">
+                          <span>Total Cash Advance</span>
+                          <span>- ₱ {selectedPayslip.cashAdvanceDeduction.toFixed(2)}</span>
+                        </div>
+                        {selectedPayslip.cashAdvanceDetails && (
+                          <ul className="text-[10px] text-slate-500 space-y-1 ml-2 border-l-2 border-red-100 pl-2">
+                            {selectedPayslip.cashAdvanceDetails.map((detail: string, i: number) => (
+                              <li key={i}>{detail}</li>
+                            ))}
+                          </ul>
+                        )}
+                      </>
                     ) : (
                       <div className="flex justify-between text-slate-400 italic">
                         <span>No deductions</span>

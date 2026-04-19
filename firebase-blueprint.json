@@ -2,11 +2,12 @@
   "entities": {
     "User": {
       "title": "User",
-      "description": "Admin user of the payroll system",
+      "description": "System user (Admin or Employee)",
       "type": "object",
       "properties": {
         "email": { "type": "string", "format": "email" },
-        "role": { "type": "string", "enum": ["admin"] }
+        "role": { "type": "string", "enum": ["admin", "employee"] },
+        "employeeId": { "type": "string", "description": "Linked employee record ID for employee role" }
       },
       "required": ["email", "role"]
     },

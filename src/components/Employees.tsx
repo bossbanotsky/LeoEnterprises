@@ -3,7 +3,7 @@ import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc } from 'fireb
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { Employee } from '../types';
-import { Search, Plus, Briefcase, ChevronRight, Edit2, Trash2 } from 'lucide-react';
+import { Search, Plus, Briefcase, ChevronRight, Edit2, Trash2, CheckCircle2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -14,18 +14,33 @@ export default function Employees() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddOpen, setIsAddOpen] = useState(false);
-  const [form, setForm] = useState({ customId: '', fullName: '', position: '', dailySalary: '' });
+  const [form, setForm] = useState({ customId: '', fullName: '', position: '', dailySalary: '', email: '' });
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
 
+  const [users, setUsers] = useState<Record<string, any>>({});
+
   useEffect(() => {
     if (!user) return;
-    const unsubscribe = onSnapshot(collection(db, 'employees'), (snapshot) => {
+    const unsubscribeEmps = onSnapshot(collection(db, 'employees'), (snapshot) => {
       const emps: Employee[] = [];
       snapshot.forEach((doc) => emps.push({ id: doc.id, ...doc.data() } as Employee));
       setEmployees(emps.sort((a, b) => a.fullName.localeCompare(b.fullName)));
     }, (error) => handleFirestoreError(error, OperationType.GET, 'employees'));
-    return () => unsubscribe();
+
+    const unsubscribeUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
+      const usersMap: Record<string, any> = {};
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        if (data.employeeId) usersMap[data.employeeId] = data;
+      });
+      setUsers(usersMap);
+    }, (error) => handleFirestoreError(error, OperationType.GET, 'users'));
+
+    return () => {
+      unsubscribeEmps();
+      unsubscribeUsers();
+    };
   }, [user]);
 
   const handleAddEmployee = async (e: React.FormEvent) => {
@@ -42,6 +57,7 @@ export default function Employees() {
           position: form.position || 'Staff',
           dailySalary,
           hourlyRate,
+          email: form.email || '',
         });
         setEditingEmployee(null);
       } else {
@@ -52,12 +68,13 @@ export default function Employees() {
           status: 'active',
           dailySalary,
           hourlyRate,
+          email: form.email || '',
           createdAt: new Date().toISOString(),
           uid: user.uid
         });
       }
       setIsAddOpen(false);
-      setForm({ customId: '', fullName: '', position: '', dailySalary: '' });
+      setForm({ customId: '', fullName: '', position: '', dailySalary: '', email: '' });
     } catch (error) {
       handleFirestoreError(error, editingEmployee ? OperationType.UPDATE : OperationType.CREATE, 'employees');
     }
@@ -79,7 +96,8 @@ export default function Employees() {
       customId: emp.customId || '',
       fullName: emp.fullName,
       position: emp.position || '',
-      dailySalary: emp.dailySalary.toString()
+      dailySalary: emp.dailySalary.toString(),
+      email: emp.email || ''
     });
     setSelectedEmployee(null);
     setIsAddOpen(true);
@@ -134,6 +152,11 @@ export default function Employees() {
                     {emp.customId}
                   </span>
                 )}
+                {users[emp.id] && (
+                  <div className="w-4 h-4 bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center" title="Account Linked">
+                    <CheckCircle2 className="w-2.5 h-2.5" />
+                  </div>
+                )}
               </div>
               <div className="flex items-center gap-4 text-xs mt-1">
                 <div className="flex items-center gap-1 text-slate-500 dark:text-slate-400 truncate">
@@ -169,7 +192,7 @@ export default function Employees() {
         setIsAddOpen(open);
         if (!open) {
           setEditingEmployee(null);
-          setForm({ customId: '', fullName: '', position: '', dailySalary: '' });
+          setForm({ customId: '', fullName: '', position: '', dailySalary: '', email: '' });
         }
       }}>
         <DialogTrigger render={<button className="absolute bottom-6 right-2 w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg flex items-center justify-center transition-transform active:scale-95 z-10" />}>
@@ -193,8 +216,12 @@ export default function Employees() {
               <Input required value={form.position} onChange={e => setForm({...form, position: e.target.value})} className="rounded-xl" />
             </div>
             <div className="space-y-2">
-              <Label>Daily Salary (Php)</Label>
+              <Label>Hourly Rate (₱ {form.dailySalary ? (parseFloat(form.dailySalary) / 8).toFixed(2) : '0.00'})</Label>
               <Input required type="number" step="0.01" value={form.dailySalary} onChange={e => setForm({...form, dailySalary: e.target.value})} className="rounded-xl" />
+            </div>
+            <div className="space-y-2">
+              <Label>Email Address (Optional)</Label>
+              <Input type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} placeholder="employee@example.com" className="rounded-xl" />
             </div>
             <Button type="submit" className="w-full rounded-xl h-12 bg-blue-600 hover:bg-blue-700">
               {editingEmployee ? 'Update Employee' : 'Save Employee'}
@@ -237,6 +264,10 @@ export default function Employees() {
                   <div className="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold mb-1">Employee ID</div>
                   <div className="font-bold text-slate-900 dark:text-white">{selectedEmployee.customId || 'No ID assigned'}</div>
                 </div>
+                <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded-xl col-span-2">
+                  <div className="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold mb-1">Email Address</div>
+                  <div className="font-bold text-slate-900 dark:text-white truncate">{selectedEmployee.email || 'None provided'}</div>
+                </div>
                 <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded-xl">
                   <div className="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold mb-1">Daily Salary</div>
                   <div className="font-bold text-slate-900 dark:text-white">₱ {selectedEmployee.dailySalary.toFixed(2)}</div>
@@ -246,6 +277,75 @@ export default function Employees() {
                   <div className="font-bold text-slate-900 dark:text-white">₱ {selectedEmployee.hourlyRate.toFixed(2)}</div>
                 </div>
               </div>
+
+              {(selectedEmployee.birthday || selectedEmployee.sex || selectedEmployee.civilStatus || selectedEmployee.religion || selectedEmployee.sssNumber || selectedEmployee.philhealthNumber || selectedEmployee.pagibigNumber || selectedEmployee.tinNumber) && (
+                <div className="pt-4 border-t border-slate-100 dark:border-slate-700">
+                  <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-3">Personal & Government Data</h4>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    {selectedEmployee.birthday && (
+                      <div>
+                        <span className="block text-[10px] uppercase font-bold text-slate-400">Birthday</span>
+                        <span className="font-medium text-slate-800 dark:text-slate-200">{selectedEmployee.birthday}</span>
+                      </div>
+                    )}
+                    {selectedEmployee.sex && (
+                      <div>
+                        <span className="block text-[10px] uppercase font-bold text-slate-400">Sex</span>
+                        <span className="font-medium text-slate-800 dark:text-slate-200">{selectedEmployee.sex}</span>
+                      </div>
+                    )}
+                    {selectedEmployee.civilStatus && (
+                      <div>
+                        <span className="block text-[10px] uppercase font-bold text-slate-400">Civil Status</span>
+                        <span className="font-medium text-slate-800 dark:text-slate-200">{selectedEmployee.civilStatus}</span>
+                      </div>
+                    )}
+                    {selectedEmployee.religion && (
+                      <div>
+                        <span className="block text-[10px] uppercase font-bold text-slate-400">Religion</span>
+                        <span className="font-medium text-slate-800 dark:text-slate-200">{selectedEmployee.religion}</span>
+                      </div>
+                    )}
+                    {selectedEmployee.sssNumber && (
+                      <div>
+                        <span className="block text-[10px] uppercase font-bold text-slate-400">SSS Number</span>
+                        <span className="font-medium text-slate-800 dark:text-slate-200">{selectedEmployee.sssNumber}</span>
+                      </div>
+                    )}
+                    {selectedEmployee.philhealthNumber && (
+                      <div>
+                        <span className="block text-[10px] uppercase font-bold text-slate-400">PhilHealth No.</span>
+                        <span className="font-medium text-slate-800 dark:text-slate-200">{selectedEmployee.philhealthNumber}</span>
+                      </div>
+                    )}
+                    {selectedEmployee.pagibigNumber && (
+                      <div>
+                        <span className="block text-[10px] uppercase font-bold text-slate-400">Pag-IBIG / HDMF</span>
+                        <span className="font-medium text-slate-800 dark:text-slate-200">{selectedEmployee.pagibigNumber}</span>
+                      </div>
+                    )}
+                    {selectedEmployee.tinNumber && (
+                      <div>
+                        <span className="block text-[10px] uppercase font-bold text-slate-400">TIN Number</span>
+                        <span className="font-medium text-slate-800 dark:text-slate-200">{selectedEmployee.tinNumber}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {(selectedEmployee.emergencyContactName || selectedEmployee.emergencyContactRelation || selectedEmployee.emergencyContactPhone) && (
+                <div className="pt-4 border-t border-slate-100 dark:border-slate-700">
+                  <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-3 text-red-600 dark:text-red-400">Emergency Contact</h4>
+                  <div className="bg-red-50/30 dark:bg-red-900/10 p-3 rounded-xl border border-red-100/50 dark:border-red-900/20">
+                    <div className="font-bold text-slate-900 dark:text-white">{selectedEmployee.emergencyContactName || 'No Name Provided'}</div>
+                    <div className="flex items-center justify-between mt-1 text-sm">
+                      <span className="text-slate-500 dark:text-slate-400">{selectedEmployee.emergencyContactRelation || 'Relation Unknown'}</span>
+                      <span className="font-mono text-blue-600 dark:text-blue-400 font-bold">{selectedEmployee.emergencyContactPhone || 'No Phone'}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="pt-4 border-t border-slate-100 dark:border-slate-700">
                 <div className="flex items-center justify-between">

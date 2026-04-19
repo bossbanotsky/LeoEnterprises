@@ -6,6 +6,8 @@ export interface CompanyInfo {
   name: string;
   address: string;
   contact: string;
+  currentPeriodStart?: string;
+  currentPeriodEnd?: string;
 }
 
 const defaultCompany: CompanyInfo = {

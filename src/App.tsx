@@ -11,13 +11,25 @@ import Pakyaw from './components/Pakyaw';
 import Payroll from './components/Payroll';
 import Settings from './components/Settings';
 import Logs from './components/Logs';
+import EmployeeDashboard from './components/EmployeeDashboard';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading } = useAuth();
+const ProtectedRoute = ({ children, requireAdmin = false }: { children: React.ReactNode, requireAdmin?: boolean }) => {
+  const { user, userData, loading } = useAuth();
   if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   if (!user) return <Navigate to="/login" />;
+  
+  if (requireAdmin && userData?.role !== 'admin') {
+    return <Navigate to="/portal" />;
+  }
+  
   return <>{children}</>;
+};
+
+const IndexRedirect = () => {
+  const { userData, loading } = useAuth();
+  if (loading) return null;
+  return <Navigate to={userData?.role === 'admin' ? "/dashboard" : "/portal"} replace />;
 };
 
 export default function App() {
@@ -28,14 +40,16 @@ export default function App() {
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-              <Route index element={<Dashboard />} />
-              <Route path="employees" element={<Employees />} />
-              <Route path="attendance" element={<Attendance />} />
-              <Route path="cash-advance" element={<CashAdvance />} />
-              <Route path="pakyaw" element={<Pakyaw />} />
-              <Route path="payroll" element={<Payroll />} />
-              <Route path="settings" element={<Settings />} />
-              <Route path="settings/logs" element={<Logs />} />
+              <Route index element={<IndexRedirect />} />
+              <Route path="dashboard" element={<ProtectedRoute requireAdmin><Dashboard /></ProtectedRoute>} />
+              <Route path="portal" element={<EmployeeDashboard />} />
+              <Route path="employees" element={<ProtectedRoute requireAdmin><Employees /></ProtectedRoute>} />
+              <Route path="attendance" element={<ProtectedRoute requireAdmin><Attendance /></ProtectedRoute>} />
+              <Route path="cash-advance" element={<ProtectedRoute requireAdmin><CashAdvance /></ProtectedRoute>} />
+              <Route path="pakyaw" element={<ProtectedRoute requireAdmin><Pakyaw /></ProtectedRoute>} />
+              <Route path="payroll" element={<ProtectedRoute requireAdmin><Payroll /></ProtectedRoute>} />
+              <Route path="settings" element={<ProtectedRoute requireAdmin><Settings /></ProtectedRoute>} />
+              <Route path="settings/logs" element={<ProtectedRoute requireAdmin><Logs /></ProtectedRoute>} />
             </Route>
           </Routes>
         </BrowserRouter>
