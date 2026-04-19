@@ -126,5 +126,6 @@ export interface Message {
   type: 'text' | 'image' | 'file';
   chatType: 'group' | 'direct';
   participants: string[];
+  readBy?: { [userId: string]: string }; // Map of userId to read timestamp
   createdAt: string;
 }

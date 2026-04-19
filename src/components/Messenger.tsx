@@ -204,6 +204,34 @@ export default function Messenger() {
     return () => unsubscribeMessages();
   }, [activeChat, user]);
 
+  const markMessagesAsRead = async () => {
+    if (!activeChat || !user || messages.length === 0) return;
+
+    const unreadMessagesForMe = messages.filter(msg => 
+      msg.senderId !== user.uid && 
+      (!msg.readBy || !msg.readBy[user.uid])
+    );
+
+    if (unreadMessagesForMe.length === 0) return;
+
+    try {
+      const batch = writeBatch(db);
+      unreadMessagesForMe.forEach(msg => {
+        const msgRef = doc(db, 'chats', activeChat.id, 'messages', msg.id);
+        batch.update(msgRef, {
+          [`readBy.${user.uid}`]: new Date().toISOString()
+        });
+      });
+      await batch.commit();
+    } catch (e) {
+      console.error("Error marking messages as read", e);
+    }
+  };
+
+  useEffect(() => {
+    markMessagesAsRead();
+  }, [messages, activeChat, user]);
+
   const scrollToBottom = () => {
     setTimeout(() => {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -618,6 +646,28 @@ export default function Messenger() {
                                 {format(new Date(msg.createdAt), 'p')}
                               </div>
                             </div>
+
+                            {/* Seen Indicators */}
+                            {isMe && msg.readBy && Object.keys(msg.readBy).filter(uid => uid !== user?.uid).length > 0 && (
+                              <div className="flex justify-end mt-1 px-1">
+                                {activeChat.type === 'direct' ? (
+                                  Object.entries(msg.readBy)
+                                    .filter(([uid]) => uid !== user?.uid)
+                                    .map(([uid, time]) => (
+                                      <span key={uid} className="text-[9px] text-slate-400 font-medium">
+                                        Seen {format(new Date(time), 'p')}
+                                      </span>
+                                    ))
+                                ) : (
+                                  <span className="text-[9px] text-slate-400 font-medium">
+                                    Seen by {Object.keys(msg.readBy)
+                                      .filter(uid => uid !== user?.uid)
+                                      .map(uid => contacts.find(c => c.uid === uid)?.fullName || 'Someone')
+                                      .join(', ')}
+                                  </span>
+                                )}
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
