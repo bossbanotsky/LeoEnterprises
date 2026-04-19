@@ -109,9 +109,11 @@ export interface Chat {
   participants: string[]; // Array of UIDs
   type: 'group' | 'direct';
   name?: string; // Optional for group chat
+  photoURL?: string; // Optional logo for group chat
   lastMessage?: string;
   lastMessageAt?: string;
   lastSenderId?: string;
+  unreadCounts?: { [userId: string]: number };
   updatedAt: string;
 }
 
@@ -122,5 +124,7 @@ export interface Message {
   senderName: string;
   text: string;
   type: 'text' | 'image' | 'file';
+  chatType: 'group' | 'direct';
+  participants: string[];
   createdAt: string;
 }

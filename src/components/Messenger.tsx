@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { collection, query, where, onSnapshot, addDoc, serverTimestamp, orderBy, limit, doc, setDoc, updateDoc, deleteDoc, getDocs, getDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, addDoc, serverTimestamp, orderBy, limit, doc, setDoc, updateDoc, deleteDoc, getDocs, getDoc, writeBatch } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { Chat, Message, Employee } from '../types';
 import { format, isSameDay } from 'date-fns';
-import { MessageSquare, Send, Users, User, Search, Trash2, ChevronLeft, MoreVertical, Loader2, Smile, ChevronRight } from 'lucide-react';
+import { MessageSquare, Send, Users, User, Search, Trash2, ChevronLeft, MoreVertical, Loader2, Smile, ChevronRight, Volume2, VolumeX, Settings2, Upload, ImagePlus } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from './ui/dialog';
+import { Label } from './ui/label';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function Messenger() {
@@ -21,9 +23,24 @@ export default function Messenger() {
   const [showContacts, setShowContacts] = useState(false);
   const [isMobileView, setIsMobileView] = useState(false);
   const [mobileChatOpen, setMobileChatOpen] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(() => {
+    const saved = localStorage.getItem('messenger_sound_enabled');
+    return saved !== null ? JSON.parse(saved) : true;
+  });
+  const [isAdminSettingsOpen, setIsAdminSettingsOpen] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [newGroupName, setNewGroupName] = useState('');
+  const [newGroupLogo, setNewGroupLogo] = useState('');
+  const [isDeletingHistory, setIsDeletingHistory] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const notificationSound = useRef<HTMLAudioElement | null>(null);
   const lastProcessedTime = useRef<string>(new Date().toISOString());
+
+  useEffect(() => {
+    localStorage.setItem('messenger_sound_enabled', JSON.stringify(soundEnabled));
+  }, [soundEnabled]);
 
   useEffect(() => {
     notificationSound.current = new Audio('https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3'); // Quick sharp alert sound
@@ -32,7 +49,7 @@ export default function Messenger() {
 
   // Play sound when a new message arrives in any chat
   useEffect(() => {
-    if (!user || chats.length === 0) return;
+    if (!user || chats.length === 0 || !soundEnabled) return;
 
     const mostRecentChat = chats.reduce((prev, current) => {
       const prevTime = prev.lastMessageAt || '0';
@@ -141,7 +158,27 @@ export default function Messenger() {
   }, [user, userData]);
 
   useEffect(() => {
-    if (!activeChat) return;
+    if (!activeChat || !user) return;
+
+    // Mark as read when opening chat
+    const markAsRead = async () => {
+      try {
+        const chatRef = doc(db, 'chats', activeChat.id);
+        const chatSnap = await getDoc(chatRef);
+        if (chatSnap.exists()) {
+          const data = chatSnap.data() as Chat;
+          const unreadCounts = data.unreadCounts || {};
+          if (unreadCounts[user.uid] > 0) {
+            await updateDoc(chatRef, {
+              [`unreadCounts.${user.uid}`]: 0
+            });
+          }
+        }
+      } catch (e) {
+        console.error("Error marking as read", e);
+      }
+    };
+    markAsRead();
 
     const messagesQuery = query(
       collection(db, 'chats', activeChat.id, 'messages'),
@@ -156,10 +193,16 @@ export default function Messenger() {
       });
       setMessages(messageList);
       scrollToBottom();
+      
+      // Also mark as read when new messages arrive while chat is open
+      if (document.visibilityState === 'visible') {
+        const chatRef = doc(db, 'chats', activeChat.id);
+        updateDoc(chatRef, { [`unreadCounts.${user.uid}`]: 0 }).catch(() => {});
+      }
     });
 
     return () => unsubscribeMessages();
-  }, [activeChat]);
+  }, [activeChat, user]);
 
   const scrollToBottom = () => {
     setTimeout(() => {
@@ -179,17 +222,28 @@ export default function Messenger() {
         senderName: userData?.fullName || user.email?.split('@')[0] || 'Unknown',
         text: newMessage,
         type: 'text',
+        chatType: activeChat.type,
+        participants: activeChat.participants,
         createdAt: new Date().toISOString()
       };
 
       await addDoc(collection(db, 'chats', activeChat.id, 'messages'), messageData);
       
-      await updateDoc(doc(db, 'chats', activeChat.id), {
+      const unreadUpdates: any = {
         lastMessage: newMessage,
         lastMessageAt: new Date().toISOString(),
         lastSenderId: user.uid,
         updatedAt: new Date().toISOString()
+      };
+
+      // Increment unread counts for all other participants
+      activeChat.participants.forEach(pUid => {
+        if (pUid !== user.uid) {
+          unreadUpdates[`unreadCounts.${pUid}`] = (activeChat.unreadCounts?.[pUid] || 0) + 1;
+        }
       });
+
+      await updateDoc(doc(db, 'chats', activeChat.id), unreadUpdates);
 
       setNewMessage('');
     } catch (error) {
@@ -235,7 +289,6 @@ export default function Messenger() {
   };
 
   const deleteChat = async (chatId: string) => {
-    if (!window.confirm("Are you sure you want to delete this conversation?")) return;
     try {
       await deleteDoc(doc(db, 'chats', chatId));
       if (activeChat?.id === chatId) {
@@ -244,6 +297,116 @@ export default function Messenger() {
       }
     } catch (e) {
       console.error("Error deleting chat", e);
+    }
+  };
+
+  const updateGroupName = async () => {
+    if (!activeChat || (!newGroupName.trim() && !newGroupLogo.trim()) || activeChat.type !== 'group') return;
+    try {
+      await updateDoc(doc(db, 'chats', activeChat.id), {
+        name: newGroupName,
+        photoURL: newGroupLogo,
+        updatedAt: new Date().toISOString()
+      });
+      setIsAdminSettingsOpen(false);
+      setStatusMessage({ type: 'success', text: 'Group settings updated successfully!' });
+      setTimeout(() => setStatusMessage(null), 3000);
+    } catch (e) {
+      console.error("Error updating group settings", e);
+      setStatusMessage({ type: 'error', text: 'Failed to update group settings.' });
+    }
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        // Max dimensions for logo
+        const MAX_SIZE = 400;
+        if (width > height) {
+          if (width > MAX_SIZE) {
+            height *= MAX_SIZE / width;
+            width = MAX_SIZE;
+          }
+        } else {
+          if (height > MAX_SIZE) {
+            width *= MAX_SIZE / height;
+            height = MAX_SIZE;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          // Compress to JPEG with quality 0.7
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+          setNewGroupLogo(dataUrl);
+        }
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const clearChatHistory = async () => {
+    if (!activeChat) return;
+
+    setIsDeletingHistory(true);
+    setStatusMessage(null);
+    console.log("Starting chat history clear for:", activeChat.id);
+    try {
+      const messagesRef = collection(db, 'chats', activeChat.id, 'messages');
+      const snapshot = await getDocs(messagesRef);
+      console.log(`Found ${snapshot.docs.length} messages to delete`);
+      
+      const chunks = [];
+      const batchSize = 500;
+      const docs = snapshot.docs;
+      
+      for (let i = 0; i < docs.length; i += batchSize) {
+        chunks.push(docs.slice(i, i + batchSize));
+      }
+
+      for (const [idx, chunk] of chunks.entries()) {
+        console.log(`Processing batch ${idx + 1}/${chunks.length}`);
+        const batch = writeBatch(db);
+        chunk.forEach(docSnap => batch.delete(docSnap.ref));
+        await batch.commit();
+      }
+
+      console.log("Messages deleted, updating chat document...");
+
+      // Also reset last message
+      await updateDoc(doc(db, 'chats', activeChat.id), {
+        lastMessage: '',
+        lastMessageAt: null,
+        lastSenderId: null,
+        updatedAt: new Date().toISOString()
+      });
+
+      console.log("Chat history cleared successfully");
+      setStatusMessage({ type: 'success', text: 'Chat history cleared successfully!' });
+      setShowDeleteConfirm(false);
+      setTimeout(() => {
+        setIsAdminSettingsOpen(false);
+        setStatusMessage(null);
+      }, 2000);
+    } catch (e) {
+      console.error("Error clearing history", e);
+      handleFirestoreError(e, OperationType.WRITE, `chats/${activeChat.id}/messages`);
+      setStatusMessage({ type: 'error', text: 'Failed to clear chat history.' });
+    } finally {
+      setIsDeletingHistory(false);
     }
   };
 
@@ -268,14 +431,24 @@ export default function Messenger() {
               <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
                 <MessageSquare className="w-5 h-5 text-blue-600" /> Messenger
               </h2>
-              <Button 
-                size="sm" 
-                variant="ghost" 
-                className="rounded-xl h-9 w-9 p-0"
-                onClick={() => setShowContacts(true)}
-              >
-                <Users className="w-5 h-5 text-slate-500" />
-              </Button>
+              <div className="flex items-center gap-1">
+                <Button 
+                  size="sm" 
+                  variant="ghost" 
+                  className={`rounded-xl h-9 w-9 p-0 ${soundEnabled ? 'text-blue-600' : 'text-slate-400'}`}
+                  onClick={() => setSoundEnabled(!soundEnabled)}
+                >
+                  {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="ghost" 
+                  className="rounded-xl h-9 w-9 p-0"
+                  onClick={() => setShowContacts(true)}
+                >
+                  <Users className="w-5 h-5 text-slate-500" />
+                </Button>
+              </div>
             </div>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -300,10 +473,14 @@ export default function Messenger() {
                     : 'hover:bg-slate-50 dark:hover:bg-slate-800'
                 }`}
               >
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-sm ${
-                  chat.type === 'group' ? 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-600'
-                }`}>
-                  {chat.type === 'group' ? <Users className="w-6 h-6" /> : <User className="w-6 h-6" />}
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-sm overflow-hidden border border-slate-100 dark:border-slate-800 bg-slate-100 dark:bg-slate-800`}>
+                  {chat.photoURL ? (
+                    <img src={chat.photoURL} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                  ) : (
+                    <div className={`w-full h-full flex items-center justify-center ${chat.type === 'group' ? 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-600'}`}>
+                      {chat.type === 'group' ? <Users className="w-6 h-6" /> : <User className="w-6 h-6" />}
+                    </div>
+                  )}
                 </div>
                 <div className="flex-1 text-left min-w-0">
                   <div className="flex justify-between items-baseline">
@@ -312,9 +489,16 @@ export default function Messenger() {
                       <span className="text-[10px] text-slate-400">{format(new Date(chat.lastMessageAt), 'p')}</span>
                     )}
                   </div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
-                    {chat.lastSenderId === user?.uid ? 'You: ' : ''}{chat.lastMessage || 'No messages yet'}
-                  </p>
+                  <div className="flex justify-between items-center mt-0.5">
+                    <p className={`text-xs truncate flex-1 ${chat.unreadCounts?.[user?.uid || ''] ? 'font-bold text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400'}`}>
+                      {chat.lastSenderId === user?.uid ? 'You: ' : ''}{chat.lastMessage || 'No messages yet'}
+                    </p>
+                    {chat.unreadCounts?.[user?.uid || ''] ? (
+                      <div className="ml-2 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-in zoom-in duration-300">
+                        {chat.unreadCounts[user?.uid || '']}
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
               </button>
             ))}
@@ -333,10 +517,14 @@ export default function Messenger() {
                       <ChevronLeft className="w-5 h-5" />
                     </Button>
                   )}
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                    activeChat.type === 'group' ? 'bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600' : 'bg-slate-50 dark:bg-slate-800 text-slate-600'
-                  }`}>
-                    {activeChat.type === 'group' ? <Users className="w-5 h-5" /> : <User className="w-5 h-5" />}
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800`}>
+                    {activeChat.photoURL ? (
+                      <img src={activeChat.photoURL} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    ) : (
+                      <div className={`w-full h-full flex items-center justify-center ${activeChat.type === 'group' ? 'bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600' : 'bg-slate-50 dark:bg-slate-800 text-slate-600'}`}>
+                        {activeChat.type === 'group' ? <Users className="w-5 h-5" /> : <User className="w-5 h-5" />}
+                      </div>
+                    )}
                   </div>
                   <div>
                     <h2 className="font-bold text-slate-900 dark:text-white leading-tight">{getChatName(activeChat)}</h2>
@@ -344,12 +532,43 @@ export default function Messenger() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
+                  {userData?.role === 'admin' && activeChat.type === 'group' && (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="hidden sm:flex items-center gap-2 border-blue-100 dark:border-blue-900/30 text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-900/10 hover:bg-blue-100 rounded-xl px-4"
+                      onClick={() => {
+                        setNewGroupName(activeChat.name || '');
+                        setNewGroupLogo(activeChat.photoURL || '');
+                        setIsAdminSettingsOpen(true);
+                      }}
+                    >
+                      <Settings2 className="w-4 h-4" />
+                      <span className="text-xs font-bold">Group Admin</span>
+                    </Button>
+                  )}
+                  {userData?.role === 'admin' && activeChat.type === 'group' && (
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="flex sm:hidden text-blue-500"
+                      onClick={() => {
+                        setNewGroupName(activeChat.name || '');
+                        setNewGroupLogo(activeChat.photoURL || '');
+                        setIsAdminSettingsOpen(true);
+                      }}
+                    >
+                      <Settings2 className="w-5 h-5" />
+                    </Button>
+                  )}
                   {activeChat.type === 'direct' && (
                     <Button 
                       variant="ghost" 
                       size="icon" 
                       className="text-red-400 hover:text-red-500 hover:bg-red-50"
-                      onClick={() => deleteChat(activeChat.id)}
+                      onClick={() => {
+                        if (window.confirm("Delete this conversation?")) deleteChat(activeChat.id);
+                      }}
                     >
                       <Trash2 className="w-5 h-5" />
                     </Button>
@@ -506,6 +725,142 @@ export default function Messenger() {
           </div>
         )}
       </AnimatePresence>
+
+      <Dialog open={isAdminSettingsOpen} onOpenChange={setIsAdminSettingsOpen}>
+        <DialogContent className="rounded-3xl max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-black">Group Settings</DialogTitle>
+            <DialogDescription>
+              Manage parameters for the group chat.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {statusMessage && (
+              <div className={`p-3 rounded-xl text-xs font-bold ${statusMessage.type === 'success' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
+                {statusMessage.text}
+              </div>
+            )}
+            
+            {!showDeleteConfirm ? (
+              <>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="group-name">Group Name</Label>
+                    <Input 
+                      id="group-name" 
+                      value={newGroupName} 
+                      onChange={(e) => setNewGroupName(e.target.value)}
+                      placeholder="Enter group name"
+                      className="rounded-xl"
+                    />
+                  </div>
+                  <div className="space-y-4">
+                    <Label htmlFor="group-logo">Group Logo</Label>
+                    <div className="flex flex-col items-center gap-4 p-4 rounded-2xl border-2 border-dashed border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+                      <div className="w-20 h-20 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex items-center justify-center relative group">
+                        {newGroupLogo ? (
+                          <>
+                            <img src={newGroupLogo} alt="Preview" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                            <button 
+                              onClick={() => setNewGroupLogo('')}
+                              className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white"
+                            >
+                              <Trash2 className="w-5 h-5" />
+                            </button>
+                          </>
+                        ) : (
+                          <div className="text-slate-300">
+                            <ImagePlus className="w-8 h-8" />
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="flex flex-col gap-2 w-full">
+                        <input 
+                          type="file" 
+                          ref={fileInputRef}
+                          onChange={handleFileUpload}
+                          className="hidden"
+                          accept="image/*"
+                        />
+                        <Button 
+                          type="button"
+                          variant="outline" 
+                          className="w-full rounded-xl border-slate-200 hover:bg-white"
+                          onClick={() => fileInputRef.current?.click()}
+                        >
+                          <Upload className="w-4 h-4 mr-2" />
+                          Upload Image
+                        </Button>
+                        <div className="relative">
+                          <div className="absolute inset-0 flex items-center">
+                            <span className="w-full border-t border-slate-100 dark:border-slate-800"></span>
+                          </div>
+                          <div className="relative flex justify-center text-[10px] uppercase font-bold text-slate-400">
+                            <span className="bg-white dark:bg-slate-900 px-2">OR</span>
+                          </div>
+                        </div>
+                        <Input 
+                          id="group-logo" 
+                          value={newGroupLogo} 
+                          onChange={(e) => setNewGroupLogo(e.target.value)}
+                          placeholder="Paste image URL here"
+                          className="rounded-xl text-[10px] h-8"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <Button onClick={updateGroupName} className="w-full bg-blue-600 rounded-xl py-6 font-bold">Update Settings</Button>
+                </div>
+                <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
+                  <Label className="text-red-500 font-bold mb-2 block text-xs uppercase tracking-wider">Danger Zone</Label>
+                  <Button 
+                    variant="destructive" 
+                    className="w-full rounded-xl flex items-center gap-2 py-6 font-bold"
+                    onClick={() => setShowDeleteConfirm(true)}
+                    disabled={isDeletingHistory}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Clear History
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <div className="bg-red-50 dark:bg-red-900/10 p-6 rounded-2xl border border-red-100 dark:border-red-900/30 text-center">
+                <div className="w-12 h-12 bg-red-100 dark:bg-red-900/40 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Trash2 className="w-6 h-6 text-red-600" />
+                </div>
+                <h4 className="font-bold text-red-900 dark:text-red-400 mb-2">Delete Chat History?</h4>
+                <p className="text-sm text-red-700 dark:text-red-500/70 mb-6">
+                  This will permanently delete all messages in this group for everyone. This action cannot be undone.
+                </p>
+                <div className="flex flex-col gap-2">
+                  <Button 
+                    variant="destructive" 
+                    className="w-full rounded-xl font-bold py-6"
+                    onClick={clearChatHistory}
+                    disabled={isDeletingHistory}
+                  >
+                    {isDeletingHistory && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+                    Confirm Delete All
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    className="w-full rounded-xl"
+                    onClick={() => setShowDeleteConfirm(false)}
+                    disabled={isDeletingHistory}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setIsAdminSettingsOpen(false)} className="rounded-xl">Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
