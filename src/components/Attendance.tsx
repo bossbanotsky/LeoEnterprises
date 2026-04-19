@@ -299,7 +299,7 @@ export default function Attendance() {
               const isPakyaw = att.status === 'pakyaw';
 
               return (
-                <div key={emp.id} className="bento-card bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex flex-col p-4 w-full min-w-[340px]">
+                <div key={emp.id} className="bento-card bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex flex-col p-4">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center font-bold text-sm shrink-0 overflow-hidden">
@@ -468,9 +468,9 @@ export default function Attendance() {
               </div>
             )}
             
-            <div className="space-y-3 overflow-x-auto w-full">
+            <div className="space-y-3">
             {employees.map(emp => (
-              <div key={emp.id} className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm hover:border-blue-300 transition-colors min-w-[320px]">
+              <div key={emp.id} className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm hover:border-blue-300 transition-colors">
                 <div 
                   className="p-4 flex justify-between items-center cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors" 
                   onClick={() => setExpandedEmp(expandedEmp === emp.id ? null : emp.id)}
@@ -522,7 +522,7 @@ export default function Attendance() {
                 </div>
                 
                 {expandedEmp === emp.id && (
-                  <div className="px-4 pb-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/30 w-full overflow-x-auto">
+                  <div className="px-4 pb-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/30">
                     {dates.map(date => {
                       const att = attendanceData[`${emp.id}_${date}`] || { status: 'absent', timeIn: '07:00', timeOut: '16:00' };
                       const isUT_detail = att.status === 'ut' || (att.status === 'present' && (att.regularHours || 0) < 8 && (att.regularHours || 0) > 0);

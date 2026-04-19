@@ -386,23 +386,23 @@ export default function EmployeeDashboard() {
 
       {/* Attendance Section */}
       <section className="space-y-3">
-        <div className="flex flex-col gap-2 px-1">
+        <div className="flex items-center justify-between px-1">
           <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center gap-2">
             <Clock className="w-3.5 h-3.5" /> Attendance
           </h3>
-          <div className="flex gap-1.5 items-center w-full">
+          <div className="flex gap-2 items-center">
             <Input 
               type="date" 
               value={startDate} 
               onChange={e => setStartDate(e.target.value)}
-              className="h-8 text-[10px] w-full rounded-lg bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 p-1"
+              className="h-7 text-[10px] w-28 rounded-lg bg-white dark:bg-slate-800"
             />
-            <span className="text-slate-400 text-[10px] font-bold">to</span>
+            <span className="text-slate-400 text-xs">to</span>
             <Input 
               type="date" 
               value={endDate} 
               onChange={e => setEndDate(e.target.value)}
-              className="h-8 text-[10px] w-full rounded-lg bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 p-1"
+              className="h-7 text-[10px] w-28 rounded-lg bg-white dark:bg-slate-800"
             />
           </div>
         </div>
