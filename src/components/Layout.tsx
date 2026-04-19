@@ -107,7 +107,7 @@ export default function Layout() {
 
                 <Icon 
                   className={`w-[22px] h-[22px] sm:w-[24px] sm:h-[24px] transition-all duration-400 z-10 relative 
-                  ${isActive ? 'text-white stroke-[2.5px] drop-shadow-[0_2px_2px_rgba(0,0,0,0.4)]' : 'text-slate-400 dark:text-slate-500 stroke-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 drop-shadow-sm'}`} 
+                  ${isActive ? 'text-white stroke-[2.5px] drop-shadow-[0_2px_2px_rgba(0,0,0,0.4)]' : 'text-slate-400 dark:text-slate-500 stroke-[1.5px] group-hover:text-blue-600 dark:group-hover:text-blue-400 drop-shadow-sm'}`} 
                 />
               </div>
               <span className={`text-[9px] sm:text-[10px] font-black tracking-widest uppercase transition-all duration-300 ${isActive ? 'text-indigo-700 dark:text-blue-400 translate-y-0' : 'text-slate-400 dark:text-slate-500 translate-y-[1px]'}`}>
