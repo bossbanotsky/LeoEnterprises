@@ -72,7 +72,7 @@ export default function Login() {
           <div className="w-16 h-16 bg-blue-600 rounded-2xl mx-auto flex items-center justify-center shadow-lg shadow-blue-500/30 mb-4 rotate-3">
             <LogIn className="w-8 h-8 text-white" />
           </div>
-          <CardTitle className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">ERP System</CardTitle>
+          <CardTitle className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Banotsky</CardTitle>
           <CardDescription className="text-slate-500 dark:text-slate-400 font-medium">Manage HR, Attendance, and Payroll</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col items-center pt-2 pb-10 space-y-6 px-8">
