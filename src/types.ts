@@ -103,3 +103,24 @@ export interface Announcement {
   viewedBy: string[]; // Array of employee UIDs
   priority: 'low' | 'medium' | 'high';
 }
+
+export interface Chat {
+  id: string;
+  participants: string[]; // Array of UIDs
+  type: 'group' | 'direct';
+  name?: string; // Optional for group chat
+  lastMessage?: string;
+  lastMessageAt?: string;
+  lastSenderId?: string;
+  updatedAt: string;
+}
+
+export interface Message {
+  id: string;
+  chatId: string;
+  senderId: string;
+  senderName: string;
+  text: string;
+  type: 'text' | 'image' | 'file';
+  createdAt: string;
+}

@@ -12,6 +12,7 @@ import Payroll from './components/Payroll';
 import Settings from './components/Settings';
 import Logs from './components/Logs';
 import Announcements from './components/Announcements';
+import Messenger from './components/Messenger';
 import EmployeeDashboard from './components/EmployeeDashboard';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
@@ -44,6 +45,7 @@ export default function App() {
               <Route index element={<IndexRedirect />} />
               <Route path="dashboard" element={<ProtectedRoute requireAdmin><Dashboard /></ProtectedRoute>} />
               <Route path="portal" element={<EmployeeDashboard />} />
+              <Route path="messenger" element={<Messenger />} />
               <Route path="employees" element={<ProtectedRoute requireAdmin><Employees /></ProtectedRoute>} />
               <Route path="attendance" element={<ProtectedRoute requireAdmin><Attendance /></ProtectedRoute>} />
               <Route path="cash-advance" element={<ProtectedRoute requireAdmin><CashAdvance /></ProtectedRoute>} />

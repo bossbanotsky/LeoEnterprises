@@ -144,6 +144,35 @@
         "priority": { "type": "string", "enum": ["low", "medium", "high"] }
       },
       "required": ["title", "message", "postedBy", "authorName", "createdAt", "expiresAt", "viewedBy", "priority"]
+    },
+    "Chat": {
+      "title": "Chat",
+      "description": "A conversation between users or a group chat",
+      "type": "object",
+      "properties": {
+        "participants": { "type": "array", "items": { "type": "string" } },
+        "type": { "type": "string", "enum": ["group", "direct"] },
+        "name": { "type": "string" },
+        "lastMessage": { "type": "string" },
+        "lastMessageAt": { "type": "string", "format": "date-time" },
+        "lastSenderId": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["participants", "type", "updatedAt"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "An individual message within a chat",
+      "type": "object",
+      "properties": {
+        "chatId": { "type": "string" },
+        "senderId": { "type": "string" },
+        "senderName": { "type": "string" },
+        "text": { "type": "string" },
+        "type": { "type": "string", "enum": ["text", "image", "file"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["chatId", "senderId", "senderName", "text", "type", "createdAt"]
     }
   },
   "firestore": {
@@ -182,6 +211,14 @@
     "/announcements/{announcementId}": {
       "schema": { "$ref": "#/entities/Announcement" },
       "description": "Corporate announcements"
+    },
+    "/chats/{chatId}": {
+      "schema": { "$ref": "#/entities/Chat" },
+      "description": "Direct and group conversations"
+    },
+    "/chats/{chatId}/messages/{messageId}": {
+      "schema": { "$ref": "#/entities/Message" },
+      "description": "Messages belonging to a chat"
     }
   }
 }

@@ -1,6 +1,6 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { LayoutGrid, UsersRound, Receipt, Clock, Settings2, WalletCards, Pickaxe, LogOut, Megaphone } from 'lucide-react';
+import { LayoutGrid, UsersRound, Receipt, Clock, Settings2, WalletCards, Pickaxe, LogOut, Megaphone, MessageSquare } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useCompanyInfo } from '../hooks/useCompanyInfo';
 import { Button } from './ui/button';
@@ -12,6 +12,7 @@ export default function Layout() {
 
   const adminNavItems = [
     { path: '/dashboard', label: 'Dash', icon: LayoutGrid },
+    { path: '/messenger', label: 'Chat', icon: MessageSquare },
     { path: '/announcements', label: 'News', icon: Megaphone },
     { path: '/employees', label: 'Staff', icon: UsersRound },
     { path: '/attendance', label: 'Attend', icon: Clock },
@@ -23,6 +24,7 @@ export default function Layout() {
 
   const employeeNavItems = [
     { path: '/portal', label: 'Portal', icon: LayoutGrid },
+    { path: '/messenger', label: 'Chat', icon: MessageSquare },
   ];
 
   const navItems = userData?.role === 'admin' ? adminNavItems : employeeNavItems;
