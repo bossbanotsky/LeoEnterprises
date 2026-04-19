@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { collection, query, where, onSnapshot, addDoc, serverTimestamp, orderBy, limit, doc, setDoc, updateDoc, deleteDoc, getDocs, getDoc, writeBatch } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, addDoc, serverTimestamp, orderBy, limit, doc, setDoc, updateDoc, deleteDoc, getDocs, getDoc, writeBatch, arrayUnion } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { Chat, Message, Employee } from '../types';
@@ -133,23 +133,29 @@ export default function Messenger() {
 
     // Ensure common group chat exists
     const ensureGroupChat = async () => {
-      const groupChatRef = doc(db, 'chats', 'common-group');
-      const docSnap = await getDoc(groupChatRef);
-      if (!docSnap.exists()) {
-        await setDoc(groupChatRef, {
-          participants: [user.uid], // Start with creator
-          type: 'group',
-          name: 'General Staff Group',
-          updatedAt: new Date().toISOString()
-        });
-      } else {
-        // If it exists, make sure current user is in participants
-        const data = docSnap.data();
-        if (!data.participants.includes(user.uid)) {
-          await updateDoc(groupChatRef, {
-            participants: [...data.participants, user.uid]
+      try {
+        const groupChatRef = doc(db, 'chats', 'common-group');
+        const docSnap = await getDoc(groupChatRef);
+        if (!docSnap.exists()) {
+          console.log("Creating common group chat...");
+          await setDoc(groupChatRef, {
+            participants: [user.uid],
+            type: 'group',
+            name: 'General Staff Group',
+            updatedAt: new Date().toISOString()
           });
+        } else {
+          const data = docSnap.data();
+          if (!data.participants.includes(user.uid)) {
+            console.log("Joining common group chat...");
+            await updateDoc(groupChatRef, {
+              participants: arrayUnion(user.uid),
+              updatedAt: new Date().toISOString()
+            });
+          }
         }
+      } catch (e) {
+        console.error("Error ensuring group chat:", e);
       }
     };
     ensureGroupChat();
