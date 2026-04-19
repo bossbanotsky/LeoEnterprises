@@ -133,6 +133,7 @@ export default function Messenger() {
 
     // Ensure common group chat exists
     const ensureGroupChat = async () => {
+      if (!user) return;
       try {
         const groupChatRef = doc(db, 'chats', 'common-group');
         const docSnap = await getDoc(groupChatRef);
@@ -142,16 +143,20 @@ export default function Messenger() {
             participants: [user.uid],
             type: 'group',
             name: 'General Staff Group',
-            updatedAt: new Date().toISOString()
+            updatedAt: new Date().toISOString(),
+            unreadCounts: { [user.uid]: 0 }
           });
         } else {
           const data = docSnap.data();
-          if (!data.participants.includes(user.uid)) {
-            console.log("Joining common group chat...");
+          if (!data.participants || !data.participants.includes(user.uid)) {
+            console.log("Joining common group chat for user:", user.uid);
             await updateDoc(groupChatRef, {
               participants: arrayUnion(user.uid),
-              updatedAt: new Date().toISOString()
+              updatedAt: new Date().toISOString(),
+              [`unreadCounts.${user.uid}`]: 0
             });
+          } else {
+            console.log("User already in group chat");
           }
         }
       } catch (e) {
@@ -257,7 +262,7 @@ export default function Messenger() {
         text: newMessage,
         type: 'text',
         chatType: activeChat.type,
-        participants: activeChat.participants,
+        participants: activeChat.participants || [],
         createdAt: new Date().toISOString()
       };
 
@@ -281,6 +286,8 @@ export default function Messenger() {
 
       setNewMessage('');
     } catch (error) {
+      console.error("Failed to send message:", error);
+      alert("Failed to send message. Please check your internet connection or try logging out and back in.");
       handleFirestoreError(error, OperationType.WRITE, `chats/${activeChat.id}/messages`);
     } finally {
       setIsSending(false);
