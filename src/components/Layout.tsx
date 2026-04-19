@@ -80,7 +80,7 @@ export default function Layout() {
       </main>
 
       {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-t border-slate-200/50 dark:border-slate-800/50 flex flex-row items-center justify-around px-1 sm:px-4 z-50 pb-[env(safe-area-inset-bottom)] h-[calc(4.8rem+env(safe-area-inset-bottom))] shadow-[0_-10px_40px_rgba(0,0,0,0.03)] filter drop-shadow-2xl">
+      <nav className="fixed bottom-0 left-0 right-0 bg-white/5 dark:bg-slate-900/5 backdrop-blur-3xl border-t border-white/5 dark:border-slate-800/5 flex flex-row items-center justify-around px-1 sm:px-4 z-50 pb-[env(safe-area-inset-bottom)] h-[calc(4.8rem+env(safe-area-inset-bottom))] shadow-[0_-10px_15px_rgba(0,0,0,0.01)]">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
           const Icon = item.icon;
