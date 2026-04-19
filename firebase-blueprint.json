@@ -125,6 +125,25 @@
         "details": { "type": "string" }
       },
       "required": ["message", "level", "createdAt", "uid"]
+    },
+    "Announcement": {
+      "title": "Announcement",
+      "description": "System-wide announcement posted by an admin",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "postedBy": { "type": "string" },
+        "authorName": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "expiresAt": { "type": "string", "format": "date-time" },
+        "viewedBy": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "priority": { "type": "string", "enum": ["low", "medium", "high"] }
+      },
+      "required": ["title", "message", "postedBy", "authorName", "createdAt", "expiresAt", "viewedBy", "priority"]
     }
   },
   "firestore": {
@@ -159,6 +178,10 @@
     "/logs/{logId}": {
       "schema": { "$ref": "#/entities/Log" },
       "description": "System logs"
+    },
+    "/announcements/{announcementId}": {
+      "schema": { "$ref": "#/entities/Announcement" },
+      "description": "Corporate announcements"
     }
   }
 }

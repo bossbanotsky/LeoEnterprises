@@ -146,6 +146,18 @@ service cloud.firestore {
              (!('details' in data) || data.details is string);
     }
 
+    function isValidAnnouncement(data) {
+      return hasOnlyAllowedFields(['title', 'message', 'postedBy', 'authorName', 'createdAt', 'expiresAt', 'viewedBy', 'priority']) &&
+             data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
+             data.message is string && data.message.size() > 0 && data.message.size() < 5000 &&
+             data.postedBy is string &&
+             data.authorName is string &&
+             isValidDateString(data.createdAt) &&
+             isValidDateString(data.expiresAt) &&
+             data.viewedBy is list &&
+             data.priority in ['low', 'medium', 'high'];
+    }
+
     // ===============================================================
     // Rules
     // ===============================================================
@@ -225,6 +237,16 @@ service cloud.firestore {
     match /settings/{settingId} {
       allow read: if isAuthenticated();
       allow write: if isAdmin();
+    }
+
+    match /announcements/{announcementId} {
+      allow read: if isAuthenticated();
+      allow create, delete: if isAdmin() && isValidAnnouncement(request.resource.data);
+      allow update: if (isAdmin() && isValidAnnouncement(request.resource.data)) || (
+        isAuthenticated() && 
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewedBy']) &&
+        request.resource.data.viewedBy.hasAll(resource.data.viewedBy)
+      );
     }
   }
 }

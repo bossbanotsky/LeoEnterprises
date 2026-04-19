@@ -11,6 +11,7 @@ import Pakyaw from './components/Pakyaw';
 import Payroll from './components/Payroll';
 import Settings from './components/Settings';
 import Logs from './components/Logs';
+import Announcements from './components/Announcements';
 import EmployeeDashboard from './components/EmployeeDashboard';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
@@ -48,6 +49,7 @@ export default function App() {
               <Route path="cash-advance" element={<ProtectedRoute requireAdmin><CashAdvance /></ProtectedRoute>} />
               <Route path="pakyaw" element={<ProtectedRoute requireAdmin><Pakyaw /></ProtectedRoute>} />
               <Route path="payroll" element={<ProtectedRoute requireAdmin><Payroll /></ProtectedRoute>} />
+              <Route path="announcements" element={<ProtectedRoute requireAdmin><Announcements /></ProtectedRoute>} />
               <Route path="settings" element={<ProtectedRoute requireAdmin><Settings /></ProtectedRoute>} />
               <Route path="settings/logs" element={<ProtectedRoute requireAdmin><Logs /></ProtectedRoute>} />
             </Route>

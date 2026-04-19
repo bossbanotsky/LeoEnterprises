@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { collection, query, where, onSnapshot, getDoc, doc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, getDoc, doc, arrayUnion, orderBy } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useCompanyInfo } from '../hooks/useCompanyInfo';
-import { Employee, Attendance, Payroll, CashAdvance } from '../types';
-import { format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
-import { Calendar, FileText, Wallet, Clock, User, Briefcase, CreditCard, ChevronRight, UserPen, Loader2, Upload } from 'lucide-react';
+import { Employee, Attendance, Payroll, CashAdvance, Announcement } from '../types';
+import { format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, isPast } from 'date-fns';
+import { Calendar, FileText, Wallet, Clock, User, Briefcase, CreditCard, ChevronRight, UserPen, Loader2, Upload, Megaphone, Bell } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -20,6 +20,7 @@ export default function EmployeeDashboard() {
   const [payrolls, setPayrolls] = useState<Payroll[]>([]);
   const [paidBulkIds, setPaidBulkIds] = useState<Set<string>>(new Set());
   const [cashAdvances, setCashAdvances] = useState<CashAdvance[]>([]);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   
   const [startDate, setStartDate] = useState(() => localStorage.getItem('attendanceStartDate') || format(startOfMonth(new Date()), 'yyyy-MM-dd'));
   const [endDate, setEndDate] = useState(() => localStorage.getItem('attendanceEndDate') || format(endOfMonth(new Date()), 'yyyy-MM-dd'));
@@ -187,13 +188,44 @@ export default function EmployeeDashboard() {
       setCashAdvances(cas.sort((a, b) => b.date.localeCompare(a.date)));
     });
 
+    const qAnn = query(collection(db, 'announcements'), orderBy('createdAt', 'desc'));
+    const unsubAnn = onSnapshot(qAnn, (snapshot) => {
+      const data: Announcement[] = [];
+      snapshot.forEach(doc => data.push({ id: doc.id, ...doc.data() } as Announcement));
+      setAnnouncements(data);
+    });
+
     setLoading(false);
     return () => {
       unsubAtt();
       unsubPayroll();
       unsubCA();
+      unsubAnn();
     };
   }, [userData, startDate, endDate]);
+
+  const handleMarkAsViewed = async (annId: string) => {
+    if (!user) return;
+    try {
+      await updateDoc(doc(db, 'announcements', annId), {
+        viewedBy: arrayUnion(user.uid)
+      });
+    } catch (err) {
+      handleFirestoreError(err, OperationType.UPDATE, 'announcements');
+    }
+  };
+
+  const activeAnnouncements = useMemo(() => 
+    announcements.filter(a => !isPast(parseISO(a.expiresAt))),
+  [announcements]);
+
+  const pastAnnouncements = useMemo(() => 
+    announcements.filter(a => isPast(parseISO(a.expiresAt))),
+  [announcements]);
+
+  const unreadCount = useMemo(() => 
+    activeAnnouncements.filter(a => !a.viewedBy.includes(user?.uid || '')).length,
+  [activeAnnouncements, user]);
 
   const dateRange = useMemo(() => {
     try {
@@ -216,6 +248,85 @@ export default function EmployeeDashboard() {
 
   return (
     <div className="h-full flex flex-col space-y-6">
+      {/* Notice Board Section */}
+      {(activeAnnouncements.length > 0 || pastAnnouncements.length > 0) && (
+        <section className="space-y-3">
+          <div className="flex items-center justify-between px-1">
+            <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center gap-2">
+              <Megaphone className="w-3.5 h-3.5 text-blue-600" /> Company Notice Board
+            </h3>
+            {unreadCount > 0 && (
+              <span className="flex items-center gap-1 text-[10px] font-bold bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full animate-bounce">
+                <Bell className="w-3 h-3" /> {unreadCount} NEW
+              </span>
+            )}
+          </div>
+          <div className="space-y-3">
+            {activeAnnouncements.map(ann => {
+              const hasViewed = ann.viewedBy.includes(user?.uid || '');
+              return (
+                <div key={ann.id} className={`bento-card flex-col p-5 relative overflow-hidden transition-all ${
+                  !hasViewed ? 'ring-2 ring-blue-500/20 bg-blue-50/10 dark:bg-blue-900/5 border-blue-200 dark:border-blue-900/30' : 'bg-white dark:bg-slate-800'
+                }`}>
+                  <div className={`absolute left-0 top-0 bottom-0 w-1 ${
+                    ann.priority === 'high' ? 'bg-red-500' : ann.priority === 'medium' ? 'bg-blue-500' : 'bg-slate-300'
+                  }`}></div>
+                  <div className="flex justify-between items-start gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h4 className="font-bold text-slate-900 dark:text-white leading-tight">{ann.title}</h4>
+                        {!hasViewed && (
+                          <span className="w-2 h-2 rounded-full bg-blue-600 shadow-sm shadow-blue-500/50"></span>
+                        )}
+                      </div>
+                      <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                        {ann.message}
+                      </p>
+                      <div className="flex items-center gap-3 mt-3 text-[10px] font-semibold text-slate-500">
+                        <span className="text-blue-600 dark:text-blue-400">By {ann.authorName}</span>
+                        <span>•</span>
+                        <span>{format(parseISO(ann.createdAt), 'MMM d, h:mm a')}</span>
+                      </div>
+                    </div>
+                    {!hasViewed && (
+                      <Button 
+                        size="sm" 
+                        variant="default" 
+                        onClick={() => handleMarkAsViewed(ann.id)}
+                        className="rounded-xl h-8 text-[10px] uppercase font-bold tracking-wider bg-blue-600 hover:bg-blue-700"
+                      >
+                        OK, Saw It
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Past Announcements Link/Accordion could go here if needed, 
+                but for now we show all active ones. Past ones move to History. */}
+            {pastAnnouncements.length > 0 && (
+              <div className="pt-2">
+                 <details className="group">
+                   <summary className="text-[10px] font-bold text-slate-400 uppercase tracking-widest cursor-pointer hover:text-slate-500 transition-colors list-none flex items-center gap-2 px-1">
+                     <ChevronRight className="w-3 h-3 group-open:rotate-90 transition-transform" />
+                     Past Notices ({pastAnnouncements.length})
+                   </summary>
+                   <div className="space-y-2 mt-3 pl-1 opacity-60">
+                     {pastAnnouncements.map(ann => (
+                       <div key={ann.id} className="bg-slate-100/50 dark:bg-slate-900/30 p-3 rounded-xl border border-slate-200/50 dark:border-slate-800/50">
+                         <h5 className="font-bold text-slate-800 dark:text-slate-200 text-xs">{ann.title}</h5>
+                         <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">{ann.message}</p>
+                       </div>
+                     ))}
+                   </div>
+                 </details>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
       {/* Header Profile */}
       <div className="relative group">
         <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl blur opacity-20 transition duration-1000"></div>

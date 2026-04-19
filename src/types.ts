@@ -91,3 +91,15 @@ export interface Payroll {
   generatedAt: string;
   createdAt: string;
 }
+
+export interface Announcement {
+  id: string;
+  title: string;
+  message: string;
+  postedBy: string; // Admin UID
+  authorName: string; // For display
+  createdAt: string;
+  expiresAt: string;
+  viewedBy: string[]; // Array of employee UIDs
+  priority: 'low' | 'medium' | 'high';
+}
