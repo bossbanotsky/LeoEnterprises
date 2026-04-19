@@ -841,7 +841,16 @@ export default function Payroll() {
                 className="bento-card flex-col bg-white dark:bg-slate-800 p-4 cursor-pointer hover:border-blue-300 transition-colors"
               >
                 <div className="flex justify-between items-center mb-3">
-                  <div className="font-bold text-slate-900 dark:text-white">{data.employee.fullName}</div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center font-bold text-[10px] overflow-hidden shrink-0">
+                      {data.employee.photoURL ? (
+                        <img src={data.employee.photoURL} alt={data.employee.fullName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                      ) : (
+                        data.employee.fullName.charAt(0).toUpperCase()
+                      )}
+                    </div>
+                    <div className="font-bold text-slate-900 dark:text-white truncate">{data.employee.fullName}</div>
+                  </div>
                   <ChevronRight className="w-5 h-5 text-slate-400" />
                 </div>
                 <div className="grid grid-cols-4 gap-2 text-sm">
@@ -911,9 +920,20 @@ export default function Payroll() {
                   <div className="text-sm text-slate-600 mt-1">
                     {format(parseISO(startDate), 'MMM dd')} - {format(parseISO(endDate), 'MMM dd, yyyy')}
                   </div>
-                  <div className="text-2xl font-black text-slate-900 mt-2 uppercase tracking-tight">{selectedPayslip.employee.fullName}</div>
-                  <div className="text-xs text-slate-500">
-                    {selectedPayslip.employee.customId ? `${selectedPayslip.employee.customId} • ` : ''}{selectedPayslip.employee.position || 'Staff'}
+                  <div className="flex items-center gap-3 mt-3">
+                    <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center font-bold text-lg overflow-hidden shrink-0 border border-slate-200">
+                      {selectedPayslip.employee.photoURL ? (
+                        <img src={selectedPayslip.employee.photoURL} alt={selectedPayslip.employee.fullName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                      ) : (
+                        selectedPayslip.employee.fullName.charAt(0).toUpperCase()
+                      )}
+                    </div>
+                    <div>
+                      <div className="text-xl font-black text-slate-900 uppercase tracking-tight leading-none">{selectedPayslip.employee.fullName}</div>
+                      <div className="text-xs text-slate-500 mt-1">
+                        {selectedPayslip.employee.customId ? `${selectedPayslip.employee.customId} • ` : ''}{selectedPayslip.employee.position || 'Staff'}
+                      </div>
+                    </div>
                   </div>
                 </div>
                 <div className="text-right">

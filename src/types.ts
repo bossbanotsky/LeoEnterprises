@@ -24,6 +24,9 @@ export interface Employee {
   emergencyContactName?: string;
   emergencyContactRelation?: string;
   emergencyContactPhone?: string;
+
+  // Profile Picture
+  photoURL?: string;
 }
 
 export interface Attendance {

@@ -1,12 +1,14 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { auth, db, loginWithGoogle, logout } from '../firebase';
 
 interface UserData {
   role: 'admin' | 'employee';
   email: string;
   employeeId?: string;
+  fullName?: string;
+  photoURL?: string;
 }
 
 interface AuthContextType {
@@ -43,20 +45,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+    let unsubscribeUserData: (() => void) | null = null;
+
+    const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
+      if (unsubscribeUserData) {
+        unsubscribeUserData();
+        unsubscribeUserData = null;
+      }
+
       if (currentUser) {
         setUser(currentUser);
-        try {
-          const userDocRef = doc(db, 'users', currentUser.uid);
-          const userDoc = await getDoc(userDocRef);
-          
+        const userDocRef = doc(db, 'users', currentUser.uid);
+        
+        // Use onSnapshot for real-time updates of role and profile
+        unsubscribeUserData = onSnapshot(userDocRef, async (userDoc) => {
           if (userDoc.exists()) {
             setUserData(userDoc.data() as UserData);
+            setLoading(false);
           } else {
             // Case-insensitive check for admin email
             const adminEmail = "marqueznorthed@gmail.com";
             if (currentUser.email?.toLowerCase() === adminEmail.toLowerCase()) {
-              const adminData: UserData = { role: 'admin', email: currentUser.email! };
+              const adminData: UserData = { role: 'admin', email: currentUser.email!, fullName: 'Administrator' };
               setUserData(adminData);
               // Provision the user document if missing
               try {
@@ -65,38 +75,53 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               } catch (e) {
                 console.error("Error provisioning admin user:", e);
               }
+              setLoading(false);
             } else {
-              // Try to find a matching employee by email (also case-insensitive if possible, but Firestore == is case-sensitive)
-              // We'll trust the email if provided by the provider
-              const { collection, query, where, getDocs, setDoc } = await import('firebase/firestore');
-              const q = query(collection(db, 'employees'), where('email', '==', currentUser.email));
-              const querySnapshot = await getDocs(q);
-              
-              if (!querySnapshot.empty) {
-                const employeeDoc = querySnapshot.docs[0];
-                const empData: UserData = { 
-                  role: 'employee', 
-                  email: currentUser.email!,
-                  employeeId: employeeDoc.id 
-                };
-                setUserData(empData);
-                await setDoc(userDocRef, empData);
-              } else {
+              // Try to find a matching employee by email
+              try {
+                const { collection, query, where, getDocs, setDoc } = await import('firebase/firestore');
+                const q = query(collection(db, 'employees'), where('email', '==', currentUser.email));
+                const querySnapshot = await getDocs(q);
+                
+                if (!querySnapshot.empty) {
+                  const employeeDoc = querySnapshot.docs[0];
+                  const employeeRecord = employeeDoc.data();
+                  const empData: UserData = { 
+                    role: 'employee', 
+                    email: currentUser.email!,
+                    employeeId: employeeDoc.id,
+                    fullName: employeeRecord.fullName,
+                    photoURL: employeeRecord.photoURL
+                  };
+                  setUserData(empData);
+                  await setDoc(userDocRef, empData);
+                } else {
+                  setUserData(null);
+                }
+                setLoading(false);
+              } catch (error) {
+                console.error("Error finding employee:", error);
                 setUserData(null);
+                setLoading(false);
               }
             }
           }
-        } catch (error) {
-          console.error("Error fetching user data:", error);
+        }, (error) => {
+          console.error("Error listening to user data:", error);
           setUserData(null);
-        }
+          setLoading(false);
+        });
       } else {
         setUser(null);
         setUserData(null);
+        setLoading(false);
       }
-      setLoading(false);
     });
-    return () => unsubscribe();
+
+    return () => {
+      unsubscribeAuth();
+      if (unsubscribeUserData) unsubscribeUserData();
+    };
   }, []);
 
   return (

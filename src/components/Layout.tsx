@@ -47,8 +47,12 @@ export default function Layout() {
           <span className="truncate">{companyInfo.name}</span>
         </div>
         <div className="flex items-center gap-3 shrink-0">
-          <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-xl flex items-center justify-center font-bold text-sm shadow-md">
-            {user?.email?.[0].toUpperCase() || 'A'}
+          <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-xl flex items-center justify-center font-bold text-sm shadow-md overflow-hidden border border-white/20">
+            {userData?.photoURL ? (
+              <img src={userData.photoURL} alt="Profile" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+            ) : (
+              userData?.fullName?.[0].toUpperCase() || user?.email?.[0].toUpperCase() || 'A'
+            )}
           </div>
           <Button variant="ghost" size="icon" onClick={logout} className="text-slate-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950">
             <LogOut className="w-5 h-5" />

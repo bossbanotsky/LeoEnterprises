@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { Employee } from '../types';
-import { Search, Plus, Briefcase, ChevronRight, Edit2, Trash2, CheckCircle2 } from 'lucide-react';
+import { Search, Plus, Briefcase, ChevronRight, Edit2, Trash2, CheckCircle2, Upload, Loader2, User } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -14,7 +14,55 @@ export default function Employees() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddOpen, setIsAddOpen] = useState(false);
-  const [form, setForm] = useState({ customId: '', fullName: '', position: '', dailySalary: '', email: '' });
+  const [isUploading, setIsUploading] = useState(false);
+  const [form, setForm] = useState({ customId: '', fullName: '', position: '', dailySalary: '', email: '', photoURL: '' });
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file.');
+      return;
+    }
+
+    setIsUploading(true);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 400;
+        const MAX_HEIGHT = 400;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, width, height);
+        
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        setForm(prev => ({ ...prev, photoURL: dataUrl }));
+        setIsUploading(false);
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
 
@@ -58,6 +106,7 @@ export default function Employees() {
           dailySalary,
           hourlyRate,
           email: form.email || '',
+          photoURL: form.photoURL || ''
         });
         setEditingEmployee(null);
       } else {
@@ -69,12 +118,13 @@ export default function Employees() {
           dailySalary,
           hourlyRate,
           email: form.email || '',
+          photoURL: form.photoURL || '',
           createdAt: new Date().toISOString(),
           uid: user.uid
         });
       }
       setIsAddOpen(false);
-      setForm({ customId: '', fullName: '', position: '', dailySalary: '', email: '' });
+      setForm({ customId: '', fullName: '', position: '', dailySalary: '', email: '', photoURL: '' });
     } catch (error) {
       handleFirestoreError(error, editingEmployee ? OperationType.UPDATE : OperationType.CREATE, 'employees');
     }
@@ -97,7 +147,8 @@ export default function Employees() {
       fullName: emp.fullName,
       position: emp.position || '',
       dailySalary: emp.dailySalary.toString(),
-      email: emp.email || ''
+      email: emp.email || '',
+      photoURL: emp.photoURL || ''
     });
     setSelectedEmployee(null);
     setIsAddOpen(true);
@@ -141,8 +192,12 @@ export default function Employees() {
             onClick={() => setSelectedEmployee(emp)}
             className="bento-card bg-white dark:bg-slate-800 p-4 flex flex-row items-center gap-4 cursor-pointer hover:border-blue-300 transition-colors"
           >
-            <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center font-bold text-lg shrink-0">
-              {emp.fullName.charAt(0).toUpperCase()}
+            <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center font-bold text-lg shrink-0 overflow-hidden">
+              {emp.photoURL ? (
+                <img src={emp.photoURL} alt={emp.fullName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+              ) : (
+                emp.fullName.charAt(0).toUpperCase()
+              )}
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
@@ -192,7 +247,7 @@ export default function Employees() {
         setIsAddOpen(open);
         if (!open) {
           setEditingEmployee(null);
-          setForm({ customId: '', fullName: '', position: '', dailySalary: '', email: '' });
+          setForm({ customId: '', fullName: '', position: '', dailySalary: '', email: '', photoURL: '' });
         }
       }}>
         <DialogTrigger render={<button className="absolute bottom-6 right-2 w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg flex items-center justify-center transition-transform active:scale-95 z-10" />}>
@@ -202,7 +257,46 @@ export default function Employees() {
           <DialogHeader>
             <DialogTitle>{editingEmployee ? 'Edit Employee' : 'Add Employee'}</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleAddEmployee} className="space-y-4 mt-4">
+          <div className="flex flex-col items-center justify-center py-4">
+            <div 
+              className="relative w-24 h-24 bg-slate-100 dark:bg-slate-800 rounded-2xl overflow-hidden border-2 border-dashed border-slate-300 dark:border-slate-700 flex items-center justify-center cursor-pointer hover:border-blue-500 transition-colors group"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {form.photoURL ? (
+                <img src={form.photoURL} alt="Preview" className="w-full h-full object-cover" />
+              ) : (
+                <div className="flex flex-col items-center text-slate-400">
+                  <Upload className="w-8 h-8 mb-1" />
+                  <span className="text-[10px] font-bold uppercase">Upload</span>
+                </div>
+              )}
+              {isUploading && (
+                <div className="absolute inset-0 bg-white/60 dark:bg-slate-900/60 flex items-center justify-center">
+                  <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+                </div>
+              )}
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                <Edit2 className="w-6 h-6 text-white" />
+              </div>
+            </div>
+            <input 
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              accept="image/*"
+              className="hidden"
+            />
+            {form.photoURL && (
+              <button 
+                type="button"
+                onClick={() => setForm(prev => ({ ...prev, photoURL: '' }))}
+                className="mt-2 text-xs font-bold text-red-500 hover:underline"
+              >
+                Remove Photo
+              </button>
+            )}
+          </div>
+          <form onSubmit={handleAddEmployee} className="space-y-4 max-h-[60vh] overflow-y-auto px-1">
             <div className="space-y-2">
               <Label>Employee ID (Optional)</Label>
               <Input value={form.customId} onChange={e => setForm({...form, customId: e.target.value})} placeholder="e.g. EMP-001" className="rounded-xl" />
@@ -239,8 +333,12 @@ export default function Employees() {
             <div className="space-y-6 mt-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center font-bold text-2xl shrink-0">
-                    {selectedEmployee.fullName.charAt(0).toUpperCase()}
+                  <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center font-bold text-2xl shrink-0 overflow-hidden">
+                    {selectedEmployee.photoURL ? (
+                      <img src={selectedEmployee.photoURL} alt={selectedEmployee.fullName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    ) : (
+                      selectedEmployee.fullName.charAt(0).toUpperCase()
+                    )}
                   </div>
                   <div>
                     <h3 className="font-bold text-xl text-slate-900 dark:text-white">{selectedEmployee.fullName}</h3>

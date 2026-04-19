@@ -52,7 +52,7 @@ service cloud.firestore {
     }
 
     function isValidEmployee(data) {
-      return hasOnlyAllowedFields(['customId', 'fullName', 'position', 'status', 'dailySalary', 'hourlyRate', 'email', 'createdAt', 'uid', 'birthday', 'sex', 'civilStatus', 'religion', 'sssNumber', 'philhealthNumber', 'pagibigNumber', 'tinNumber', 'emergencyContactName', 'emergencyContactRelation', 'emergencyContactPhone']) &&
+      return hasOnlyAllowedFields(['customId', 'fullName', 'position', 'status', 'dailySalary', 'hourlyRate', 'email', 'createdAt', 'uid', 'birthday', 'sex', 'civilStatus', 'religion', 'sssNumber', 'philhealthNumber', 'pagibigNumber', 'tinNumber', 'emergencyContactName', 'emergencyContactRelation', 'emergencyContactPhone', 'photoURL']) &&
              (!('customId' in data) || data.customId is string) &&
              data.fullName is string && data.fullName.size() > 0 && data.fullName.size() < 100 &&
              (!('position' in data) || (data.position is string && data.position.size() < 100)) &&
@@ -71,6 +71,7 @@ service cloud.firestore {
              (!('emergencyContactName' in data) || data.emergencyContactName is string) &&
              (!('emergencyContactRelation' in data) || data.emergencyContactRelation is string) &&
              (!('emergencyContactPhone' in data) || data.emergencyContactPhone is string) &&
+             (!('photoURL' in data) || data.photoURL is string && data.photoURL.size() < 2048) &&
              isValidDateString(data.createdAt) &&
              data.uid is string;
     }
@@ -169,7 +170,8 @@ service cloud.firestore {
         request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           'birthday', 'sex', 'civilStatus', 'religion', 
           'sssNumber', 'philhealthNumber', 'pagibigNumber', 'tinNumber',
-          'emergencyContactName', 'emergencyContactRelation', 'emergencyContactPhone'
+          'emergencyContactName', 'emergencyContactRelation', 'emergencyContactPhone',
+          'photoURL'
         ])
       );
     }
