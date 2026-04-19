@@ -2,14 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useCompanyInfo } from '../hooks/useCompanyInfo';
-import { Building2, Settings as SettingsIcon, Shield, Moon, Sun, ChevronRight, LogOut, AlertCircle, X, Save } from 'lucide-react';
+import { Building2, Settings as SettingsIcon, Shield, Moon, Sun, ChevronRight, LogOut, AlertCircle, X, Save, Lock, CheckCircle2 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from './ui/dialog';
 
 export default function Settings() {
-  const { user, logout } = useAuth();
+  const { user, logout, changePassword } = useAuth();
   const navigate = useNavigate();
   const [isDarkMode, setIsDarkMode] = useState(false);
   
@@ -17,6 +17,14 @@ export default function Settings() {
   const [showCompanyDialog, setShowCompanyDialog] = useState(false);
   const [companyForm, setCompanyForm] = useState({ name: '', address: '', contact: '' });
   const [isSaving, setIsSaving] = useState(false);
+
+  // Password State
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
 
   useEffect(() => {
     const isDark = document.documentElement.classList.contains('dark');
@@ -107,6 +115,34 @@ export default function Settings() {
                 </div>
               </div>
               <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-emerald-500 transition-colors" />
+            </div>
+          </div>
+        </div>
+
+        {/* System Section */}
+        <div className="space-y-3">
+          <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">Security</h3>
+          <div className="bento-card flex-col bg-white dark:bg-slate-800 p-0 overflow-hidden border-slate-200 dark:border-slate-700 shadow-sm">
+            <div 
+              className="p-4 flex items-center justify-between cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors group"
+              onClick={() => {
+                setPasswordSuccess(false);
+                setPasswordError(null);
+                setNewPassword('');
+                setConfirmPassword('');
+                setShowPasswordDialog(true);
+              }}
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-900/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Lock className="w-5 h-5 text-rose-600 dark:text-rose-400" />
+                </div>
+                <div>
+                  <span className="block font-semibold text-slate-900 dark:text-white">Security & Password</span>
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400">Set or change your login password</span>
+                </div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-rose-500 transition-colors" />
             </div>
           </div>
         </div>
@@ -236,6 +272,97 @@ export default function Settings() {
               )}
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Password Change Dialog */}
+      <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
+        <DialogContent className="sm:max-w-[425px] p-0 overflow-hidden bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-3xl">
+          <div className="p-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-between items-center">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-rose-100 dark:bg-rose-900/40 flex items-center justify-center">
+                <Lock className="w-5 h-5 text-rose-600 dark:text-rose-400" />
+              </div>
+              <DialogTitle className="text-xl font-bold text-slate-900 dark:text-white">Security</DialogTitle>
+            </div>
+            <DialogClose className="rounded-full p-2 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+              <X className="w-5 h-5 text-slate-500" />
+            </DialogClose>
+          </div>
+          
+          <div className="p-6 space-y-4">
+            {passwordSuccess ? (
+              <div className="flex flex-col items-center justify-center py-6 text-center space-y-3">
+                <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 text-green-600 rounded-full flex items-center justify-center">
+                  <CheckCircle2 className="w-10 h-10" />
+                </div>
+                <h3 className="text-lg font-bold">Password Updated!</h3>
+                <p className="text-sm text-slate-500">You can now use this password to sign in via email.</p>
+                <Button onClick={() => setShowPasswordDialog(false)} className="rounded-xl px-8">Got it</Button>
+              </div>
+            ) : (
+              <>
+                <p className="text-xs text-slate-500 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
+                  Setting a password allows you to log in using your email address ({user?.email}) in the standard sign-in form.
+                </p>
+                
+                {passwordError && (
+                  <div className="p-3 text-xs text-red-600 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-100 font-medium">
+                    {passwordError}
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">New Password</Label>
+                  <Input
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="h-12 rounded-xl bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700"
+                    placeholder="Min. 6 characters"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Confirm Password</Label>
+                  <Input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="h-12 rounded-xl bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700"
+                    placeholder="Repeat new password"
+                  />
+                </div>
+              </>
+            )}
+          </div>
+
+          {!passwordSuccess && (
+            <div className="p-6 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800">
+              <Button
+                className="w-full h-12 rounded-xl bg-slate-900 dark:bg-blue-600 hover:bg-black text-white font-bold"
+                disabled={isChangingPassword || newPassword.length < 6 || newPassword !== confirmPassword}
+                onClick={async () => {
+                  try {
+                    setPasswordError(null);
+                    setIsChangingPassword(true);
+                    await changePassword(newPassword);
+                    setPasswordSuccess(true);
+                  } catch (e: any) {
+                    console.error(e);
+                    if (e.code === 'auth/requires-recent-login') {
+                      setPasswordError('Security: Please sign out and sign back in with Google before setting a password.');
+                    } else {
+                      setPasswordError(e.message || 'Failed to update password.');
+                    }
+                  } finally {
+                    setIsChangingPassword(false);
+                  }
+                }}
+              >
+                {isChangingPassword ? 'Processing...' : 'Set / Update Password'}
+              </Button>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

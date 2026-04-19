@@ -18,6 +18,7 @@ interface AuthContextType {
   loginWithGoogleContext: () => Promise<void>;
   loginWithEmail: (e: string, p: string) => Promise<void>;
   registerWithEmail: (e: string, p: string) => Promise<void>;
+  changePassword: (newPassword: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -28,6 +29,7 @@ const AuthContext = createContext<AuthContextType>({
   loginWithGoogleContext: async () => {},
   loginWithEmail: async () => {},
   registerWithEmail: async () => {},
+  changePassword: async () => {},
   logout: async () => {},
 });
 
@@ -42,6 +44,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   
   const registerWithEmail = async (e: string, p: string) => {
     await createUserWithEmailAndPassword(auth, e, p);
+  };
+
+  const changePassword = async (newPassword: string) => {
+    if (!auth.currentUser) throw new Error("No user logged in");
+    const { updatePassword } = await import('firebase/auth');
+    await updatePassword(auth.currentUser, newPassword);
   };
 
   useEffect(() => {
@@ -132,6 +140,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       loginWithGoogleContext: loginWithGoogle,
       loginWithEmail,
       registerWithEmail,
+      changePassword,
       logout 
     }}>
       {children}

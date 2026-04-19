@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useCompanyInfo } from '../hooks/useCompanyInfo';
 import { Employee, Attendance, Payroll, CashAdvance, Announcement } from '../types';
 import { format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, isPast } from 'date-fns';
-import { Calendar, FileText, Wallet, Clock, User, Briefcase, CreditCard, ChevronRight, UserPen, Loader2, Upload, Megaphone, Bell } from 'lucide-react';
+import { Calendar, FileText, Wallet, Clock, User, Briefcase, CreditCard, ChevronRight, UserPen, Loader2, Upload, Megaphone, Bell, Lock, X } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -33,6 +33,15 @@ export default function EmployeeDashboard() {
   const [isUploading, setIsUploading] = useState(false);
   const [profileData, setProfileData] = useState<Partial<Employee>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Password State
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
+  const { changePassword } = useAuth();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -885,6 +894,24 @@ export default function EmployeeDashboard() {
                 </div>
               </div>
             </div>
+
+            <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-3">
+              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Security</h4>
+              <Button 
+                variant="outline" 
+                className="w-full rounded-xl border-slate-200 dark:border-slate-700 h-11 justify-start gap-3"
+                onClick={() => {
+                  setPasswordSuccess(false);
+                  setPasswordError(null);
+                  setNewPassword('');
+                  setConfirmPassword('');
+                  setShowPasswordDialog(true);
+                }}
+              >
+                <Lock className="w-4 h-4 text-blue-600" />
+                <span className="text-xs font-bold">Set / Change Login Password</span>
+              </Button>
+            </div>
           </div>
           
           <div className="p-4 bg-slate-50 dark:bg-slate-800/50 flex justify-end gap-2 border-t border-slate-100 dark:border-slate-800">
@@ -892,6 +919,86 @@ export default function EmployeeDashboard() {
             <Button onClick={handleSaveProfile} disabled={isSavingProfile} className="rounded-xl bg-blue-600 hover:bg-blue-700 min-w-24">
               {isSavingProfile ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save Profile'}
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
+        <DialogContent className="sm:max-w-[400px] p-0 overflow-hidden bg-white dark:bg-slate-900 border-0 shadow-2xl rounded-2xl">
+          <div className="bg-slate-900 p-6 text-white flex justify-between items-center">
+            <h3 className="font-bold flex items-center gap-2">
+              <Lock className="w-4 h-4" /> Security Settings
+            </h3>
+            <Button variant="ghost" size="icon" onClick={() => setShowPasswordDialog(false)} className="text-white hover:bg-white/10">
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
+          <div className="p-6 space-y-4">
+            {passwordSuccess ? (
+              <div className="text-center py-4 space-y-4">
+                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto text-green-600 font-bold">✓</div>
+                <div>
+                  <h4 className="font-bold">Password Updated</h4>
+                  <p className="text-xs text-slate-500 mt-1">You can now login with your email and password.</p>
+                </div>
+                <Button onClick={() => setShowPasswordDialog(false)} className="w-full rounded-xl">Close</Button>
+              </div>
+            ) : (
+              <>
+                <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-xl text-[11px] text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/30">
+                  Setting a password allows you to access this portal using your email ({user?.email}) even without Google.
+                </div>
+                
+                {passwordError && (
+                  <div className="p-3 bg-red-50 text-red-600 border border-red-100 rounded-xl text-[11px] font-bold">
+                    {passwordError}
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <Label className="text-[10px] uppercase font-bold text-slate-500">New Password</Label>
+                  <Input 
+                    type="password" 
+                    value={newPassword}
+                    onChange={e => setNewPassword(e.target.value)}
+                    placeholder="Min 6 characters"
+                    className="rounded-xl"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] uppercase font-bold text-slate-500">Confirm New Password</Label>
+                  <Input 
+                    type="password" 
+                    value={confirmPassword}
+                    onChange={e => setConfirmPassword(e.target.value)}
+                    placeholder="Match new password"
+                    className="rounded-xl"
+                  />
+                </div>
+                <Button 
+                  className="w-full h-12 rounded-xl bg-blue-600 hover:bg-blue-700 font-bold mt-2"
+                  disabled={isChangingPassword || newPassword.length < 6 || newPassword !== confirmPassword}
+                  onClick={async () => {
+                    try {
+                      setIsChangingPassword(true);
+                      setPasswordError(null);
+                      await changePassword(newPassword);
+                      setPasswordSuccess(true);
+                    } catch (e: any) {
+                      if (e.code === 'auth/requires-recent-login') {
+                        setPasswordError('Security: Please sign out and sign back in with Google before changing your password.');
+                      } else {
+                        setPasswordError(e.message);
+                      }
+                    } finally {
+                      setIsChangingPassword(false);
+                    }
+                  }}
+                >
+                  {isChangingPassword ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Update My Password'}
+                </Button>
+              </>
+            )}
           </div>
         </DialogContent>
       </Dialog>
