@@ -4,6 +4,7 @@ import { LayoutGrid, UsersRound, Receipt, Clock, Settings2, WalletCards, Pickaxe
 import { motion, AnimatePresence } from 'motion/react';
 import { useCompanyInfo } from '../hooks/useCompanyInfo';
 import { Button } from './ui/button';
+import EtherealMeshBackground from './EtherealMeshBackground';
 
 export default function Layout() {
   const { user, userData, logout } = useAuth();
@@ -31,15 +32,8 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground overflow-hidden relative">
-      {/* Decorative Sea Waves */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden opacity-40 dark:opacity-20">
-        <svg className="absolute top-0 left-0 w-full h-64 -translate-y-1/2 fill-blue-400/20" viewBox="0 0 1440 320" preserveAspectRatio="none">
-          <path d="M0,160L48,176C96,192,192,224,288,213.3C384,203,480,149,576,144C672,139,768,181,864,181.3C960,181,1056,139,1152,122.7C1248,107,1344,117,1392,122.7L1440,128L1440,0L1392,0C1344,0,1248,0,1152,0C1056,0,960,0,864,0C768,0,672,0,576,0C480,0,384,0,288,0C192,0,96,0,48,0L0,0Z"></path>
-        </svg>
-        <svg className="absolute bottom-0 left-0 w-full h-96 translate-y-1/3 fill-blue-500/10" viewBox="0 0 1440 320" preserveAspectRatio="none">
-          <path d="M0,224L48,213.3C96,203,192,181,288,181.3C384,181,480,203,576,224C672,245,768,267,864,250.7C960,235,1056,181,1152,149.3C1248,117,1344,107,1392,101.3L1440,96L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
-        </svg>
-      </div>
+      {/* Ethereal Mesh Background */}
+      <EtherealMeshBackground />
 
       {/* Header */}
       <header className="h-16 bg-white/70 dark:bg-slate-800/70 backdrop-blur-md border-b border-blue-100 dark:border-blue-900/30 flex items-center justify-between px-4 sticky top-0 z-10">
@@ -64,7 +58,7 @@ export default function Layout() {
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 overflow-x-hidden overflow-y-auto pb-24 relative z-1">
+      <main className="flex-1 overflow-x-hidden overflow-y-auto pb-24 relative z-1 bg-white/5 dark:bg-slate-900/5 backdrop-blur-sm border-x border-white/5 dark:border-slate-800/5">
         <AnimatePresence mode="wait">
           <motion.div
             key={location.pathname}
