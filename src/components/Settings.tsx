@@ -153,7 +153,7 @@ export default function Settings() {
           <div className="bento-card flex-col bg-white dark:bg-slate-800 p-0 overflow-hidden border-slate-200 dark:border-slate-700 shadow-sm">
             <div 
               className="p-4 flex items-center justify-between border-b border-slate-100 dark:border-slate-700/50 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors group"
-              onClick={() => navigate('/settings/logs')}
+              onClick={() => navigate('/admin-dashboard/settings/logs')}
             >
               <div className="flex items-center gap-4">
                 <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center group-hover:scale-110 transition-transform">

@@ -129,3 +129,13 @@ export interface Message {
   readBy?: { [userId: string]: string }; // Map of userId to read timestamp
   createdAt: string;
 }
+
+export interface UserProfile {
+  uid: string;
+  email: string;
+  fullName: string;
+  role: 'admin' | 'employee';
+  employeeId?: string; // Link to Employee document for employees
+  photoURL?: string;
+  createdAt: string;
+}

@@ -2,13 +2,15 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Layout from './components/Layout';
-import Login from './components/Login';
+import LandingPage from './pages/LandingPage';
+import LoginPage from './pages/LoginPage';
 import Dashboard from './components/Dashboard';
 import Employees from './components/Employees';
 import Attendance from './components/Attendance';
 import CashAdvance from './components/CashAdvance';
 import Pakyaw from './components/Pakyaw';
 import Payroll from './components/Payroll';
+import GalleryManagement from './components/GalleryManagement';
 import Settings from './components/Settings';
 import Logs from './components/Logs';
 import Announcements from './components/Announcements';
@@ -18,20 +20,23 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 
 const ProtectedRoute = ({ children, requireAdmin = false }: { children: React.ReactNode, requireAdmin?: boolean }) => {
   const { user, userData, loading } = useAuth();
-  if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
-  if (!user) return <Navigate to="/login" />;
+  if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-50 font-bold text-slate-400 uppercase tracking-widest animate-pulse">Establishing Session...</div>;
+  if (!user) return <Navigate to="/" />;
   
   if (requireAdmin && userData?.role !== 'admin') {
-    return <Navigate to="/portal" />;
+    return <Navigate to="/employee-dashboard" />;
   }
   
   return <>{children}</>;
 };
 
-const IndexRedirect = () => {
-  const { userData, loading } = useAuth();
+const AuthRedirect = () => {
+  const { user, userData, loading } = useAuth();
   if (loading) return null;
-  return <Navigate to={userData?.role === 'admin' ? "/dashboard" : "/portal"} replace />;
+  if (user && userData) {
+    return <Navigate to={userData.role === 'admin' ? "/admin-dashboard" : "/employee-dashboard"} replace />;
+  }
+  return <LandingPage />;
 };
 
 export default function App() {
@@ -40,21 +45,32 @@ export default function App() {
       <AuthProvider>
         <BrowserRouter>
           <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-              <Route index element={<IndexRedirect />} />
-              <Route path="dashboard" element={<ProtectedRoute requireAdmin><Dashboard /></ProtectedRoute>} />
-              <Route path="portal" element={<EmployeeDashboard />} />
+            <Route path="/" element={<AuthRedirect />} />
+            <Route path="/login" element={<LoginPage />} />
+            
+            {/* Admin Routes */}
+            <Route path="/admin-dashboard" element={<ProtectedRoute requireAdmin><Layout /></ProtectedRoute>}>
+              <Route index element={<Dashboard />} />
               <Route path="messenger" element={<Messenger />} />
-              <Route path="employees" element={<ProtectedRoute requireAdmin><Employees /></ProtectedRoute>} />
-              <Route path="attendance" element={<ProtectedRoute requireAdmin><Attendance /></ProtectedRoute>} />
-              <Route path="cash-advance" element={<ProtectedRoute requireAdmin><CashAdvance /></ProtectedRoute>} />
-              <Route path="pakyaw" element={<ProtectedRoute requireAdmin><Pakyaw /></ProtectedRoute>} />
-              <Route path="payroll" element={<ProtectedRoute requireAdmin><Payroll /></ProtectedRoute>} />
-              <Route path="announcements" element={<ProtectedRoute requireAdmin><Announcements /></ProtectedRoute>} />
-              <Route path="settings" element={<ProtectedRoute requireAdmin><Settings /></ProtectedRoute>} />
-              <Route path="settings/logs" element={<ProtectedRoute requireAdmin><Logs /></ProtectedRoute>} />
+              <Route path="employees" element={<Employees />} />
+              <Route path="attendance" element={<Attendance />} />
+              <Route path="cash-advance" element={<CashAdvance />} />
+              <Route path="pakyaw" element={<Pakyaw />} />
+              <Route path="payroll" element={<Payroll />} />
+              <Route path="gallery" element={<GalleryManagement />} />
+              <Route path="announcements" element={<Announcements />} />
+              <Route path="settings" element={<Settings />} />
+              <Route path="settings/logs" element={<Logs />} />
             </Route>
+
+            {/* Employee Routes */}
+            <Route path="/employee-dashboard" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+              <Route index element={<EmployeeDashboard />} />
+              <Route path="messenger" element={<Messenger />} />
+            </Route>
+
+            {/* Fallback */}
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </BrowserRouter>
       </AuthProvider>

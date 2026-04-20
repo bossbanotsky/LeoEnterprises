@@ -207,7 +207,7 @@ export default function Dashboard() {
               <Megaphone className="w-4 h-4 text-blue-600" />
               <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500">Recent Notices</h3>
             </div>
-            <Link to="/announcements" className="p-1 px-2 bg-blue-50 dark:bg-blue-900/40 text-[9px] font-bold text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 transition-colors uppercase">
+            <Link to="/admin-dashboard/announcements" className="p-1 px-2 bg-blue-50 dark:bg-blue-900/40 text-[9px] font-bold text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 transition-colors uppercase">
               Manage
             </Link>
           </div>
@@ -230,7 +230,7 @@ export default function Dashboard() {
                     )}
                   </div>
                   <p className="text-[11px] text-slate-500 line-clamp-1 italic">{ann.message}</p>
-                  <Link to="/announcements" className="flex items-center gap-2 mt-1">
+                  <Link to="/admin-dashboard/announcements" className="flex items-center gap-2 mt-1">
                     <div className="flex items-center gap-1 text-[9px] text-slate-400">
                       <Eye className="w-3 h-3" /> Seen by {ann.viewedBy.length}
                     </div>
@@ -239,7 +239,7 @@ export default function Dashboard() {
               ))
             )}
             
-            <Link to="/announcements" className="block">
+            <Link to="/admin-dashboard/announcements" className="block">
               <button className="w-full mt-2 h-10 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-blue-400 hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-all flex items-center justify-center gap-2 text-slate-400 hover:text-blue-600 text-[10px] font-bold uppercase tracking-widest">
                 <Plus className="w-3.5 h-3.5" />
                 Post New Notice

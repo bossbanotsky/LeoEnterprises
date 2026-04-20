@@ -185,13 +185,6 @@ service cloud.firestore {
              (!('readBy' in data) || data.readBy is map);
     }
 
-    function isValidGallery(data) {
-      return hasOnlyAllowedFields(['imageUrl', 'category', 'createdAt']) &&
-             data.imageUrl is string && data.imageUrl.size() < 2048 &&
-             data.category in ['Civil Works', 'Repairs & Maintenance', 'Hauling Services', 'Fabrication', 'IT Services', 'CCTV Installation'] &&
-             isValidDateString(data.createdAt);
-    }
-
     // ===============================================================
     // Rules
     // ===============================================================
@@ -295,12 +288,6 @@ service cloud.firestore {
         allow update: if isAuthenticated() && (resource.data.chatType == 'group' || request.auth.uid in resource.data.participants);
         allow delete: if isAdmin();
       }
-    }
-
-    match /gallery/{docId} {
-      allow read: if true;
-      allow create, update: if isAdmin() && isValidGallery(request.resource.data);
-      allow delete: if isAdmin();
     }
   }
 }

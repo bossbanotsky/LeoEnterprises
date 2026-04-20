@@ -718,7 +718,7 @@ export default function Messenger() {
               <div className="w-20 h-20 bg-blue-100 dark:bg-blue-900/30 rounded-3xl flex items-center justify-center mb-6 animate-pulse">
                 <MessageSquare className="w-10 h-10 text-blue-600" />
               </div>
-              <h3 className="text-xl font-black text-slate-900 dark:text-white mb-2 tracking-tight">Welcome to Banotsky Messenger</h3>
+              <h3 className="text-xl font-black text-slate-900 dark:text-white mb-2 tracking-tight">Welcome to Leo Enterprises Messenger</h3>
               <p className="text-sm text-slate-500 max-w-xs leading-relaxed">
                 Choose a conversation from the sidebar or start a new chat with your team members.
               </p>

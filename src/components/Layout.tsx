@@ -1,6 +1,6 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { LayoutGrid, UsersRound, Receipt, Clock, Settings2, WalletCards, Pickaxe, LogOut, Megaphone, MessageSquare } from 'lucide-react';
+import { LayoutGrid, UsersRound, Receipt, Clock, Settings2, WalletCards, Pickaxe, LogOut, Megaphone, MessageSquare, GalleryHorizontal } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useCompanyInfo } from '../hooks/useCompanyInfo';
 import { Button } from './ui/button';
@@ -12,20 +12,21 @@ export default function Layout() {
   const { companyInfo } = useCompanyInfo();
 
   const adminNavItems = [
-    { path: '/dashboard', label: 'Dash', icon: LayoutGrid },
-    { path: '/messenger', label: 'Chat', icon: MessageSquare },
-    { path: '/announcements', label: 'News', icon: Megaphone },
-    { path: '/employees', label: 'Staff', icon: UsersRound },
-    { path: '/attendance', label: 'Attend', icon: Clock },
-    { path: '/pakyaw', label: 'Pakyaw', icon: Pickaxe },
-    { path: '/cash-advance', label: 'Advance', icon: WalletCards },
-    { path: '/payroll', label: 'Payroll', icon: Receipt },
-    { path: '/settings', label: 'Gear', icon: Settings2 },
+    { path: '/admin-dashboard', label: 'Dash', icon: LayoutGrid },
+    { path: '/admin-dashboard/messenger', label: 'Chat', icon: MessageSquare },
+    { path: '/admin-dashboard/announcements', label: 'News', icon: Megaphone },
+    { path: '/admin-dashboard/employees', label: 'Staff', icon: UsersRound },
+    { path: '/admin-dashboard/attendance', label: 'Attend', icon: Clock },
+    { path: '/admin-dashboard/pakyaw', label: 'Pakyaw', icon: Pickaxe },
+    { path: '/admin-dashboard/cash-advance', label: 'Advance', icon: WalletCards },
+    { path: '/admin-dashboard/payroll', label: 'Payroll', icon: Receipt },
+    { path: '/admin-dashboard/gallery', label: 'Gallery', icon: GalleryHorizontal },
+    { path: '/admin-dashboard/settings', label: 'Gear', icon: Settings2 },
   ];
 
   const employeeNavItems = [
-    { path: '/portal', label: 'Portal', icon: LayoutGrid },
-    { path: '/messenger', label: 'Chat', icon: MessageSquare },
+    { path: '/employee-dashboard', label: 'Portal', icon: LayoutGrid },
+    { path: '/employee-dashboard/messenger', label: 'Chat', icon: MessageSquare },
   ];
 
   const navItems = userData?.role === 'admin' ? adminNavItems : employeeNavItems;
@@ -74,7 +75,7 @@ export default function Layout() {
       </main>
 
       {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white/5 dark:bg-slate-900/5 backdrop-blur-3xl border-t border-white/5 dark:border-slate-800/5 flex flex-row items-center justify-around px-1 sm:px-4 z-50 pb-[env(safe-area-inset-bottom)] h-[calc(4.8rem+env(safe-area-inset-bottom))] shadow-[0_-10px_15px_rgba(0,0,0,0.01)]">
+      <nav className="fixed bottom-0 left-0 right-0 bg-white/10 dark:bg-slate-900/10 backdrop-blur-3xl border-t border-white/10 dark:border-slate-800/10 flex flex-row items-center overflow-x-auto overflow-y-hidden z-50 pb-[env(safe-area-inset-bottom)] h-[calc(4.5rem+env(safe-area-inset-bottom))] shadow-[0_-10px_15px_rgba(0,0,0,0.05)] snap-x snap-mandatory px-4 gap-1 scroll-smooth no-scrollbar">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
           const Icon = item.icon;
@@ -82,29 +83,29 @@ export default function Layout() {
             <Link
               key={item.path}
               to={item.path}
-              className="flex flex-col items-center justify-center flex-1 h-full gap-1 transition-all duration-500 relative group outline-none"
+              className="flex flex-col items-center justify-center min-w-[60px] flex-1 h-full gap-0.5 transition-all duration-500 relative group outline-none shrink-0 snap-center"
             >
-              <div className="relative flex items-center justify-center w-[42px] h-[42px] sm:w-12 sm:h-12 mt-1">
+              <div className="relative flex items-center justify-center w-[38px] h-[38px] sm:w-10 sm:h-10 mt-1">
                 {/* Active 3D Hyper-Realistic Indicator */}
                 {isActive && (
                   <motion.div 
                     layoutId="active-icon-bg"
-                    className="absolute inset-0 bg-gradient-to-b from-blue-400 via-blue-600 to-indigo-700 rounded-2xl shadow-[0_6px_12px_rgba(37,99,235,0.35),inset_0_2px_1px_rgba(255,255,255,0.4),inset_0_-2px_2px_rgba(0,0,0,0.2)] ring-1 ring-blue-500/50 z-0"
+                    className="absolute inset-0 bg-gradient-to-b from-blue-400 via-blue-600 to-indigo-700 rounded-xl shadow-[0_4px_8px_rgba(37,99,235,0.3),inset_0_1px_1px_rgba(255,255,255,0.4)] z-0"
                     transition={{ type: "spring", stiffness: 450, damping: 25 }}
                   />
                 )}
                 
                 {/* Hover Glass Base */}
                 {!isActive && (
-                  <div className="absolute inset-0 bg-slate-100/80 dark:bg-slate-800/80 backdrop-blur-md rounded-2xl opacity-0 scale-50 group-hover:opacity-100 group-hover:scale-100 transition-all duration-300 z-0 shadow-[inset_0_1px_2px_rgba(0,0,0,0.05),0_2px_5px_rgba(0,0,0,0.05)] border border-white/50 dark:border-slate-700/50" />
+                  <div className="absolute inset-0 bg-slate-100/80 dark:bg-slate-800/80 backdrop-blur-md rounded-xl opacity-0 scale-50 group-hover:opacity-100 group-hover:scale-100 transition-all duration-300 z-0 border border-white/50" />
                 )}
 
                 <Icon 
-                  className={`w-[22px] h-[22px] sm:w-[24px] sm:h-[24px] transition-all duration-400 z-10 relative 
-                  ${isActive ? 'text-white stroke-[2.5px] drop-shadow-[0_2px_2px_rgba(0,0,0,0.4)]' : 'text-slate-400 dark:text-slate-500 stroke-[1.5px] group-hover:text-blue-600 dark:group-hover:text-blue-400 drop-shadow-sm'}`} 
+                  className={`w-[20px] h-[20px] sm:w-[22px] sm:h-[22px] transition-all duration-400 z-10 relative 
+                  ${isActive ? 'text-white stroke-[2.5px]' : 'text-slate-400 dark:text-slate-500 stroke-[1.5px] group-hover:text-blue-600'}`} 
                 />
               </div>
-              <span className={`text-[9px] sm:text-[10px] font-black tracking-widest uppercase transition-all duration-300 ${isActive ? 'text-indigo-700 dark:text-blue-400 translate-y-0' : 'text-slate-400 dark:text-slate-500 translate-y-[1px]'}`}>
+              <span className={`text-[8px] sm:text-[9px] font-black tracking-tighter uppercase transition-all duration-300 ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'}`}>
                 {item.label}
               </span>
             </Link>

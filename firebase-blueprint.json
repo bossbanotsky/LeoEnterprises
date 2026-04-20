@@ -173,6 +173,17 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["chatId", "senderId", "senderName", "text", "type", "createdAt"]
+    },
+    "Gallery": {
+      "title": "Gallery Image",
+      "description": "Image uploaded by admin",
+      "type": "object",
+      "properties": {
+        "imageUrl": { "type": "string" },
+        "category": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["imageUrl", "category", "createdAt"]
     }
   },
   "firestore": {
@@ -219,6 +230,10 @@
     "/chats/{chatId}/messages/{messageId}": {
       "schema": { "$ref": "#/entities/Message" },
       "description": "Messages belonging to a chat"
+    },
+    "/gallery/{docId}": {
+      "schema": { "$ref": "#/entities/Gallery" },
+      "description": "Public gallery images organized by category"
     }
   }
 }

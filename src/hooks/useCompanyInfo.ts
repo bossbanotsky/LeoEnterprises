@@ -12,8 +12,8 @@ export interface CompanyInfo {
 
 const defaultCompany: CompanyInfo = {
   name: 'Leo Enterprises',
-  address: '',
-  contact: ''
+  address: 'Santa Maria, Bauan, Batangas',
+  contact: '0994-606-4463'
 };
 
 export function useCompanyInfo() {

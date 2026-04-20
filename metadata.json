@@ -1,6 +1,13 @@
 {
-  "name": "Leo Enterprises",
-  "description": "Payroll and Attendance Management System for Leo Enterprises",
-  "requestFramePermissions": [],
-  "majorCapabilities": []
+  "name": "Leo Enterprises ERP",
+  "description": "Multi-service ERP solutions including civil works, hauling, IT services, and technical support. Features attendance, payroll, and project management.",
+  "requestFramePermissions": [
+    "geolocation"
+  ],
+  "majorCapabilities": [
+    "PWA",
+    "Firebase Auth",
+    "Firestore",
+    "Framer Motion Animations"
+  ]
 }

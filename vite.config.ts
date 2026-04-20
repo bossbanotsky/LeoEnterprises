@@ -11,14 +11,14 @@ export default defineConfig(({mode}) => {
       react(), 
       tailwindcss(),
       VitePWA({
-        registerType: 'prompt',
+        registerType: 'autoUpdate',
         injectRegister: 'auto',
         includeAssets: ['favicon.ico', 'icon.svg'],
         manifest: {
-          name: 'ERP System',
-          short_name: 'ERP',
-          description: 'Manage HR, Attendance, and Payroll',
-          theme_color: '#ffffff',
+          name: 'Leo Enterprises ERP',
+          short_name: 'Leo ERP',
+          description: 'Multi-service solutions for Leo Enterprises',
+          theme_color: '#0f172a', // Navy Blue (slate-900)
           background_color: '#ffffff',
           display: 'standalone',
           icons: [
