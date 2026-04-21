@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Layout from './components/Layout';
 import LandingPage from './pages/LandingPage';
@@ -20,11 +20,17 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 
 const ProtectedRoute = ({ children, requireAdmin = false }: { children: React.ReactNode, requireAdmin?: boolean }) => {
   const { user, userData, loading } = useAuth();
+  const location = useLocation();
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-50 font-bold text-slate-400 uppercase tracking-widest animate-pulse">Establishing Session...</div>;
   if (!user) return <Navigate to="/" />;
   
   if (requireAdmin && userData?.role !== 'admin') {
-    return <Navigate to="/employee-dashboard" />;
+    return <Navigate to="/employee-dashboard" replace />;
+  }
+  
+  // If at employee dashboard but is an admin, redirect to admin side
+  if (!requireAdmin && userData?.role === 'admin' && location.pathname.startsWith('/employee-dashboard')) {
+    return <Navigate to="/admin-dashboard" replace />;
   }
   
   return <>{children}</>;

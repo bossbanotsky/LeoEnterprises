@@ -66,7 +66,7 @@ export default function Attendance() {
     let totalPay = 0;
 
     // 1. Calculate Regular/OT Pay if applicable
-    if (att.status === 'present' || att.status === 'ut') {
+    if (att.status === 'present' || att.status === 'ut' || att.status === 'hd') {
       const hourlyRate = emp.dailySalary / 8;
       const regPay = (att.regularHours || 0) * hourlyRate;
       const otPay = (att.otHours || 0) * hourlyRate;
@@ -147,12 +147,17 @@ export default function Attendance() {
     let updated: Partial<AttendanceType> = { ...current, [field]: value };
     
     // Auto-calculate for Present status
-    if (field === 'status' && value === 'present' && !updated.timeIn) { 
-      updated.timeIn = '07:00'; 
-      updated.timeOut = '16:00'; 
+    if (field === 'status' && (value === 'present' || value === 'hd') && !updated.timeIn) { 
+      if (value === 'hd') {
+        updated.timeIn = '07:00'; 
+        updated.timeOut = '12:00';
+      } else {
+        updated.timeIn = '07:00'; 
+        updated.timeOut = '16:00'; 
+      }
     }
     
-    // Calculation of hours when present/ut (not absent or pakyaw)
+    // Calculation of hours when present/ut/hd (not absent or pakyaw)
     if (updated.status !== 'absent' && updated.status !== 'pakyaw') {
       const tIn = updated.timeIn || '07:00';
       const tOut = updated.timeOut || '16:00';
@@ -184,8 +189,11 @@ export default function Attendance() {
       updated.regularHours = parseFloat(regDuration.toFixed(2));
       updated.otHours = parseFloat(otDuration.toFixed(2));
       
-      // Auto-set status: Total hours (Reg + OT) must be 8 for 'present'
-      if ((regDuration + otDuration) < 8) {
+      // Auto-set status: 
+      // 7:00 to 12:00 is HD (Half Day)
+      if (tIn === '07:00' && tOut === '12:00') {
+        updated.status = 'hd';
+      } else if ((regDuration + otDuration) < 8) {
         updated.status = 'ut';
       } else {
         updated.status = 'present';
@@ -294,8 +302,9 @@ export default function Attendance() {
           <div className="grid grid-cols-1 gap-3">
             {employees.map(emp => {
               const att = attendanceData[`${emp.id}_${singleDate}`] || { status: 'absent', timeIn: '07:00', timeOut: '16:00' };
-              const isUT = att.status === 'ut' || (att.status === 'present' && (att.regularHours || 0) < 8 && (att.regularHours || 0) > 0);
-              const isPresent = att.status === 'present' && !isUT;
+              const isHD = att.status === 'hd' || (att.timeIn === '07:00' && att.timeOut === '12:00');
+              const isUT = (att.status === 'ut' || (att.status === 'present' && (att.regularHours || 0) < 8 && (att.regularHours || 0) > 0)) && !isHD;
+              const isPresent = att.status === 'present' && !isUT && !isHD;
               const isPakyaw = att.status === 'pakyaw';
 
               return (
@@ -318,10 +327,11 @@ export default function Attendance() {
                           <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider ${
                             isPresent ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
                             isPakyaw ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
+                            isHD ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' :
                             isUT ? 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400' :
                             'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400'
                           }`}>
-                            {att.status === 'present' && !isUT ? 'Present' : att.status.toUpperCase()}
+                            {isHD ? 'Half Day' : isPresent ? 'Present' : isPakyaw ? 'Pakyaw' : isUT ? 'UT' : 'Absent'}
                           </span>
                         </div>
                       </div>
@@ -332,7 +342,7 @@ export default function Attendance() {
                     </div>
                   </div>
                   
-                   {(isPresent || isUT) && (
+                   {(isPresent || isUT || isHD) && (
                     <div className="space-y-3 mb-4 pt-2 border-t border-slate-100 dark:border-slate-700">
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1">
@@ -412,28 +422,34 @@ export default function Attendance() {
                     </div>
                   )}
 
-                  <div className="grid grid-cols-4 gap-2 mt-auto">
+                  <div className="grid grid-cols-5 gap-1.5 mt-auto">
                     <button 
                       onClick={() => handleAttendanceChange(emp.id, singleDate, 'status', 'present')} 
-                      className={`py-2 text-[10px] rounded-xl font-bold transition-all border ${isPresent ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' : 'bg-white dark:bg-slate-900 text-slate-500 border-slate-200 dark:border-slate-700 hover:border-emerald-300'}`}
+                      className={`py-2 text-[9px] rounded-xl font-bold transition-all border ${isPresent ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' : 'bg-white dark:bg-slate-900 text-slate-500 border-slate-200 dark:border-slate-700 hover:border-emerald-300'}`}
                     >
                       Present
                     </button>
                     <button 
                       onClick={() => handleAttendanceChange(emp.id, singleDate, 'status', 'pakyaw')} 
-                      className={`py-2 text-[10px] rounded-xl font-bold transition-all border ${isPakyaw ? 'bg-amber-500 text-white border-amber-500 shadow-sm' : 'bg-white dark:bg-slate-900 text-slate-500 border-slate-200 dark:border-slate-700 hover:border-amber-300'}`}
+                      className={`py-2 text-[9px] rounded-xl font-bold transition-all border ${isPakyaw ? 'bg-amber-500 text-white border-amber-500 shadow-sm' : 'bg-white dark:bg-slate-900 text-slate-500 border-slate-200 dark:border-slate-700 hover:border-amber-300'}`}
                     >
                       Pakyaw
                     </button>
                     <button 
+                      onClick={() => handleAttendanceChange(emp.id, singleDate, 'status', 'hd')} 
+                      className={`py-2 text-[9px] rounded-xl font-bold transition-all border ${isHD ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-white dark:bg-slate-900 text-slate-500 border-slate-200 dark:border-slate-700 hover:border-indigo-300'}`}
+                    >
+                      HD
+                    </button>
+                    <button 
                       onClick={() => handleAttendanceChange(emp.id, singleDate, 'status', 'ut')} 
-                      className={`py-2 text-[10px] rounded-xl font-bold transition-all border ${isUT ? 'bg-sky-500 text-white border-sky-500 shadow-sm' : 'bg-white dark:bg-slate-900 text-slate-500 border-slate-200 dark:border-slate-700 hover:border-sky-300'}`}
+                      className={`py-2 text-[9px] rounded-xl font-bold transition-all border ${isUT ? 'bg-sky-500 text-white border-sky-500 shadow-sm' : 'bg-white dark:bg-slate-900 text-slate-500 border-slate-200 dark:border-slate-700 hover:border-sky-300'}`}
                     >
                       UT
                     </button>
                     <button 
                       onClick={() => handleAttendanceChange(emp.id, singleDate, 'status', 'absent')} 
-                      className={`py-2 text-[10px] rounded-xl font-bold transition-all border ${att.status === 'absent' ? 'bg-rose-600 text-white border-rose-600 shadow-sm' : 'bg-white dark:bg-slate-900 text-slate-500 border-slate-200 dark:border-slate-700 hover:border-rose-300'}`}
+                      className={`py-2 text-[9px] rounded-xl font-bold transition-all border ${att.status === 'absent' ? 'bg-rose-600 text-white border-rose-600 shadow-sm' : 'bg-white dark:bg-slate-900 text-slate-500 border-slate-200 dark:border-slate-700 hover:border-rose-300'}`}
                     >
                       Absent
                     </button>
@@ -504,8 +520,15 @@ export default function Attendance() {
                           <span className="text-[8px] font-bold text-sky-700 bg-sky-50 dark:bg-sky-900/20 dark:text-sky-400 px-1.5 py-0.5 rounded uppercase tracking-wider">
                             {dates.filter(d => {
                               const att = attendanceData[`${emp.id}_${d}`];
-                              return att?.status === 'ut' || (att?.status === 'present' && att.regularHours !== undefined && att.regularHours < 8);
+                              const isHDLocal = att?.status === 'hd' || (att?.timeIn === '07:00' && att?.timeOut === '12:00');
+                              return (att?.status === 'ut' || (att?.status === 'present' && att?.regularHours !== undefined && att?.regularHours < 8)) && !isHDLocal;
                             }).length} UT
+                          </span>
+                          <span className="text-[8px] font-bold text-indigo-700 bg-indigo-50 dark:bg-indigo-900/20 dark:text-indigo-400 px-1.5 py-0.5 rounded uppercase tracking-wider">
+                            {dates.filter(d => {
+                              const att = attendanceData[`${emp.id}_${d}`];
+                              return att?.status === 'hd' || (att?.timeIn === '07:00' && att?.timeOut === '12:00');
+                            }).length} HD
                           </span>
                       </div>
                     </div>
@@ -525,20 +548,22 @@ export default function Attendance() {
                   <div className="px-4 pb-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/30">
                     {dates.map(date => {
                       const att = attendanceData[`${emp.id}_${date}`] || { status: 'absent', timeIn: '07:00', timeOut: '16:00' };
-                      const isUT_detail = att.status === 'ut' || (att.status === 'present' && (att.regularHours || 0) < 8 && (att.regularHours || 0) > 0);
-                      const isPresent_detail = att.status === 'present' && !isUT_detail;
-                      const isAbs_detail = att.status === 'absent' || (!att.status && !att.regularHours);
+                      const isHD_detail = att.status === 'hd' || (att.timeIn === '07:00' && att.timeOut === '12:00');
+                      const isUT_detail = (att.status === 'ut' || (att.status === 'present' && (att.regularHours || 0) < 8 && (att.regularHours || 0) > 0)) && !isHD_detail;
+                      const isPresent_detail = att.status === 'present' && !isUT_detail && !isHD_detail;
+                      const isAbs_detail = (att.status === 'absent' || (!att.status && !att.regularHours)) && !isHD_detail && !isUT_detail && !isPresent_detail;
 
                       return (
                         <div key={date} className="pt-4 first:pt-4 border-b last:border-0 border-slate-100 dark:border-slate-800 pb-4">
                           <div className="flex justify-between items-center mb-3">
                             <span className="font-bold text-sm text-slate-700 dark:text-slate-200">{format(parseISO(date), 'MMM dd, EEE')}</span>
                             <div className="flex gap-2 text-[10px] font-bold text-slate-500 bg-white dark:bg-slate-800 px-3 py-1 rounded-full border border-slate-100 dark:border-slate-700">
-                               {(isPresent_detail || isUT_detail) && (
+                               {(isPresent_detail || isUT_detail || isHD_detail) && (
                                   <>
                                     <span className="text-slate-500">Reg: {att.regularHours || 0}h</span>
                                     {att.otHours ? <span className="text-emerald-600">OT: {att.otHours.toFixed(1)}h</span> : null}
                                     {isUT_detail ? <span className="text-amber-600">UT: {(8 - (att.regularHours || 0)).toFixed(1)}h</span> : null}
+                                    {isHD_detail ? <span className="text-indigo-600">HD</span> : null}
                                     <span className="text-blue-600 dark:text-blue-400 border-l border-slate-200 dark:border-slate-700 ml-1 pl-2">₱{calculateDailyPay(emp, `${emp.id}_${date}`).toLocaleString()}</span>
                                   </>
                                )}
@@ -564,13 +589,14 @@ export default function Attendance() {
                           </div>
 
                           <div className="flex gap-2 mb-3">
-                            <button onClick={() => handleAttendanceChange(emp.id, date, 'status', 'present')} className={`flex-1 py-2 text-xs font-bold rounded-lg ${isPresent_detail ? 'bg-emerald-600 text-white' : 'bg-white dark:bg-slate-800 text-slate-600 border border-slate-200 dark:border-slate-700'}`}>Present</button>
-                            <button onClick={() => handleAttendanceChange(emp.id, date, 'status', 'pakyaw')} className={`flex-1 py-2 text-xs font-bold rounded-lg ${att?.status === 'pakyaw' ? 'bg-amber-500 text-white' : 'bg-white dark:bg-slate-800 text-slate-600 border border-slate-200 dark:border-slate-700'}`}>Pakyaw</button>
-                            <button onClick={() => handleAttendanceChange(emp.id, date, 'status', 'ut')} className={`flex-1 py-2 text-xs font-bold rounded-lg ${isUT_detail ? 'bg-sky-500 text-white' : 'bg-white dark:bg-slate-800 text-slate-600 border border-slate-200 dark:border-slate-700'}`}>UT</button>
-                            <button onClick={() => handleAttendanceChange(emp.id, date, 'status', 'absent')} className={`flex-1 py-2 text-xs font-bold rounded-lg ${isAbs_detail ? 'bg-rose-600 text-white' : 'bg-white dark:bg-slate-800 text-slate-600 border border-slate-200 dark:border-slate-700'}`}>Absent</button>
+                            <button onClick={() => handleAttendanceChange(emp.id, date, 'status', 'present')} className={`flex-1 py-2 text-[10px] font-bold rounded-lg ${isPresent_detail ? 'bg-emerald-600 text-white' : 'bg-white dark:bg-slate-800 text-slate-600 border border-slate-200 dark:border-slate-700'}`}>Present</button>
+                            <button onClick={() => handleAttendanceChange(emp.id, date, 'status', 'pakyaw')} className={`flex-1 py-2 text-[10px] font-bold rounded-lg ${att?.status === 'pakyaw' ? 'bg-amber-500 text-white' : 'bg-white dark:bg-slate-800 text-slate-600 border border-slate-200 dark:border-slate-700'}`}>Pakyaw</button>
+                            <button onClick={() => handleAttendanceChange(emp.id, date, 'status', 'hd')} className={`flex-1 py-2 text-[10px] font-bold rounded-lg ${isHD_detail ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-slate-800 text-slate-600 border border-slate-200 dark:border-slate-700'}`}>HD</button>
+                            <button onClick={() => handleAttendanceChange(emp.id, date, 'status', 'ut')} className={`flex-1 py-2 text-[10px] font-bold rounded-lg ${isUT_detail ? 'bg-sky-500 text-white' : 'bg-white dark:bg-slate-800 text-slate-600 border border-slate-200 dark:border-slate-700'}`}>UT</button>
+                            <button onClick={() => handleAttendanceChange(emp.id, date, 'status', 'absent')} className={`flex-1 py-2 text-[10px] font-bold rounded-lg ${isAbs_detail ? 'bg-rose-600 text-white' : 'bg-white dark:bg-slate-800 text-slate-600 border border-slate-200 dark:border-slate-700'}`}>Absent</button>
                           </div>
                           
-                          {(att?.status === 'present' || att?.status === 'ut') && (
+                          {(att?.status === 'present' || att?.status === 'ut' || att?.status === 'hd') && (
                             <div className="grid grid-cols-2 gap-2">
                               <Input type="time" value={att?.timeIn || '07:00'} onChange={e => handleAttendanceChange(emp.id, date, 'timeIn', e.target.value)} className="h-9 text-xs font-mono rounded-lg bg-white dark:bg-slate-800 border-0" />
                               <Input type="time" value={att?.timeOut || '16:00'} onChange={e => handleAttendanceChange(emp.id, date, 'timeOut', e.target.value)} className="h-9 text-xs font-mono rounded-lg bg-white dark:bg-slate-800 border-0" />

@@ -33,10 +33,28 @@ export default function LoginPage() {
       setIsLoading(true);
       await loginWithEmail(email, password);
     } catch (err: any) {
-      console.error(err);
-      setError(err.code === 'auth/invalid-credential' 
-        ? 'Invalid email or password.' 
-        : err.message || 'Authentication failed.');
+      const errorCode = err.code || "";
+      const errorMessage = err.message || "";
+      
+      if (
+        errorCode === 'auth/invalid-credential' || 
+        errorCode === 'auth/user-not-found' || 
+        errorCode === 'auth/wrong-password' ||
+        errorMessage.includes('auth/invalid-credential') ||
+        errorMessage.includes('auth/user-not-found') ||
+        errorMessage.includes('auth/wrong-password')
+      ) {
+        // We handle this as a standard UI feedback, not a system failure
+        setError('Invalid email or password. Please check your credentials and try again.');
+      } else if (errorCode === 'auth/invalid-email' || errorMessage.includes('auth/invalid-email')) {
+        setError('Please enter a valid email address.');
+      } else if (errorCode === 'auth/too-many-requests' || errorMessage.includes('auth/too-many-requests')) {
+        setError('Too many failed attempts. Please try again later or reset your password.');
+      } else {
+        // Only log errors that are NOT standard credential failures
+        console.error("Login error details:", err);
+        setError(errorMessage || 'Authentication failed. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }

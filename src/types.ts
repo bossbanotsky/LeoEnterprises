@@ -7,6 +7,7 @@ export interface Employee {
   dailySalary: number;
   hourlyRate: number;
   email?: string;
+  loginPassword?: string;
   createdAt: string;
   uid: string;
   
@@ -35,7 +36,7 @@ export interface Attendance {
   date: string;
   timeIn: string;
   timeOut: string;
-  status: 'present' | 'absent' | 'pakyaw' | 'ut';
+  status: 'present' | 'absent' | 'pakyaw' | 'ut' | 'hd';
   regularHours: number;
   otHours: number;
   pakyawJobId?: string; // Add this
@@ -70,7 +71,8 @@ export interface Payroll {
   startDate: string;
   endDate: string;
   totalPresent: number; // Represents Full Days (8 hours)
-  totalUndertimeDays: number; // Days with < 8 hours
+  totalHalfDays: number; // Days marked as HD (7am-12pm)
+  totalUndertimeDays: number; // Days with < 8 hours (excluding HD)
   totalUndertimeHours: number; // Total hours lacking from 8-hour shift
   undertimeDetails: string[]; // List of dates and hours e.g. ["2024-03-20 (2.0 hrs)"]
   totalAbsent: number;

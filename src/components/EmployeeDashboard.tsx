@@ -6,6 +6,7 @@ import { useCompanyInfo } from '../hooks/useCompanyInfo';
 import { Employee, Attendance, Payroll, CashAdvance, Announcement } from '../types';
 import { format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, isPast } from 'date-fns';
 import { Calendar, FileText, Wallet, Clock, User, Briefcase, CreditCard, ChevronRight, UserPen, Loader2, Upload, Megaphone, Bell, Lock, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -14,6 +15,7 @@ import { updateDoc, deleteField } from 'firebase/firestore';
 
 export default function EmployeeDashboard() {
   const { user, userData } = useAuth();
+  const navigate = useNavigate();
   const { companyInfo } = useCompanyInfo();
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [attendances, setAttendances] = useState<Attendance[]>([]);
@@ -26,6 +28,13 @@ export default function EmployeeDashboard() {
   const [endDate, setEndDate] = useState(() => localStorage.getItem('attendanceEndDate') || format(endOfMonth(new Date()), 'yyyy-MM-dd'));
   const [loading, setLoading] = useState(true);
   const [selectedPayslip, setSelectedPayslip] = useState<any>(null);
+
+  // If Admin lands here, redirect to admin dashboard
+  useEffect(() => {
+    if (userData?.role === 'admin') {
+      navigate('/admin-dashboard', { replace: true });
+    }
+  }, [userData, navigate]);
 
   // Profile Edit State
   const [isProfileEditOpen, setIsProfileEditOpen] = useState(false);

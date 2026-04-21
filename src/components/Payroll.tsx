@@ -407,6 +407,7 @@ export default function Payroll() {
         const empPjw = allPj.filter(pj => pj.employeeIds.includes(emp.id));
         
         let totalPresent = 0;
+        let totalHalfDays = 0;
         let totalUndertimeDays = 0;
         let totalUndertimeHours = 0;
         let undertimeDetails: string[] = [];
@@ -442,7 +443,7 @@ export default function Payroll() {
             let otHrs = 0;
 
             // ALWAYS re-calculate from times if they exist to keep payroll in sync with latest rules
-            if (att.timeIn && att.timeOut && (att.status === 'present' || att.status === 'ut')) {
+            if (att.timeIn && att.timeOut && (att.status === 'present' || att.status === 'ut' || att.status === 'hd')) {
                const [inH, inM] = att.timeIn.split(':').map(Number);
                const [outH, outM] = att.timeOut.split(':').map(Number);
                const start = inH + inM / 60;
@@ -479,11 +480,17 @@ export default function Payroll() {
                otHrs = att.otHours || 0;
             }
 
-            const dailyWorkLog = `${format(parseISO(date), 'MMM dd')}: ${regHrs}h Reg${otHrs ? `, ${otHrs}h OT` : ''}`;
+            const dailyWorkLog = `${format(parseISO(date), 'MMM dd')}: ${regHrs}h Reg${otHrs ? `, ${otHrs}h OT` : ''}${att.status === 'hd' ? ' (HD)' : ''}`;
 
-            if (att.status === 'present' || att.status === 'ut') {
+            const isHDRun = att.status === 'hd' || (att.timeIn === '07:00' && att.timeOut === '12:00');
+
+            if (att.status === 'present' || att.status === 'ut' || att.status === 'hd') {
               // Check for Undertime (total worked hours < 8)
-              if ((regHrs + otHrs) < 8) {
+              if (isHDRun) {
+                // Count as HD but add to total regular hours
+                totalHalfDays++;
+                totalRegularHours += regHrs;
+              } else if ((regHrs + otHrs) < 8) {
                 totalUndertimeDays++;
                 totalUndertimeHours += regHrs;
                 totalRegularHours += regHrs;
@@ -522,6 +529,7 @@ export default function Payroll() {
           startDate,
           endDate,
           totalPresent,
+          totalHalfDays,
           totalUndertimeDays,
           totalUndertimeHours,
           undertimeDetails,
@@ -853,22 +861,26 @@ export default function Payroll() {
                   </div>
                   <ChevronRight className="w-5 h-5 text-slate-400" />
                 </div>
-                <div className="grid grid-cols-4 gap-2 text-sm">
+                <div className="grid grid-cols-5 gap-2 text-sm">
                   <div>
-                    <div className="text-[9px] text-slate-500 uppercase font-semibold">Full/UT</div>
-                    <div className="font-medium text-[11px]">{data.totalPresent}d / {data.totalUndertimeDays || 0}d</div>
+                    <div className="text-[9px] text-slate-500 uppercase font-semibold text-center">F/HD/UT</div>
+                    <div className="font-medium text-[10px] text-center">{data.totalPresent}d / {data.totalHalfDays || 0}d / {data.totalUndertimeDays || 0}d</div>
                   </div>
                   <div>
-                    <div className="text-[9px] text-slate-500 uppercase font-semibold">Regular</div>
-                    <div className="font-medium text-[11px]">₱{data.regularPay.toFixed(2)}</div>
+                    <div className="text-[9px] text-slate-500 uppercase font-semibold text-center">Regular</div>
+                    <div className="font-medium text-[10px] text-center">₱{data.regularPay.toFixed(0)}</div>
                   </div>
-                  <div>
-                    <div className="text-[9px] text-green-600 uppercase font-semibold">OT Pay</div>
-                    <div className="font-medium text-[11px] text-green-600">₱{data.otPay.toFixed(2)}</div>
+                  <div className="border-x border-slate-100 dark:border-slate-700">
+                    <div className="text-[9px] text-green-600 uppercase font-semibold text-center">OT Pay</div>
+                    <div className="font-medium text-[10px] text-center text-green-600">₱{data.otPay.toFixed(0)}</div>
+                  </div>
+                  <div className="border-r border-slate-100 dark:border-slate-700">
+                    <div className="text-[9px] text-indigo-600 uppercase font-semibold text-center">Pakyaw</div>
+                    <div className="font-medium text-[10px] text-center text-indigo-600">₱{data.totalPakyawPay.toFixed(0)}</div>
                   </div>
                   <div className="text-right">
                     <div className="text-[9px] text-blue-600 uppercase font-semibold">Net Pay</div>
-                    <div className="font-bold text-[12px] text-blue-600">₱{data.totalPay.toFixed(2)}</div>
+                    <div className="font-bold text-[11px] text-blue-600">₱{data.totalPay.toFixed(0)}</div>
                   </div>
                 </div>
               </div>
@@ -1005,15 +1017,18 @@ export default function Payroll() {
               
               <div className="mt-6 pt-4 border-t border-slate-200">
                 <h3 className="font-bold text-slate-900 mb-3 text-sm">ATTENDANCE SUMMARY</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm mb-4">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm mb-4">
                   <div className="bg-slate-50 p-3 rounded-xl text-center">
                     <div className="text-[10px] text-slate-500 mb-1 uppercase font-bold tracking-tight">Present</div>
                     <div className="font-bold text-slate-900">{selectedPayslip.totalPresent} days</div>
                   </div>
+                  <div className="bg-indigo-50 p-3 rounded-xl text-center border border-indigo-100">
+                    <div className="text-[10px] text-indigo-600 mb-1 uppercase font-bold tracking-tight">Half Day</div>
+                    <div className="font-bold text-indigo-700">{selectedPayslip.totalHalfDays || 0} days</div>
+                  </div>
                   <div className="bg-amber-50 p-3 rounded-xl text-center border border-amber-100">
                     <div className="text-[10px] text-amber-600 mb-1 uppercase font-bold tracking-tight">Undertime</div>
                     <div className="font-bold text-amber-700">{selectedPayslip.totalUndertimeHours?.toFixed(1) || '0.0'} hrs</div>
-                    <div className="text-[10px] text-amber-500">total worked</div>
                   </div>
                   <div className="bg-red-50 p-3 rounded-xl text-center">
                     <div className="text-[10px] text-red-500 mb-1 uppercase font-bold tracking-tight">Absent</div>
@@ -1089,7 +1104,7 @@ export default function Payroll() {
                       <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">
                         {emp?.fullName}
                         <div className="text-[10px] text-slate-400 font-normal">
-                          {p.totalPresent}d present, {p.totalAbsent}d absent
+                          {p.totalPresent}d present, {p.totalHalfDays || 0}d half, {p.totalAbsent}d absent
                         </div>
                       </td>
                       <td className="px-6 py-4 text-center font-medium text-slate-700 dark:text-slate-300">

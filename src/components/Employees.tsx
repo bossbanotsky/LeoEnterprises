@@ -3,7 +3,8 @@ import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc } from 'fireb
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { Employee } from '../types';
-import { Search, Plus, Briefcase, ChevronRight, Edit2, Trash2, CheckCircle2, Upload, Loader2, User } from 'lucide-react';
+import { Search, Plus, Briefcase, ChevronRight, Edit2, Trash2, CheckCircle2, Upload, Loader2, User, Key, ShieldCheck } from 'lucide-react';
+import { createEmployeeAuth } from '../lib/adminAuth';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -15,7 +16,8 @@ export default function Employees() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [form, setForm] = useState({ customId: '', fullName: '', position: '', dailySalary: '', email: '', photoURL: '' });
+  const [form, setForm] = useState({ customId: '', fullName: '', position: '', dailySalary: '', email: '', loginPassword: '', photoURL: '' });
+  const [isProvisioning, setIsProvisioning] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -106,6 +108,7 @@ export default function Employees() {
           dailySalary,
           hourlyRate,
           email: form.email || '',
+          loginPassword: form.loginPassword || '',
           photoURL: form.photoURL || ''
         });
         setEditingEmployee(null);
@@ -118,13 +121,14 @@ export default function Employees() {
           dailySalary,
           hourlyRate,
           email: form.email || '',
+          loginPassword: form.loginPassword || '',
           photoURL: form.photoURL || '',
           createdAt: new Date().toISOString(),
           uid: user.uid
         });
       }
       setIsAddOpen(false);
-      setForm({ customId: '', fullName: '', position: '', dailySalary: '', email: '', photoURL: '' });
+      setForm({ customId: '', fullName: '', position: '', dailySalary: '', email: '', loginPassword: '', photoURL: '' });
     } catch (error) {
       handleFirestoreError(error, editingEmployee ? OperationType.UPDATE : OperationType.CREATE, 'employees');
     }
@@ -148,10 +152,38 @@ export default function Employees() {
       position: emp.position || '',
       dailySalary: emp.dailySalary.toString(),
       email: emp.email || '',
+      loginPassword: emp.loginPassword || '',
       photoURL: emp.photoURL || ''
     });
     setSelectedEmployee(null);
     setIsAddOpen(true);
+  };
+
+  const handleProvisionAccount = async () => {
+    if (!form.email || !form.loginPassword) {
+      alert("Please provide both email and password first.");
+      return;
+    }
+
+    if (form.loginPassword.length < 6) {
+      alert("Password must be at least 6 characters.");
+      return;
+    }
+
+    setIsProvisioning(true);
+    try {
+      await createEmployeeAuth(form.email, form.loginPassword);
+      alert("Employee login account provisioned successfully! They can now log in using these credentials.");
+    } catch (error: any) {
+      console.error("Provisioning error:", error);
+      if (error.code === 'auth/email-already-in-use') {
+        alert("This email is already registered in Firebase. If the employee forgot their password, they can reset it, or you can update the employee record to match.");
+      } else {
+        alert("Error provisioning account: " + error.message);
+      }
+    } finally {
+      setIsProvisioning(false);
+    }
   };
 
   const handleUpdateStatus = async (emp: Employee) => {
@@ -247,7 +279,7 @@ export default function Employees() {
         setIsAddOpen(open);
         if (!open) {
           setEditingEmployee(null);
-          setForm({ customId: '', fullName: '', position: '', dailySalary: '', email: '', photoURL: '' });
+          setForm({ customId: '', fullName: '', position: '', dailySalary: '', email: '', loginPassword: '', photoURL: '' });
         }
       }}>
         <DialogTrigger render={<button className="absolute bottom-6 right-2 w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg flex items-center justify-center transition-transform active:scale-95 z-10" />}>
@@ -317,8 +349,39 @@ export default function Employees() {
               <Label>Email Address (Optional)</Label>
               <Input type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} placeholder="employee@example.com" className="rounded-xl" />
             </div>
-            <Button type="submit" className="w-full rounded-xl h-12 bg-blue-600 hover:bg-blue-700">
-              {editingEmployee ? 'Update Employee' : 'Save Employee'}
+            <div className="space-y-2">
+              <Label>Login Password {editingEmployee && "(Hidden)"}</Label>
+              <div className="flex gap-2">
+                <Input 
+                  type="password" 
+                  value={form.loginPassword} 
+                  onChange={e => setForm({...form, loginPassword: e.target.value})} 
+                  placeholder="Min 6 chars" 
+                  className="rounded-xl flex-1" 
+                />
+              </div>
+            </div>
+
+            {editingEmployee && (
+              <div className="pt-2">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  className="w-full gap-2 border-blue-200 text-blue-600 hover:bg-blue-50 rounded-xl h-10"
+                  onClick={handleProvisionAccount}
+                  disabled={isProvisioning}
+                >
+                  {isProvisioning ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
+                  {isProvisioning ? 'Provisioning...' : 'Provision/Link Login Account'}
+                </Button>
+                <p className="text-[10px] text-slate-400 mt-1 text-center">
+                  This creates a Firebase Auth user for the employee.
+                </p>
+              </div>
+            )}
+            
+            <Button type="submit" className="w-full rounded-xl h-12 bg-blue-600 hover:bg-blue-700 mt-2">
+              {editingEmployee ? 'Update Employee Record' : 'Save Employee'}
             </Button>
           </form>
         </DialogContent>
@@ -364,8 +427,21 @@ export default function Employees() {
                 </div>
                 <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded-xl col-span-2">
                   <div className="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold mb-1">Email Address</div>
-                  <div className="font-bold text-slate-900 dark:text-white truncate">{selectedEmployee.email || 'None provided'}</div>
+                  <div className="font-bold text-slate-900 dark:text-white truncate flex items-center gap-2">
+                    {selectedEmployee.email || 'None provided'}
+                    {users[selectedEmployee.id] && <ShieldCheck className="w-4 h-4 text-emerald-500" />}
+                  </div>
                 </div>
+                {selectedEmployee.loginPassword && (
+                   <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded-xl col-span-2">
+                    <div className="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold mb-1 flex items-center gap-1">
+                      <Key className="w-3 h-3" /> Login Password
+                    </div>
+                    <div className="font-mono text-xs font-bold text-slate-900 dark:text-white truncate">
+                      {selectedEmployee.loginPassword}
+                    </div>
+                  </div>
+                )}
                 <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded-xl">
                   <div className="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold mb-1">Daily Salary</div>
                   <div className="font-bold text-slate-900 dark:text-white">₱ {selectedEmployee.dailySalary.toFixed(2)}</div>
