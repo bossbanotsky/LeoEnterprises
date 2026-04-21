@@ -365,9 +365,9 @@ export default function Payroll() {
     if (!startDate || !endDate || employees.length === 0) return;
     setIsLoading(true);
     try {
-      const targetEmployees = selectedEmployeeId === 'all' 
-        ? employees 
-        : employees.filter(e => e.id === selectedEmployeeId);
+      const targetEmployees = (selectedEmployeeId === 'all' 
+        ? employees.filter(e => (!e.position || !e.position.toLowerCase().includes("ceo")) && e.role !== "ceo") 
+        : employees.filter(e => e.id === selectedEmployeeId));
 
       const q = query(
         collection(db, 'attendance'),

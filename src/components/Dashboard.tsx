@@ -280,6 +280,7 @@ export default function Dashboard() {
     const activeEmployees = employees.filter(
       (emp) =>
         (emp.status === "active" || !emp.status) &&
+        (!emp.position || !emp.position.toLowerCase().includes("ceo")) &&
         emp.role !== "ceo" &&
         emp.role !== "admin",
     );

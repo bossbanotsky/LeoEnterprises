@@ -203,7 +203,17 @@ export default function Employees() {
   const filteredEmployees = employees.filter(emp => 
     emp.fullName.toLowerCase().includes(searchQuery.toLowerCase()) || 
     (emp.position && emp.position.toLowerCase().includes(searchQuery.toLowerCase()))
-  ).sort((a, b) => a.fullName.localeCompare(b.fullName));
+  );
+
+  // Grouping logic
+  const groupedEmployees: Record<string, Employee[]> = {};
+  filteredEmployees.forEach(emp => {
+    const position = (emp.position || 'Staff').charAt(0).toUpperCase() + (emp.position || 'Staff').slice(1).toLowerCase();
+    if (!groupedEmployees[position]) groupedEmployees[position] = [];
+    groupedEmployees[position].push(emp);
+  });
+  
+  const sortedPositions = Object.keys(groupedEmployees).sort();
 
   return (
     <div className="h-full flex flex-col relative">
@@ -220,54 +230,63 @@ export default function Employees() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto space-y-3 pb-20">
-        {filteredEmployees.map(emp => (
-          <div 
-            key={emp.id} 
-            onClick={() => setSelectedEmployee(emp)}
-            className="bento-card bg-white dark:bg-slate-800 p-4 flex flex-row items-center gap-4 cursor-pointer hover:border-blue-300 transition-colors"
-          >
-            <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center font-bold text-lg shrink-0 overflow-hidden">
-              {emp.photoURL ? (
-                <img src={emp.photoURL} alt={emp.fullName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-              ) : (
-                emp.fullName.charAt(0).toUpperCase()
-              )}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <h3 className="font-bold text-slate-900 dark:text-white truncate">{emp.fullName}</h3>
-                {emp.customId && (
-                  <span className="text-[9px] font-bold text-slate-400 bg-slate-100 dark:bg-slate-700 px-1 rounded uppercase tracking-tighter">
-                    {emp.customId}
-                  </span>
-                )}
-                {users[emp.id] && (
-                  <div className="w-4 h-4 bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center" title="Account Linked">
-                    <CheckCircle2 className="w-2.5 h-2.5" />
+      <div className="flex-1 overflow-y-auto space-y-6 pb-20">
+        {sortedPositions.map(position => (
+          <div key={position}>
+            <h2 className="text-sm font-bold text-slate-500 uppercase tracking-widest mb-3 pl-1">
+              {position}
+            </h2>
+            <div className="space-y-3">
+              {groupedEmployees[position].sort((a, b) => a.fullName.localeCompare(b.fullName)).map(emp => (
+                <div 
+                  key={emp.id} 
+                  onClick={() => setSelectedEmployee(emp)}
+                  className="bento-card bg-white dark:bg-slate-800 p-4 flex flex-row items-center gap-4 cursor-pointer hover:border-blue-300 transition-colors"
+                >
+                  <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center font-bold text-lg shrink-0 overflow-hidden">
+                    {emp.photoURL ? (
+                      <img src={emp.photoURL} alt={emp.fullName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    ) : (
+                      emp.fullName.charAt(0).toUpperCase()
+                    )}
                   </div>
-                )}
-              </div>
-              <div className="flex items-center gap-4 text-xs mt-1">
-                <div className="flex items-center gap-1 text-slate-500 dark:text-slate-400 truncate">
-                  <Briefcase className="w-3 h-3" />
-                  <span className="truncate">{emp.position || 'Staff'}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-bold text-slate-900 dark:text-white truncate">{emp.fullName}</h3>
+                      {emp.customId && (
+                        <span className="text-[9px] font-bold text-slate-400 bg-slate-100 dark:bg-slate-700 px-1 rounded uppercase tracking-tighter">
+                          {emp.customId}
+                        </span>
+                      )}
+                      {users[emp.id] && (
+                        <div className="w-4 h-4 bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center" title="Account Linked">
+                          <CheckCircle2 className="w-2.5 h-2.5" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-4 text-xs mt-1">
+                      <div className="flex items-center gap-1 text-slate-500 dark:text-slate-400 truncate">
+                        <Briefcase className="w-3 h-3" />
+                        <span className="truncate">{emp.position || 'Staff'}</span>
+                      </div>
+                      <div className="font-bold text-blue-600 dark:text-blue-400 flex items-center gap-0.5 whitespace-nowrap">
+                        <span className="text-[10px] opacity-70">₱</span>
+                        <span>{emp.dailySalary.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="shrink-0 flex items-center gap-2">
+                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                      emp.status === 'active' || !emp.status 
+                        ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' 
+                        : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400'
+                    }`}>
+                      {emp.status || 'Active'}
+                    </span>
+                    <ChevronRight className="w-4 h-4 text-slate-400" />
+                  </div>
                 </div>
-                <div className="font-bold text-blue-600 dark:text-blue-400 flex items-center gap-0.5 whitespace-nowrap">
-                  <span className="text-[10px] opacity-70">₱</span>
-                  <span>{emp.dailySalary.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                </div>
-              </div>
-            </div>
-            <div className="shrink-0 flex items-center gap-2">
-              <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                emp.status === 'active' || !emp.status 
-                  ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' 
-                  : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400'
-              }`}>
-                {emp.status || 'Active'}
-              </span>
-              <ChevronRight className="w-4 h-4 text-slate-400" />
+              ))}
             </div>
           </div>
         ))}
