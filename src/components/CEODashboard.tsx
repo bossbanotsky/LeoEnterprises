@@ -31,6 +31,8 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { useCompanyInfo } from "../hooks/useCompanyInfo";
+import { Interactive } from "./ui/Interactive";
+import { Skeleton } from "./ui/Skeleton";
 import html2canvas from "html2canvas";
 
 export default function CEODashboard() {
@@ -41,6 +43,7 @@ export default function CEODashboard() {
   const [payrolls, setPayrolls] = useState<Payroll[]>([]);
   const [pakyawJobs, setPakyawJobs] = useState<PakyawJob[]>([]);
   const [cashAdvances, setCashAdvances] = useState<CashAdvance[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const [startDate, setStartDate] = useState(() => {
     const saved = localStorage.getItem("payrollStartDate");
@@ -92,6 +95,7 @@ export default function CEODashboard() {
             (a.fullName || "").localeCompare(b.fullName || ""),
           ),
         );
+        setLoading(false);
       },
     );
 
@@ -382,10 +386,12 @@ export default function CEODashboard() {
             </span>
           </div>
           <div className="text-4xl font-black">
-            {
+            {loading ? (
+              <Skeleton className="h-10 w-20" />
+            ) : (
               employees.filter((e) => e.role !== "ceo" && e.role !== "admin")
                 .length
-            }
+            )}
           </div>
         </div>
 
@@ -398,11 +404,17 @@ export default function CEODashboard() {
             </span>
           </div>
           <div className="text-4xl font-black text-slate-900 dark:text-white relative z-10">
-            ₱{" "}
-            {projection.grandTotal.toLocaleString(undefined, {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
+            {loading ? (
+              <Skeleton className="h-10 w-48" />
+            ) : (
+              <>
+                ₱{" "}
+                {projection.grandTotal.toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -438,46 +450,50 @@ export default function CEODashboard() {
           </div>
 
           <div className="pt-4 space-y-3 max-h-[400px] overflow-y-auto no-scrollbar">
-            {projection.employeeProjections.map((emp) => (
-              <div
-                key={emp.id}
-                className="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-xl flex items-center justify-between border border-slate-100 dark:border-slate-800 cursor-pointer hover:border-blue-300 transition-colors"
-                onClick={() => setSelectedEmployeeProj(emp)}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 overflow-hidden flex items-center justify-center font-bold text-blue-600 text-xs shadow-sm">
-                    {emp.photoURL ? (
-                      <img
-                        src={emp.photoURL}
-                        alt={emp.fullName}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      emp.fullName.charAt(0)
-                    )}
-                  </div>
-                  <div>
-                    <div className="font-bold text-sm text-slate-800 dark:text-slate-200">
-                      {emp.fullName}
+            {loading ? (
+              <Skeleton count={5} className="h-16 w-full rounded-xl" />
+            ) : (
+              projection.employeeProjections.map((emp) => (
+                <div
+                  key={emp.id}
+                  className="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-xl flex items-center justify-between border border-slate-100 dark:border-slate-800 cursor-pointer hover:border-blue-300 transition-colors"
+                  onClick={() => setSelectedEmployeeProj(emp)}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 overflow-hidden flex items-center justify-center font-bold text-blue-600 text-xs shadow-sm">
+                      {emp.photoURL ? (
+                        <img
+                          src={emp.photoURL}
+                          alt={emp.fullName}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        emp.fullName.charAt(0)
+                      )}
                     </div>
-                    <div className="text-[10px] text-slate-500 uppercase tracking-widest">
-                      {emp.position || "Staff"} • ₱{emp.dailySalary?.toLocaleString() || 0}/day
+                    <div>
+                      <div className="font-bold text-sm text-slate-800 dark:text-slate-200">
+                        {emp.fullName}
+                      </div>
+                      <div className="text-[10px] text-slate-500 uppercase tracking-widest">
+                        {emp.position || "Staff"} • ₱{emp.dailySalary?.toLocaleString() || 0}/day
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-bold text-emerald-600 dark:text-emerald-400 text-sm">
+                      ₱{" "}
+                      {emp.totalToBePaid.toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                      })}
+                    </div>
+                    <div className="text-[10px] text-slate-400 font-medium">
+                      {emp.presentDays + emp.utDays + emp.hdDays * 0.5} Days
                     </div>
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="font-bold text-emerald-600 dark:text-emerald-400 text-sm">
-                    ₱{" "}
-                    {emp.totalToBePaid.toLocaleString(undefined, {
-                      minimumFractionDigits: 2,
-                    })}
-                  </div>
-                  <div className="text-[10px] text-slate-400 font-medium">
-                    {emp.presentDays + emp.utDays + emp.hdDays * 0.5} Days
-                  </div>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
 

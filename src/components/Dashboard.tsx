@@ -48,6 +48,8 @@ import { calculateAttendanceHours } from "../lib/payrollUtils";
 import { Input } from "./ui/input";
 import { Link } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
+import { Interactive } from "./ui/Interactive";
+import { Skeleton } from "./ui/Skeleton";
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -73,6 +75,7 @@ export default function Dashboard() {
   const [recentAnnouncements, setRecentAnnouncements] = useState<
     Announcement[]
   >([]);
+  const [loading, setLoading] = useState(true);
 
   // Projection States
   const [startDate, setStartDate] = useState(
@@ -261,6 +264,7 @@ export default function Dashboard() {
         data.push({ id: doc.id, ...doc.data() } as Announcement),
       );
       setRecentAnnouncements(data);
+      setLoading(false);
     });
 
     return () => {
@@ -479,7 +483,7 @@ export default function Dashboard() {
               </span>
             </div>
             <div className="text-4xl font-black text-slate-900 dark:text-white tracking-tight">
-              {stats.totalEmployees}
+              {loading ? <Skeleton className="h-10 w-24" /> : stats.totalEmployees}
             </div>
             <div className="text-[10px] text-slate-400 dark:text-slate-500 mt-2 font-medium uppercase tracking-wider">
               Active Personnel
@@ -495,7 +499,7 @@ export default function Dashboard() {
                 </span>
               </div>
               <div className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-                {stats.present}
+                {loading ? <Skeleton className="h-9 w-16" /> : stats.present}
               </div>
             </div>
 
@@ -507,7 +511,7 @@ export default function Dashboard() {
                 </span>
               </div>
               <div className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-                {stats.ut}
+                {loading ? <Skeleton className="h-9 w-16" /> : stats.ut}
               </div>
             </div>
 
@@ -519,7 +523,7 @@ export default function Dashboard() {
                 </span>
               </div>
               <div className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-                {stats.hd}
+                {loading ? <Skeleton className="h-9 w-16" /> : stats.hd}
               </div>
             </div>
 
@@ -531,8 +535,14 @@ export default function Dashboard() {
                 </span>
               </div>
               <div className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-                {stats.ot.toFixed(1)}{" "}
-                <span className="text-sm font-bold text-slate-400">h</span>
+                {loading ? (
+                  <Skeleton className="h-9 w-16" />
+                ) : (
+                  <>
+                    {stats.ot.toFixed(1)}{" "}
+                    <span className="text-sm font-bold text-slate-400">h</span>
+                  </>
+                )}
               </div>
             </div>
 
@@ -544,7 +554,7 @@ export default function Dashboard() {
                 </span>
               </div>
               <div className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-                {stats.pakyaw}
+                {loading ? <Skeleton className="h-9 w-16" /> : stats.pakyaw}
               </div>
             </div>
 
@@ -556,7 +566,7 @@ export default function Dashboard() {
                 </span>
               </div>
               <div className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-                {stats.absent}
+                {loading ? <Skeleton className="h-9 w-16" /> : stats.absent}
               </div>
             </div>
           </div>
@@ -571,11 +581,17 @@ export default function Dashboard() {
                 </span>
               </div>
               <div className="text-4xl font-black text-white relative z-10">
-                ₱{" "}
-                {projection.grandTotal.toLocaleString(undefined, {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}
+                {loading ? (
+                  <Skeleton className="h-10 w-48 bg-slate-800" />
+                ) : (
+                  <>
+                    ₱{" "}
+                    {projection.grandTotal.toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </>
+                )}
               </div>
               <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-2 relative z-10">
                 {format(parseISO(startDate), "MMM dd")} -{" "}
@@ -628,47 +644,51 @@ export default function Dashboard() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
-              {projection.employeeProjections.map((emp) => (
-                <div
-                  key={emp.id}
-                  className="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-xl flex items-center justify-between border border-slate-100 dark:border-slate-800 cursor-pointer hover:border-blue-300 transition-colors"
-                  onClick={() => setSelectedEmployeeProj(emp)}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 overflow-hidden flex items-center justify-center font-bold text-blue-600 text-xs">
-                      {emp.photoURL ? (
-                        <img
-                          src={emp.photoURL}
-                          alt=""
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        emp.fullName.charAt(0)
-                      )}
-                    </div>
-                    <div>
-                      <div className="font-bold text-sm text-slate-800 dark:text-slate-200">
-                        {emp.fullName}
+              {loading ? (
+                <Skeleton count={6} className="h-20 w-full" />
+              ) : (
+                projection.employeeProjections.map((emp) => (
+                  <Interactive
+                    key={emp.id}
+                    className="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-xl flex items-center justify-between border border-slate-100 dark:border-slate-800 hover:border-blue-300 transition-colors"
+                    onClick={() => setSelectedEmployeeProj(emp)}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 overflow-hidden flex items-center justify-center font-bold text-blue-600 text-xs">
+                        {emp.photoURL ? (
+                          <img
+                            src={emp.photoURL}
+                            alt=""
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          emp.fullName.charAt(0)
+                        )}
                       </div>
-                      <div className="text-[10px] text-slate-500">
-                        {emp.position || "Staff"}
+                      <div>
+                        <div className="font-bold text-sm text-slate-800 dark:text-slate-200">
+                          {emp.fullName}
+                        </div>
+                        <div className="text-[10px] text-slate-500">
+                          {emp.position || "Staff"}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="font-bold text-emerald-600 dark:text-emerald-400 text-sm">
-                      ₱{" "}
-                      {emp.totalToBePaid.toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                      })}
+                    <div className="text-right">
+                      <div className="font-bold text-emerald-600 dark:text-emerald-400 text-sm">
+                        ₱{" "}
+                        {emp.totalToBePaid.toLocaleString(undefined, {
+                          minimumFractionDigits: 2,
+                        })}
+                      </div>
+                      <div className="text-[9px] text-slate-400">
+                        {emp.presentDays + emp.utDays + emp.hdDays * 0.5} Action
+                        Days
+                      </div>
                     </div>
-                    <div className="text-[9px] text-slate-400">
-                      {emp.presentDays + emp.utDays + emp.hdDays * 0.5} Action
-                      Days
-                    </div>
-                  </div>
-                </div>
-              ))}
+                  </Interactive>
+                ))
+              )}
             </div>
           </div>
         </div>
@@ -691,7 +711,9 @@ export default function Dashboard() {
           </div>
 
           <div className="space-y-4">
-            {recentAnnouncements.length === 0 ? (
+            {loading ? (
+              <Skeleton count={3} className="h-16 w-full mb-3" />
+            ) : recentAnnouncements.length === 0 ? (
               <div className="py-10 text-center flex flex-col items-center gap-2 opacity-40">
                 <Megaphone className="w-8 h-8 text-slate-300" />
                 <p className="text-xs font-bold uppercase tracking-widest">

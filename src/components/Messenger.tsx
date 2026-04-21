@@ -9,11 +9,13 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from './ui/dialog';
 import { Label } from './ui/label';
+import { Skeleton } from './ui/Skeleton';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function Messenger() {
   const { user, userData } = useAuth();
   const [chats, setChats] = useState<Chat[]>([]);
+  const [loading, setLoading] = useState(true);
   const [activeChat, setActiveChat] = useState<Chat | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -93,6 +95,7 @@ export default function Messenger() {
         chatList.push({ id: doc.id, ...doc.data() } as Chat);
       });
       setChats(chatList);
+      setLoading(false);
     });
 
     // Load available contacts (employees + admin)
@@ -501,7 +504,11 @@ export default function Messenger() {
           </div>
 
           <div className="flex-1 overflow-y-auto p-2 space-y-1">
-            {chats.map(chat => (
+            {loading ? (
+              <div className="space-y-1 p-2">
+                <Skeleton count={6} className="h-16 w-full rounded-2xl mb-1" />
+              </div>
+            ) : chats.map(chat => (
               <button
                 key={chat.id}
                 onClick={() => {

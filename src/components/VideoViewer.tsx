@@ -5,9 +5,11 @@ import { collection, query, where, onSnapshot, doc, deleteDoc } from 'firebase/f
 import { Category } from '../services/galleryService';
 import { Trash2 } from 'lucide-react';
 import ReactPlayer from 'react-player';
+import { Skeleton } from './ui/Skeleton';
 
 export default function VideoViewer({ category, isAdminView = false }: { category: Category, isAdminView?: boolean }) {
   const [videos, setVideos] = useState<{ id: string, videoUrl: string }[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const q = query(
@@ -23,8 +25,10 @@ export default function VideoViewer({ category, isAdminView = false }: { categor
       }));
       // Sort locally by createdAt desc
       setVideos(data.sort((a, b) => b.createdAt - a.createdAt));
+      setLoading(false);
     }, (error) => {
       console.error(`Error fetching videos for ${category}:`, error);
+      setLoading(false);
     });
   }, [category]);
 
@@ -37,6 +41,17 @@ export default function VideoViewer({ category, isAdminView = false }: { categor
       alert("Failed to delete video.");
     }
   };
+
+  if (loading) {
+    return (
+      <div className={isAdminView ? "py-4" : "py-12"}>
+        <h4 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-6">{category} Videos</h4>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Skeleton count={2} className="aspect-video w-full rounded-3xl" />
+        </div>
+      </div>
+    );
+  }
 
   if (videos.length === 0) {
     if (isAdminView) {

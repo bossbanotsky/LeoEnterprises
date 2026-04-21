@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ToastProvider } from './contexts/ToastContext';
 import Layout from './components/Layout';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
@@ -71,9 +72,10 @@ export default function App() {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<AuthRedirect />} />
+        <ToastProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<AuthRedirect />} />
             <Route path="/login" element={<LoginPage />} />
             
             {/* Admin Routes */}
@@ -107,7 +109,8 @@ export default function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </BrowserRouter>
-      </AuthProvider>
-    </ErrorBoundary>
-  );
+      </ToastProvider>
+    </AuthProvider>
+  </ErrorBoundary>
+);
 }

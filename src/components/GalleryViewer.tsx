@@ -4,10 +4,12 @@ import { collection, query, where, onSnapshot, doc, deleteDoc } from 'firebase/f
 import { Category } from '../services/galleryService';
 import { X, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Skeleton } from './ui/Skeleton';
 
 export default function GalleryViewer({ category, isAdminView = false }: { category: Category, isAdminView?: boolean }) {
   const [images, setImages] = useState<{ id: string, imageUrl: string }[]>([]);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const q = query(
@@ -23,8 +25,10 @@ export default function GalleryViewer({ category, isAdminView = false }: { categ
       }));
       // Sort locally by createdAt desc
       setImages(data.sort((a, b) => b.createdAt - a.createdAt));
+      setLoading(false);
     }, (error) => {
       console.error(`Error fetching gallery images for ${category}:`, error);
+      setLoading(false);
     });
   }, [category]);
 
@@ -38,6 +42,17 @@ export default function GalleryViewer({ category, isAdminView = false }: { categ
       alert("Failed to delete image.");
     }
   };
+
+  if (loading) {
+    return (
+      <div className={isAdminView ? "py-4" : "py-12"}>
+        <h4 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-6">{category} Gallery</h4>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <Skeleton count={4} className="aspect-square w-full rounded-2xl" />
+        </div>
+      </div>
+    );
+  }
 
   if (images.length === 0) {
     if (isAdminView) {

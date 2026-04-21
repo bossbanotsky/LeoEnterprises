@@ -12,6 +12,8 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { updateDoc, deleteField } from 'firebase/firestore';
+import { Interactive } from './ui/Interactive';
+import { Skeleton } from './ui/Skeleton';
 
 export default function EmployeeDashboard() {
   const { user, userData } = useAuth();
@@ -27,6 +29,7 @@ export default function EmployeeDashboard() {
   const [startDate, setStartDate] = useState(() => localStorage.getItem('attendanceStartDate') || format(startOfMonth(new Date()), 'yyyy-MM-dd'));
   const [endDate, setEndDate] = useState(() => localStorage.getItem('attendanceEndDate') || format(endOfMonth(new Date()), 'yyyy-MM-dd'));
   const [loading, setLoading] = useState(true);
+  const [loadingPayrolls, setLoadingPayrolls] = useState(true);
   const [selectedPayslip, setSelectedPayslip] = useState<any>(null);
 
   // If Admin lands here, redirect to admin dashboard
@@ -194,6 +197,7 @@ export default function EmployeeDashboard() {
       const pays: Payroll[] = [];
       snapshot.forEach(doc => pays.push({ id: doc.id, ...doc.data() } as Payroll));
       setPayrolls(pays.sort((a, b) => b.generatedAt.localeCompare(a.generatedAt)));
+      setLoadingPayrolls(false);
     });
 
     const qCA = query(
@@ -257,7 +261,19 @@ export default function EmployeeDashboard() {
   }, [startDate, endDate]);
 
   if (loading || !employee) {
-    return <div className="h-full flex items-center justify-center">Loading portal...</div>;
+    return (
+      <div className="h-full flex flex-col space-y-6 pt-4">
+        <Skeleton className="h-40 w-full rounded-3xl" />
+        <div className="space-y-3">
+          <Skeleton className="h-6 w-32" />
+          <Skeleton className="h-64 w-full rounded-2xl" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Skeleton className="h-24 w-full rounded-xl" />
+          <Skeleton className="h-24 w-full rounded-xl" />
+        </div>
+      </div>
+    );
   }
 
   // We can filter payrolls based on their individual status rather than checking bulkPayrolls
@@ -471,30 +487,36 @@ export default function EmployeeDashboard() {
           <FileText className="w-3.5 h-3.5" /> Recent Payslips
         </h3>
         <div className="space-y-3">
-          {pendingPayrolls.map(pay => (
-            <div key={pay.id} className="bento-card flex-row items-center justify-between bg-white dark:bg-slate-800 p-4 border-slate-200 dark:border-slate-700 shadow-sm relative overflow-hidden">
-              <div className="absolute top-0 right-0 bg-yellow-100 text-yellow-700 text-[9px] font-bold px-2 py-0.5 rounded-bl-lg uppercase tracking-wider">Unpaid</div>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
-                  <CreditCard className="w-5 h-5" />
-                </div>
-                <div>
-                  <div className="font-bold text-slate-900 dark:text-white text-sm">
-                    {format(parseISO(pay.startDate), 'MMM dd')} - {format(parseISO(pay.endDate), 'MMM dd, yyyy')}
+          {loadingPayrolls ? (
+            <Skeleton count={2} className="h-32 w-full rounded-2xl" />
+          ) : (
+            <>
+              {pendingPayrolls.map(pay => (
+                <Interactive key={pay.id} className="bento-card flex-row items-center justify-between bg-white dark:bg-slate-800 p-4 border-slate-200 dark:border-slate-700 shadow-sm relative overflow-hidden">
+                  <div className="absolute top-0 right-0 bg-yellow-100 text-yellow-700 text-[9px] font-bold px-2 py-0.5 rounded-bl-lg uppercase tracking-wider">Unpaid</div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                      <CreditCard className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="font-bold text-slate-900 dark:text-white text-sm">
+                        {format(parseISO(pay.startDate), 'MMM dd')} - {format(parseISO(pay.endDate), 'MMM dd, yyyy')}
+                      </div>
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400">Generated on {format(parseISO(pay.generatedAt), 'MMM dd, h:mm a')}</div>
+                    </div>
                   </div>
-                  <div className="text-[10px] text-slate-500 dark:text-slate-400">Generated on {format(parseISO(pay.generatedAt), 'MMM dd, h:mm a')}</div>
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="text-sm font-black text-blue-600 dark:text-blue-400">₱{pay.totalPay.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
-                <Button variant="outline" size="sm" className="mt-2 h-7 text-xs bg-transparent dark:border-slate-700 dark:text-slate-300" onClick={() => setSelectedPayslip({ ...pay, employee })}>
-                  View Full
-                </Button>
-              </div>
-            </div>
-          ))}
-          {pendingPayrolls.length === 0 && (
-            <div className="text-center py-6 text-slate-400 text-sm">No recent unpaid payslips</div>
+                  <div className="text-right">
+                    <div className="text-sm font-black text-blue-600 dark:text-blue-400">₱{pay.totalPay.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+                    <Button variant="outline" size="sm" className="mt-2 h-7 text-xs bg-transparent dark:border-slate-700 dark:text-slate-300" onClick={() => setSelectedPayslip({ ...pay, employee })}>
+                      View Full
+                    </Button>
+                  </div>
+                </Interactive>
+              ))}
+              {pendingPayrolls.length === 0 && (
+                <div className="text-center py-6 text-slate-400 text-sm">No recent unpaid payslips</div>
+              )}
+            </>
           )}
         </div>
       </section>

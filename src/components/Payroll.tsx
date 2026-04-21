@@ -11,6 +11,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
+import { Skeleton } from './ui/Skeleton';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
@@ -35,6 +36,7 @@ export default function Payroll() {
   const [bulkPayrolls, setBulkPayrolls] = useState<any[]>([]);
   const [selectedBulkId, setSelectedBulkId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingInitial, setLoadingInitial] = useState(true);
   const [selectedPayslip, setSelectedPayslip] = useState<any>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [viewMode, setViewMode] = useState<'process' | 'archives'>('process');
@@ -273,6 +275,7 @@ export default function Payroll() {
       const emps: Employee[] = [];
       snapshot.forEach((doc) => emps.push({ id: doc.id, ...doc.data() } as Employee));
       setEmployees(emps.sort((a, b) => a.fullName.localeCompare(b.fullName)));
+      setLoadingInitial(false);
     }, (error) => handleFirestoreError(error, OperationType.GET, 'employees'));
     return () => unsubscribe();
   }, [user]);
@@ -687,7 +690,11 @@ export default function Payroll() {
       )}
 
       <div className="flex-1 overflow-y-auto space-y-3 pb-4">
-        {selectedEmployeeId === 'all' && !selectedBulkId && (
+        {loadingInitial ? (
+          <div className="space-y-3">
+            <Skeleton count={4} className="h-24 w-full rounded-2xl" />
+          </div>
+        ) : selectedEmployeeId === 'all' && !selectedBulkId && (
           <div className="space-y-3">
             <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider px-1">
               {viewMode === 'process' ? 'Pending Runs' : 'Paid Runs'}

@@ -7,6 +7,7 @@ import { format, parseISO, eachDayOfInterval, startOfWeek, endOfWeek, addDays, s
 import { ChevronDown, ChevronUp, Check, X, ChevronLeft, ChevronRight, Calendar, Calculator } from 'lucide-react';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
+import { Skeleton } from './ui/Skeleton';
 
 export default function Attendance() {
   const { user } = useAuth();
@@ -19,6 +20,7 @@ export default function Attendance() {
   const [attendanceData, setAttendanceData] = useState<Record<string, Partial<AttendanceType>>>({});
   const [error, setError] = useState<string | null>(null);
   const [expandedEmp, setExpandedEmp] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     localStorage.setItem('attendanceStartDate', startDate);
@@ -42,6 +44,7 @@ export default function Attendance() {
       const emps: Employee[] = [];
       snapshot.forEach((doc) => emps.push({ id: doc.id, ...doc.data() } as Employee));
       setEmployees(emps.filter(e => (e.status === 'active' || !e.status) && e.role !== 'ceo' && e.role !== 'admin').sort((a, b) => a.fullName.localeCompare(b.fullName)));
+      setLoading(false);
     }, (error) => { setError('Failed to load employees'); handleFirestoreError(error, OperationType.GET, 'employees'); });
     return () => unsubscribe();
   }, [user]);
@@ -298,7 +301,11 @@ export default function Attendance() {
       </div>
 
       <div className="flex-1 overflow-y-auto pb-20 px-1">
-        {activeTab === 'mark' ? (
+        {loading ? (
+          <div className="space-y-4">
+            <Skeleton count={5} className="h-40 w-full mb-3 rounded-2xl" />
+          </div>
+        ) : activeTab === 'mark' ? (
           <div className="grid grid-cols-1 gap-3">
             {employees.map(emp => {
               const att = attendanceData[`${emp.id}_${singleDate}`] || { status: 'absent', timeIn: '07:00', timeOut: '16:00' };
