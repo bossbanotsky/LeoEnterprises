@@ -882,15 +882,15 @@ export default function Dashboard() {
                     [...selectedEmployeeProj.attendances]
                       .sort((a: any, b: any) => b.date.localeCompare(a.date))
                       .map((att: any) => {
+                        const { regHrs, otHrs } = calculateAttendanceHours(att);
                         const isHD =
                           att.status === "hd" ||
                           (att.timeIn === "07:00" && att.timeOut === "12:00");
                         const isUT =
                           (att.status === "ut" ||
                             (att.status === "present" &&
-                              att.regularHours !== undefined &&
-                              att.regularHours < 8 &&
-                              att.regularHours > 0)) &&
+                              regHrs < 8 &&
+                              regHrs > 0)) &&
                           !isHD;
                         const isPresent =
                           att.status === "present" && !isUT && !isHD;

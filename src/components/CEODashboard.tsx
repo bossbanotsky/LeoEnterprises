@@ -397,7 +397,7 @@ export default function CEODashboard() {
               Upcoming Payroll Projection
             </span>
           </div>
-          <div className="text-4xl font-black text-white relative z-10">
+          <div className="text-4xl font-black text-slate-900 dark:text-white relative z-10">
             ₱{" "}
             {projection.grandTotal.toLocaleString(undefined, {
               minimumFractionDigits: 2,
@@ -832,15 +832,15 @@ export default function CEODashboard() {
                     [...selectedEmployeeProj.attendances]
                       .sort((a: any, b: any) => b.date.localeCompare(a.date))
                       .map((att: any) => {
+                        const { regHrs, otHrs } = calculateAttendanceHours(att);
                         const isHD =
                           att.status === "hd" ||
                           (att.timeIn === "07:00" && att.timeOut === "12:00");
                         const isUT =
                           (att.status === "ut" ||
                             (att.status === "present" &&
-                              att.regularHours !== undefined &&
-                              att.regularHours < 8 &&
-                              att.regularHours > 0)) &&
+                              regHrs < 8 &&
+                              regHrs > 0)) &&
                           !isHD;
                         const isPresent =
                           att.status === "present" && !isUT && !isHD;
@@ -868,9 +868,9 @@ export default function CEODashboard() {
                                 {(isPresent || isHD || isUT) && att.timeIn && (
                                   <span className="block text-[10px] text-slate-400 font-normal">
                                     {att.timeIn} - {att.timeOut || "--:--"}
-                                    {att.otHours > 0 && (
+                                    {otHrs > 0 && (
                                       <span className="text-blue-500 ml-1">
-                                        +{att.otHours}h OT
+                                        +{otHrs}h OT
                                       </span>
                                     )}
                                   </span>

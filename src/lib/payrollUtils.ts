@@ -24,24 +24,31 @@ export function calculateAttendanceHours(att: Attendance) {
     let end = outH + outM / 60;
     if (end < start) end += 24;
 
-    const breakStart = 12.0;
-    const breakEnd = 13.0;
-    const otCutoff = 16.0;
+    const SHIFT_START = 7.0;
+    const SHIFT_END = 16.0;
+    const BREAK_START = 12.0;
+    const BREAK_END = 13.0;
 
-    const regRangeEnd = Math.min(end, otCutoff);
-    let regDuration = Math.max(0, regRangeEnd - start);
+    // 1. Early OT (Before 7am)
+    const earlyOt = Math.max(0, Math.min(end, SHIFT_START) - start);
     
-    // Subtract break overlap
-    const overlapStart = Math.max(start, breakStart);
-    const overlapEnd = Math.min(regRangeEnd, breakEnd);
+    // 2. Late OT (After 4pm)
+    const lateOt = Math.max(0, end - Math.max(start, SHIFT_END));
+
+    // 3. Regular Range
+    const regRangeStart = Math.max(start, SHIFT_START);
+    const regRangeEnd = Math.min(end, SHIFT_END);
+    
+    let regDuration = Math.max(0, regRangeEnd - regRangeStart);
+
+    // Subtract break overlap from regular hours
+    const overlapStart = Math.max(regRangeStart, BREAK_START);
+    const overlapEnd = Math.min(regRangeEnd, BREAK_END);
     const breakOverlap = Math.max(0, overlapEnd - overlapStart);
     regDuration -= breakOverlap;
 
-    const otRangeStart = Math.max(start, otCutoff);
-    const otDuration = Math.max(0, end - otRangeStart);
-
     regHrs = parseFloat(regDuration.toFixed(2));
-    otHrs = parseFloat(otDuration.toFixed(2));
+    otHrs = parseFloat((earlyOt + lateOt).toFixed(2));
   } else {
     // Fallback for missing times or other statuses
     if (att.regularHours !== undefined) {

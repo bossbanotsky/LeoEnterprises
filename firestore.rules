@@ -91,6 +91,10 @@ service cloud.firestore {
         get(/databases/$(database)/documents/chats/$(chatId)).data.participants.hasAny([request.auth.uid]) ||
         chatId == 'common-group'
       );
+      allow update: if isSignedIn() && (
+        get(/databases/$(database)/documents/chats/$(chatId)).data.participants.hasAny([request.auth.uid]) ||
+        chatId == 'common-group'
+      ) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readBy']);
     }
 
     match /gallery/{docId} {
