@@ -47,7 +47,7 @@ export default function Layout() {
         <div className="flex items-center gap-3 shrink-0">
           <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-xl flex items-center justify-center font-bold text-sm shadow-md overflow-hidden border border-white/20">
             {userData?.photoURL ? (
-              <img src={userData.photoURL} alt="Profile" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+              <img src={userData.photoURL} alt="Profile" className="w-full h-full object-cover" referrerPolicy="no-referrer" loading="lazy" decoding="async" />
             ) : (
               userData?.fullName?.[0].toUpperCase() || user?.email?.[0].toUpperCase() || 'A'
             )}
@@ -59,14 +59,14 @@ export default function Layout() {
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 overflow-x-hidden overflow-y-auto pb-24 relative z-1 bg-white/5 dark:bg-slate-900/5 backdrop-blur-sm border-x border-white/5 dark:border-slate-800/5">
-        <AnimatePresence mode="wait">
+      <main className="flex-1 overflow-x-hidden overflow-y-auto pb-24 relative z-1 bg-white/5 dark:bg-slate-900/5 backdrop-blur-sm border-x border-white/5 dark:border-slate-800/5 antialiased">
+        <AnimatePresence mode="popLayout" initial={false}>
           <motion.div
             key={location.pathname}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.3, ease: "easeOut" }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
             className="h-full p-4 max-w-3xl mx-auto w-full"
           >
             <Outlet />
@@ -75,7 +75,7 @@ export default function Layout() {
       </main>
 
       {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white/10 dark:bg-slate-900/10 backdrop-blur-3xl border-t border-white/10 dark:border-slate-800/10 flex flex-row items-center overflow-x-auto overflow-y-hidden z-50 pb-[env(safe-area-inset-bottom)] h-[calc(4.5rem+env(safe-area-inset-bottom))] shadow-[0_-10px_15px_rgba(0,0,0,0.05)] snap-x snap-mandatory px-4 gap-1 scroll-smooth no-scrollbar">
+      <nav className="fixed bottom-0 left-0 right-0 bg-white/10 dark:bg-slate-900/10 backdrop-blur-3xl border-t border-white/10 dark:border-slate-800/10 flex flex-row items-center overflow-x-auto overflow-y-hidden z-50 pb-[env(safe-area-inset-bottom)] h-[calc(4rem+env(safe-area-inset-bottom))] shadow-[0_-10px_15px_rgba(0,0,0,0.05)] snap-x snap-mandatory px-4 gap-1 scroll-smooth no-scrollbar will-change-transform">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
           const Icon = item.icon;
@@ -83,29 +83,28 @@ export default function Layout() {
             <Link
               key={item.path}
               to={item.path}
-              className="flex flex-col items-center justify-center min-w-[60px] flex-1 h-full gap-0.5 transition-all duration-500 relative group outline-none shrink-0 snap-center"
+              className="flex flex-col items-center justify-center min-w-[56px] flex-1 h-full gap-0.5 transition-all duration-300 relative group outline-none shrink-0 snap-center touch-manipulation"
             >
-              <div className="relative flex items-center justify-center w-[38px] h-[38px] sm:w-10 sm:h-10 mt-1">
-                {/* Active 3D Hyper-Realistic Indicator */}
+              <div className="relative flex items-center justify-center w-[34px] h-[34px] mt-1">
+                {/* Active Indicator */}
                 {isActive && (
                   <motion.div 
-                    layoutId="active-icon-bg"
-                    className="absolute inset-0 bg-gradient-to-b from-blue-400 via-blue-600 to-indigo-700 rounded-xl shadow-[0_4px_8px_rgba(37,99,235,0.3),inset_0_1px_1px_rgba(255,255,255,0.4)] z-0"
-                    transition={{ type: "spring", stiffness: 450, damping: 25 }}
+                    layoutId="active-nav-bg"
+                    className="absolute inset-0 bg-gradient-to-b from-blue-500 to-indigo-700 rounded-xl shadow-lg z-0"
+                    transition={{ type: "spring", stiffness: 500, damping: 35 }}
                   />
                 )}
                 
-                {/* Hover Glass Base */}
-                {!isActive && (
-                  <div className="absolute inset-0 bg-slate-100/80 dark:bg-slate-800/80 backdrop-blur-md rounded-xl opacity-0 scale-50 group-hover:opacity-100 group-hover:scale-100 transition-all duration-300 z-0 border border-white/50" />
+                {isActive ? null : (
+                  <div className="absolute inset-0 bg-slate-100/50 dark:bg-slate-800/50 backdrop-blur-md rounded-xl opacity-0 scale-50 group-hover:opacity-100 group-hover:scale-100 transition-all duration-200 z-0" />
                 )}
 
                 <Icon 
-                  className={`w-[20px] h-[20px] sm:w-[22px] sm:h-[22px] transition-all duration-400 z-10 relative 
-                  ${isActive ? 'text-white stroke-[2.5px]' : 'text-slate-400 dark:text-slate-500 stroke-[1.5px] group-hover:text-blue-600'}`} 
+                  className={`w-[18px] h-[18px] transition-all duration-300 z-10 relative 
+                  ${isActive ? 'text-white' : 'text-slate-400 dark:text-slate-500 group-hover:text-blue-600'}`} 
                 />
               </div>
-              <span className={`text-[8px] sm:text-[9px] font-black tracking-tighter uppercase transition-all duration-300 ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'}`}>
+              <span className={`text-[7px] sm:text-[8px] font-bold tracking-tight uppercase transition-all duration-200 ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'}`}>
                 {item.label}
               </span>
             </Link>
