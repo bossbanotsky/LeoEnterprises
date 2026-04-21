@@ -461,7 +461,7 @@ export default function CEODashboard() {
                       {emp.fullName}
                     </div>
                     <div className="text-[10px] text-slate-500 uppercase tracking-widest">
-                      {emp.position || "Staff"}
+                      {emp.position || "Staff"} • ₱{emp.dailySalary?.toLocaleString() || 0}/day
                     </div>
                   </div>
                 </div>
