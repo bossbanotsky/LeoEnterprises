@@ -16,7 +16,7 @@ export default function Employees() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [form, setForm] = useState({ customId: '', fullName: '', position: '', dailySalary: '', email: '', loginPassword: '', photoURL: '' });
+  const [form, setForm] = useState({ customId: '', fullName: '', position: '', dailySalary: '', email: '', loginPassword: '', photoURL: '', role: 'employee' as 'admin' | 'employee' | 'ceo' });
   const [isProvisioning, setIsProvisioning] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -109,7 +109,8 @@ export default function Employees() {
           hourlyRate,
           email: form.email || '',
           loginPassword: form.loginPassword || '',
-          photoURL: form.photoURL || ''
+          photoURL: form.photoURL || '',
+          role: form.role || 'employee'
         });
         setEditingEmployee(null);
       } else {
@@ -123,12 +124,13 @@ export default function Employees() {
           email: form.email || '',
           loginPassword: form.loginPassword || '',
           photoURL: form.photoURL || '',
+          role: form.role || 'employee',
           createdAt: new Date().toISOString(),
           uid: user.uid
         });
       }
       setIsAddOpen(false);
-      setForm({ customId: '', fullName: '', position: '', dailySalary: '', email: '', loginPassword: '', photoURL: '' });
+      setForm({ customId: '', fullName: '', position: '', dailySalary: '', email: '', loginPassword: '', photoURL: '', role: 'employee' });
     } catch (error) {
       handleFirestoreError(error, editingEmployee ? OperationType.UPDATE : OperationType.CREATE, 'employees');
     }
@@ -153,7 +155,8 @@ export default function Employees() {
       dailySalary: emp.dailySalary.toString(),
       email: emp.email || '',
       loginPassword: emp.loginPassword || '',
-      photoURL: emp.photoURL || ''
+      photoURL: emp.photoURL || '',
+      role: emp.role || 'employee'
     });
     setSelectedEmployee(null);
     setIsAddOpen(true);
@@ -175,10 +178,10 @@ export default function Employees() {
       await createEmployeeAuth(form.email, form.loginPassword);
       alert("Employee login account provisioned successfully! They can now log in using these credentials.");
     } catch (error: any) {
-      console.error("Provisioning error:", error);
       if (error.code === 'auth/email-already-in-use') {
-        alert("This email is already registered in Firebase. If the employee forgot their password, they can reset it, or you can update the employee record to match.");
+        alert("This email is already registered in Firebase Identity! The employee record has been successfully linked. They can log in with their existing Google account or password.");
       } else {
+        console.error("Provisioning error:", error);
         alert("Error provisioning account: " + error.message);
       }
     } finally {
@@ -279,7 +282,7 @@ export default function Employees() {
         setIsAddOpen(open);
         if (!open) {
           setEditingEmployee(null);
-          setForm({ customId: '', fullName: '', position: '', dailySalary: '', email: '', loginPassword: '', photoURL: '' });
+          setForm({ customId: '', fullName: '', position: '', dailySalary: '', email: '', loginPassword: '', photoURL: '', role: 'employee' });
         }
       }}>
         <DialogTrigger render={<button className="absolute bottom-6 right-2 w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg flex items-center justify-center transition-transform active:scale-95 z-10" />}>
@@ -340,6 +343,18 @@ export default function Employees() {
             <div className="space-y-2">
               <Label>Position</Label>
               <Input required value={form.position} onChange={e => setForm({...form, position: e.target.value})} className="rounded-xl" />
+            </div>
+            <div className="space-y-2">
+              <Label>Account Role</Label>
+              <select 
+                value={form.role} 
+                onChange={e => setForm({...form, role: e.target.value as any})}
+                className="flex h-10 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-800 dark:bg-slate-950 dark:ring-offset-slate-950 dark:placeholder:text-slate-400 dark:focus-visible:ring-slate-300"
+              >
+                <option value="employee">Employee</option>
+                <option value="ceo">CEO</option>
+                <option value="admin">Admin</option>
+              </select>
             </div>
             <div className="space-y-2">
               <Label>Hourly Rate (₱ {form.dailySalary ? (parseFloat(form.dailySalary) / 8).toFixed(2) : '0.00'})</Label>

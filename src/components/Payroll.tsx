@@ -4,7 +4,8 @@ import { db, handleFirestoreError, OperationType } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useCompanyInfo } from '../hooks/useCompanyInfo';
 import { Employee, Attendance, CashAdvance } from '../types';
-import { format, parseISO, eachDayOfInterval } from 'date-fns';
+import { format, parseISO, eachDayOfInterval, isWithinInterval } from "date-fns";
+import { calculateAttendanceHours } from "../lib/payrollUtils";
 import { Calendar, ChevronRight, FileText, Download, Trash2, Loader2, Users, CreditCard, CheckCircle, Search } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -22,10 +23,12 @@ export default function Payroll() {
 
   useEffect(() => {
     localStorage.setItem('payrollStartDate', startDate);
+    window.dispatchEvent(new Event('payrollDateChange'));
   }, [startDate]);
 
   useEffect(() => {
     localStorage.setItem('payrollEndDate', endDate);
+    window.dispatchEvent(new Event('payrollDateChange'));
   }, [endDate]);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('all');
   const [payrollData, setPayrollData] = useState<any[]>([]);
@@ -439,46 +442,7 @@ export default function Payroll() {
           const att = empAtts.find(a => a.date === date);
           
           if (att) {
-            let regHrs = 0;
-            let otHrs = 0;
-
-            // ALWAYS re-calculate from times if they exist to keep payroll in sync with latest rules
-            if (att.timeIn && att.timeOut && (att.status === 'present' || att.status === 'ut' || att.status === 'hd')) {
-               const [inH, inM] = att.timeIn.split(':').map(Number);
-               const [outH, outM] = att.timeOut.split(':').map(Number);
-               const start = inH + inM / 60;
-               let end = outH + outM / 60;
-               if (end < start) end += 24;
-
-               const breakStart = 12.0;
-               const breakEnd = 13.0;
-               const otCutoff = 16.0;
-
-               const regRangeEnd = Math.min(end, otCutoff);
-               let regDuration = Math.max(0, regRangeEnd - start);
-               const overlapStart = Math.max(start, breakStart);
-               const overlapEnd = Math.min(regRangeEnd, breakEnd);
-               const breakOverlap = Math.max(0, overlapEnd - overlapStart);
-               regDuration -= breakOverlap;
-
-               const otRangeStart = Math.max(start, otCutoff);
-               const otDuration = Math.max(0, end - otRangeStart);
-
-               regHrs = parseFloat(regDuration.toFixed(2));
-               otHrs = parseFloat(otDuration.toFixed(2));
-            } else {
-               // Fallback for missing times or other statuses (absent, pakyaw)
-               if (att.regularHours !== undefined) {
-                 regHrs = att.regularHours;
-               } else if (att.status === 'present') {
-                 regHrs = 8;
-               } else if (att.status === 'ut') {
-                 regHrs = 5; // Default to 5 hours (7-12) if status is UT but hours are missing
-               } else {
-                 regHrs = 0;
-               }
-               otHrs = att.otHours || 0;
-            }
+            const { regHrs, otHrs } = calculateAttendanceHours(att);
 
             const dailyWorkLog = `${format(parseISO(date), 'MMM dd')}: ${regHrs}h Reg${otHrs ? `, ${otHrs}h OT` : ''}${att.status === 'hd' ? ' (HD)' : ''}`;
 
@@ -633,12 +597,14 @@ export default function Payroll() {
     if (!user) return;
     try {
       await deleteDoc(doc(db, 'bulkPayrolls', bulkId));
-      // Also delete associated payrolls or just unlink them? 
-      // User said "delete bulk", usually means the whole run.
-      const associated = payrollData.filter(p => p.bulkId === bulkId);
-      for (const p of associated) {
-        await deleteDoc(doc(db, 'payrolls', p.id));
+      
+      // Correctly delete all associated payrolls from the database
+      const q = query(collection(db, 'payrolls'), where('bulkId', '==', bulkId));
+      const snapshot = await getDocs(q);
+      for (const pDoc of snapshot.docs) {
+        await deleteDoc(doc(db, 'payrolls', pDoc.id));
       }
+      
       if (selectedBulkId === bulkId) setSelectedBulkId(null);
     } catch (error) {
       handleFirestoreError(error, OperationType.DELETE, 'bulkPayrolls');

@@ -18,7 +18,9 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
 
   if (user && !loading) {
-    return <Navigate to={userData?.role === 'admin' ? "/admin-dashboard" : "/employee-dashboard"} />;
+    if (userData?.role === 'admin') return <Navigate to="/admin-dashboard" />;
+    if (userData?.role === 'ceo') return <Navigate to="/ceo-dashboard" />;
+    return <Navigate to="/employee-dashboard" />;
   }
 
   const handleSubmit = async (e: React.FormEvent) => {

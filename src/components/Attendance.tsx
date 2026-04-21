@@ -41,7 +41,7 @@ export default function Attendance() {
     const unsubscribe = onSnapshot(collection(db, 'employees'), (snapshot) => {
       const emps: Employee[] = [];
       snapshot.forEach((doc) => emps.push({ id: doc.id, ...doc.data() } as Employee));
-      setEmployees(emps.filter(e => e.status === 'active' || !e.status).sort((a, b) => a.fullName.localeCompare(b.fullName)));
+      setEmployees(emps.filter(e => (e.status === 'active' || !e.status) && e.role !== 'ceo' && e.role !== 'admin').sort((a, b) => a.fullName.localeCompare(b.fullName)));
     }, (error) => { setError('Failed to load employees'); handleFirestoreError(error, OperationType.GET, 'employees'); });
     return () => unsubscribe();
   }, [user]);
@@ -529,6 +529,9 @@ export default function Attendance() {
                               const att = attendanceData[`${emp.id}_${d}`];
                               return att?.status === 'hd' || (att?.timeIn === '07:00' && att?.timeOut === '12:00');
                             }).length} HD
+                          </span>
+                          <span className="text-[8px] font-bold text-blue-700 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400 px-1.5 py-0.5 rounded uppercase tracking-wider">
+                            {dates.reduce((sum, d) => sum + (attendanceData[`${emp.id}_${d}`]?.otHours || 0), 0).toFixed(1)} OT
                           </span>
                       </div>
                     </div>

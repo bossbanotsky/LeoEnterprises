@@ -4,7 +4,7 @@ import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { auth, db, loginWithGoogle, logout } from '../firebase';
 
 interface UserData {
-  role: 'admin' | 'employee';
+  role: 'admin' | 'employee' | 'ceo';
   email: string;
   employeeId?: string;
   fullName?: string;
@@ -85,19 +85,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               }
               setLoading(false);
             } else {
-              // Try to find a matching employee by email
+              // Try to find a matching employee by email (Case-insensitive & trimmed)
               try {
-                const { collection, query, where, getDocs, setDoc } = await import('firebase/firestore');
-                const q = query(collection(db, 'employees'), where('email', '==', currentUser.email));
-                const querySnapshot = await getDocs(q);
+                const { collection, getDocs, setDoc } = await import('firebase/firestore');
                 
-                if (!querySnapshot.empty) {
-                  const employeeDoc = querySnapshot.docs[0];
-                  const employeeRecord = employeeDoc.data();
+                // Fetch all employees to allow robust casing/spacing matching
+                // (This is highly efficient for standard employee sizes)
+                const snapshot = await getDocs(collection(db, 'employees'));
+                let matchedEmployeeDoc = null;
+                const normalizedCurrentEmail = currentUser.email?.trim().toLowerCase();
+
+                for (const doc of snapshot.docs) {
+                  const data = doc.data();
+                  if (data.email && data.email.trim().toLowerCase() === normalizedCurrentEmail) {
+                    matchedEmployeeDoc = doc;
+                    break;
+                  }
+                }
+                
+                if (matchedEmployeeDoc) {
+                  const employeeRecord = matchedEmployeeDoc.data();
                   const empData: UserData = { 
-                    role: 'employee', 
+                    role: employeeRecord.role || 'employee', 
                     email: currentUser.email!,
-                    employeeId: employeeDoc.id,
+                    employeeId: matchedEmployeeDoc.id,
                     fullName: employeeRecord.fullName,
                     photoURL: employeeRecord.photoURL
                   };

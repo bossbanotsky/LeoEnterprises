@@ -1,147 +1,461 @@
-import React, { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, where, orderBy, limit } from 'firebase/firestore';
-import { db, handleFirestoreError, OperationType } from '../firebase';
-import { useAuth } from '../contexts/AuthContext';
-import { useCompanyInfo } from '../hooks/useCompanyInfo';
-import { Announcement } from '../types';
-import { Users, CheckCircle, XCircle, Clock, Hammer, Calendar, ChevronLeft, ChevronRight, Megaphone, Plus, Eye } from 'lucide-react';
-import { format, addDays, subDays, parseISO, isPast } from 'date-fns';
-import { Input } from './ui/input';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect, useMemo } from "react";
+import {
+  collection,
+  onSnapshot,
+  query,
+  where,
+  orderBy,
+  limit,
+} from "firebase/firestore";
+import { db, handleFirestoreError, OperationType } from "../firebase";
+import { useAuth } from "../contexts/AuthContext";
+import { useCompanyInfo } from "../hooks/useCompanyInfo";
+import {
+  Announcement,
+  Employee,
+  Attendance,
+  PakyawJob,
+  CashAdvance,
+} from "../types";
+import {
+  Users,
+  CheckCircle,
+  XCircle,
+  Clock,
+  Hammer,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  Megaphone,
+  Plus,
+  Eye,
+  PhilippinePeso,
+} from "lucide-react";
+import {
+  format,
+  addDays,
+  subDays,
+  parseISO,
+  isPast,
+  isWithinInterval,
+  startOfMonth,
+  endOfMonth,
+  eachDayOfInterval,
+  isSunday,
+  getDay,
+} from "date-fns";
+import { calculateAttendanceHours } from "../lib/payrollUtils";
+import { Input } from "./ui/input";
+import { Link } from "react-router-dom";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 
 export default function Dashboard() {
   const { user } = useAuth();
   const { companyInfo } = useCompanyInfo();
-  const [selectedDate, setSelectedDate] = useState(() => localStorage.getItem('dashSelectedDate') || format(new Date(), 'yyyy-MM-dd'));
+  const [selectedDate, setSelectedDate] = useState(
+    () =>
+      localStorage.getItem("dashSelectedDate") ||
+      format(new Date(), "yyyy-MM-dd"),
+  );
   const [stats, setStats] = useState({
     totalEmployees: 0,
     present: 0,
     absent: 0,
     ut: 0,
-    pakyaw: 0
+    hd: 0,
+    pakyaw: 0,
+    ot: 0,
   });
-  const [recentAnnouncements, setRecentAnnouncements] = useState<Announcement[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [attendances, setAttendances] = useState<Attendance[]>([]);
+  const [pakyawJobs, setPakyawJobs] = useState<PakyawJob[]>([]);
+  const [cashAdvances, setCashAdvances] = useState<CashAdvance[]>([]);
+  const [recentAnnouncements, setRecentAnnouncements] = useState<
+    Announcement[]
+  >([]);
+
+  // Projection States
+  const [startDate, setStartDate] = useState(
+    () =>
+      localStorage.getItem("payrollStartDate") ||
+      format(startOfMonth(new Date()), "yyyy-MM-dd"),
+  );
+  const [endDate, setEndDate] = useState(
+    () =>
+      localStorage.getItem("payrollEndDate") ||
+      format(endOfMonth(new Date()), "yyyy-MM-dd"),
+  );
+  const [selectedEmployeeProj, setSelectedEmployeeProj] = useState<any | null>(
+    null,
+  );
 
   useEffect(() => {
-    localStorage.setItem('dashSelectedDate', selectedDate);
+    const handleStorage = () => {
+      const savedStart = localStorage.getItem("payrollStartDate");
+      const savedEnd = localStorage.getItem("payrollEndDate");
+      if (savedStart) setStartDate(savedStart);
+      if (savedEnd) setEndDate(savedEnd);
+    };
+    window.addEventListener("payrollDateChange", handleStorage);
+    return () => window.removeEventListener("payrollDateChange", handleStorage);
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("dashSelectedDate", selectedDate);
   }, [selectedDate]);
 
   const handlePrevDate = () => {
-    setSelectedDate(prev => format(subDays(parseISO(prev), 1), 'yyyy-MM-dd'));
+    setSelectedDate((prev) => format(subDays(parseISO(prev), 1), "yyyy-MM-dd"));
   };
 
   const handleNextDate = () => {
-    setSelectedDate(prev => format(addDays(parseISO(prev), 1), 'yyyy-MM-dd'));
+    setSelectedDate((prev) => format(addDays(parseISO(prev), 1), "yyyy-MM-dd"));
   };
 
   useEffect(() => {
     if (!user) return;
-    
+
     let unsubscribeAtt: (() => void) | null = null;
     let activeEmpIds = new Set<string>();
 
     // Get active employees first to filter attendance
-    const unsubscribeEmps = onSnapshot(collection(db, 'employees'), (snapshot) => {
-      const newActiveEmpIds = new Set<string>();
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        if (data.status === 'active' || !data.status) {
-          newActiveEmpIds.add(doc.id);
-        }
-      });
-      activeEmpIds = newActiveEmpIds;
-      
-      setStats(prev => ({ ...prev, totalEmployees: activeEmpIds.size }));
-
-      // Attendance for selected date
-      const q = query(collection(db, 'attendance'), where('date', '==', selectedDate));
-      
-      if (unsubscribeAtt) {
-        unsubscribeAtt();
-      }
-
-      unsubscribeAtt = onSnapshot(q, (attSnapshot) => {
-        let present = 0;
-        let ut = 0;
-        let pakyaw = 0;
-        const loggedIds = new Set<string>();
-
-        attSnapshot.forEach(doc => {
+    const unsubscribeEmps = onSnapshot(
+      collection(db, "employees"),
+      (snapshot) => {
+        const emps: Employee[] = [];
+        const newActiveEmpIds = new Set<string>();
+        snapshot.forEach((doc) => {
           const data = doc.data();
-          if (activeEmpIds.has(data.employeeId)) {
-            loggedIds.add(data.employeeId);
-            if (data.status === 'present') present++;
-            else if (data.status === 'ut') ut++;
-            else if (data.status === 'pakyaw') pakyaw++;
+          emps.push({ id: doc.id, ...data } as Employee);
+          if (
+            (data.status === "active" || !data.status) &&
+            data.role !== "ceo" &&
+            data.role !== "admin"
+          ) {
+            newActiveEmpIds.add(doc.id);
           }
         });
+        setEmployees(emps);
+        activeEmpIds = newActiveEmpIds;
 
-        // Implicitly absent = active employees who are NOT logged or are logged as 'absent'
-        // Actually, we should count those explicitly 'absent' too
-        let explicitAbsent = 0;
-        attSnapshot.forEach(doc => {
-          const data = doc.data();
-          if (activeEmpIds.has(data.employeeId) && data.status === 'absent') explicitAbsent++;
-        });
+        setStats((prev) => ({ ...prev, totalEmployees: activeEmpIds.size }));
 
-        const totalHandledButLogged = loggedIds.size;
-        const missing = activeEmpIds.size - totalHandledButLogged;
+        // Attendance for selected date
+        const q = query(
+          collection(db, "attendance"),
+          where("date", "==", selectedDate),
+        );
 
-        setStats(prev => ({ 
-          ...prev, 
-          present, 
-          ut, 
-          pakyaw, 
-          absent: missing + explicitAbsent 
-        }));
-      }, (error) => handleFirestoreError(error, OperationType.GET, 'attendance'));
+        if (unsubscribeAtt) {
+          unsubscribeAtt();
+        }
 
-    }, (error) => handleFirestoreError(error, OperationType.GET, 'employees'));
+        unsubscribeAtt = onSnapshot(
+          q,
+          (attSnapshot) => {
+            let present = 0;
+            let ut = 0;
+            let hd = 0;
+            let pakyaw = 0;
+            let ot = 0;
+            const loggedIds = new Set<string>();
 
-    const qAnn = query(collection(db, 'announcements'), orderBy('createdAt', 'desc'), limit(3));
+            attSnapshot.forEach((doc) => {
+              const data = doc.data();
+              if (activeEmpIds.has(data.employeeId)) {
+                loggedIds.add(data.employeeId);
+
+                const isHD =
+                  data.status === "hd" ||
+                  (data.timeIn === "07:00" && data.timeOut === "12:00");
+                const isUT =
+                  (data.status === "ut" ||
+                    (data.status === "present" &&
+                      data.regularHours !== undefined &&
+                      data.regularHours < 8 &&
+                      data.regularHours > 0)) &&
+                  !isHD;
+                const isPresent = data.status === "present" && !isUT && !isHD;
+
+                if (isPresent) present++;
+                else if (isUT) ut++;
+                else if (isHD) hd++;
+                else if (data.status === "pakyaw") pakyaw++;
+
+                if (data.otHours && data.otHours > 0) {
+                  ot += data.otHours;
+                }
+              }
+            });
+
+            // Implicitly absent = active employees who are NOT logged or are logged as 'absent'
+            // Actually, we should count those explicitly 'absent' too
+            let explicitAbsent = 0;
+            attSnapshot.forEach((doc) => {
+              const data = doc.data();
+              if (activeEmpIds.has(data.employeeId) && data.status === "absent")
+                explicitAbsent++;
+            });
+
+            const totalHandledButLogged = loggedIds.size;
+            const missing = activeEmpIds.size - totalHandledButLogged;
+
+            setStats((prev) => ({
+              ...prev,
+              present,
+              ut,
+              hd,
+              pakyaw,
+              ot,
+              absent: missing + explicitAbsent,
+            }));
+          },
+          (error) =>
+            handleFirestoreError(error, OperationType.GET, "attendance"),
+        );
+      },
+      (error) => handleFirestoreError(error, OperationType.GET, "employees"),
+    );
+
+    const unsubscribeAllAtts = onSnapshot(
+      collection(db, "attendance"),
+      (snapshot) => {
+        const allAtts: Attendance[] = [];
+        snapshot.forEach((doc) =>
+          allAtts.push({ id: doc.id, ...doc.data() } as Attendance),
+        );
+        setAttendances(allAtts);
+      },
+    );
+
+    const unsubscribePakyaw = onSnapshot(
+      collection(db, "pakyawJobs"),
+      (snapshot) => {
+        const pj: PakyawJob[] = [];
+        snapshot.forEach((doc) =>
+          pj.push({ id: doc.id, ...doc.data() } as PakyawJob),
+        );
+        setPakyawJobs(pj);
+      },
+    );
+
+    const unsubscribeCA = onSnapshot(
+      collection(db, "cashAdvances"),
+      (snapshot) => {
+        const ca: CashAdvance[] = [];
+        snapshot.forEach((doc) =>
+          ca.push({ id: doc.id, ...doc.data() } as CashAdvance),
+        );
+        setCashAdvances(ca);
+      },
+    );
+
+    const qAnn = query(
+      collection(db, "announcements"),
+      orderBy("createdAt", "desc"),
+      limit(3),
+    );
     const unsubscribeAnn = onSnapshot(qAnn, (snapshot) => {
       const data: Announcement[] = [];
-      snapshot.forEach(doc => data.push({ id: doc.id, ...doc.data() } as Announcement));
+      snapshot.forEach((doc) =>
+        data.push({ id: doc.id, ...doc.data() } as Announcement),
+      );
       setRecentAnnouncements(data);
     });
 
     return () => {
       unsubscribeEmps();
       unsubscribeAnn();
+      unsubscribeAllAtts();
+      unsubscribePakyaw();
+      unsubscribeCA();
       if (unsubscribeAtt) {
         unsubscribeAtt();
       }
     };
   }, [user, selectedDate]);
 
+  const projection = useMemo(() => {
+    let grandTotal = 0;
+    const activeEmployees = employees.filter(
+      (emp) =>
+        (emp.status === "active" || !emp.status) &&
+        emp.role !== "ceo" &&
+        emp.role !== "admin",
+    );
+    const start = parseISO(startDate);
+    const end = parseISO(endDate);
+
+    const employeeProjections = activeEmployees
+      .map((emp) => {
+        const empAttendances = attendances.filter((a) => {
+          if (a.employeeId !== emp.id) return false;
+          try {
+            const date = parseISO(a.date);
+            return isWithinInterval(date, { start, end });
+          } catch {
+            return false;
+          }
+        });
+
+        const attendedDates = new Set(empAttendances.map((a) => a.date));
+        // Full Monday to Sunday
+        const workingDays = eachDayOfInterval({ start, end });
+
+        // Implicitly find missing days (Default Absent)
+        const implicitAbsents: Attendance[] = [];
+        workingDays.forEach((day) => {
+          const dateStr = format(day, "yyyy-MM-dd");
+          if (!attendedDates.has(dateStr)) {
+            implicitAbsents.push({
+              id: `implicit-${emp.id}-${dateStr}`,
+              employeeId: emp.id,
+              date: dateStr,
+              status: "absent",
+              timeIn: "",
+              timeOut: "",
+              regularHours: 0,
+              otHours: 0,
+              userId: "system",
+              createdAt: new Date().toISOString(),
+              uid: "system",
+            } as Attendance);
+          }
+        });
+
+        // Combine real records with detected system absents and enrich with job names
+        const combinedAttendances = [...empAttendances, ...implicitAbsents].map(
+          (att) => {
+            if (att.status === "pakyaw" && att.pakyawJobId) {
+              const job = pakyawJobs.find((j) => j.id === att.pakyawJobId);
+              return { ...att, jobName: job?.description };
+            }
+            return att;
+          },
+        );
+
+        let presentDays = 0;
+        let hdDays = 0;
+        let otHours = 0;
+        let otDays = 0;
+        let utDays = 0;
+        let absentDays = 0;
+        let pakyawDays = 0;
+        let regularHoursCount = 0;
+
+        combinedAttendances.forEach((att) => {
+          const { regHrs, otHrs: calculatedOtHrs } = calculateAttendanceHours(att);
+          
+          if (calculatedOtHrs > 0) {
+            otHours += calculatedOtHrs;
+            otDays++;
+          }
+
+          const isHD =
+            att.status === "hd" ||
+            (att.timeIn === "07:00" && att.timeOut === "12:00");
+          const isUT =
+            (att.status === "ut" ||
+              (att.status === "present" &&
+                regHrs < 8 &&
+                regHrs > 0)) &&
+            !isHD;
+          const isPresent = att.status === "present" && !isUT && !isHD;
+
+          if (isPresent || isHD || isUT) {
+            if (isPresent) presentDays++;
+            else if (isHD) hdDays++;
+            else if (isUT) utDays++;
+            
+            regularHoursCount += regHrs;
+          } else if (att.status === "absent") {
+            absentDays++;
+          } else if (att.status === "pakyaw") {
+            pakyawDays++;
+          }
+        });
+
+        // Pakyaw Pay Calculation (Sync with Payroll.tsx - only completed jobs)
+        const empPakyawJobs = pakyawJobs.filter(
+          (pj) =>
+            pj.employeeIds.includes(emp.id) &&
+            pj.status === "completed" &&
+            isWithinInterval(parseISO(pj.startDate), { start, end }),
+        );
+        const pakyawPay = empPakyawJobs.reduce(
+          (sum, pj) => sum + pj.totalPrice / Math.max(1, pj.employeeIds.length),
+          0,
+        );
+
+        const hourlyRate = (emp.dailySalary || 0) / 8;
+        const regularPay = regularHoursCount * hourlyRate;
+        const otPayAmount = otHours * hourlyRate;
+
+        // Cash Advance for period
+        const empCAs = cashAdvances.filter(
+          (ca) =>
+            ca.employeeId === emp.id &&
+            isWithinInterval(parseISO(ca.date), { start, end }),
+        );
+        const totalCA = empCAs.reduce((sum, ca) => sum + ca.amount, 0);
+
+        const totalToBePaid = regularPay + otPayAmount + pakyawPay - totalCA;
+
+        grandTotal += totalToBePaid;
+
+        return {
+          ...emp,
+          presentDays,
+          hdDays,
+          utDays,
+          absentDays,
+          pakyawDays,
+          otHours,
+          otDays,
+          pakyawPay,
+          totalCA,
+          totalToBePaid,
+          attendances: combinedAttendances,
+          hourlyRate,
+        };
+      })
+      .sort((a, b) => a.fullName.localeCompare(b.fullName));
+
+    return { employeeProjections, grandTotal };
+  }, [employees, attendances, pakyawJobs, cashAdvances, startDate, endDate]);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Overview</h1>
-          <p className="text-slate-500 dark:text-slate-400 text-sm">Welcome back to {companyInfo.name}</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+            Overview
+          </h1>
+          <p className="text-slate-500 dark:text-slate-400 text-sm">
+            Welcome back to {companyInfo.name}
+          </p>
         </div>
-        
+
         <div className="bg-white dark:bg-slate-800 p-1 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center gap-1 group">
-          <button 
+          <button
             onClick={handlePrevDate}
             className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-colors text-slate-500"
             title="Previous Day"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
-          
+
           <div className="flex items-center gap-1.5 px-1 py-1 bg-slate-50 dark:bg-slate-900 rounded-xl">
             <Calendar className="w-3.5 h-3.5 text-blue-500 ml-1" />
-            <Input 
-              type="date" 
-              value={selectedDate} 
-              onChange={e => setSelectedDate(e.target.value)}
+            <Input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
               className="border-0 h-7 text-xs font-black bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 w-[110px] p-0"
             />
           </div>
 
-          <button 
+          <button
             onClick={handleNextDate}
             className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-colors text-slate-500"
             title="Next Day"
@@ -159,43 +473,201 @@ export default function Dashboard() {
               <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/40 rounded-xl flex items-center justify-center">
                 <Users className="w-5 h-5" />
               </div>
-              <span className="text-xs font-bold uppercase tracking-widest">Total Employees</span>
+              <span className="text-xs font-bold uppercase tracking-widest">
+                Total Employees
+              </span>
             </div>
-            <div className="text-4xl font-black text-slate-900 dark:text-white tracking-tight">{stats.totalEmployees}</div>
-            <div className="text-[10px] text-slate-400 dark:text-slate-500 mt-2 font-medium uppercase tracking-wider">Active Personnel</div>
+            <div className="text-4xl font-black text-slate-900 dark:text-white tracking-tight">
+              {stats.totalEmployees}
+            </div>
+            <div className="text-[10px] text-slate-400 dark:text-slate-500 mt-2 font-medium uppercase tracking-wider">
+              Active Personnel
+            </div>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
             <div className="bento-card flex-col bg-white dark:bg-slate-800 p-5 border-emerald-100 dark:border-emerald-900/30 relative overflow-hidden group">
               <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 mb-2">
                 <CheckCircle className="w-4 h-4" />
-                <span className="text-[10px] font-bold uppercase tracking-widest">Present</span>
+                <span className="text-[10px] font-bold uppercase tracking-widest">
+                  Present
+                </span>
               </div>
-              <div className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">{stats.present}</div>
+              <div className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                {stats.present}
+              </div>
             </div>
 
             <div className="bento-card flex-col bg-white dark:bg-slate-800 p-5 border-sky-100 dark:border-sky-900/30 relative overflow-hidden group">
               <div className="flex items-center gap-2 text-sky-600 dark:text-sky-400 mb-2">
                 <Clock className="w-4 h-4" />
-                <span className="text-[10px] font-bold uppercase tracking-widest">UT</span>
+                <span className="text-[10px] font-bold uppercase tracking-widest">
+                  UT
+                </span>
               </div>
-              <div className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">{stats.ut}</div>
+              <div className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                {stats.ut}
+              </div>
+            </div>
+
+            <div className="bento-card flex-col bg-white dark:bg-slate-800 p-5 border-indigo-100 dark:border-indigo-900/30 relative overflow-hidden group">
+              <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 mb-2">
+                <Clock className="w-4 h-4" />
+                <span className="text-[10px] font-bold uppercase tracking-widest">
+                  HD
+                </span>
+              </div>
+              <div className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                {stats.hd}
+              </div>
+            </div>
+
+            <div className="bento-card flex-col bg-white dark:bg-slate-800 p-5 border-blue-100 dark:border-blue-900/30 relative overflow-hidden group">
+              <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 mb-2">
+                <Clock className="w-4 h-4" />
+                <span className="text-[10px] font-bold uppercase tracking-widest">
+                  OT Total
+                </span>
+              </div>
+              <div className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                {stats.ot.toFixed(1)}{" "}
+                <span className="text-sm font-bold text-slate-400">h</span>
+              </div>
             </div>
 
             <div className="bento-card flex-col bg-white dark:bg-slate-800 p-5 border-amber-100 dark:border-amber-900/30 relative overflow-hidden group">
               <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 mb-2">
                 <Hammer className="w-4 h-4" />
-                <span className="text-[10px] font-bold uppercase tracking-widest">Pakyaw</span>
+                <span className="text-[10px] font-bold uppercase tracking-widest">
+                  Pakyaw
+                </span>
               </div>
-              <div className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">{stats.pakyaw}</div>
+              <div className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                {stats.pakyaw}
+              </div>
             </div>
 
             <div className="bento-card flex-col bg-white dark:bg-slate-800 p-5 border-rose-100 dark:border-rose-900/30 relative overflow-hidden group">
               <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400 mb-2">
                 <XCircle className="w-4 h-4" />
-                <span className="text-[10px] font-bold uppercase tracking-widest">Absent</span>
+                <span className="text-[10px] font-bold uppercase tracking-widest">
+                  Absent
+                </span>
               </div>
-              <div className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">{stats.absent}</div>
+              <div className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                {stats.absent}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bento-card flex-col bg-slate-900 dark:bg-slate-950 p-6 border-slate-800 relative overflow-hidden group min-h-[160px] justify-center text-center md:text-left">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-[40px] -mr-16 -mt-16 group-hover:bg-emerald-500/20 transition-all duration-700"></div>
+              <div className="flex items-center gap-3 text-emerald-400 mb-2 relative z-10 justify-center md:justify-start">
+                <PhilippinePeso className="w-5 h-5" />
+                <span className="text-xs font-bold uppercase tracking-widest text-emerald-500">
+                  Upcoming Projection
+                </span>
+              </div>
+              <div className="text-4xl font-black text-white relative z-10">
+                ₱{" "}
+                {projection.grandTotal.toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </div>
+              <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-2 relative z-10">
+                {format(parseISO(startDate), "MMM dd")} -{" "}
+                {format(parseISO(endDate), "MMM dd")}
+              </div>
+            </div>
+
+            <div className="bento-card flex-col bg-white dark:bg-slate-800 p-6 border-slate-200 dark:border-slate-700 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2">
+                  <Calendar className="w-4 h-4" /> Period
+                </h3>
+              </div>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setStartDate(val);
+                    localStorage.setItem("payrollStartDate", val);
+                    window.dispatchEvent(new Event("payrollDateChange"));
+                  }}
+                  className="h-9 text-xs rounded-xl"
+                />
+                <span className="text-slate-400">to</span>
+                <Input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setEndDate(val);
+                    localStorage.setItem("payrollEndDate", val);
+                    window.dispatchEvent(new Event("payrollDateChange"));
+                  }}
+                  className="h-9 text-xs rounded-xl"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="bento-card flex-col bg-white dark:bg-slate-800 p-6 border-slate-200 dark:border-slate-700">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500">
+                Personnel Projection Details
+              </h3>
+              <div className="text-[10px] text-slate-400 font-medium">
+                Click name for daily logs
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+              {projection.employeeProjections.map((emp) => (
+                <div
+                  key={emp.id}
+                  className="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-xl flex items-center justify-between border border-slate-100 dark:border-slate-800 cursor-pointer hover:border-blue-300 transition-colors"
+                  onClick={() => setSelectedEmployeeProj(emp)}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 overflow-hidden flex items-center justify-center font-bold text-blue-600 text-xs">
+                      {emp.photoURL ? (
+                        <img
+                          src={emp.photoURL}
+                          alt=""
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        emp.fullName.charAt(0)
+                      )}
+                    </div>
+                    <div>
+                      <div className="font-bold text-sm text-slate-800 dark:text-slate-200">
+                        {emp.fullName}
+                      </div>
+                      <div className="text-[10px] text-slate-500">
+                        {emp.position || "Staff"}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-bold text-emerald-600 dark:text-emerald-400 text-sm">
+                      ₱{" "}
+                      {emp.totalToBePaid.toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                      })}
+                    </div>
+                    <div className="text-[9px] text-slate-400">
+                      {emp.presentDays + emp.utDays + emp.hdDays * 0.5} Action
+                      Days
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -205,32 +677,49 @@ export default function Dashboard() {
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-2">
               <Megaphone className="w-4 h-4 text-blue-600" />
-              <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500">Recent Notices</h3>
+              <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500">
+                Recent Notices
+              </h3>
             </div>
-            <Link to="/admin-dashboard/announcements" className="p-1 px-2 bg-blue-50 dark:bg-blue-900/40 text-[9px] font-bold text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 transition-colors uppercase">
+            <Link
+              to="/admin-dashboard/announcements"
+              className="p-1 px-2 bg-blue-50 dark:bg-blue-900/40 text-[9px] font-bold text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 transition-colors uppercase"
+            >
               Manage
             </Link>
           </div>
-          
+
           <div className="space-y-4">
             {recentAnnouncements.length === 0 ? (
               <div className="py-10 text-center flex flex-col items-center gap-2 opacity-40">
                 <Megaphone className="w-8 h-8 text-slate-300" />
-                <p className="text-xs font-bold uppercase tracking-widest">No New Notices</p>
+                <p className="text-xs font-bold uppercase tracking-widest">
+                  No New Notices
+                </p>
               </div>
             ) : (
               recentAnnouncements.map((ann, idx) => (
-                <div key={ann.id} className={`group flex flex-col gap-1 pb-4 ${idx !== recentAnnouncements.length - 1 ? 'border-b border-slate-50 dark:border-slate-800' : ''}`}>
+                <div
+                  key={ann.id}
+                  className={`group flex flex-col gap-1 pb-4 ${idx !== recentAnnouncements.length - 1 ? "border-b border-slate-50 dark:border-slate-800" : ""}`}
+                >
                   <div className="flex items-center justify-between">
                     <h4 className="font-bold text-xs text-slate-800 dark:text-slate-200 line-clamp-1 group-hover:text-blue-600 transition-colors">
                       {ann.title}
                     </h4>
                     {isPast(parseISO(ann.expiresAt)) && (
-                      <span className="text-[8px] bg-slate-100 text-slate-400 px-1.5 py-0.5 rounded font-bold uppercase">Archived</span>
+                      <span className="text-[8px] bg-slate-100 text-slate-400 px-1.5 py-0.5 rounded font-bold uppercase">
+                        Archived
+                      </span>
                     )}
                   </div>
-                  <p className="text-[11px] text-slate-500 line-clamp-1 italic">{ann.message}</p>
-                  <Link to="/admin-dashboard/announcements" className="flex items-center gap-2 mt-1">
+                  <p className="text-[11px] text-slate-500 line-clamp-1 italic">
+                    {ann.message}
+                  </p>
+                  <Link
+                    to="/admin-dashboard/announcements"
+                    className="flex items-center gap-2 mt-1"
+                  >
                     <div className="flex items-center gap-1 text-[9px] text-slate-400">
                       <Eye className="w-3 h-3" /> Seen by {ann.viewedBy.length}
                     </div>
@@ -238,7 +727,7 @@ export default function Dashboard() {
                 </div>
               ))
             )}
-            
+
             <Link to="/admin-dashboard/announcements" className="block">
               <button className="w-full mt-2 h-10 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-blue-400 hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-all flex items-center justify-center gap-2 text-slate-400 hover:text-blue-600 text-[10px] font-bold uppercase tracking-widest">
                 <Plus className="w-3.5 h-3.5" />
@@ -248,6 +737,219 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* Detail Breakdown Modal */}
+      <Dialog
+        open={!!selectedEmployeeProj}
+        onOpenChange={(open) => !open && setSelectedEmployeeProj(null)}
+      >
+        <DialogContent className="sm:max-w-[500px] border-slate-200 dark:border-slate-800">
+          <DialogHeader>
+            <DialogTitle>Projection Breakdown</DialogTitle>
+          </DialogHeader>
+
+          {selectedEmployeeProj && (
+            <div className="space-y-4 pt-2 relative">
+              <div className="flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
+                <div className="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900 flex items-center justify-center font-bold text-blue-600 dark:text-blue-400 overflow-hidden shadow-sm">
+                  {selectedEmployeeProj.photoURL ? (
+                    <img
+                      src={selectedEmployeeProj.photoURL}
+                      alt=""
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    selectedEmployeeProj.fullName.charAt(0)
+                  )}
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg text-slate-900 dark:text-white">
+                    {selectedEmployeeProj.fullName}
+                  </h3>
+                  <p className="text-xs text-slate-500 uppercase tracking-widest">
+                    {selectedEmployeeProj.position || "Staff"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-3 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                      Present
+                    </span>
+                    <span className="font-bold text-slate-900 dark:text-white">
+                      {selectedEmployeeProj.presentDays} days
+                    </span>
+                  </div>
+                </div>
+                <div className="p-3 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                      Half Days
+                    </span>
+                    <span className="font-bold text-slate-900 dark:text-white">
+                      {selectedEmployeeProj.hdDays} days
+                    </span>
+                  </div>
+                </div>
+                <div className="p-3 bg-orange-50 dark:bg-orange-950/20 rounded-xl border border-orange-100 dark:border-orange-900/30 text-orange-900 dark:text-orange-400">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Undertime</span>
+                    <span className="font-bold">
+                      {selectedEmployeeProj.utDays} days
+                    </span>
+                  </div>
+                </div>
+                <div className="p-3 bg-red-50 dark:bg-red-950/20 rounded-xl border border-red-100 dark:border-red-900/30 text-red-900 dark:text-red-400">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Absent</span>
+                    <span className="font-bold">
+                      {selectedEmployeeProj.absentDays} days
+                    </span>
+                  </div>
+                </div>
+                <div className="p-3 bg-amber-50 dark:bg-amber-950/20 rounded-xl border border-amber-100 dark:border-amber-900/30 text-amber-900 dark:text-amber-400">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Pakyaw</span>
+                    <span className="font-bold">
+                      {selectedEmployeeProj.pakyawDays} days
+                    </span>
+                  </div>
+                </div>
+                <div className="p-3 bg-blue-50 dark:bg-blue-950/20 rounded-xl border border-blue-100 dark:border-blue-900/30 text-blue-900 dark:text-blue-400">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Overtime</span>
+                    <div className="text-right">
+                      <span className="font-bold block">
+                        {selectedEmployeeProj.otHours} hours
+                      </span>
+                      <span className="text-[10px] font-medium opacity-70 italic">
+                        {selectedEmployeeProj.otDays} days worked OT
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 bg-emerald-50 dark:bg-emerald-950/20 rounded-xl border border-emerald-100 dark:border-emerald-900/30">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-sm font-medium text-emerald-800 dark:text-emerald-400">
+                    Regular Pay Est.
+                  </span>
+                  <span className="font-bold text-emerald-900 dark:text-emerald-100">
+                    ₱{" "}
+                    {(
+                      selectedEmployeeProj.totalToBePaid -
+                      selectedEmployeeProj.otHours *
+                        selectedEmployeeProj.hourlyRate
+                    ).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-emerald-800 dark:text-emerald-400">
+                    Overtime ({selectedEmployeeProj.otHours}h)
+                  </span>
+                  <span className="font-bold text-emerald-900 dark:text-emerald-100">
+                    ₱{" "}
+                    {(
+                      selectedEmployeeProj.otHours *
+                      selectedEmployeeProj.hourlyRate
+                    ).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between mt-3 pt-3 border-t border-emerald-200 dark:border-emerald-900/50">
+                  <span className="text-xs font-bold uppercase tracking-widest text-emerald-600">
+                    Calculated Projection
+                  </span>
+                  <span className="text-xl font-black text-emerald-700 dark:text-emerald-400">
+                    ₱{" "}
+                    {selectedEmployeeProj.totalToBePaid.toLocaleString(
+                      undefined,
+                      { minimumFractionDigits: 2 },
+                    )}
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+                  Attendance Log
+                </h4>
+                <div className="max-h-[180px] overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                  {selectedEmployeeProj.attendances &&
+                  selectedEmployeeProj.attendances.length > 0 ? (
+                    [...selectedEmployeeProj.attendances]
+                      .sort((a: any, b: any) => b.date.localeCompare(a.date))
+                      .map((att: any) => {
+                        const isHD =
+                          att.status === "hd" ||
+                          (att.timeIn === "07:00" && att.timeOut === "12:00");
+                        const isUT =
+                          (att.status === "ut" ||
+                            (att.status === "present" &&
+                              att.regularHours !== undefined &&
+                              att.regularHours < 8 &&
+                              att.regularHours > 0)) &&
+                          !isHD;
+                        const isPresent =
+                          att.status === "present" && !isUT && !isHD;
+                        return (
+                          <div
+                            key={att.id}
+                            className="flex items-center justify-between p-2 bg-white dark:bg-slate-900 rounded-lg border border-slate-100 dark:border-slate-800 text-[11px]"
+                          >
+                            <div className="flex items-center gap-2">
+                              <div
+                                className={`w-1.5 h-1.5 rounded-full ${
+                                  isPresent
+                                    ? "bg-emerald-500"
+                                    : att.status === "hd"
+                                      ? "bg-blue-400"
+                                      : att.status === "ut"
+                                        ? "bg-orange-400"
+                                        : att.status === "pakyaw"
+                                          ? "bg-amber-500"
+                                          : "bg-red-500"
+                                }`}
+                              ></div>
+                              <span className="font-medium text-slate-700 dark:text-slate-300">
+                                {format(parseISO(att.date), "MMM dd, yyyy")}
+                                {(isPresent || isHD || isUT) && att.timeIn && (
+                                  <span className="block text-[9px] text-slate-400 font-normal">
+                                    {att.timeIn} - {att.timeOut || "--:--"}
+                                  </span>
+                                )}
+                                {att.status === "pakyaw" && att.jobName && (
+                                  <span className="block text-[9px] text-amber-600 font-bold italic">
+                                    Project: {att.jobName}
+                                  </span>
+                                )}
+                              </span>
+                            </div>
+                            <span className="font-bold uppercase tracking-tighter opacity-60">
+                              {isHD
+                                ? "Half Day"
+                                : isUT
+                                  ? "Undertime"
+                                  : isPresent
+                                    ? "Present"
+                                    : att.status}
+                            </span>
+                          </div>
+                        );
+                      })
+                  ) : (
+                    <div className="text-center py-4 text-xs text-slate-400 border border-dashed rounded-xl">
+                      No logs found
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

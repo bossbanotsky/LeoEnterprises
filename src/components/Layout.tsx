@@ -29,7 +29,16 @@ export default function Layout() {
     { path: '/employee-dashboard/messenger', label: 'Chat', icon: MessageSquare },
   ];
 
-  const navItems = userData?.role === 'admin' ? adminNavItems : employeeNavItems;
+  const ceoNavItems = [
+    { path: '/ceo-dashboard', label: 'Executive', icon: LayoutGrid },
+    { path: '/ceo-dashboard/messenger', label: 'Chat', icon: MessageSquare },
+  ];
+
+  const navItems = userData?.role === 'admin' 
+    ? adminNavItems 
+    : userData?.role === 'ceo' 
+      ? ceoNavItems 
+      : employeeNavItems;
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground overflow-hidden relative">

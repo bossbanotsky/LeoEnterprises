@@ -8,6 +8,7 @@ export interface Employee {
   hourlyRate: number;
   email?: string;
   loginPassword?: string;
+  role?: 'admin' | 'employee' | 'ceo';
   createdAt: string;
   uid: string;
   
@@ -136,7 +137,7 @@ export interface UserProfile {
   uid: string;
   email: string;
   fullName: string;
-  role: 'admin' | 'employee';
+  role: 'admin' | 'employee' | 'ceo';
   employeeId?: string; // Link to Employee document for employees
   photoURL?: string;
   createdAt: string;

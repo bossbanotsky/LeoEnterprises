@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import GalleryViewer from '../components/GalleryViewer';
+import VideoViewer from '../components/VideoViewer';
 import { Category } from '../services/galleryService';
 
 const services = [
@@ -135,6 +136,7 @@ export default function LandingPage() {
                   {service.description}
                 </p>
                 <GalleryViewer category={service.title as Category} />
+                <VideoViewer category={service.title as Category} />
                 <div className="mt-8 pt-6 border-t border-slate-100 flex items-center text-blue-600 text-sm font-bold opacity-0 group-hover:opacity-100 transition-opacity">
                   Learn More <ArrowRight className="ml-2 w-4 h-4" />
                 </div>
