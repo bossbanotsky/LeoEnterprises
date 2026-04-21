@@ -2,16 +2,67 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useCompanyInfo } from '../hooks/useCompanyInfo';
-import { Building2, Settings as SettingsIcon, Shield, Moon, Sun, ChevronRight, LogOut, AlertCircle, X, Save, Lock, CheckCircle2 } from 'lucide-react';
+import { Building2, Settings as SettingsIcon, Shield, Moon, Sun, ChevronRight, LogOut, AlertCircle, X, Save, Lock, CheckCircle2, Camera, Loader2 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from './ui/dialog';
+import { storage, auth } from '../firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { updateProfile } from 'firebase/auth';
 
 export default function Settings() {
   const { user, logout, changePassword } = useAuth();
   const navigate = useNavigate();
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    console.log('File change triggered:', file ? file.name : 'no file');
+    
+    if (!file) {
+      alert("No file selected.");
+      return;
+    }
+    if (!user) {
+      alert("No user context found.");
+      return;
+    }
+
+    try {
+      setIsUploading(true);
+      console.log('Starting upload for user:', user.uid);
+      const storageRef = ref(storage, `profilePictures/${user.uid}`);
+      await uploadBytes(storageRef, file);
+      console.log('Upload bytes complete.');
+      
+      const downloadURL = await getDownloadURL(storageRef);
+      console.log('Download URL obtained:', downloadURL);
+      
+      // Update Firebase Auth
+      if (auth.currentUser) {
+        await updateProfile(auth.currentUser, { photoURL: downloadURL });
+        console.log('Firebase Auth profile updated.');
+      } else {
+        throw new Error("No authenticated user to update profile.");
+      }
+      
+      // Update Firestore user document
+      const { updateDoc, doc } = await import('firebase/firestore');
+      await updateDoc(doc(db, 'users', user.uid), { photoURL: downloadURL });
+      console.log('Profile document updated.');
+
+      // Trigger a re-render/refresh
+      alert('Upload successful!');
+      window.location.reload();
+    } catch (error) {
+      console.error('Error uploading photo:', error);
+      alert('Failed to upload image: ' + (error instanceof Error ? error.message : String(error)));
+    } finally {
+      setIsUploading(false);
+    }
+  };
   
   const { companyInfo, updateCompanyInfo } = useCompanyInfo();
   const [showCompanyDialog, setShowCompanyDialog] = useState(false);
@@ -54,9 +105,21 @@ export default function Settings() {
           <div className="relative bento-card flex-col bg-white dark:bg-slate-800 p-0 overflow-hidden border-slate-200 dark:border-slate-700 shadow-sm">
             <div className="p-6 flex items-center gap-5">
               <div className="relative">
-                <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-2xl flex items-center justify-center font-bold text-3xl shadow-lg transform group-hover:scale-105 transition-transform duration-300">
-                  {user?.email?.[0].toUpperCase() || 'A'}
-                </div>
+                <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" id="profile-picture-upload-admin" />
+                <label htmlFor="profile-picture-upload-admin" className="cursor-pointer">
+                  <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-2xl flex items-center justify-center font-bold text-3xl shadow-lg transform group-hover:scale-105 transition-transform duration-300 overflow-hidden relative">
+                    {isUploading ? (
+                      <Loader2 className="w-8 h-8 animate-spin" />
+                    ) : user?.photoURL ? (
+                      <img src={user.photoURL} alt="Profile" className="w-full h-full object-cover" />
+                    ) : (
+                      user?.email?.[0].toUpperCase() || 'A'
+                    )}
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                      <Camera className="w-8 h-8 text-white" />
+                    </div>
+                  </div>
+                </label>
                 <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 border-4 border-white dark:border-slate-800 rounded-full"></div>
               </div>
               <div className="flex-1 min-w-0">
