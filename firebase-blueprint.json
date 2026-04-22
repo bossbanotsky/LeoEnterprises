@@ -181,9 +181,34 @@
       "properties": {
         "imageUrl": { "type": "string" },
         "category": { "type": "string" },
+        "albumId": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["imageUrl", "category", "createdAt"]
+    },
+    "Video": {
+      "title": "Gallery Video",
+      "description": "Video uploaded by admin",
+      "type": "object",
+      "properties": {
+        "videoUrl": { "type": "string" },
+        "category": { "type": "string" },
+        "albumId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["videoUrl", "category", "createdAt"]
+    },
+    "Album": {
+      "title": "Album",
+      "description": "Gallery album to organize images and videos",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "category": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "category", "createdAt"]
     }
   },
   "firestore": {
@@ -234,6 +259,14 @@
     "/gallery/{docId}": {
       "schema": { "$ref": "#/entities/Gallery" },
       "description": "Public gallery images organized by category"
+    },
+    "/videos/{docId}": {
+      "schema": { "$ref": "#/entities/Video" },
+      "description": "Public gallery videos organized by category"
+    },
+    "/albums/{docId}": {
+      "schema": { "$ref": "#/entities/Album" },
+      "description": "Albums for galleries"
     }
   }
 }

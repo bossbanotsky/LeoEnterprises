@@ -1,6 +1,6 @@
 import { storage, db, auth } from '../firebase';
 import { ref, uploadBytesResumable, getDownloadURL, UploadTaskSnapshot } from 'firebase/storage';
-import { collection, addDoc, query, where, getDocs, orderBy, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, query, where, getDocs, orderBy, serverTimestamp, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 
 export const CATEGORIES = [
   "Civil Works",
@@ -13,7 +13,29 @@ export const CATEGORIES = [
 
 export type Category = typeof CATEGORIES[number];
 
-export async function uploadImage(file: File, category: Category, onProgress: (progress: number) => void) {
+export interface Album {
+  id: string;
+  category: Category;
+  title: string;
+  description: string;
+  createdAt: any;
+}
+
+export async function createAlbum(category: Category, title: string, description: string) {
+  try {
+    const docRef = await addDoc(collection(db, "albums"), {
+      category,
+      title,
+      description,
+      createdAt: serverTimestamp()
+    });
+    return docRef.id;
+  } catch (error: any) {
+    throw new Error("Error creating album: " + error.message);
+  }
+}
+
+export async function uploadImage(file: File, category: Category, onProgress: (progress: number) => void, albumId?: string) {
   try {
     if (!file) throw new Error("No file selected");
     if (!category) throw new Error("Please select a category");
@@ -68,6 +90,7 @@ export async function uploadImage(file: File, category: Category, onProgress: (p
              await addDoc(collection(db, "gallery"), {
                imageUrl: base64Url,
                category: category,
+               albumId: albumId || null,
                createdAt: serverTimestamp(),
              });
              onProgress(100);
@@ -85,7 +108,7 @@ export async function uploadImage(file: File, category: Category, onProgress: (p
   }
 }
 
-export async function addVideoUrl(url: string, category: Category) {
+export async function addVideoUrl(url: string, category: Category, albumId?: string) {
   try {
     if (!url) throw new Error("No URL provided");
     if (!category) throw new Error("Please select a category");
@@ -93,6 +116,7 @@ export async function addVideoUrl(url: string, category: Category) {
     await addDoc(collection(db, "videos"), {
       videoUrl: url,
       category: category,
+      albumId: albumId || null,
       createdAt: serverTimestamp(),
     });
     return "Video added successfully!";
@@ -101,7 +125,7 @@ export async function addVideoUrl(url: string, category: Category) {
   }
 }
 
-export async function uploadVideoFile(file: File, category: Category, onProgress: (progress: number) => void) {
+export async function uploadVideoFile(file: File, category: Category, onProgress: (progress: number) => void, albumId?: string) {
   return new Promise(async (resolve, reject) => {
     if (!file) {
       reject(new Error("No file selected"));
@@ -168,6 +192,7 @@ export async function uploadVideoFile(file: File, category: Category, onProgress
           await addDoc(collection(db, "videos"), {
             videoUrl: downloadURL,
             category: category,
+            albumId: albumId || null,
             createdAt: serverTimestamp(),
           });
           onProgress(100);
@@ -187,5 +212,25 @@ export async function getGalleryImages(category: Category) {
     orderBy("createdAt", "desc")
   );
   const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as { id: string, imageUrl: string, category: string, createdAt: any }));
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as { id: string, imageUrl: string, category: string, albumId?: string, createdAt: any }));
+}
+
+export async function getAlbums(category: Category): Promise<Album[]> {
+  const q = query(
+    collection(db, "albums"),
+    where("category", "==", category),
+    orderBy("createdAt", "desc")
+  );
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Album));
+}
+
+export async function updateAlbum(id: string, title: string, description: string) {
+  const docRef = doc(db, "albums", id);
+  await updateDoc(docRef, { title, description });
+}
+
+export async function deleteAlbum(id: string) {
+  const docRef = doc(db, "albums", id);
+  await deleteDoc(docRef);
 }

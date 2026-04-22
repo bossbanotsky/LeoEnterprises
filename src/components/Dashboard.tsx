@@ -1002,9 +1002,13 @@ export default function Dashboard() {
             {selectedStatus.employeeIds.map((id) => {
               const emp = employees.find((e) => e.id === id);
               if (!emp) return null;
+              
+              const att = attendances.find((a) => a.employeeId === id && a.date === selectedDate);
+              const job = att && att.status === 'pakyaw' ? pakyawJobs.find((j) => j.id === att.pakyawJobId) : null;
+              
               return (
                 <div key={emp.id} className="p-3 bg-slate-50 dark:bg-slate-900 rounded-xl flex items-center gap-3 border border-slate-100 dark:border-slate-800">
-                  <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden flex items-center justify-center font-bold text-slate-500 text-xs">
+                  <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden flex items-center justify-center font-bold text-slate-500 text-xs shrink-0">
                     {emp.photoURL ? (
                       <img
                         src={emp.photoURL}
@@ -1015,13 +1019,41 @@ export default function Dashboard() {
                       emp.fullName.charAt(0)
                     )}
                   </div>
-                  <div className="flex-1">
-                    <div className="font-bold text-sm text-slate-900 dark:text-white">
-                      {emp.fullName}
+                  <div className="flex-1 flex justify-between items-center gap-2">
+                    <div className="min-w-0">
+                      <div className="font-bold text-sm text-slate-900 dark:text-white truncate">
+                        {emp.fullName}
+                      </div>
+                      <div className="text-[10px] text-slate-500 truncate">
+                        {emp.position || "Staff"}
+                      </div>
                     </div>
-                    <div className="text-[10px] text-slate-500">
-                      {emp.position || "Staff"}
-                    </div>
+                    {att && (
+                      <div className="text-right shrink-0 flex flex-col items-end gap-1">
+                        {(att.timeIn || att.timeOut) && (
+                          <div className="text-[10px] font-bold text-slate-600 dark:text-slate-300">
+                            {format(parseISO(`${selectedDate}T${att.timeIn || '00:00'}`), "h:mm a")} - {att.timeOut ? format(parseISO(`${selectedDate}T${att.timeOut}`), "h:mm a") : 'No out'}
+                          </div>
+                        )}
+                        <div className="flex flex-wrap justify-end gap-1">
+                          {att.status === 'pakyaw' && job && (
+                            <span className="text-[9px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded">
+                              {job.description}
+                            </span>
+                          )}
+                          {!!att.otHours && att.otHours > 0 && (
+                            <span className="text-[9px] font-bold text-blue-600 bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 rounded">
+                              +{att.otHours}h OT
+                            </span>
+                          )}
+                          {!!att.regularHours && att.regularHours > 0 && att.regularHours < 8 && selectedStatus.category !== 'Half-Day' && (
+                            <span className="text-[9px] font-bold text-orange-600 bg-orange-50 dark:bg-orange-900/30 px-1.5 py-0.5 rounded">
+                              {att.regularHours}h
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               );

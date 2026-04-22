@@ -14,6 +14,9 @@ export default defineConfig(({mode}) => {
         registerType: 'autoUpdate',
         injectRegister: 'auto',
         includeAssets: ['favicon.ico', 'icon.svg'],
+        workbox: {
+          maximumFileSizeToCacheInBytes: 4000000, // Increase to 4MB
+        },
         manifest: {
           name: 'Leo Enterprises ERP',
           short_name: 'Leo ERP',

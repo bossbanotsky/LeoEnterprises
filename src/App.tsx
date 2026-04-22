@@ -5,6 +5,7 @@ import { ToastProvider } from './contexts/ToastContext';
 import Layout from './components/Layout';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
+import ServiceDetail from './pages/ServiceDetail';
 import Dashboard from './components/Dashboard';
 import Employees from './components/Employees';
 import Attendance from './components/Attendance';
@@ -76,9 +77,10 @@ export default function App() {
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<AuthRedirect />} />
-            <Route path="/login" element={<LoginPage />} />
-            
-            {/* Admin Routes */}
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/services/:slug" element={<ServiceDetail />} />
+              
+              {/* Admin Routes */}
             <Route path="/admin-dashboard" element={<ProtectedRoute allowedRoles={['admin']}><Layout /></ProtectedRoute>}>
               <Route index element={<Dashboard />} />
               <Route path="messenger" element={<Messenger />} />

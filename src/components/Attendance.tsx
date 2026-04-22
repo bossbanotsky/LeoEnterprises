@@ -4,10 +4,13 @@ import { db, handleFirestoreError, OperationType } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { Employee, Attendance as AttendanceType, PakyawJob } from '../types';
 import { format, parseISO, eachDayOfInterval, startOfWeek, endOfWeek, addDays, subDays } from 'date-fns';
-import { ChevronDown, ChevronUp, Check, X, ChevronLeft, ChevronRight, Calendar, Calculator } from 'lucide-react';
+import { ChevronDown, ChevronUp, Check, X, ChevronLeft, ChevronRight, Calendar, Calculator, Download } from 'lucide-react';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Skeleton } from './ui/Skeleton';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 export default function Attendance() {
   const { user } = useAuth();
@@ -21,6 +24,10 @@ export default function Attendance() {
   const [error, setError] = useState<string | null>(null);
   const [expandedEmp, setExpandedEmp] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportScope, setExportScope] = useState<'bulk' | 'individual'>('bulk');
+  const [exportEmpId, setExportEmpId] = useState<string>('all');
 
   useEffect(() => {
     localStorage.setItem('attendanceStartDate', startDate);
@@ -238,22 +245,241 @@ export default function Attendance() {
     }
   };
 
+  const handleExportPDF = () => {
+    const doc = new jsPDF();
+    const periodString = activeTab === 'mark' 
+      ? format(parseISO(singleDate), 'MMMM d, yyyy')
+      : `${format(parseISO(startDate), 'MMM d, yyyy')} to ${format(parseISO(endDate), 'MMM d, yyyy')}`;
+
+    doc.setFontSize(16);
+    doc.text('Attendance Report', 14, 22);
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text(`Period: ${periodString}`, 14, 28);
+    
+    let yPos = 35;
+    
+    const employeesToExport = exportScope === 'individual' && exportEmpId !== 'all'
+      ? employees.filter(e => e.id === exportEmpId)
+      : employees;
+
+    employeesToExport.forEach((emp, index) => {
+      // Add a small gap between tables if printing multiple, unless it's a bulk table
+      if (exportScope === 'individual' && index > 0) {
+        yPos += 10;
+        if (yPos > 250) {
+          doc.addPage();
+          yPos = 20;
+        }
+      }
+
+      const tableData = dates.map(date => {
+        const att = attendanceData[`${emp.id}_${date}`];
+        let statusDisplay = 'Absent';
+        let timeInOut = '-- / --';
+        let reg = '0.0';
+        let ot = '0.0';
+        let detail = `₱${calculateDailyPay(emp, `${emp.id}_${date}`).toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+
+        if (att) {
+          if (att.status === 'hd') statusDisplay = 'Half Day';
+          else if (att.status === 'present') statusDisplay = 'Present';
+          else if (att.status === 'pakyaw') statusDisplay = 'Pakyaw';
+          else if (att.status === 'ut') statusDisplay = 'Undertime';
+          
+          if (att.status === 'present' || att.status === 'ut' || att.status === 'hd') {
+            timeInOut = `${att.timeIn || '--'} - ${att.timeOut || '--'}`;
+            reg = (att.regularHours || 0).toString();
+            ot = (att.otHours || 0).toString();
+          }
+          if (att.status === 'pakyaw') {
+            const jobs = pakyawJobs.filter(j => j.startDate === date && j.employeeIds.includes(emp.id));
+            if (jobs.length > 0) {
+               detail += ` (${jobs.map(j => j.description).join(', ')})`;
+            }
+          }
+        }
+
+        return [
+          format(parseISO(date), 'MMM dd (EEE)'),
+          statusDisplay,
+          timeInOut,
+          reg,
+          ot,
+          detail
+        ];
+      });
+
+      if (exportScope === 'individual') {
+        doc.setFontSize(12);
+        doc.setTextColor(0);
+        doc.text(`Employee: ${emp.fullName} (${emp.position || 'Staff'})`, 14, yPos);
+        yPos += 5;
+        
+        autoTable(doc, {
+          startY: yPos,
+          head: [['Date', 'Status', 'Time', 'Reg', 'OT', 'Amount (₱) / Details']],
+          body: tableData,
+          theme: 'grid',
+          headStyles: { fillColor: [59, 130, 246] },
+          styles: { fontSize: 8 },
+        });
+        
+        yPos = (doc as any).lastAutoTable.finalY + 5;
+        
+        // Add footer for this employee
+        doc.setFontSize(9);
+        doc.text(`Total Period Amount: ₱${calculatePeriodTotal(emp).toLocaleString(undefined, {minimumFractionDigits: 2})}`, 14, yPos);
+        yPos += 5;
+      }
+    });
+
+    if (exportScope === 'bulk') {
+      // Bulk view: summarize by employee rather than per day, or flattened if single date
+      if (activeTab === 'mark') {
+         const bulkData = employeesToExport.map(emp => {
+            const att = attendanceData[`${emp.id}_${singleDate}`];
+            let statusDisplay = 'Absent';
+            let timeInOut = '-- / --';
+            let reg = '0.0';
+            let ot = '0.0';
+            if (att) {
+              if (att.status === 'hd') statusDisplay = 'Half Day';
+              else if (att.status === 'present') statusDisplay = 'Present';
+              else if (att.status === 'pakyaw') statusDisplay = 'Pakyaw';
+              else if (att.status === 'ut') statusDisplay = 'Undertime';
+              timeInOut = `${att.timeIn || '--:--'} - ${att.timeOut || '--:--'}`;
+              reg = (att.regularHours || 0).toString();
+              ot = (att.otHours || 0).toString();
+            }
+            return [
+              emp.fullName,
+              statusDisplay,
+              timeInOut,
+              reg,
+              ot,
+              `₱${calculateDailyPay(emp, `${emp.id}_${singleDate}`).toLocaleString()}`
+            ];
+         });
+         
+         autoTable(doc, {
+            startY: yPos,
+            head: [['Name', 'Status', 'Time', 'Reg', 'OT', 'Amount (₱)']],
+            body: bulkData,
+            theme: 'grid',
+            headStyles: { fillColor: [59, 130, 246] },
+            styles: { fontSize: 8 },
+          });
+      } else {
+         // Range Bulk Review
+         const bulkData: any[] = [];
+         
+         employeesToExport.forEach(emp => {
+            // Add a row to group by employee? To make the report clearer. Let's add a shaded row for the Employee name before their dates.
+            bulkData.push([{ content: `Employee: ${emp.fullName}`, colSpan: 6, styles: { fillColor: [240, 240, 240], fontStyle: 'bold' } }, '']);
+            
+            let periodTotal = 0;
+
+            dates.forEach(d => {
+               const att = attendanceData[`${emp.id}_${d}`];
+               
+               let statusDisplay = 'Absent';
+               let timeInOut = '-- / --';
+               let reg = '0.0';
+               let ot = '0.0';
+               
+               const dailyPay = calculateDailyPay(emp, `${emp.id}_${d}`);
+               periodTotal += dailyPay;
+               
+               let detail = `₱${dailyPay.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+
+               if (att) {
+                 if (att.status === 'hd') statusDisplay = 'Half Day';
+                 else if (att.status === 'present') statusDisplay = 'Present';
+                 else if (att.status === 'pakyaw') statusDisplay = 'Pakyaw';
+                 else if (att.status === 'ut') statusDisplay = 'Undertime';
+                 
+                 if (att.status === 'present' || att.status === 'ut' || att.status === 'hd') {
+                   timeInOut = `${att.timeIn || '--'} - ${att.timeOut || '--'}`;
+                   reg = (att.regularHours || 0).toString();
+                   ot = (att.otHours || 0).toString();
+                 }
+                 if (att.status === 'pakyaw') {
+                   const jobs = pakyawJobs.filter(j => j.startDate === d && j.employeeIds.includes(emp.id));
+                   if (jobs.length > 0) {
+                      detail += ` (${jobs.map(j => j.description).join(', ')})`;
+                   }
+                 }
+               }
+               
+               bulkData.push([
+                 format(parseISO(d), 'MMM dd'),
+                 '', // Empty Name column since we used a group header
+                 statusDisplay,
+                 timeInOut,
+                 reg,
+                 ot,
+                 detail
+               ]);
+            });
+
+            // Employee Subtotal
+            bulkData.push([{ content: `Subtotal`, colSpan: 6, styles: { halign: 'right', fontStyle: 'bold' } }, { content: `₱${periodTotal.toLocaleString(undefined, {minimumFractionDigits: 2})}`, styles: { fontStyle: 'bold' } }]);
+         });
+         
+         autoTable(doc, {
+            startY: yPos,
+            head: [['Date', 'Name', 'Status', 'Time', 'Reg', 'OT', 'Amount (₱)']],
+            body: bulkData,
+            theme: 'grid',
+            headStyles: { fillColor: [59, 130, 246] },
+            styles: { fontSize: 8 },
+            didDrawPage: function (data) {
+               yPos = data.cursor ? data.cursor.y : 0;
+            }
+          });
+          
+          yPos = (doc as any).lastAutoTable.finalY + 10;
+          doc.setFontSize(12);
+          doc.text(`Grand Total: ₱${calculateGrandTotal().toLocaleString(undefined, {minimumFractionDigits: 2})}`, 14, yPos);
+      }
+    }
+
+    doc.save(`Attendance_${activeTab}_${format(new Date(), 'yyyyMMdd')}.pdf`);
+    setShowExportModal(false);
+  };
+
   return (
     <div className="h-full flex flex-col w-full p-2 sm:px-4 space-y-3 sm:space-y-4">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 px-1">
         <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight shrink-0">Attendance</h1>
-        <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700 w-full sm:w-auto">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           <button 
-            className={`flex-1 sm:px-6 py-2 text-sm font-semibold rounded-lg transition-all ${activeTab === 'mark' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
-            onClick={() => setActiveTab('mark')}
+            onClick={() => setShowExportModal(true)}
+            className="hidden sm:flex items-center gap-2 px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-none font-bold text-sm rounded-xl shadow-sm hover:opacity-90 transition-opacity"
           >
-            Mark
+            <Download className="w-4 h-4" />
+            <span className="hidden sm:inline">Export PDF</span>
           </button>
+          <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700 flex-1 sm:flex-none">
+            <button 
+              className={`flex-1 sm:px-6 py-2 text-sm font-semibold rounded-lg transition-all ${activeTab === 'mark' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
+              onClick={() => setActiveTab('mark')}
+            >
+              Mark
+            </button>
+            <button 
+              className={`flex-1 sm:px-6 py-2 text-sm font-semibold rounded-lg transition-all ${activeTab === 'report' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
+              onClick={() => setActiveTab('report')}
+            >
+              Report
+            </button>
+          </div>
           <button 
-            className={`flex-1 sm:px-6 py-2 text-sm font-semibold rounded-lg transition-all ${activeTab === 'report' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
-            onClick={() => setActiveTab('report')}
+            onClick={() => setShowExportModal(true)}
+            className="sm:hidden flex items-center justify-center p-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl shadow-sm"
           >
-            Report
+            <Download className="w-5 h-5" />
           </button>
         </div>
       </div>
@@ -623,6 +849,68 @@ export default function Attendance() {
         </div>
       )}
     </div>
+    
+      {/* Export Options Modal */}
+      <Dialog open={showExportModal} onOpenChange={setShowExportModal}>
+        <DialogContent className="sm:max-w-md border-slate-200 dark:border-slate-800">
+          <DialogHeader>
+            <DialogTitle>Export PDF Report</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-6 mt-4">
+            <div className="space-y-4 text-sm">
+              <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800">
+                <span className="font-bold text-slate-700 dark:text-slate-300">Period Selected:</span>
+                <span className="text-blue-600 dark:text-blue-400 font-bold">
+                  {activeTab === 'mark' ? format(parseISO(singleDate), 'MMMM d, yyyy') : `${format(parseISO(startDate), 'MMM d, yy')} - ${format(parseISO(endDate), 'MMM d, yy')}`}
+                </span>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">Export Scope</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => setExportScope('bulk')}
+                    className={`py-2 px-3 rounded-lg border font-bold text-xs transition-colors ${exportScope === 'bulk' ? 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-400' : 'bg-white border-slate-200 text-slate-600 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400'}`}
+                  >
+                    Bulk Report
+                  </button>
+                  <button
+                    onClick={() => setExportScope('individual')}
+                    className={`py-2 px-3 rounded-lg border font-bold text-xs transition-colors ${exportScope === 'individual' ? 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-400' : 'bg-white border-slate-200 text-slate-600 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400'}`}
+                  >
+                    Per Employee
+                  </button>
+                </div>
+              </div>
+
+              {exportScope === 'individual' && (
+                <div className="space-y-2 animate-in fade-in slide-in-from-top-1">
+                  <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">Select Employee</Label>
+                  <select 
+                    value={exportEmpId} 
+                    onChange={(e) => setExportEmpId(e.target.value)}
+                    className="w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="all">All Employees (Separate Pages)</option>
+                    {employees.map(emp => (
+                      <option key={emp.id} value={emp.id}>{emp.fullName}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+
+            <button 
+              onClick={handleExportPDF}
+              className="w-full h-11 bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-bold rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+            >
+              <Download className="w-4 h-4" />
+              Download {exportScope === 'bulk' ? 'Bulk Report' : 'Employee Report'}
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
   </div>
 );
 }

@@ -46,16 +46,9 @@ export default function LoginPage() {
         errorMessage.includes('auth/user-not-found') ||
         errorMessage.includes('auth/wrong-password')
       ) {
-        // We handle this as a standard UI feedback, not a system failure
-        setError('Invalid email or password. Please check your credentials and try again.');
-      } else if (errorCode === 'auth/invalid-email' || errorMessage.includes('auth/invalid-email')) {
-        setError('Please enter a valid email address.');
-      } else if (errorCode === 'auth/too-many-requests' || errorMessage.includes('auth/too-many-requests')) {
-        setError('Too many failed attempts. Please try again later or reset your password.');
+        setError('Invalid credentials. Please attempt again.');
       } else {
-        // Only log errors that are NOT standard credential failures
-        console.error("Login error details:", err);
-        setError(errorMessage || 'Authentication failed. Please try again.');
+        setError(errorMessage || 'Authentication failed.');
       }
     } finally {
       setIsLoading(false);
@@ -68,7 +61,6 @@ export default function LoginPage() {
       setIsLoading(true);
       await loginWithGoogleContext();
     } catch (err: any) {
-      console.error(err);
       setError(err.message || 'Failed to sign in with Google.');
     } finally {
       setIsLoading(false);
@@ -76,134 +68,134 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 relative overflow-hidden">
-      <EtherealMeshBackground />
+    <div className="min-h-screen bg-[linear-gradient(180deg,#f8fafc_0%,#eef2f7_100%)] flex items-center justify-center p-6 relative overflow-hidden font-sans">
+      {/* Background Glass Elements */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        <div className="absolute top-[-10%] right-[-5%] w-[600px] h-[600px] bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.08),transparent_60%)]"></div>
+        <div className="absolute bottom-[-10%] left-[-5%] w-[500px] h-[500px] bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.05),transparent_60%)]"></div>
+      </div>
 
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="w-full max-w-md relative z-10"
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className="w-full max-w-[480px] relative z-10"
       >
-        <Card className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-slate-200 dark:border-slate-800 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.3)] rounded-[2.5rem] overflow-hidden">
-          <div className={`h-2 ${role === 'admin' ? 'bg-gradient-to-r from-blue-600 via-indigo-600 to-indigo-950' : 'bg-gradient-to-r from-blue-500 via-indigo-500 to-indigo-700'}`} />
-          
-          <div className="pt-6 px-6">
+        <div className="bg-white/55 backdrop-blur-[20px] border border-white/60 shadow-[0_40px_80px_rgba(37,99,235,0.08)] rounded-[40px] overflow-hidden p-10 lg:p-14">
+          <div className="flex items-center justify-between mb-12">
             <Link to="/">
-              <Button variant="ghost" className="text-slate-500 hover:text-blue-900 gap-2 font-black uppercase tracking-wider text-xs">
-                <ArrowLeft className="w-4 h-4" /> Back Home
+              <div className="flex items-center gap-2 group cursor-pointer">
+                <div className="w-8 h-8 bg-slate-900 rounded-lg flex items-center justify-center rotate-3 border border-slate-700/50">
+                  <span className="text-white font-black text-sm">L</span>
+                </div>
+                <span className="font-bold text-sm tracking-tight text-slate-900 uppercase italic">LEO</span>
+              </div>
+            </Link>
+            <Link to="/">
+              <Button variant="ghost" className="text-[11px] font-bold text-slate-400 uppercase tracking-widest hover:text-blue-600 transition-colors">
+                <ArrowLeft className="w-3.5 h-3.5 mr-2" /> Exit
               </Button>
             </Link>
           </div>
-          
-          <CardHeader className="text-center space-y-2 pt-2 pb-6">
-            <div className={`w-20 h-20 ${role === 'admin' ? 'bg-slate-900' : 'bg-blue-600'} rounded-[2rem] mx-auto flex items-center justify-center shadow-2xl ${role === 'admin' ? 'rotate-6' : '-rotate-6'} mb-4 text-white`}>
-              {role === 'admin' ? <ShieldCheck className="w-10 h-10" /> : <LogIn className="w-10 h-10" />}
-            </div>
-            <CardTitle className="text-3xl font-black text-slate-900 tracking-tight">
-              {role === 'admin' ? 'Admin Console' : 'Staff Portal'}
-            </CardTitle>
-            <CardDescription className="text-slate-500 font-medium italic">
-              {role === 'admin' ? 'Secure Company Administration' : 'Access records & attendance'}
-            </CardDescription>
-          </CardHeader>
 
-          <CardContent className="px-10 pb-12">
-            <div className="bg-slate-100 p-1 rounded-2xl mb-8 flex">
-                <Button 
-                    variant={role === 'employee' ? 'default' : 'ghost'} 
-                    className={`flex-1 rounded-xl h-10 ${role === 'employee' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500'}`}
-                    onClick={() => setRole('employee')}
-                >
-                    <User className="w-4 h-4 mr-2" /> Employee
-                </Button>
-                <Button 
-                    variant={role === 'admin' ? 'default' : 'ghost'} 
-                    className={`flex-1 rounded-xl h-10 ${role === 'admin' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-500'}`}
-                    onClick={() => setRole('admin')}
-                >
-                    <ShieldCheck className="w-4 h-4 mr-2" /> Admin
-                </Button>
-            </div>
+          <div className="mb-12">
+            <h1 className="text-4xl font-bold text-slate-900 tracking-[-0.04em] leading-none mb-3 uppercase italic">
+              {role === 'admin' ? 'Strategic' : 'Operational'} <br /> 
+              <span className="text-blue-600">Access Portal.</span>
+            </h1>
+            <p className="text-sm font-medium text-slate-500 tracking-tight">Enter your secure credentials to log into the command center.</p>
+          </div>
 
-            {error && (
-              <div className="mb-6 p-4 text-xs text-red-600 bg-red-50 rounded-2xl border border-red-100 font-bold uppercase tracking-wide">
-                {error}
-              </div>
-            )}
-            
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label className="text-xs font-black uppercase text-slate-400 ml-1 tracking-widest leading-none">Email Address</Label>
-                <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                  <Input 
-                    type="email" 
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="name@example.com" 
-                    className="pl-12 h-14 rounded-2xl border-slate-200 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium transition-all" 
-                    required
-                  />
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label className="text-xs font-black uppercase text-slate-400 ml-1 tracking-widest leading-none">{role === 'admin' ? 'Secret Key' : 'Security Pin'}</Label>
-                <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                  <Input 
-                    type="password" 
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••" 
-                    className="pl-12 h-14 rounded-2xl border-slate-200 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium transition-all" 
-                    required
-                  />
-                </div>
-              </div>
-              
-              <Button 
-                type="submit"
-                size="lg" 
-                className={`w-full h-16 rounded-2xl ${role === 'admin' ? 'bg-slate-900 hover:bg-slate-800' : 'bg-blue-600 hover:bg-blue-700'} text-white shadow-xl ${role === 'admin' ? 'shadow-slate-900/20' : 'shadow-blue-600/20'} transition-all active:scale-[0.98] font-black text-lg mt-4 group`}
-                disabled={isLoading}
+          <div className="bg-slate-100/50 backdrop-blur-sm p-1 rounded-2xl mb-10 flex border border-slate-100">
+              <button 
+                  onClick={() => setRole('employee')}
+                  className={`flex-1 flex items-center justify-center rounded-xl h-11 text-xs font-bold transition-all duration-300 ${role === 'employee' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
               >
-                {isLoading ? <Loader2 className="w-6 h-6 animate-spin" /> : <span>{role === 'admin' ? 'Authorize' : 'Access Portal'} <ArrowRight className="inline ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" /></span>}
-              </Button>
-            </form>
+                  <User className="w-3.5 h-3.5 mr-2" /> Employee
+              </button>
+              <button 
+                  onClick={() => setRole('admin')}
+                  className={`flex-1 flex items-center justify-center rounded-xl h-11 text-xs font-bold transition-all duration-300 ${role === 'admin' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+              >
+                  <ShieldCheck className="w-3.5 h-3.5 mr-2" /> Administrator
+              </button>
+          </div>
 
-            {role === 'employee' && (
-                <>
-                    <div className="w-full relative py-8 flex items-center justify-center">
+          {error && (
+            <div className="mb-8 p-5 text-[11px] text-red-600 bg-red-50/50 border border-red-100 rounded-2xl font-bold uppercase tracking-widest leading-relaxed">
+              {error}
+            </div>
+          )}
+          
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold uppercase text-slate-400 tracking-[2px] ml-1">Identity Resource</label>
+              <div className="relative">
+                <Mail className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
+                <Input 
+                  type="email" 
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="name@leoenterprises.ph" 
+                  className="pl-14 h-14 md:h-16 rounded-[20px] border-slate-100 bg-white/50 focus:bg-white text-[15px] font-medium transition-all focus:ring-4 focus:ring-blue-600/5" 
+                  required
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold uppercase text-slate-400 tracking-[2px] ml-1">Security Descriptor</label>
+              <div className="relative">
+                <Lock className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
+                <Input 
+                  type="password" 
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••" 
+                  className="pl-14 h-14 md:h-16 rounded-[20px] border-slate-100 bg-white/50 focus:bg-white text-[15px] font-medium transition-all focus:ring-4 focus:ring-blue-600/5" 
+                  required
+                />
+              </div>
+            </div>
+            
+            <Button 
+              type="submit"
+              className={`w-full h-16 md:h-20 rounded-full ${role === 'admin' ? 'bg-slate-900 border-slate-800' : 'bg-[linear-gradient(135deg,#1e3a8a,#2563eb)]'} text-white shadow-2xl ${role === 'admin' ? 'shadow-slate-900/10' : 'shadow-blue-600/30'} transition-all active:scale-95 font-bold uppercase italic italic tracking-tighter text-lg mt-6 group`}
+              disabled={isLoading}
+            >
+              {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <span className="flex items-center">Authorize Application <ArrowRight className="ml-3 w-5 h-5 group-hover:translate-x-2 transition-transform duration-300" /></span>}
+            </Button>
+          </form>
+
+          {role === 'employee' && (
+              <div className="mt-10">
+                  <div className="w-full relative py-6 flex items-center justify-center">
                     <div className="absolute inset-0 flex items-center">
                         <div className="w-full border-t border-slate-100"></div>
                     </div>
-                    <div className="relative bg-white/0 px-4 text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Quick SSO</div>
-                    </div>
+                    <div className="relative bg-white/0 px-4 text-[10px] font-bold text-slate-300 uppercase tracking-[3px]">SSO Integration</div>
+                  </div>
 
-                    <Button 
+                  <Button 
                     onClick={handleGoogleLogin} 
                     type="button"
-                    variant="outline"
-                    size="lg" 
-                    className="w-full h-14 rounded-2xl flex items-center justify-center space-x-3 transition-all font-black uppercase tracking-wider text-sm border-slate-200 hover:bg-slate-50"
+                    variant="ghost"
+                    className="w-full h-14 rounded-2xl flex items-center justify-center border border-slate-100 hover:bg-slate-50 transition-all font-bold uppercase tracking-wider text-xs text-slate-500"
                     disabled={isLoading}
-                    >
-                    <svg viewBox="0 0 24 24" className="w-5 h-5">
+                  >
+                    <svg viewBox="0 0 24 24" className="w-4 h-4 mr-3">
                         <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
                         <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
                         <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
                         <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-                        <path d="M1 1h22v22H1z" fill="none" />
                     </svg>
-                    <span>Continue with Google</span>
-                    </Button>
-                </>
-            )}
-          </CardContent>
-        </Card>
+                    Continue with Google
+                  </Button>
+              </div>
+          )}
+        </div>
       </motion.div>
     </div>
   );
 }
+

@@ -1,9 +1,7 @@
 {
   "name": "Leo Enterprises ERP",
   "description": "Multi-service ERP solutions including civil works, hauling, IT services, and technical support. Features attendance, payroll, and project management.",
-  "requestFramePermissions": [
-    "geolocation"
-  ],
+  "requestFramePermissions": [],
   "majorCapabilities": [
     "PWA",
     "Firebase Auth",
