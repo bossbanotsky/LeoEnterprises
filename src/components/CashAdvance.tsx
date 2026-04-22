@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, addDoc, updateDoc, query, orderBy, deleteDoc, doc } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
+import { useData } from '../contexts/DataContext';
 import { Employee, CashAdvance as CashAdvanceType } from '../types';
 import { Search, Plus, Wallet, Trash2, Edit2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
@@ -12,33 +13,11 @@ import { format, parseISO } from 'date-fns';
 
 export default function CashAdvance() {
   const { user } = useAuth();
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [cashAdvances, setCashAdvances] = useState<CashAdvanceType[]>([]);
+  const { employees, cashAdvances, loading: dataLoading } = useData();
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ employeeId: '', date: format(new Date(), 'yyyy-MM-dd'), amount: '', notes: '' });
-
-  useEffect(() => {
-    if (!user) return;
-    const unsubscribe = onSnapshot(collection(db, 'employees'), (snapshot) => {
-      const emps: Employee[] = [];
-      snapshot.forEach((doc) => emps.push({ id: doc.id, ...doc.data() } as Employee));
-      setEmployees(emps.sort((a, b) => a.fullName.localeCompare(b.fullName)));
-    }, (error) => handleFirestoreError(error, OperationType.GET, 'employees'));
-    return () => unsubscribe();
-  }, [user]);
-
-  useEffect(() => {
-    if (!user) return;
-    const q = query(collection(db, 'cashAdvances'), orderBy('date', 'desc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const advances: CashAdvanceType[] = [];
-      snapshot.forEach((doc) => advances.push({ id: doc.id, ...doc.data() } as CashAdvanceType));
-      setCashAdvances(advances);
-    }, (error) => handleFirestoreError(error, OperationType.GET, 'cashAdvances'));
-    return () => unsubscribe();
-  }, [user]);
 
   const handleAddCashAdvance = async (e: React.FormEvent) => {
     e.preventDefault();

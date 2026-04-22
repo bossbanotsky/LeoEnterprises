@@ -21,16 +21,23 @@ export function useCompanyInfo() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onSnapshot(doc(db, 'settings', 'company'), (docSnap) => {
-      if (docSnap.exists()) {
-        setCompanyInfo({ ...defaultCompany, ...docSnap.data() });
+    const fetchCompany = async () => {
+      try {
+        const { getDoc } = await import('firebase/firestore');
+        const docSnap = await getDoc(doc(db, 'settings', 'company'));
+        if (docSnap.exists()) {
+          setCompanyInfo({ ...defaultCompany, ...docSnap.data() });
+        }
+        setLoading(false);
+      } catch (error: any) {
+        // Silently handle quota errors
+        if (!error?.message?.toLowerCase().includes('quota')) {
+          console.error("Error fetching company info:", error);
+        }
+        setLoading(false);
       }
-      setLoading(false);
-    }, (error) => {
-      console.error("Error fetching company info:", error);
-      setLoading(false);
-    });
-    return () => unsubscribe();
+    };
+    fetchCompany();
   }, []);
 
   const updateCompanyInfo = async (data: Partial<CompanyInfo>) => {

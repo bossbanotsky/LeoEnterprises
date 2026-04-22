@@ -127,16 +127,15 @@ export default function Dashboard() {
   useEffect(() => {
     if (!user) return;
 
-    let unsubscribeAtt: (() => void) | null = null;
-    let activeEmpIds = new Set<string>();
-
-    // Get active employees first to filter attendance
-    const unsubscribeEmps = onSnapshot(
-      collection(db, "employees"),
-      (snapshot) => {
+    const fetchData = async () => {
+      try {
+        const { getDocs, collection, query, where, orderBy, limit } = await import('firebase/firestore');
+        
+        // 1. Employees (Single Fetch)
+        const empsSnapshot = await getDocs(collection(db, "employees"));
         const emps: Employee[] = [];
-        const newActiveEmpIds = new Set<string>();
-        snapshot.forEach((doc) => {
+        const activeEmpIds = new Set<string>();
+        empsSnapshot.forEach((doc) => {
           const data = doc.data();
           emps.push({ id: doc.id, ...data } as Employee);
           if (
@@ -144,155 +143,104 @@ export default function Dashboard() {
             data.role !== "ceo" &&
             data.role !== "admin"
           ) {
-            newActiveEmpIds.add(doc.id);
+            activeEmpIds.add(doc.id);
           }
         });
         setEmployees(emps);
-        activeEmpIds = newActiveEmpIds;
-
         setStats((prev) => ({ ...prev, totalEmployees: activeEmpIds.size }));
 
-        // Attendance for selected date
-        const q = query(
+        // 2. Attendance for current dashboard date
+        const attDayQ = query(
           collection(db, "attendance"),
           where("date", "==", selectedDate),
         );
+        const attDaySnapshot = await getDocs(attDayQ);
+        
+        const presentIds: string[] = [];
+        const utIds: string[] = [];
+        const hdIds: string[] = [];
+        const pakyawIds: string[] = [];
+        const absentIds: string[] = [];
+        let ot = 0;
+        const loggedIds = new Set<string>();
 
-        if (unsubscribeAtt) {
-          unsubscribeAtt();
-        }
+        attDaySnapshot.forEach((doc) => {
+          const data = doc.data();
+          if (activeEmpIds.has(data.employeeId)) {
+            loggedIds.add(data.employeeId);
+            const isHD = data.status === "hd" || (data.timeIn === "07:00" && data.timeOut === "12:00");
+            const isUT = (data.status === "ut" || (data.status === "present" && data.regularHours !== undefined && data.regularHours < 8 && data.regularHours > 0)) && !isHD;
+            const isPresent = data.status === "present" && !isUT && !isHD;
 
-        unsubscribeAtt = onSnapshot(
-          q,
-          (attSnapshot) => {
-            const presentIds: string[] = [];
-            const utIds: string[] = [];
-            const hdIds: string[] = [];
-            const pakyawIds: string[] = [];
-            const absentIds: string[] = [];
-            
-            let ot = 0;
-            const loggedIds = new Set<string>();
+            if (isPresent) presentIds.push(data.employeeId);
+            else if (isUT) utIds.push(data.employeeId);
+            else if (isHD) hdIds.push(data.employeeId);
+            else if (data.status === "pakyaw") pakyawIds.push(data.employeeId);
+            else if (data.status === "absent") absentIds.push(data.employeeId);
+            if (data.otHours && data.otHours > 0) ot += data.otHours;
+          }
+        });
 
-            // Find all active employees who don't have a record
-            const allActiveEmpIds = Array.from(activeEmpIds);
-            
-            attSnapshot.forEach((doc) => {
-              const data = doc.data();
-              if (activeEmpIds.has(data.employeeId)) {
-                loggedIds.add(data.employeeId);
+        Array.from(activeEmpIds).forEach(id => {
+          if (!loggedIds.has(id)) absentIds.push(id);
+        });
 
-                const isHD =
-                  data.status === "hd" ||
-                  (data.timeIn === "07:00" && data.timeOut === "12:00");
-                const isUT =
-                  (data.status === "ut" ||
-                    (data.status === "present" &&
-                      data.regularHours !== undefined &&
-                      data.regularHours < 8 &&
-                      data.regularHours > 0)) &&
-                  !isHD;
-                const isPresent = data.status === "present" && !isUT && !isHD;
+        setStats((prev) => ({
+          ...prev,
+          present: presentIds.length,
+          ut: utIds.length,
+          hd: hdIds.length,
+          pakyaw: pakyawIds.length,
+          ot,
+          absent: absentIds.length,
+          presentIds, utIds, hdIds, pakyawIds, absentIds,
+        }));
 
-                if (isPresent) presentIds.push(data.employeeId);
-                else if (isUT) utIds.push(data.employeeId);
-                else if (isHD) hdIds.push(data.employeeId);
-                else if (data.status === "pakyaw") pakyawIds.push(data.employeeId);
-                else if (data.status === "absent") absentIds.push(data.employeeId);
-
-                if (data.otHours && data.otHours > 0) {
-                  ot += data.otHours;
-                }
-              }
-            });
-
-            // Implicitly absent
-            allActiveEmpIds.forEach(id => {
-              if (!loggedIds.has(id)) {
-                absentIds.push(id);
-              }
-            });
-
-            setStats((prev) => ({
-              ...prev,
-              present: presentIds.length,
-              ut: utIds.length,
-              hd: hdIds.length,
-              pakyaw: pakyawIds.length,
-              ot,
-              absent: absentIds.length,
-              presentIds,
-              utIds,
-              hdIds,
-              pakyawIds,
-              absentIds,
-            }));
-          },
-          (error) =>
-            handleFirestoreError(error, OperationType.GET, "attendance"),
+        // 3. Attendance for Projection Range (Optimization: Fetch only needed range)
+        const attRangeQ = query(
+          collection(db, "attendance"),
+          where("date", ">=", startDate),
+          where("date", "<=", endDate)
         );
-      },
-      (error) => handleFirestoreError(error, OperationType.GET, "employees"),
-    );
-
-    const unsubscribeAllAtts = onSnapshot(
-      collection(db, "attendance"),
-      (snapshot) => {
+        const attRangeSnapshot = await getDocs(attRangeQ);
         const allAtts: Attendance[] = [];
-        snapshot.forEach((doc) =>
-          allAtts.push({ id: doc.id, ...doc.data() } as Attendance),
-        );
+        attRangeSnapshot.forEach((doc) => allAtts.push({ id: doc.id, ...doc.data() } as Attendance));
         setAttendances(allAtts);
-      },
-    );
 
-    const unsubscribePakyaw = onSnapshot(
-      collection(db, "pakyawJobs"),
-      (snapshot) => {
+        // 4. Pakyaw Jobs
+        const pjSnapshot = await getDocs(collection(db, "pakyawJobs"));
         const pj: PakyawJob[] = [];
-        snapshot.forEach((doc) =>
-          pj.push({ id: doc.id, ...doc.data() } as PakyawJob),
-        );
+        pjSnapshot.forEach((doc) => pj.push({ id: doc.id, ...doc.data() } as PakyawJob));
         setPakyawJobs(pj);
-      },
-    );
 
-    const unsubscribeCA = onSnapshot(
-      collection(db, "cashAdvances"),
-      (snapshot) => {
+        // 5. Cash Advances
+        const caSnapshot = await getDocs(collection(db, "cashAdvances"));
         const ca: CashAdvance[] = [];
-        snapshot.forEach((doc) =>
-          ca.push({ id: doc.id, ...doc.data() } as CashAdvance),
-        );
+        caSnapshot.forEach((doc) => ca.push({ id: doc.id, ...doc.data() } as CashAdvance));
         setCashAdvances(ca);
-      },
-    );
 
-    const qAnn = query(
-      collection(db, "announcements"),
-      orderBy("createdAt", "desc"),
-      limit(3),
-    );
-    const unsubscribeAnn = onSnapshot(qAnn, (snapshot) => {
-      const data: Announcement[] = [];
-      snapshot.forEach((doc) =>
-        data.push({ id: doc.id, ...doc.data() } as Announcement),
-      );
-      setRecentAnnouncements(data);
-      setLoading(false);
-    });
-
-    return () => {
-      unsubscribeEmps();
-      unsubscribeAnn();
-      unsubscribeAllAtts();
-      unsubscribePakyaw();
-      unsubscribeCA();
-      if (unsubscribeAtt) {
-        unsubscribeAtt();
+        // 6. Announcements
+        const qAnn = query(
+          collection(db, "announcements"),
+          orderBy("createdAt", "desc"),
+          limit(3),
+        );
+        const annSnapshot = await getDocs(qAnn);
+        const dataAnn: Announcement[] = [];
+        annSnapshot.forEach((doc) => dataAnn.push({ id: doc.id, ...doc.data() } as Announcement));
+        setRecentAnnouncements(dataAnn);
+        
+        setLoading(false);
+      } catch (error: any) {
+        if (!error?.message?.toLowerCase().includes('quota')) {
+          handleFirestoreError(error, OperationType.GET, "dashboard_fetch");
+        }
+        setLoading(false);
       }
     };
-  }, [user, selectedDate]);
+
+    fetchData();
+  }, [user, selectedDate, startDate, endDate]);
 
   const projection = useMemo(() => {
     let grandTotal = 0;

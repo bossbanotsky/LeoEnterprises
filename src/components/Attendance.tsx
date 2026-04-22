@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { collection, onSnapshot, query, where, doc, setDoc, orderBy, deleteField } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
+import { useData } from '../contexts/DataContext';
 import { Employee, Attendance as AttendanceType, PakyawJob } from '../types';
 import { format, parseISO, eachDayOfInterval, startOfWeek, endOfWeek, addDays, subDays } from 'date-fns';
 import { ChevronDown, ChevronUp, Check, X, ChevronLeft, ChevronRight, Calendar, Calculator, Download } from 'lucide-react';
@@ -14,8 +15,7 @@ import autoTable from 'jspdf-autotable';
 
 export default function Attendance() {
   const { user } = useAuth();
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [pakyawJobs, setPakyawJobs] = useState<PakyawJob[]>([]);
+  const { employees: allEmps, pakyawJobs, loading: dataLoading } = useData();
   const [activeTab, setActiveTab] = useState<'mark' | 'report'>('mark');
   const [singleDate, setSingleDate] = useState(() => format(new Date(), 'yyyy-MM-dd'));
   const [startDate, setStartDate] = useState(() => localStorage.getItem('attendanceStartDate') || format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd'));
@@ -24,6 +24,10 @@ export default function Attendance() {
   const [error, setError] = useState<string | null>(null);
   const [expandedEmp, setExpandedEmp] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const employees = useMemo(() => {
+    return allEmps.filter(e => (e.status === 'active' || !e.status) && e.role !== 'ceo' && e.role !== 'admin').sort((a, b) => a.fullName.localeCompare(b.fullName));
+  }, [allEmps]);
   
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportScope, setExportScope] = useState<'bulk' | 'individual'>('bulk');
@@ -36,98 +40,39 @@ export default function Attendance() {
 
   useEffect(() => {
     if (!user) return;
-    const q = query(collection(db, 'pakyawJobs'), orderBy('startDate', 'desc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const jobs: PakyawJob[] = [];
-      snapshot.forEach((doc) => jobs.push({ id: doc.id, ...doc.data() } as PakyawJob));
-      setPakyawJobs(jobs);
-    }, (error) => handleFirestoreError(error, OperationType.GET, 'pakyawJobs'));
-    return () => unsubscribe();
-  }, [user]);
-
-  useEffect(() => {
-    if (!user) return;
-    const unsubscribe = onSnapshot(collection(db, 'employees'), (snapshot) => {
-      const emps: Employee[] = [];
-      snapshot.forEach((doc) => emps.push({ id: doc.id, ...doc.data() } as Employee));
-      setEmployees(emps.filter(e => (e.status === 'active' || !e.status) && e.role !== 'ceo' && e.role !== 'admin').sort((a, b) => a.fullName.localeCompare(b.fullName)));
-      setLoading(false);
-    }, (error) => { setError('Failed to load employees'); handleFirestoreError(error, OperationType.GET, 'employees'); });
-    return () => unsubscribe();
-  }, [user]);
-
-  const handlePrevDate = () => {
-    setSingleDate(prev => format(subDays(parseISO(prev), 1), 'yyyy-MM-dd'));
-  };
-
-  const handleNextDate = () => {
-    setSingleDate(prev => format(addDays(parseISO(prev), 1), 'yyyy-MM-dd'));
-  };
-
-  const queryStart = activeTab === 'mark' ? singleDate : startDate;
-  const queryEnd = activeTab === 'mark' ? singleDate : endDate;
-
-  const calculateDailyPay = (emp: Employee, attKey: string) => {
-    const att = attendanceData[attKey];
-    const date = attKey.split('_')[1];
     
-    if (!att || att.status === 'absent') return 0;
-    
-    let totalPay = 0;
+    const fetchData = async () => {
+      try {
+        const { getDocs, collection, query, where } = await import('firebase/firestore');
+        
+        // Initial Attendance Fetch for selected range
+        const queryStart = activeTab === 'mark' ? singleDate : startDate;
+        const queryEnd = activeTab === 'mark' ? singleDate : endDate;
 
-    // 1. Calculate Regular/OT Pay if applicable
-    if (att.status === 'present' || att.status === 'ut' || att.status === 'hd') {
-      const hourlyRate = emp.dailySalary / 8;
-      const regPay = (att.regularHours || 0) * hourlyRate;
-      const otPay = (att.otHours || 0) * hourlyRate;
-      totalPay += regPay + otPay;
-    }
-    
-    // 2. Calculate Pakyaw Pay (Sum of all completed pakyaw jobs for this employee on this date)
-    const dailyPakyawJobs = pakyawJobs.filter(j => 
-      j.startDate === date && 
-      j.employeeIds.includes(emp.id)
-    );
+        const attQ = query(collection(db, 'attendance'), where('date', '>=', queryStart), where('date', '<=', queryEnd));
+        const attSnap = await getDocs(attQ);
+        const atts: Record<string, Partial<AttendanceType>> = {};
+        attSnap.forEach(doc => { 
+          const data = doc.data() as AttendanceType; 
+          atts[`${data.employeeId}_${data.date}`] = { ...data, id: doc.id }; 
+        });
+        setAttendanceData(atts);
 
-    if (dailyPakyawJobs.length > 0) {
-      dailyPakyawJobs.forEach(job => {
-        if (job.status === 'completed') {
-          totalPay += job.totalPrice / Math.max(1, job.employeeIds.length);
+        setLoading(false);
+      } catch (error: any) {
+        // Silently handle quota
+        const isQuota = error?.message?.toLowerCase().includes('quota') || 
+                        error?.message?.toLowerCase().includes('resource-exhausted');
+        if (!isQuota) {
+          setError('Failed to load data');
+          handleFirestoreError(error, OperationType.GET, 'attendance_fetch');
         }
-      });
-    } else if (att.status === 'pakyaw' && att.pakyawJobId) {
-      // Fallback for the specifically linked job
-      const job = pakyawJobs.find(j => j.id === att.pakyawJobId);
-      if (job && job.status === 'completed') {
-        totalPay += job.totalPrice / Math.max(1, job.employeeIds.length);
+        setLoading(false);
       }
-    }
-    
-    return totalPay;
-  };
+    };
 
-  const calculatePeriodTotal = (emp: Employee) => {
-    return dates.reduce((total, date) => {
-      return total + calculateDailyPay(emp, `${emp.id}_${date}`);
-    }, 0);
-  };
-
-  const calculateGrandTotal = () => {
-    return employees.reduce((total, emp) => {
-      return total + calculatePeriodTotal(emp);
-    }, 0);
-  };
-
-  useEffect(() => {
-    if (!user || !queryStart || !queryEnd) return;
-    const q = query(collection(db, 'attendance'), where('date', '>=', queryStart), where('date', '<=', queryEnd));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const atts: Record<string, Partial<AttendanceType>> = {};
-      snapshot.forEach(doc => { const data = doc.data() as AttendanceType; atts[`${data.employeeId}_${data.date}`] = { ...data, id: doc.id }; });
-      setAttendanceData(atts);
-    }, (error) => { setError('Failed to load attendance'); handleFirestoreError(error, OperationType.GET, 'attendance'); });
-    return () => unsubscribe();
-  }, [user, queryStart, queryEnd]);
+    fetchData();
+  }, [user, activeTab, startDate, endDate, singleDate]);
 
   const dates = useMemo(() => {
     if (activeTab === 'mark') return [singleDate];
@@ -138,6 +83,34 @@ export default function Attendance() {
       return eachDayOfInterval({ start, end }).map(d => format(d, 'yyyy-MM-dd'));
     } catch { return []; }
   }, [activeTab, startDate, endDate, singleDate]);
+
+  const calculateDailyPay = useCallback((emp: Employee, key: string) => {
+    const att = attendanceData[key];
+    if (!att || att.status === 'absent') return 0;
+    if (att.status === 'pakyaw') {
+      const date = key.split('_')[1];
+      const jobs = pakyawJobs.filter(j => j.startDate === date && j.employeeIds.includes(emp.id));
+      return jobs.reduce((sum, j) => sum + (j.totalPrice / (j.employeeIds.length || 1)), 0);
+    }
+    const hourlyRate = emp.dailySalary / 8;
+    return ((att.regularHours || 0) + (att.otHours || 0)) * hourlyRate;
+  }, [attendanceData, pakyawJobs]);
+
+  const calculatePeriodTotal = useCallback((emp: Employee) => {
+    return dates.reduce((sum, date) => sum + calculateDailyPay(emp, `${emp.id}_${date}`), 0);
+  }, [dates, calculateDailyPay]);
+
+  const calculateGrandTotal = useCallback(() => {
+    return employees.reduce((sum, emp) => sum + calculatePeriodTotal(emp), 0);
+  }, [employees, calculatePeriodTotal]);
+
+  const handlePrevDate = () => {
+    setSingleDate(prev => format(subDays(parseISO(prev), 1), 'yyyy-MM-dd'));
+  };
+
+  const handleNextDate = () => {
+    setSingleDate(prev => format(addDays(parseISO(prev), 1), 'yyyy-MM-dd'));
+  };
 
   const handleAttendanceChange = async (employeeId: string, date: string, field: keyof AttendanceType, value: any) => {
     setError(null);

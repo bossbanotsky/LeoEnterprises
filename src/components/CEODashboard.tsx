@@ -83,82 +83,55 @@ export default function CEODashboard() {
   useEffect(() => {
     if (!user) return;
 
-    const unsubscribeEmps = onSnapshot(
-      collection(db, "employees"),
-      (snapshot) => {
+    const fetchData = async () => {
+      try {
+        const { getDocs, collection } = await import('firebase/firestore');
+        
+        // Parallel fetching for faster response and clean quota usage
+        const [empsSnap, attsSnap, payrollsSnap, pjSnap, caSnap] = await Promise.all([
+          getDocs(collection(db, "employees")),
+          getDocs(collection(db, "attendance")),
+          getDocs(collection(db, "payrolls")),
+          getDocs(collection(db, "pakyawJobs")),
+          getDocs(collection(db, "cashAdvances"))
+        ]);
+
         const emps: Employee[] = [];
-        snapshot.forEach((doc) =>
-          emps.push({ id: doc.id, ...doc.data() } as Employee),
-        );
-        setEmployees(
-          emps.sort((a, b) =>
-            (a.fullName || "").localeCompare(b.fullName || ""),
-          ),
-        );
-        setLoading(false);
-      },
-    );
+        empsSnap.forEach((doc) => emps.push({ id: doc.id, ...doc.data() } as Employee));
+        setEmployees(emps.sort((a, b) => (a.fullName || "").localeCompare(b.fullName || "")));
 
-    const unsubscribeAtts = onSnapshot(
-      collection(db, "attendance"),
-      (snapshot) => {
         const atts: Attendance[] = [];
-        snapshot.forEach((doc) =>
-          atts.push({ id: doc.id, ...doc.data() } as Attendance),
-        );
+        attsSnap.forEach((doc) => atts.push({ id: doc.id, ...doc.data() } as Attendance));
         setAttendances(atts);
-      },
-    );
 
-    const unsubscribePayrolls = onSnapshot(
-      collection(db, "payrolls"),
-      (snapshot) => {
-        const p: Payroll[] = [];
-        snapshot.forEach((doc) => {
+        const payrollRes: Payroll[] = [];
+        payrollsSnap.forEach((doc) => {
           const data = doc.data();
-          // Only show officially paid/active completed payrolls to the CEO
-          if (data.status === "paid") {
-            p.push({ id: doc.id, ...data } as Payroll);
-          }
+          if (data.status === "paid") payrollRes.push({ id: doc.id, ...data } as Payroll);
         });
-        setPayrolls(
-          p.sort(
-            (a, b) =>
-              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-          ),
-        );
-      },
-    );
+        setPayrolls(payrollRes.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
 
-    const unsubscribePakyaw = onSnapshot(
-      collection(db, "pakyawJobs"),
-      (snapshot) => {
         const pj: PakyawJob[] = [];
-        snapshot.forEach((doc) =>
-          pj.push({ id: doc.id, ...doc.data() } as PakyawJob),
-        );
+        pjSnap.forEach((doc) => pj.push({ id: doc.id, ...doc.data() } as PakyawJob));
         setPakyawJobs(pj);
-      },
-    );
 
-    const unsubscribeCA = onSnapshot(
-      collection(db, "cashAdvances"),
-      (snapshot) => {
         const ca: CashAdvance[] = [];
-        snapshot.forEach((doc) =>
-          ca.push({ id: doc.id, ...doc.data() } as CashAdvance),
-        );
+        caSnap.forEach((doc) => ca.push({ id: doc.id, ...doc.data() } as CashAdvance));
         setCashAdvances(ca);
-      },
-    );
 
-    return () => {
-      unsubscribeEmps();
-      unsubscribeAtts();
-      unsubscribePayrolls();
-      unsubscribePakyaw();
-      unsubscribeCA();
+        setLoading(false);
+      } catch (error: any) {
+        // Silently fail on quota
+        const isQuota = error?.message?.toLowerCase().includes('quota') || 
+                        error?.message?.toLowerCase().includes('resource-exhausted');
+        if (!isQuota) {
+          console.error("Error fetching CEO data:", error);
+        }
+        setLoading(false);
+      }
     };
+
+    fetchData();
   }, [user]);
 
   // Calculate upcoming payroll projections

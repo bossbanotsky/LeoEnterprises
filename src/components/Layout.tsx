@@ -67,6 +67,23 @@ export default function Layout() {
         </div>
       </header>
 
+      {/* Quota Limitation Notice */}
+      <AnimatePresence>
+        {useAuth().isQuotaLimited && (
+          <motion.div 
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="bg-amber-500 text-white text-[10px] font-bold py-1.5 px-4 text-center overflow-hidden shrink-0 border-b border-amber-600 shadow-inner"
+          >
+            <div className="flex items-center justify-center gap-2">
+              <span role="img" aria-label="alert">⚠️</span>
+              DATABASE QUOTA REACHED: Viewing cached data. Some recent changes may be missing.
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Main Content Area */}
       <main className="flex-1 overflow-x-hidden overflow-y-auto pb-24 relative z-1 bg-white/5 dark:bg-slate-900/5 backdrop-blur-sm border-x border-white/5 dark:border-slate-800/5 antialiased">
         <AnimatePresence mode="popLayout" initial={false}>

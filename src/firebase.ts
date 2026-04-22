@@ -18,7 +18,7 @@ const app = initializeApp(firebaseConfig);
 // Initialize Firestore with Persistent Cache to save daily quota
 export const db = initializeFirestore(app, {
   localCache: persistentLocalCache({
-    tabManager: persistentSingleTabManager()
+    tabManager: persistentSingleTabManager({})
   })
 }, firebaseConfig.firestoreDatabaseId);
 

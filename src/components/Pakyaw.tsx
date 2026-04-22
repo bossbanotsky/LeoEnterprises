@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, addDoc, updateDoc, query, orderBy, deleteDoc, doc, setDoc } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
+import { useData } from '../contexts/DataContext';
 import { Employee, PakyawJob } from '../types';
 import { Search, Plus, Hammer, Trash2, Edit2, CheckSquare, Square } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
@@ -12,8 +13,7 @@ import { format, parseISO } from 'date-fns';
 
 export default function Pakyaw() {
   const { user } = useAuth();
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [jobs, setJobs] = useState<PakyawJob[]>([]);
+  const { employees, pakyawJobs: jobs, loading: dataLoading } = useData();
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -28,27 +28,6 @@ export default function Pakyaw() {
     totalPrice: '',
     employeeIds: [] as string[]
   });
-
-  useEffect(() => {
-    if (!user) return;
-    const unsubscribe = onSnapshot(collection(db, 'employees'), (snapshot) => {
-      const emps: Employee[] = [];
-      snapshot.forEach((doc) => emps.push({ id: doc.id, ...doc.data() } as Employee));
-      setEmployees(emps.sort((a, b) => a.fullName.localeCompare(b.fullName)));
-    }, (error) => handleFirestoreError(error, OperationType.GET, 'employees'));
-    return () => unsubscribe();
-  }, [user]);
-
-  useEffect(() => {
-    if (!user) return;
-    const q = query(collection(db, 'pakyawJobs'), orderBy('startDate', 'desc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const loadedJobs: PakyawJob[] = [];
-      snapshot.forEach((doc) => loadedJobs.push({ id: doc.id, ...doc.data() } as PakyawJob));
-      setJobs(loadedJobs);
-    }, (error) => handleFirestoreError(error, OperationType.GET, 'pakyawJobs'));
-    return () => unsubscribe();
-  }, [user]);
 
   const handleSaveJob = async (e: React.FormEvent) => {
     e.preventDefault();

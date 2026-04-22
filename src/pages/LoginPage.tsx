@@ -69,16 +69,16 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-transparent flex items-center justify-center p-6 relative overflow-hidden font-sans">
-      {/* Fixed Background Image - Modern Enterprise Aesthetic */}
-      <div className="fixed inset-0 -z-10 bg-slate-950">
+      {/* Fixed Background Image - Full Visibility Aesthetic */}
+      <div className="fixed inset-0 -z-10">
         <img 
           src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=2070" 
           alt="Modern Enterprise Background" 
-          className="w-full h-full object-cover opacity-50"
+          className="w-full h-full object-cover"
           referrerPolicy="no-referrer"
         />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(2,6,23,0.85)_100%)]" />
-        <div className="absolute inset-0 bg-slate-950/40" />
+        {/* Very subtle gradient overlay for text protection while maintaining full image visibility */}
+        <div className="absolute inset-0 bg-black/20" />
       </div>
 
       <motion.div
@@ -87,7 +87,7 @@ export default function LoginPage() {
         transition={{ duration: 0.5, ease: "easeOut" }}
         className="w-full max-w-[480px] relative z-10"
       >
-        <div className="bg-white/10 backdrop-blur-[32px] border border-white/20 shadow-[0_40px_80px_rgba(0,0,0,0.5)] rounded-[40px] overflow-hidden p-10 lg:p-14">
+        <div className="bg-slate-900/90 border border-white/10 shadow-[0_40px_80px_rgba(0,0,0,0.6)] rounded-[40px] overflow-hidden p-10 lg:p-14">
           <div className="flex items-center justify-between mb-12">
             <Link to="/">
               <div className="flex items-center gap-2 group cursor-pointer">

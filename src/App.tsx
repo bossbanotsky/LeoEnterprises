@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { DataProvider } from './contexts/DataContext';
 import { ToastProvider } from './contexts/ToastContext';
 import Layout from './components/Layout';
 import LandingPage from './pages/LandingPage';
@@ -73,45 +74,47 @@ export default function App() {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <ToastProvider>
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<AuthRedirect />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/services/:slug" element={<ServiceDetail />} />
-              
-              {/* Admin Routes */}
-            <Route path="/admin-dashboard" element={<ProtectedRoute allowedRoles={['admin']}><Layout /></ProtectedRoute>}>
-              <Route index element={<Dashboard />} />
-              <Route path="messenger" element={<Messenger />} />
-              <Route path="employees" element={<Employees />} />
-              <Route path="attendance" element={<Attendance />} />
-              <Route path="cash-advance" element={<CashAdvance />} />
-              <Route path="pakyaw" element={<Pakyaw />} />
-              <Route path="payroll" element={<Payroll />} />
-              <Route path="gallery" element={<GalleryManagement />} />
-              <Route path="announcements" element={<Announcements />} />
-              <Route path="settings" element={<Settings />} />
-              <Route path="settings/logs" element={<Logs />} />
-            </Route>
+        <DataProvider>
+          <ToastProvider>
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<AuthRedirect />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/services/:slug" element={<ServiceDetail />} />
+                
+                {/* Admin Routes */}
+              <Route path="/admin-dashboard" element={<ProtectedRoute allowedRoles={['admin']}><Layout /></ProtectedRoute>}>
+                <Route index element={<Dashboard />} />
+                <Route path="messenger" element={<Messenger />} />
+                <Route path="employees" element={<Employees />} />
+                <Route path="attendance" element={<Attendance />} />
+                <Route path="cash-advance" element={<CashAdvance />} />
+                <Route path="pakyaw" element={<Pakyaw />} />
+                <Route path="payroll" element={<Payroll />} />
+                <Route path="gallery" element={<GalleryManagement />} />
+                <Route path="announcements" element={<Announcements />} />
+                <Route path="settings" element={<Settings />} />
+                <Route path="settings/logs" element={<Logs />} />
+              </Route>
 
-            {/* CEO Routes */}
-            <Route path="/ceo-dashboard" element={<ProtectedRoute allowedRoles={['ceo']}><Layout /></ProtectedRoute>}>
-              <Route index element={<CEODashboard />} />
-              <Route path="messenger" element={<Messenger />} />
-            </Route>
+              {/* CEO Routes */}
+              <Route path="/ceo-dashboard" element={<ProtectedRoute allowedRoles={['ceo']}><Layout /></ProtectedRoute>}>
+                <Route index element={<CEODashboard />} />
+                <Route path="messenger" element={<Messenger />} />
+              </Route>
 
-            {/* Employee Routes */}
-            <Route path="/employee-dashboard" element={<ProtectedRoute allowedRoles={['employee']}><Layout /></ProtectedRoute>}>
-              <Route index element={<EmployeeDashboard />} />
-              <Route path="messenger" element={<Messenger />} />
-            </Route>
+              {/* Employee Routes */}
+              <Route path="/employee-dashboard" element={<ProtectedRoute allowedRoles={['employee']}><Layout /></ProtectedRoute>}>
+                <Route index element={<EmployeeDashboard />} />
+                <Route path="messenger" element={<Messenger />} />
+              </Route>
 
-            {/* Fallback */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </BrowserRouter>
-      </ToastProvider>
+              {/* Fallback */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </BrowserRouter>
+        </ToastProvider>
+      </DataProvider>
     </AuthProvider>
   </ErrorBoundary>
 );

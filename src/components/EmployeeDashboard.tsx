@@ -164,66 +164,70 @@ export default function EmployeeDashboard() {
   useEffect(() => {
     if (!userData?.employeeId) return;
 
-    const fetchEmployee = async () => {
+    const fetchData = async () => {
       try {
+        const { getDoc, getDocs, doc, collection, query, where, orderBy } = await import('firebase/firestore');
+        
+        // 1. Employee Data
         const empDoc = await getDoc(doc(db, 'employees', userData.employeeId!));
         if (empDoc.exists()) {
           setEmployee({ id: empDoc.id, ...empDoc.data() } as Employee);
         }
-      } catch (error) {
-        handleFirestoreError(error, OperationType.GET, 'employees');
+
+        // 2. Attendance within Range
+        const qAtt = query(
+          collection(db, 'attendance'),
+          where('employeeId', '==', userData.employeeId),
+          where('date', '>=', startDate),
+          where('date', '<=', endDate)
+        );
+        const attSnap = await getDocs(qAtt);
+        const atts: Attendance[] = [];
+        attSnap.forEach(doc => atts.push({ id: doc.id, ...doc.data() } as Attendance));
+        setAttendances(atts.sort((a, b) => b.date.localeCompare(a.date)));
+
+        // 3. User Payrolls
+        const qPayroll = query(
+          collection(db, 'payrolls'),
+          where('employeeId', '==', userData.employeeId)
+        );
+        const payrollSnap = await getDocs(qPayroll);
+        const pays: Payroll[] = [];
+        payrollSnap.forEach(doc => pays.push({ id: doc.id, ...doc.data() } as Payroll));
+        setPayrolls(pays.sort((a, b) => b.generatedAt.localeCompare(a.generatedAt)));
+        setLoadingPayrolls(false);
+
+        // 4. Cash Advances
+        const qCA = query(
+          collection(db, 'cashAdvances'),
+          where('employeeId', '==', userData.employeeId)
+        );
+        const caSnap = await getDocs(qCA);
+        const cas: CashAdvance[] = [];
+        caSnap.forEach(doc => cas.push({ id: doc.id, ...doc.data() } as CashAdvance));
+        setCashAdvances(cas.sort((a, b) => b.date.localeCompare(a.date)));
+
+        // 5. Announcements
+        const qAnn = query(collection(db, 'announcements'), orderBy('createdAt', 'desc'));
+        const annSnap = await getDocs(qAnn);
+        const dataAnn: Announcement[] = [];
+        annSnap.forEach(doc => dataAnn.push({ id: doc.id, ...doc.data() } as Announcement));
+        setAnnouncements(dataAnn);
+
+        setLoading(false);
+      } catch (error: any) {
+        // Silently handle quota errors
+        const isQuota = error?.message?.toLowerCase().includes('quota') || 
+                        error?.message?.toLowerCase().includes('resource-exhausted');
+        if (!isQuota) {
+          handleFirestoreError(error, OperationType.GET, 'employee_dashboard');
+        }
+        setLoading(false);
+        setLoadingPayrolls(false);
       }
     };
 
-    fetchEmployee();
-
-    const qAtt = query(
-      collection(db, 'attendance'),
-      where('employeeId', '==', userData.employeeId),
-      where('date', '>=', startDate),
-      where('date', '<=', endDate)
-    );
-    const unsubAtt = onSnapshot(qAtt, (snapshot) => {
-      const atts: Attendance[] = [];
-      snapshot.forEach(doc => atts.push({ id: doc.id, ...doc.data() } as Attendance));
-      setAttendances(atts.sort((a, b) => b.date.localeCompare(a.date)));
-    });
-
-    const qPayroll = query(
-      collection(db, 'payrolls'),
-      where('employeeId', '==', userData.employeeId)
-    );
-    const unsubPayroll = onSnapshot(qPayroll, (snapshot) => {
-      const pays: Payroll[] = [];
-      snapshot.forEach(doc => pays.push({ id: doc.id, ...doc.data() } as Payroll));
-      setPayrolls(pays.sort((a, b) => b.generatedAt.localeCompare(a.generatedAt)));
-      setLoadingPayrolls(false);
-    });
-
-    const qCA = query(
-      collection(db, 'cashAdvances'),
-      where('employeeId', '==', userData.employeeId)
-    );
-    const unsubCA = onSnapshot(qCA, (snapshot) => {
-      const cas: CashAdvance[] = [];
-      snapshot.forEach(doc => cas.push({ id: doc.id, ...doc.data() } as CashAdvance));
-      setCashAdvances(cas.sort((a, b) => b.date.localeCompare(a.date)));
-    });
-
-    const qAnn = query(collection(db, 'announcements'), orderBy('createdAt', 'desc'));
-    const unsubAnn = onSnapshot(qAnn, (snapshot) => {
-      const data: Announcement[] = [];
-      snapshot.forEach(doc => data.push({ id: doc.id, ...doc.data() } as Announcement));
-      setAnnouncements(data);
-    });
-
-    setLoading(false);
-    return () => {
-      unsubAtt();
-      unsubPayroll();
-      unsubCA();
-      unsubAnn();
-    };
+    fetchData();
   }, [userData, startDate, endDate]);
 
   const handleMarkAsViewed = async (annId: string) => {

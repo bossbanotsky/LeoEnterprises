@@ -11,13 +11,21 @@ export default function Logs() {
 
   useEffect(() => {
     if (!user) return;
-    const q = query(collection(db, 'logs'), orderBy('createdAt', 'desc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const fetchedLogs: any[] = [];
-      snapshot.forEach(doc => fetchedLogs.push({ id: doc.id, ...doc.data() }));
-      setLogs(fetchedLogs);
-    }, (error) => handleFirestoreError(error, OperationType.GET, 'logs'));
-    return () => unsubscribe();
+    const fetchData = async () => {
+      try {
+        const { getDocs, collection, query, orderBy } = await import('firebase/firestore');
+        const q = query(collection(db, 'logs'), orderBy('createdAt', 'desc'));
+        const snapshot = await getDocs(q);
+        const fetchedLogs: any[] = [];
+        snapshot.forEach(doc => fetchedLogs.push({ id: doc.id, ...doc.data() }));
+        setLogs(fetchedLogs);
+      } catch (error: any) {
+        if (!error?.message?.toLowerCase().includes('quota')) {
+          handleFirestoreError(error, OperationType.GET, 'logs');
+        }
+      }
+    };
+    fetchData();
   }, [user]);
 
   return (

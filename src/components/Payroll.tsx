@@ -2,8 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { collection, onSnapshot, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
+import { useData } from '../contexts/DataContext';
 import { useCompanyInfo } from '../hooks/useCompanyInfo';
-import { Employee, Attendance, CashAdvance } from '../types';
+import { Employee, Attendance, CashAdvance, PakyawJob } from '../types';
 import { format, parseISO, eachDayOfInterval, isWithinInterval } from "date-fns";
 import { calculateAttendanceHours } from "../lib/payrollUtils";
 import { Calendar, ChevronRight, FileText, Download, Trash2, Loader2, Users, CreditCard, CheckCircle, Search } from 'lucide-react';
@@ -18,9 +19,16 @@ import html2canvas from 'html2canvas';
 export default function Payroll() {
   const { user } = useAuth();
   const { companyInfo } = useCompanyInfo();
-  const [employees, setEmployees] = useState<Employee[]>([]);
+  const { employees, loading: dataLoading } = useData();
   const [startDate, setStartDate] = useState(() => localStorage.getItem('payrollStartDate') || format(new Date(), 'yyyy-MM-01'));
   const [endDate, setEndDate] = useState(() => localStorage.getItem('payrollEndDate') || format(new Date(), 'yyyy-MM-15'));
+
+  const loadingInitial = dataLoading;
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('all');
+  const [payrollData, setPayrollData] = useState<any[]>([]);
+  const [bulkPayrolls, setBulkPayrolls] = useState<any[]>([]);
+  const [selectedBulkId, setSelectedBulkId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     localStorage.setItem('payrollStartDate', startDate);
@@ -31,12 +39,7 @@ export default function Payroll() {
     localStorage.setItem('payrollEndDate', endDate);
     window.dispatchEvent(new Event('payrollDateChange'));
   }, [endDate]);
-  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('all');
-  const [payrollData, setPayrollData] = useState<any[]>([]);
-  const [bulkPayrolls, setBulkPayrolls] = useState<any[]>([]);
-  const [selectedBulkId, setSelectedBulkId] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [loadingInitial, setLoadingInitial] = useState(true);
+
   const [selectedPayslip, setSelectedPayslip] = useState<any>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [viewMode, setViewMode] = useState<'process' | 'archives'>('process');
@@ -270,98 +273,104 @@ export default function Payroll() {
   };
 
   useEffect(() => {
-    if (!user) return;
-    const unsubscribe = onSnapshot(collection(db, 'employees'), (snapshot) => {
-      const emps: Employee[] = [];
-      snapshot.forEach((doc) => emps.push({ id: doc.id, ...doc.data() } as Employee));
-      setEmployees(emps.sort((a, b) => a.fullName.localeCompare(b.fullName)));
-      setLoadingInitial(false);
-    }, (error) => handleFirestoreError(error, OperationType.GET, 'employees'));
-    return () => unsubscribe();
-  }, [user]);
-
-  useEffect(() => {
     if (!user || employees.length === 0 || viewMode !== 'process') return;
     
-    const q = query(
-      collection(db, 'payrolls'),
-      where('startDate', '==', startDate),
-      where('endDate', '==', endDate)
-    );
+    const fetchData = async () => {
+      try {
+        const { query, collection, where, getDocs } = await import('firebase/firestore');
+        const q = query(
+          collection(db, 'payrolls'),
+          where('startDate', '==', startDate),
+          where('endDate', '==', endDate)
+        );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const fetchedPayrolls: any[] = [];
-      snapshot.forEach(docSnap => {
-        const data = docSnap.data();
-        const emp = employees.find(e => e.id === data.employeeId);
-        if (emp) {
-          fetchedPayrolls.push({
-            id: docSnap.id,
-            employee: emp,
-            ...data
-          });
+        const snapshot = await getDocs(q);
+        const fetchedPayrolls: any[] = [];
+        snapshot.forEach(docSnap => {
+          const data = docSnap.data();
+          const emp = employees.find(e => e.id === data.employeeId);
+          if (emp) {
+            fetchedPayrolls.push({
+              id: docSnap.id,
+              employee: emp,
+              ...data
+            });
+          }
+        });
+        setPayrollData(fetchedPayrolls);
+
+        // Fetch Bulk Payrolls
+        const bulkQ = query(
+          collection(db, 'bulkPayrolls'),
+          where('startDate', '==', startDate),
+          where('endDate', '==', endDate)
+        );
+        const bulkSnapshot = await getDocs(bulkQ);
+        const fetchedBulk: any[] = [];
+        bulkSnapshot.forEach(docSnap => {
+          const data = docSnap.data();
+          if (data.status !== 'paid') {
+            fetchedBulk.push({ id: docSnap.id, ...data });
+          }
+        });
+        setBulkPayrolls(fetchedBulk.sort((a, b) => b.generatedAt.localeCompare(a.generatedAt)));
+      } catch (error: any) {
+        if (!error?.message?.toLowerCase().includes('quota')) {
+          handleFirestoreError(error, OperationType.GET, 'payrolls_process');
         }
-      });
-      setPayrollData(fetchedPayrolls);
-    }, (error) => handleFirestoreError(error, OperationType.GET, 'payrolls'));
-
-    // Fetch Bulk Payrolls (only non-paid ones for the active view, or we can filter locally)
-    const bulkQ = query(
-      collection(db, 'bulkPayrolls'),
-      where('startDate', '==', startDate),
-      where('endDate', '==', endDate)
-    );
-
-    const unsubscribeBulk = onSnapshot(bulkQ, (snapshot) => {
-      const fetchedBulk: any[] = [];
-      snapshot.forEach(docSnap => {
-        const data = docSnap.data();
-        if (data.status !== 'paid') {
-          fetchedBulk.push({ id: docSnap.id, ...data });
-        }
-      });
-      setBulkPayrolls(fetchedBulk.sort((a, b) => b.generatedAt.localeCompare(a.generatedAt)));
-    }, (error) => handleFirestoreError(error, OperationType.GET, 'bulkPayrolls'));
-
-    return () => {
-      unsubscribe();
-      unsubscribeBulk();
+      }
     };
+
+    fetchData();
   }, [user, employees, startDate, endDate, viewMode]);
 
   // Fetch Archives
   useEffect(() => {
     if (!user || viewMode !== 'archives') return;
-    const q = query(collection(db, 'bulkPayrolls'), where('status', '==', 'paid'));
-    const unsub = onSnapshot(q, (snapshot) => {
-      const runs: any[] = [];
-      snapshot.forEach(doc => runs.push({ id: doc.id, ...doc.data() }));
-      runs.sort((a, b) => b.generatedAt.localeCompare(a.generatedAt));
-      setArchivedBulkRuns(runs);
-    }, (error) => handleFirestoreError(error, OperationType.GET, 'bulkPayrolls'));
-    return () => unsub();
+    const fetchData = async () => {
+      try {
+        const { query, collection, where, getDocs } = await import('firebase/firestore');
+        const q = query(collection(db, 'bulkPayrolls'), where('status', '==', 'paid'));
+        const snapshot = await getDocs(q);
+        const runs: any[] = [];
+        snapshot.forEach(doc => runs.push({ id: doc.id, ...doc.data() }));
+        runs.sort((a, b) => b.generatedAt.localeCompare(a.generatedAt));
+        setArchivedBulkRuns(runs);
+      } catch (error: any) {
+        if (!error?.message?.toLowerCase().includes('quota')) {
+          handleFirestoreError(error, OperationType.GET, 'bulkPayrolls_archives');
+        }
+      }
+    };
+    fetchData();
   }, [user, viewMode]);
 
   // Fetch individual payrolls for a selected archive run
   useEffect(() => {
     if (!user || employees.length === 0 || viewMode !== 'archives' || !selectedBulkId) return;
-    const q = query(collection(db, 'payrolls'), where('bulkId', '==', selectedBulkId));
-    const unsub = onSnapshot(q, (snapshot) => {
-      const fetchedPayrolls: any[] = [];
-      snapshot.forEach(docSnap => {
-        const data = docSnap.data();
+    const fetchData = async () => {
+      try {
+        const { query, collection, where, getDocs, updateDoc, doc } = await import('firebase/firestore');
+        const q = query(collection(db, 'payrolls'), where('bulkId', '==', selectedBulkId));
+        const snapshot = await getDocs(q);
+        const fetchedPayrolls: any[] = [];
         
-        // AUTO-FIX: If the bulk run is closed but individual payrolls don't have the status tag, fix it here
-        if (data.status !== 'paid') {
-          updateDoc(doc(db, 'payrolls', docSnap.id), { status: 'paid' }).catch(console.error);
+        for (const docSnap of snapshot.docs) {
+          const data = docSnap.data();
+          if (data.status !== 'paid') {
+            await updateDoc(doc(db, 'payrolls', docSnap.id), { status: 'paid' });
+          }
+          const emp = employees.find(e => e.id === data.employeeId);
+          if (emp) fetchedPayrolls.push({ id: docSnap.id, employee: emp, ...data });
         }
-        
-        const emp = employees.find(e => e.id === data.employeeId);
-        if (emp) fetchedPayrolls.push({ id: docSnap.id, employee: emp, ...data });
-      });
-      setPayrollData(fetchedPayrolls);
-    }, (error) => handleFirestoreError(error, OperationType.GET, 'payrolls'));
-    return () => unsub();
+        setPayrollData(fetchedPayrolls);
+      } catch (error: any) {
+        if (!error?.message?.toLowerCase().includes('quota')) {
+          handleFirestoreError(error, OperationType.GET, 'payrolls_archive_details');
+        }
+      }
+    };
+    fetchData();
   }, [user, employees, viewMode, selectedBulkId]);
 
   const handlePreviewPayroll = async () => {

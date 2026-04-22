@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
+import { useData } from '../contexts/DataContext';
 import { Employee } from '../types';
 import { Search, Plus, Briefcase, ChevronRight, Edit2, Trash2, CheckCircle2, Upload, Loader2, User, Key, ShieldCheck } from 'lucide-react';
 import { createEmployeeAuth } from '../lib/adminAuth';
@@ -14,88 +15,40 @@ import { Skeleton } from './ui/Skeleton';
 
 export default function Employees() {
   const { user } = useAuth();
-  const [employees, setEmployees] = useState<Employee[]>([]);
+  const { employees, users: usersList, loading } = useData();
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [form, setForm] = useState({ customId: '', fullName: '', position: '', dailySalary: '', email: '', loginPassword: '', photoURL: '', role: 'employee' as 'admin' | 'employee' | 'ceo' });
   const [isProvisioning, setIsProvisioning] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-      alert('Please select an image file.');
-      return;
-    }
-
-    setIsUploading(true);
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 400;
-        const MAX_HEIGHT = 400;
-        let width = img.width;
-        let height = img.height;
-
-        if (width > height) {
-          if (width > MAX_WIDTH) {
-            height *= MAX_WIDTH / width;
-            width = MAX_WIDTH;
-          }
-        } else {
-          if (height > MAX_HEIGHT) {
-            width *= MAX_HEIGHT / height;
-            height = MAX_HEIGHT;
-          }
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx?.drawImage(img, 0, 0, width, height);
-        
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-        setForm(prev => ({ ...prev, photoURL: dataUrl }));
-        setIsUploading(false);
-      };
-      img.src = event.target?.result as string;
-    };
-    reader.readAsDataURL(file);
-  };
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
-  const [loading, setLoading] = useState(true);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [users, setUsers] = useState<Record<string, any>>({});
+  const users = useMemo(() => {
+    const map: Record<string, any> = {};
+    usersList.forEach(u => {
+      if (u.employeeId) map[u.employeeId] = u;
+    });
+    return map;
+  }, [usersList]);
 
-  useEffect(() => {
-    if (!user) return;
-    const unsubscribeEmps = onSnapshot(collection(db, 'employees'), (snapshot) => {
-      const emps: Employee[] = [];
-      snapshot.forEach((doc) => emps.push({ id: doc.id, ...doc.data() } as Employee));
-      setEmployees(emps.sort((a, b) => a.fullName.localeCompare(b.fullName)));
-      setLoading(false);
-    }, (error) => handleFirestoreError(error, OperationType.GET, 'employees'));
-
-    const unsubscribeUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
-      const usersMap: Record<string, any> = {};
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        if (data.employeeId) usersMap[data.employeeId] = data;
-      });
-      setUsers(usersMap);
-    }, (error) => handleFirestoreError(error, OperationType.GET, 'users'));
-
-    return () => {
-      unsubscribeEmps();
-      unsubscribeUsers();
-    };
-  }, [user]);
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploading(true);
+    try {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setForm(prev => ({ ...prev, photoURL: reader.result as string }));
+        setIsUploading(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error("Upload error", error);
+      setIsUploading(false);
+    }
+  };
 
   const handleAddEmployee = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -15,6 +15,8 @@ interface AuthContextType {
   user: User | null;
   userData: UserData | null;
   loading: boolean;
+  isQuotaLimited: boolean;
+  setQuotaLimited: (limited: boolean) => void;
   loginWithGoogleContext: () => Promise<void>;
   loginWithEmail: (e: string, p: string) => Promise<void>;
   registerWithEmail: (e: string, p: string) => Promise<void>;
@@ -26,6 +28,8 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   userData: null,
   loading: true,
+  isQuotaLimited: false,
+  setQuotaLimited: () => {},
   loginWithGoogleContext: async () => {},
   loginWithEmail: async () => {},
   registerWithEmail: async () => {},
@@ -37,6 +41,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isQuotaLimited, setIsQuotaLimited] = useState(false);
+
+  // Auto-reset quota limited state after some time or on certain actions
+  const setQuotaLimited = (limited: boolean) => {
+    setIsQuotaLimited(limited);
+    if (limited) {
+      // Clear it after 5 minutes potentially or leave it until next reload
+      setTimeout(() => setIsQuotaLimited(false), 300000);
+    }
+  };
 
   const loginWithEmail = async (e: string, p: string) => {
     await signInWithEmailAndPassword(auth, e, p);
@@ -56,105 +70,95 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
         setUser(currentUser);
-        const userDocRef = doc(db, 'users', currentUser.uid);
+        // Immediate completion of loading for Auth state
+        setLoading(false);
         
-        // Optimize: Use single fetch instead of onSnapshot to save quota
+        const userDocRef = doc(db, 'users', currentUser.uid);
+        const ADMIN_EMAIL = "marqueznorthed@gmail.com".toLowerCase();
+        
+        // Try to load from cache first for zero-read fast startup
+        const cachedUserData = localStorage.getItem(`userData_${currentUser.uid}`);
+        if (cachedUserData) {
+          try {
+            setUserData(JSON.parse(cachedUserData));
+          } catch (e) {
+            console.error("Error parsing cached user data", e);
+          }
+        }
+
+        // Background fetch of fresh user data
         const fetchUserData = async () => {
           try {
+            // Failsafe: If the user is the hardcoded admin, grant access immediately 
+            if (currentUser.email?.toLowerCase() === ADMIN_EMAIL) {
+              const adminData: UserData = { role: 'admin', email: currentUser.email!, fullName: 'Administrator' };
+              setUserData(adminData);
+              localStorage.setItem(`userData_${currentUser.uid}`, JSON.stringify(adminData));
+              // We don't return here, we still try to sync with DB if possible for fresh name/photo
+            }
+
             const userDoc = await getDoc(userDocRef);
             if (userDoc.exists()) {
-              setUserData(userDoc.data() as UserData);
-              setLoading(false);
+              const data = userDoc.data() as UserData;
+              setUserData(data);
+              localStorage.setItem(`userData_${currentUser.uid}`, JSON.stringify(data));
             } else {
               // Case-insensitive check for admin email
-              const adminEmail = "marqueznorthed@gmail.com";
-              if (currentUser.email?.toLowerCase() === adminEmail.toLowerCase()) {
+              if (currentUser.email?.toLowerCase() === ADMIN_EMAIL) {
                 const adminData: UserData = { role: 'admin', email: currentUser.email!, fullName: 'Administrator' };
                 setUserData(adminData);
-                // Provision the user document if missing
+                localStorage.setItem(`userData_${currentUser.uid}`, JSON.stringify(adminData));
                 try {
                   const { setDoc } = await import('firebase/firestore');
                   await setDoc(userDocRef, adminData);
-                } catch (e) {
-                  console.error("Error provisioning admin user:", e);
-                }
-                setLoading(false);
+                } catch (e) { console.error("Admin provision error", e); }
               } else {
-                // Try to find a matching employee by email using a targeted query (Quota optimization)
+                // Secondary check: search employees by email
                 try {
                   const { collection, getDocs, setDoc, query, where } = await import('firebase/firestore');
-                  
-                  const normalizedCurrentEmail = currentUser.email?.trim().toLowerCase();
-                  if (!normalizedCurrentEmail) {
-                    setUserData(null);
-                    setLoading(false);
-                    return;
-                  }
-
-                  // Use a specific query instead of fetching all employees
                   const q = query(collection(db, 'employees'), where('email', '==', currentUser.email));
                   const snapshot = await getDocs(q);
                   
-                  let matchedEmployeeDoc = null;
                   if (!snapshot.empty) {
-                    matchedEmployeeDoc = snapshot.docs[0];
-                  } else {
-                    // Fallback search if email casing/spacing in DB is different
-                    // Note: Firestore '==' is case-sensitive, but we can't efficiently do case-insensitive search 
-                    // without a normalized field. For now, we stay with targeted query and suggest data normalization.
-                    setUserData(null);
-                    setLoading(false);
-                    return;
-                  }
-                  
-                  if (matchedEmployeeDoc) {
+                    const matchedEmployeeDoc = snapshot.docs[0];
                     const employeeRecord = matchedEmployeeDoc.data();
                     const empData: UserData = { 
-                      role: employeeRecord.role || 'employee', 
+                      role: (employeeRecord.role as any) || 'employee', 
                       email: currentUser.email!,
                       employeeId: matchedEmployeeDoc.id,
                       fullName: employeeRecord.fullName,
                       photoURL: employeeRecord.photoURL
                     };
                     setUserData(empData);
+                    localStorage.setItem(`userData_${currentUser.uid}`, JSON.stringify(empData));
                     await setDoc(userDocRef, empData);
-                  } else {
-                    setUserData(null);
                   }
-                  setLoading(false);
                 } catch (error) {
                   console.error("Error finding employee:", error);
-                  setUserData(null);
-                  setLoading(false);
                 }
               }
             }
           } catch (error: any) {
-            // Silently handle quota errors to prevent crashing the UI experience
             const isQuotaError = error?.message?.toLowerCase().includes('quota') || 
                                error?.message?.toLowerCase().includes('resource-exhausted');
+            if (isQuotaError) setQuotaLimited(true);
             
-            if (!isQuotaError) {
-              console.error("Error fetching user data:", error);
+            // Failsafe fallback
+            if (currentUser.email?.toLowerCase() === ADMIN_EMAIL) {
+              setUserData(prev => prev || { role: 'admin', email: currentUser.email!, fullName: 'Administrator' });
             }
-            
-            setUserData(null);
-            setLoading(false);
           }
         };
 
         fetchUserData();
-      }
- else {
+      } else {
         setUser(null);
         setUserData(null);
         setLoading(false);
       }
     });
 
-    return () => {
-      unsubscribeAuth();
-    };
+    return () => unsubscribeAuth();
   }, []);
 
   return (
@@ -162,6 +166,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       user, 
       userData,
       loading, 
+      isQuotaLimited,
+      setQuotaLimited,
       loginWithGoogleContext: loginWithGoogle,
       loginWithEmail,
       registerWithEmail,
