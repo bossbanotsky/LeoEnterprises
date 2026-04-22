@@ -341,12 +341,12 @@ export default function CEODashboard() {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-4xl md:text-5xl font-black text-white tracking-tighter uppercase italic leading-none flex items-center gap-3">
-            <span className="w-2 h-10 bg-cyan-500 rounded-full shadow-[0_0_20px_rgba(6,182,212,0.6)]"></span>
-            Executive Dashboard
+          <h1 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">
+            <span className="w-2 h-8 bg-cyan-500 rounded-full shadow-[0_0_15px_rgba(6,182,212,0.5)]"></span>
+            EXECUTIVE DASHBOARD
           </h1>
-          <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em] mt-2 ml-5 italic opacity-80">
-            Leo Enterprises • Operational Status
+          <p className="text-slate-400 font-bold uppercase tracking-[0.2em] text-[10px] mt-1 ml-5">
+            LEO Enterprises • Internal Financial Status
           </p>
         </div>
       </div>
@@ -356,7 +356,7 @@ export default function CEODashboard() {
           <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/10 rounded-full -mr-12 -mt-12 group-hover:scale-125 transition-transform duration-500"></div>
           <div className="flex items-center gap-3 text-cyan-400 mb-2 relative z-10">
             <Users className="w-5 h-5" />
-            <span className="text-[10px] font-black uppercase tracking-[0.3em] italic">
+            <span className="text-xs font-bold uppercase tracking-widest">
               Total Workforce
             </span>
           </div>
@@ -374,7 +374,7 @@ export default function CEODashboard() {
           <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-[40px] -mr-16 -mt-16 group-hover:bg-emerald-500/20 transition-all duration-700"></div>
           <div className="flex items-center gap-3 text-emerald-400 mb-2 relative z-10">
             <PhilippinePeso className="w-5 h-5" />
-            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-400 italic">
+            <span className="text-xs font-bold uppercase tracking-widest text-emerald-500">
               Upcoming Payroll Projection
             </span>
           </div>
@@ -396,11 +396,11 @@ export default function CEODashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Projection Filters & List */}
-        <div className="bento-card flex-col space-y-4 bg-slate-900/40 backdrop-blur-md border border-white/10 shadow-xl">
-          <h3 className="font-black uppercase tracking-[0.2em] text-xs text-white flex items-center gap-2 italic">
+        <div className="bento-card flex-col space-y-4">
+          <h3 className="font-bold text-slate-800 dark:text-white flex items-center gap-2">
             <Calendar className="w-4 h-4 text-slate-400" /> Projection Filter
           </h3>
-          <div className="flex items-center gap-2 relative z-20">
+          <div className="flex items-center gap-2">
             <input
               type="date"
               value={startDate}
@@ -409,9 +409,9 @@ export default function CEODashboard() {
                 localStorage.setItem("payrollStartDate", e.target.value);
                 window.dispatchEvent(new Event("payrollDateChange"));
               }}
-              className="flex h-10 w-full rounded-xl border border-white/10 bg-slate-950/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 text-white font-bold"
+              className="flex h-10 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 dark:border-slate-800 dark:bg-slate-950 text-slate-800 dark:text-white"
             />
-            <span className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">to</span>
+            <span className="text-slate-400">to</span>
             <input
               type="date"
               value={endDate}
@@ -420,7 +420,7 @@ export default function CEODashboard() {
                 localStorage.setItem("payrollEndDate", e.target.value);
                 window.dispatchEvent(new Event("payrollDateChange"));
               }}
-              className="flex h-10 w-full rounded-xl border border-white/10 bg-slate-950/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 text-white font-bold"
+              className="flex h-10 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 dark:border-slate-800 dark:bg-slate-950 text-slate-800 dark:text-white"
             />
           </div>
 

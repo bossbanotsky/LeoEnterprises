@@ -289,10 +289,10 @@ export default function EmployeeDashboard() {
       {/* Welcome Header */}
       <div className="flex items-center justify-between px-1">
         <div>
-          <h1 className="text-4xl md:text-5xl font-black text-white tracking-tighter leading-none uppercase italic">
-             Hello, {userData?.fullName?.split(' ')[0]}
+          <h1 className="text-2xl font-black text-white tracking-tight leading-none uppercase">
+             HELLO, {userData?.fullName?.split(' ')[0]}
           </h1>
-          <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em] mt-2 italic opacity-80">
+          <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-1">
             Portal Access • {companyInfo.name}
           </p>
         </div>

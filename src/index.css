@@ -23,7 +23,6 @@
   --danger: #ef4444;
   --warning: #f59e0b;
   --radius: 1.25rem;
-  color-scheme: dark;
 }
 
 .dark {
@@ -32,7 +31,6 @@
   --text-main: #ffffff;
   --text-sub: #94a3b8;
   --border: rgba(255, 255, 255, 0.15);
-  color-scheme: dark;
 }
 
 body {
@@ -41,25 +39,6 @@ body {
   font-family: 'Inter', sans-serif;
   -webkit-tap-highlight-color: transparent;
   min-height: 100vh;
-}
-
-/* Force Native Date & Time UI to use Dark Mode High Contrast */
-input[type="date"], input[type="time"], input[type="datetime-local"] {
-  color-scheme: dark;
-  color: #ffffff !important;
-}
-
-input[type="date"]::-webkit-calendar-picker-indicator,
-input[type="time"]::-webkit-calendar-picker-indicator,
-input[type="datetime-local"]::-webkit-calendar-picker-indicator {
-  filter: invert(1) brightness(1.5);
-  opacity: 0.8;
-  cursor: pointer;
-}
-input[type="date"]::-webkit-calendar-picker-indicator:hover,
-input[type="time"]::-webkit-calendar-picker-indicator:hover,
-input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
-  opacity: 1;
 }
 
 .bento-card {

@@ -48,8 +48,8 @@ export default function Layout() {
       {/* Header */}
       <header className="h-16 bg-slate-950/40 backdrop-blur-xl border-b border-white/5 flex items-center justify-between px-4 sticky top-0 z-10 shadow-2xl">
         <div className="font-bold text-lg text-white tracking-tight flex items-center gap-2 truncate pr-4">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 overflow-hidden">
-            <img src="/logo.png" alt="LEO Enterprises" className="w-full h-full object-contain" />
+          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-cyan-400 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/20 shrink-0">
+            <LayoutGrid className="w-5 h-5 text-white" />
           </div>
           <span className="truncate uppercase text-xs tracking-[0.2em] opacity-80">{companyInfo.name}</span>
         </div>

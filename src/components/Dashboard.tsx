@@ -396,11 +396,11 @@ export default function Dashboard() {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-4xl md:text-5xl font-black text-white tracking-tighter uppercase italic leading-none">
+          <h1 className="text-2xl font-bold text-white">
             Overview
           </h1>
-          <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mt-2 ml-1 opacity-80">
-            Welcome to {companyInfo.name} Command
+          <p className="text-slate-400 text-sm">
+            Welcome back to {companyInfo.name}
           </p>
         </div>
 
@@ -441,14 +441,14 @@ export default function Dashboard() {
               <div className="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center">
                 <Users className="w-5 h-5" />
               </div>
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] italic">
+              <span className="text-xs font-bold uppercase tracking-widest">
                 Total Employees
               </span>
             </div>
             <div className="text-4xl font-black text-white tracking-tight">
               {loading ? <Skeleton className="h-10 w-24 bg-slate-800" /> : stats.totalEmployees}
             </div>
-            <div className="text-[10px] text-slate-500 mt-2 font-black uppercase tracking-[0.2em] italic opacity-70">
+            <div className="text-[10px] text-slate-400 mt-2 font-medium uppercase tracking-wider">
               Active Personnel
             </div>
           </div>
@@ -457,7 +457,7 @@ export default function Dashboard() {
             <Interactive className="bento-card flex-col bg-slate-900/80 backdrop-blur-md p-5 border border-emerald-500/20 shadow-xl relative overflow-hidden group hover:border-emerald-500 transition-all cursor-pointer" onClick={() => setSelectedStatus({category: "Present", employeeIds: stats.presentIds})}>
               <div className="flex items-center gap-2 text-emerald-400 mb-2">
                 <CheckCircle className="w-4 h-4" />
-                <span className="text-[9px] font-black uppercase tracking-[0.2em] leading-none italic">
+                <span className="text-[10px] font-bold uppercase tracking-widest leading-none">
                   Present
                 </span>
               </div>
@@ -469,7 +469,7 @@ export default function Dashboard() {
             <Interactive className="bento-card flex-col bg-slate-900/80 backdrop-blur-md p-5 border border-sky-500/20 shadow-xl relative overflow-hidden group hover:border-sky-500 transition-all cursor-pointer" onClick={() => setSelectedStatus({category: "Undertime", employeeIds: stats.utIds})}>
               <div className="flex items-center gap-2 text-sky-400 mb-2">
                 <Clock className="w-4 h-4" />
-                <span className="text-[9px] font-black uppercase tracking-[0.2em] leading-none italic">
+                <span className="text-[10px] font-bold uppercase tracking-widest leading-none">
                   UT
                 </span>
               </div>
@@ -481,7 +481,7 @@ export default function Dashboard() {
             <Interactive className="bento-card flex-col bg-slate-900/80 backdrop-blur-md p-5 border border-indigo-500/20 shadow-xl relative overflow-hidden group hover:border-indigo-500 transition-all cursor-pointer" onClick={() => setSelectedStatus({category: "Half-Day", employeeIds: stats.hdIds})}>
               <div className="flex items-center gap-2 text-indigo-400 mb-2">
                 <Clock className="w-4 h-4" />
-                <span className="text-[9px] font-black uppercase tracking-[0.2em] leading-none italic">
+                <span className="text-[10px] font-bold uppercase tracking-widest leading-none">
                   HD
                 </span>
               </div>
@@ -493,7 +493,7 @@ export default function Dashboard() {
             <div className="bento-card flex-col bg-slate-900/80 backdrop-blur-md p-5 border border-blue-500/20 shadow-xl relative overflow-hidden group">
               <div className="flex items-center gap-2 text-blue-400 mb-2">
                 <Clock className="w-4 h-4" />
-                <span className="text-[9px] font-black uppercase tracking-[0.2em] leading-none italic">
+                <span className="text-[10px] font-bold uppercase tracking-widest leading-none">
                   OT Total
                 </span>
               </div>
@@ -512,7 +512,7 @@ export default function Dashboard() {
             <Interactive className="bento-card flex-col bg-slate-900/80 backdrop-blur-md p-5 border border-amber-500/20 shadow-xl relative overflow-hidden group hover:border-amber-500 transition-all cursor-pointer" onClick={() => setSelectedStatus({category: "Pakyaw", employeeIds: stats.pakyawIds})}>
               <div className="flex items-center gap-2 text-amber-400 mb-2">
                 <Hammer className="w-4 h-4" />
-                <span className="text-[9px] font-black uppercase tracking-[0.2em] leading-none italic">
+                <span className="text-[10px] font-bold uppercase tracking-widest leading-none">
                   Pakyaw
                 </span>
               </div>
@@ -524,7 +524,7 @@ export default function Dashboard() {
             <Interactive className="bento-card flex-col bg-slate-900/80 backdrop-blur-md p-5 border border-rose-500/20 shadow-xl relative overflow-hidden group hover:border-rose-500 transition-all cursor-pointer" onClick={() => setSelectedStatus({category: "Absent", employeeIds: stats.absentIds})}>
               <div className="flex items-center gap-2 text-rose-400 mb-2">
                 <XCircle className="w-4 h-4" />
-                <span className="text-[9px] font-black uppercase tracking-[0.2em] leading-none italic">
+                <span className="text-[10px] font-bold uppercase tracking-widest leading-none">
                   Absent
                 </span>
               </div>
@@ -539,7 +539,7 @@ export default function Dashboard() {
               <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-[40px] -mr-16 -mt-16 group-hover:bg-emerald-500/20 transition-all duration-700"></div>
               <div className="flex items-center gap-3 text-emerald-400 mb-2 relative z-10 justify-center md:justify-start">
                 <PhilippinePeso className="w-5 h-5" />
-                <span className="text-xs font-black uppercase tracking-[0.3em] text-emerald-400 italic">
+                <span className="text-xs font-black uppercase tracking-[0.2em] text-emerald-400">
                   Upcoming Projection
                 </span>
               </div>
@@ -556,7 +556,7 @@ export default function Dashboard() {
                   </>
                 )}
               </div>
-              <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] italic mt-3 relative z-10 bg-white/5 inline-block px-4 py-1.5 rounded-full border border-white/10 mx-auto md:ml-0">
+              <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-3 relative z-10 bg-white/5 inline-block px-3 py-1 rounded-full border border-white/5 mx-auto md:ml-0">
                 {format(parseISO(startDate), "MMM dd")} -{" "}
                 {format(parseISO(endDate), "MMM dd")}
               </div>
@@ -564,7 +564,7 @@ export default function Dashboard() {
 
             <div className="bento-card flex-col bg-slate-900/40 backdrop-blur-md p-6 border border-white/10 space-y-4 shadow-xl">
               <div className="flex items-center justify-between">
-                <h3 className="text-xs font-black uppercase tracking-[0.3em] text-slate-400 flex items-center gap-2 italic">
+                <h3 className="text-sm font-bold uppercase tracking-widest text-slate-400 flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-blue-400" /> Period
                 </h3>
               </div>

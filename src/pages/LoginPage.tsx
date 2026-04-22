@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
-import { LogIn, Mail, Lock, Loader2, ArrowLeft, ArrowRight, ShieldCheck, User } from 'lucide-react';
+import { LogIn, Mail, Lock, Loader2, ArrowLeft, ArrowRight, ShieldCheck, User, LayoutGrid } from 'lucide-react';
 import { Navigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import EtherealMeshBackground from '../components/EtherealMeshBackground';
