@@ -175,12 +175,12 @@ export default function Employees() {
   return (
     <div className="h-full flex flex-col relative">
       <div className="mb-4">
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">Employees</h1>
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+        <h1 className="text-2xl md:text-3xl font-black text-white mb-4 uppercase italic tracking-tight">Employees</h1>
+        <div className="relative group">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 transition-colors group-focus-within:text-blue-500" />
           <Input 
             placeholder="Search employees..." 
-            className="pl-10 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl h-12"
+            className="pl-10 bg-slate-900/50 backdrop-blur-md border border-white/10 rounded-xl h-12 text-white placeholder:text-slate-500 focus-visible:ring-blue-500 transition-all font-bold"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -202,17 +202,17 @@ export default function Employees() {
         ) : (
           sortedPositions.map(position => (
             <div key={position}>
-              <h2 className="text-sm font-bold text-slate-500 uppercase tracking-widest mb-3 pl-1">
-                {position}
+              <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-4 pl-1 flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-blue-500" /> {position}
               </h2>
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {groupedEmployees[position].sort((a, b) => a.fullName.localeCompare(b.fullName)).map(emp => (
                   <Interactive 
                     key={emp.id} 
                     onClick={() => setSelectedEmployee(emp)}
-                    className="bento-card bg-white dark:bg-slate-800 p-4 flex flex-row items-center gap-4 border border-slate-100 dark:border-slate-800 hover:border-blue-300 transition-colors"
+                    className="bento-card bg-slate-900/80 backdrop-blur-md p-4 flex flex-row items-center gap-4 border border-white/10 hover:border-blue-500 transition-all shadow-xl"
                   >
-                    <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center font-bold text-lg shrink-0 overflow-hidden">
+                    <div className="w-12 h-12 bg-blue-500/20 text-blue-400 rounded-full flex items-center justify-center font-bold text-lg shrink-0 overflow-hidden border border-blue-500/20">
                       {emp.photoURL ? (
                         <img src={emp.photoURL} alt={emp.fullName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                       ) : (
@@ -221,38 +221,38 @@ export default function Employees() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <h3 className="font-bold text-slate-900 dark:text-white truncate">{emp.fullName}</h3>
+                        <h3 className="font-bold text-white truncate">{emp.fullName}</h3>
                         {emp.customId && (
-                          <span className="text-[9px] font-bold text-slate-400 bg-slate-100 dark:bg-slate-700 px-1 rounded uppercase tracking-tighter">
+                          <span className="text-[9px] font-black text-slate-400 bg-white/5 border border-white/10 px-2 py-0.5 rounded uppercase tracking-tighter">
                             {emp.customId}
                           </span>
                         )}
                         {users[emp.id] && (
-                          <div className="w-4 h-4 bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center" title="Account Linked">
+                          <div className="w-4 h-4 bg-blue-500/20 text-blue-400 rounded-full flex items-center justify-center border border-blue-500/30" title="Account Linked">
                             <CheckCircle2 className="w-2.5 h-2.5" />
                           </div>
                         )}
                       </div>
                       <div className="flex items-center gap-4 text-xs mt-1">
-                        <div className="flex items-center gap-1 text-slate-500 dark:text-slate-400 truncate">
+                        <div className="flex items-center gap-1 text-slate-400 truncate font-semibold uppercase tracking-tight">
                           <Briefcase className="w-3 h-3" />
                           <span className="truncate">{emp.position || 'Staff'}</span>
                         </div>
-                        <div className="font-bold text-blue-600 dark:text-blue-400 flex items-center gap-0.5 whitespace-nowrap">
-                          <span className="text-[10px] opacity-70">₱</span>
-                          <span>{emp.dailySalary.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                        <div className="font-black text-cyan-400 flex items-center gap-0.5 whitespace-nowrap">
+                          <span className="text-[10px] opacity-70 italic shadow-sm">₱</span>
+                          <span className="tracking-tight">{emp.dailySalary.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                         </div>
                       </div>
                     </div>
                     <div className="shrink-0 flex items-center gap-2">
-                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border transition-colors ${
                         emp.status === 'active' || !emp.status 
-                          ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' 
-                          : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400'
+                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 shadow-[0_0_10px_rgba(16,185,129,0.1)]' 
+                          : 'bg-slate-500/10 text-slate-400 border-slate-500/30'
                       }`}>
                         {emp.status || 'Active'}
                       </span>
-                      <ChevronRight className="w-4 h-4 text-slate-400" />
+                      <ChevronRight className="w-4 h-4 text-slate-600 group-hover:text-white transition-colors" />
                     </div>
                   </Interactive>
                 ))}

@@ -337,30 +337,32 @@ export default function CEODashboard() {
     }
   };
 
-  return (
+   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold bg-gradient-to-br from-slate-900 to-slate-600 dark:from-white dark:to-slate-400 bg-clip-text text-transparent">
-            CEO Executive Dashboard
+          <h1 className="text-4xl md:text-5xl font-black text-white tracking-tighter uppercase italic leading-none flex items-center gap-3">
+            <span className="w-2 h-10 bg-cyan-500 rounded-full shadow-[0_0_20px_rgba(6,182,212,0.6)]"></span>
+            Executive Dashboard
           </h1>
-          <p className="text-slate-500 font-medium text-sm mt-1">
-            Financial overview and personnel tracking
+          <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em] mt-2 ml-5 italic opacity-80">
+            Leo Enterprises • Operational Status
           </p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bento-card flex-col bg-white dark:bg-slate-800 p-6 border-blue-100 dark:border-blue-900/30">
-          <div className="flex items-center gap-3 text-blue-600 dark:text-blue-400 mb-2">
+        <div className="bento-card flex-col bg-slate-900/40 backdrop-blur-md p-6 border border-white/10 shadow-xl overflow-hidden relative group">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/10 rounded-full -mr-12 -mt-12 group-hover:scale-125 transition-transform duration-500"></div>
+          <div className="flex items-center gap-3 text-cyan-400 mb-2 relative z-10">
             <Users className="w-5 h-5" />
-            <span className="text-xs font-bold uppercase tracking-widest">
+            <span className="text-[10px] font-black uppercase tracking-[0.3em] italic">
               Total Workforce
             </span>
           </div>
-          <div className="text-4xl font-black">
+          <div className="text-4xl font-black text-white tracking-tighter relative z-10">
             {loading ? (
-              <Skeleton className="h-10 w-20" />
+              <Skeleton className="h-10 w-20 bg-slate-800" />
             ) : (
               employees.filter((e) => e.role !== "ceo" && e.role !== "admin")
                 .length
@@ -368,17 +370,17 @@ export default function CEODashboard() {
           </div>
         </div>
 
-        <div className="bento-card flex-col bg-slate-900 dark:bg-slate-950 p-6 border-slate-800 relative overflow-hidden group">
+        <div className="bento-card flex-col bg-slate-900/40 backdrop-blur-md p-6 border border-white/10 relative overflow-hidden group shadow-xl">
           <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-[40px] -mr-16 -mt-16 group-hover:bg-emerald-500/20 transition-all duration-700"></div>
           <div className="flex items-center gap-3 text-emerald-400 mb-2 relative z-10">
             <PhilippinePeso className="w-5 h-5" />
-            <span className="text-xs font-bold uppercase tracking-widest text-emerald-500">
+            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-400 italic">
               Upcoming Payroll Projection
             </span>
           </div>
-          <div className="text-4xl font-black text-slate-900 dark:text-white relative z-10">
+          <div className="text-4xl font-black text-white relative z-10">
             {loading ? (
-              <Skeleton className="h-10 w-48" />
+              <Skeleton className="h-10 w-48 bg-slate-800" />
             ) : (
               <>
                 ₱{" "}
@@ -394,11 +396,11 @@ export default function CEODashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Projection Filters & List */}
-        <div className="bento-card flex-col space-y-4">
-          <h3 className="font-bold text-slate-800 dark:text-white flex items-center gap-2">
+        <div className="bento-card flex-col space-y-4 bg-slate-900/40 backdrop-blur-md border border-white/10 shadow-xl">
+          <h3 className="font-black uppercase tracking-[0.2em] text-xs text-white flex items-center gap-2 italic">
             <Calendar className="w-4 h-4 text-slate-400" /> Projection Filter
           </h3>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 relative z-20">
             <input
               type="date"
               value={startDate}
@@ -407,9 +409,9 @@ export default function CEODashboard() {
                 localStorage.setItem("payrollStartDate", e.target.value);
                 window.dispatchEvent(new Event("payrollDateChange"));
               }}
-              className="flex h-10 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 dark:border-slate-800 dark:bg-slate-950 text-slate-800 dark:text-white"
+              className="flex h-10 w-full rounded-xl border border-white/10 bg-slate-950/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 text-white font-bold"
             />
-            <span className="text-slate-400">to</span>
+            <span className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">to</span>
             <input
               type="date"
               value={endDate}
@@ -418,7 +420,7 @@ export default function CEODashboard() {
                 localStorage.setItem("payrollEndDate", e.target.value);
                 window.dispatchEvent(new Event("payrollDateChange"));
               }}
-              className="flex h-10 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 dark:border-slate-800 dark:bg-slate-950 text-slate-800 dark:text-white"
+              className="flex h-10 w-full rounded-xl border border-white/10 bg-slate-950/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 text-white font-bold"
             />
           </div>
 

@@ -13,54 +13,71 @@
 }
 
 :root {
-  --bg: #E0F2FE;
-  --card-bg: rgba(255, 255, 255, 0.8);
-  --accent: #0284C7;
-  --text-main: #0C4A6E;
-  --text-sub: #0369A1;
-  --border: #BAE6FD;
-  --success: #0D9488;
-  --danger: #E11D48;
-  --warning: #F59E0B;
-  --radius: 1rem;
+  --bg: #050b18;
+  --card-bg: rgba(15, 23, 42, 0.85);
+  --accent: #2563eb;
+  --text-main: #f8fafc;
+  --text-sub: #cbd5e1;
+  --border: rgba(255, 255, 255, 0.1);
+  --success: #10b981;
+  --danger: #ef4444;
+  --warning: #f59e0b;
+  --radius: 1.25rem;
+  color-scheme: dark;
 }
 
 .dark {
-  --bg: #082F49;
-  --card-bg: rgba(15, 23, 42, 0.8);
-  --text-main: #F0F9FF;
-  --text-sub: #BAE6FD;
-  --border: #0C4A6E;
+  --bg: #050b18;
+  --card-bg: rgba(15, 23, 42, 0.9);
+  --text-main: #ffffff;
+  --text-sub: #94a3b8;
+  --border: rgba(255, 255, 255, 0.15);
+  color-scheme: dark;
 }
 
 body {
   background-color: var(--bg);
-  background-image: 
-    radial-gradient(at 0% 0%, hsla(199, 89%, 48%, 0.15) 0px, transparent 50%),
-    radial-gradient(at 100% 0%, hsla(187, 92%, 45%, 0.15) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, hsla(199, 89%, 48%, 0.15) 0px, transparent 50%),
-    radial-gradient(at 0% 100%, hsla(187, 92%, 45%, 0.15) 0px, transparent 50%);
   color: var(--text-main);
   font-family: 'Inter', sans-serif;
   -webkit-tap-highlight-color: transparent;
   min-height: 100vh;
 }
 
+/* Force Native Date & Time UI to use Dark Mode High Contrast */
+input[type="date"], input[type="time"], input[type="datetime-local"] {
+  color-scheme: dark;
+  color: #ffffff !important;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(1.5);
+  opacity: 0.8;
+  cursor: pointer;
+}
+input[type="date"]::-webkit-calendar-picker-indicator:hover,
+input[type="time"]::-webkit-calendar-picker-indicator:hover,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
 .bento-card {
   background: var(--card-bg);
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(16px);
   border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 16px;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+  border-radius: 24px;
+  padding: 20px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
   display: flex;
-  transition: transform 0.2s cubic-bezier(0.16,1,0.3,1), box-shadow 0.2s ease, border-color 0.2s ease;
-  will-change: transform;
+  transition: all 0.3s cubic-bezier(0.16,1,0.3,1);
+  will-change: transform, box-shadow;
 }
 
 .bento-card:hover {
-  border-color: var(--accent);
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 25px 30px -5px rgba(0, 0, 0, 0.3), 0 15px 15px -5px rgba(0, 0, 0, 0.2);
 }
 
 button:active {
@@ -68,9 +85,11 @@ button:active {
 }
 
 .card-title {
-  font-size: 0.875rem;
-  font-weight: 700;
-  color: var(--text-sub);
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--text-main);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
   margin-bottom: 12px;
 }
 

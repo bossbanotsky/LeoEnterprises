@@ -396,15 +396,15 @@ export default function Dashboard() {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+          <h1 className="text-4xl md:text-5xl font-black text-white tracking-tighter uppercase italic leading-none">
             Overview
           </h1>
-          <p className="text-slate-500 dark:text-slate-400 text-sm">
-            Welcome back to {companyInfo.name}
+          <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mt-2 ml-1 opacity-80">
+            Welcome to {companyInfo.name} Command
           </p>
         </div>
 
-        <div className="bg-white dark:bg-slate-800 p-1 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center gap-1 group">
+        <div className="bg-slate-900/50 p-1 rounded-2xl border border-white/10 shadow-lg flex items-center gap-1 group backdrop-blur-md">
           <button
             onClick={handlePrevDate}
             className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-colors text-slate-500"
@@ -435,71 +435,71 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          <div className="bento-card flex-col bg-white dark:bg-slate-800 p-6 border-blue-100 dark:border-blue-900/30 relative overflow-hidden group">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full -mr-16 -mt-16 transition-transform group-hover:scale-150 duration-700"></div>
-            <div className="flex items-center gap-3 text-blue-600 dark:text-blue-400 mb-3">
-              <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/40 rounded-xl flex items-center justify-center">
+          <div className="bento-card flex-col bg-slate-900/40 backdrop-blur-md p-6 border border-white/10 relative overflow-hidden group shadow-xl">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full -mr-16 -mt-16 transition-transform group-hover:scale-150 duration-700"></div>
+            <div className="flex items-center gap-3 text-cyan-400 mb-3">
+              <div className="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center">
                 <Users className="w-5 h-5" />
               </div>
-              <span className="text-xs font-bold uppercase tracking-widest">
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] italic">
                 Total Employees
               </span>
             </div>
-            <div className="text-4xl font-black text-slate-900 dark:text-white tracking-tight">
-              {loading ? <Skeleton className="h-10 w-24" /> : stats.totalEmployees}
+            <div className="text-4xl font-black text-white tracking-tight">
+              {loading ? <Skeleton className="h-10 w-24 bg-slate-800" /> : stats.totalEmployees}
             </div>
-            <div className="text-[10px] text-slate-400 dark:text-slate-500 mt-2 font-medium uppercase tracking-wider">
+            <div className="text-[10px] text-slate-500 mt-2 font-black uppercase tracking-[0.2em] italic opacity-70">
               Active Personnel
             </div>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-            <Interactive className="bento-card flex-col bg-white dark:bg-slate-800 p-5 border-emerald-100 dark:border-emerald-900/30 relative overflow-hidden group hover:border-emerald-300 transition-colors cursor-pointer" onClick={() => setSelectedStatus({category: "Present", employeeIds: stats.presentIds})}>
-              <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 mb-2">
+            <Interactive className="bento-card flex-col bg-slate-900/80 backdrop-blur-md p-5 border border-emerald-500/20 shadow-xl relative overflow-hidden group hover:border-emerald-500 transition-all cursor-pointer" onClick={() => setSelectedStatus({category: "Present", employeeIds: stats.presentIds})}>
+              <div className="flex items-center gap-2 text-emerald-400 mb-2">
                 <CheckCircle className="w-4 h-4" />
-                <span className="text-[10px] font-bold uppercase tracking-widest">
+                <span className="text-[9px] font-black uppercase tracking-[0.2em] leading-none italic">
                   Present
                 </span>
               </div>
-              <div className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-                {loading ? <Skeleton className="h-9 w-16" /> : stats.present}
+              <div className="text-3xl font-black text-white tracking-tight">
+                {loading ? <Skeleton className="h-9 w-16 bg-slate-800" /> : stats.present}
               </div>
             </Interactive>
 
-            <Interactive className="bento-card flex-col bg-white dark:bg-slate-800 p-5 border-sky-100 dark:border-sky-900/30 relative overflow-hidden group hover:border-sky-300 transition-colors cursor-pointer" onClick={() => setSelectedStatus({category: "Undertime", employeeIds: stats.utIds})}>
-              <div className="flex items-center gap-2 text-sky-600 dark:text-sky-400 mb-2">
+            <Interactive className="bento-card flex-col bg-slate-900/80 backdrop-blur-md p-5 border border-sky-500/20 shadow-xl relative overflow-hidden group hover:border-sky-500 transition-all cursor-pointer" onClick={() => setSelectedStatus({category: "Undertime", employeeIds: stats.utIds})}>
+              <div className="flex items-center gap-2 text-sky-400 mb-2">
                 <Clock className="w-4 h-4" />
-                <span className="text-[10px] font-bold uppercase tracking-widest">
+                <span className="text-[9px] font-black uppercase tracking-[0.2em] leading-none italic">
                   UT
                 </span>
               </div>
-              <div className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-                {loading ? <Skeleton className="h-9 w-16" /> : stats.ut}
+              <div className="text-3xl font-black text-white tracking-tight">
+                {loading ? <Skeleton className="h-9 w-16 bg-slate-800" /> : stats.ut}
               </div>
             </Interactive>
 
-            <Interactive className="bento-card flex-col bg-white dark:bg-slate-800 p-5 border-indigo-100 dark:border-indigo-900/30 relative overflow-hidden group hover:border-indigo-300 transition-colors cursor-pointer" onClick={() => setSelectedStatus({category: "Half-Day", employeeIds: stats.hdIds})}>
-              <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 mb-2">
+            <Interactive className="bento-card flex-col bg-slate-900/80 backdrop-blur-md p-5 border border-indigo-500/20 shadow-xl relative overflow-hidden group hover:border-indigo-500 transition-all cursor-pointer" onClick={() => setSelectedStatus({category: "Half-Day", employeeIds: stats.hdIds})}>
+              <div className="flex items-center gap-2 text-indigo-400 mb-2">
                 <Clock className="w-4 h-4" />
-                <span className="text-[10px] font-bold uppercase tracking-widest">
+                <span className="text-[9px] font-black uppercase tracking-[0.2em] leading-none italic">
                   HD
                 </span>
               </div>
-              <div className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-                {loading ? <Skeleton className="h-9 w-16" /> : stats.hd}
+              <div className="text-3xl font-black text-white tracking-tight">
+                {loading ? <Skeleton className="h-9 w-16 bg-slate-800" /> : stats.hd}
               </div>
             </Interactive>
 
-            <div className="bento-card flex-col bg-white dark:bg-slate-800 p-5 border-blue-100 dark:border-blue-900/30 relative overflow-hidden group">
-              <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 mb-2">
+            <div className="bento-card flex-col bg-slate-900/80 backdrop-blur-md p-5 border border-blue-500/20 shadow-xl relative overflow-hidden group">
+              <div className="flex items-center gap-2 text-blue-400 mb-2">
                 <Clock className="w-4 h-4" />
-                <span className="text-[10px] font-bold uppercase tracking-widest">
+                <span className="text-[9px] font-black uppercase tracking-[0.2em] leading-none italic">
                   OT Total
                 </span>
               </div>
-              <div className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+              <div className="text-3xl font-black text-white tracking-tight">
                 {loading ? (
-                  <Skeleton className="h-9 w-16" />
+                  <Skeleton className="h-9 w-16 bg-slate-800" />
                 ) : (
                   <>
                     {stats.ot.toFixed(1)}{" "}
@@ -509,41 +509,41 @@ export default function Dashboard() {
               </div>
             </div>
 
-            <Interactive className="bento-card flex-col bg-white dark:bg-slate-800 p-5 border-amber-100 dark:border-amber-900/30 relative overflow-hidden group hover:border-amber-300 transition-colors cursor-pointer" onClick={() => setSelectedStatus({category: "Pakyaw", employeeIds: stats.pakyawIds})}>
-              <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 mb-2">
+            <Interactive className="bento-card flex-col bg-slate-900/80 backdrop-blur-md p-5 border border-amber-500/20 shadow-xl relative overflow-hidden group hover:border-amber-500 transition-all cursor-pointer" onClick={() => setSelectedStatus({category: "Pakyaw", employeeIds: stats.pakyawIds})}>
+              <div className="flex items-center gap-2 text-amber-400 mb-2">
                 <Hammer className="w-4 h-4" />
-                <span className="text-[10px] font-bold uppercase tracking-widest">
+                <span className="text-[9px] font-black uppercase tracking-[0.2em] leading-none italic">
                   Pakyaw
                 </span>
               </div>
-              <div className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-                {loading ? <Skeleton className="h-9 w-16" /> : stats.pakyaw}
+              <div className="text-3xl font-black text-white tracking-tight">
+                {loading ? <Skeleton className="h-9 w-16 bg-slate-800" /> : stats.pakyaw}
               </div>
             </Interactive>
 
-            <Interactive className="bento-card flex-col bg-white dark:bg-slate-800 p-5 border-rose-100 dark:border-rose-900/30 relative overflow-hidden group hover:border-rose-300 transition-colors cursor-pointer" onClick={() => setSelectedStatus({category: "Absent", employeeIds: stats.absentIds})}>
-              <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400 mb-2">
+            <Interactive className="bento-card flex-col bg-slate-900/80 backdrop-blur-md p-5 border border-rose-500/20 shadow-xl relative overflow-hidden group hover:border-rose-500 transition-all cursor-pointer" onClick={() => setSelectedStatus({category: "Absent", employeeIds: stats.absentIds})}>
+              <div className="flex items-center gap-2 text-rose-400 mb-2">
                 <XCircle className="w-4 h-4" />
-                <span className="text-[10px] font-bold uppercase tracking-widest">
+                <span className="text-[9px] font-black uppercase tracking-[0.2em] leading-none italic">
                   Absent
                 </span>
               </div>
-              <div className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-                {loading ? <Skeleton className="h-9 w-16" /> : stats.absent}
+              <div className="text-3xl font-black text-white tracking-tight">
+                {loading ? <Skeleton className="h-9 w-16 bg-slate-800" /> : stats.absent}
               </div>
             </Interactive>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bento-card flex-col bg-slate-900 dark:bg-slate-950 p-6 border-slate-800 relative overflow-hidden group min-h-[160px] justify-center text-center md:text-left">
+            <div className="bento-card flex-col bg-slate-950/80 backdrop-blur-xl p-6 border border-emerald-500/30 relative overflow-hidden group min-h-[160px] justify-center text-center md:text-left shadow-[0_0_50px_rgba(16,185,129,0.1)]">
               <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-[40px] -mr-16 -mt-16 group-hover:bg-emerald-500/20 transition-all duration-700"></div>
               <div className="flex items-center gap-3 text-emerald-400 mb-2 relative z-10 justify-center md:justify-start">
                 <PhilippinePeso className="w-5 h-5" />
-                <span className="text-xs font-bold uppercase tracking-widest text-emerald-500">
+                <span className="text-xs font-black uppercase tracking-[0.3em] text-emerald-400 italic">
                   Upcoming Projection
                 </span>
               </div>
-              <div className="text-4xl font-black text-white relative z-10">
+              <div className="text-4xl font-black text-white relative z-10 tracking-tight">
                 {loading ? (
                   <Skeleton className="h-10 w-48 bg-slate-800" />
                 ) : (
@@ -556,16 +556,16 @@ export default function Dashboard() {
                   </>
                 )}
               </div>
-              <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-2 relative z-10">
+              <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] italic mt-3 relative z-10 bg-white/5 inline-block px-4 py-1.5 rounded-full border border-white/10 mx-auto md:ml-0">
                 {format(parseISO(startDate), "MMM dd")} -{" "}
                 {format(parseISO(endDate), "MMM dd")}
               </div>
             </div>
 
-            <div className="bento-card flex-col bg-white dark:bg-slate-800 p-6 border-slate-200 dark:border-slate-700 space-y-4">
+            <div className="bento-card flex-col bg-slate-900/40 backdrop-blur-md p-6 border border-white/10 space-y-4 shadow-xl">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2">
-                  <Calendar className="w-4 h-4" /> Period
+                <h3 className="text-xs font-black uppercase tracking-[0.3em] text-slate-400 flex items-center gap-2 italic">
+                  <Calendar className="w-4 h-4 text-blue-400" /> Period
                 </h3>
               </div>
               <div className="flex items-center gap-2">
@@ -578,9 +578,9 @@ export default function Dashboard() {
                     localStorage.setItem("payrollStartDate", val);
                     window.dispatchEvent(new Event("payrollDateChange"));
                   }}
-                  className="h-9 text-xs rounded-xl"
+                  className="h-9 text-xs rounded-xl bg-slate-950/50 border-white/10 text-white"
                 />
-                <span className="text-slate-400">to</span>
+                <span className="text-slate-500">to</span>
                 <Input
                   type="date"
                   value={endDate}
@@ -590,34 +590,34 @@ export default function Dashboard() {
                     localStorage.setItem("payrollEndDate", val);
                     window.dispatchEvent(new Event("payrollDateChange"));
                   }}
-                  className="h-9 text-xs rounded-xl"
+                  className="h-9 text-xs rounded-xl bg-slate-950/50 border-white/10 text-white"
                 />
               </div>
             </div>
           </div>
 
-          <div className="bento-card flex-col bg-white dark:bg-slate-800 p-6 border-slate-200 dark:border-slate-700">
+          <div className="bento-card flex-col bg-slate-900/40 backdrop-blur-md p-6 border border-white/10 shadow-xl">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500">
+              <h3 className="text-sm font-bold uppercase tracking-widest text-cyan-400">
                 Personnel Projection Details
               </h3>
-              <div className="text-[10px] text-slate-400 font-medium">
-                Click name for daily logs
+              <div className="text-[10px] text-slate-500 font-medium tracking-wider">
+                CLICK NAME FOR DAILY LOGS
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
               {loading ? (
-                <Skeleton count={6} className="h-20 w-full" />
+                <Skeleton count={6} className="h-20 w-full bg-slate-800" />
               ) : (
                 projection.employeeProjections.map((emp) => (
                   <Interactive
                     key={emp.id}
-                    className="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-xl flex items-center justify-between border border-slate-100 dark:border-slate-800 hover:border-blue-300 transition-colors"
+                    className="p-3 bg-white/5 hover:bg-white/10 rounded-xl flex items-center justify-between border border-white/5 hover:border-blue-500/50 transition-all duration-300"
                     onClick={() => setSelectedEmployeeProj(emp)}
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 overflow-hidden flex items-center justify-center font-bold text-blue-600 text-xs">
+                      <div className="w-8 h-8 rounded-full bg-blue-500/20 overflow-hidden flex items-center justify-center font-bold text-blue-400 text-xs">
                         {emp.photoURL ? (
                           <img
                             src={emp.photoURL}
@@ -629,24 +629,23 @@ export default function Dashboard() {
                         )}
                       </div>
                       <div>
-                        <div className="font-bold text-sm text-slate-800 dark:text-slate-200">
+                        <div className="font-bold text-sm text-white">
                           {emp.fullName}
                         </div>
-                        <div className="text-[10px] text-slate-500">
+                        <div className="text-[10px] text-slate-400 uppercase tracking-tight">
                           {emp.position || "Staff"}
                         </div>
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="font-bold text-emerald-600 dark:text-emerald-400 text-sm">
+                      <div className="font-bold text-emerald-400 text-sm">
                         ₱{" "}
                         {emp.totalToBePaid.toLocaleString(undefined, {
                           minimumFractionDigits: 2,
                         })}
                       </div>
-                      <div className="text-[9px] text-slate-400">
-                        {emp.presentDays + emp.utDays + emp.hdDays * 0.5} Action
-                        Days
+                      <div className="text-[9px] text-slate-500 font-medium">
+                        {emp.presentDays + emp.utDays + emp.hdDays * 0.5} DAYS
                       </div>
                     </div>
                   </Interactive>

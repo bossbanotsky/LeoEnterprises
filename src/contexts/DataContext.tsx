@@ -66,14 +66,33 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!user) return;
     
     try {
+      const { getDocsFromCache } = await import('firebase/firestore');
+      
       // Parallel fetch to save time and reduce overhead
-      const [empsSnap, usersSnap, jobsSnap, annSnap, caSnap] = await Promise.all([
+      const snapsPromise = Promise.all([
         getDocs(collection(db, 'employees')),
         getDocs(collection(db, 'users')),
         getDocs(query(collection(db, 'pakyawJobs'), orderBy('startDate', 'desc'))),
         getDocs(query(collection(db, 'announcements'), orderBy('createdAt', 'desc'))),
-        getDocs(query(collection(db, 'cashAdvances'), orderBy('date', 'desc'), limit(500))) // Limit to avoid massive reads
+        getDocs(query(collection(db, 'cashAdvances'), orderBy('date', 'desc'), limit(500)))
       ]);
+
+      let snaps;
+      try {
+        snaps = await snapsPromise;
+      } catch (e: any) {
+        // If server fails (quota), try cache for all
+        console.warn("DataContext server fetch failed, trying cache...", e.message);
+        snaps = await Promise.all([
+          getDocsFromCache(collection(db, 'employees')),
+          getDocsFromCache(collection(db, 'users')),
+          getDocsFromCache(query(collection(db, 'pakyawJobs'), orderBy('startDate', 'desc'))),
+          getDocsFromCache(query(collection(db, 'announcements'), orderBy('createdAt', 'desc'))),
+          getDocsFromCache(query(collection(db, 'cashAdvances'), orderBy('date', 'desc'), limit(500)))
+        ]);
+      }
+
+      const [empsSnap, usersSnap, jobsSnap, annSnap, caSnap] = snaps;
 
       const emps: Employee[] = [];
       empsSnap.forEach(doc => emps.push({ id: doc.id, ...doc.data() } as Employee));

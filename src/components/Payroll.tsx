@@ -277,26 +277,35 @@ export default function Payroll() {
     
     const fetchData = async () => {
       try {
-        const { query, collection, where, getDocs } = await import('firebase/firestore');
+        const { query, collection, where, getDocs, getDocsFromCache } = await import('firebase/firestore');
         const q = query(
           collection(db, 'payrolls'),
           where('startDate', '==', startDate),
           where('endDate', '==', endDate)
         );
 
-        const snapshot = await getDocs(q);
+        let snapshot;
+        try {
+          snapshot = await getDocs(q);
+        } catch (e: any) {
+          console.warn("Payroll server fetch failed, trying cache...", e.message);
+          snapshot = await getDocsFromCache(q);
+        }
+
         const fetchedPayrolls: any[] = [];
-        snapshot.forEach(docSnap => {
-          const data = docSnap.data();
-          const emp = employees.find(e => e.id === data.employeeId);
-          if (emp) {
-            fetchedPayrolls.push({
-              id: docSnap.id,
-              employee: emp,
-              ...data
-            });
-          }
-        });
+        if (snapshot) {
+          snapshot.forEach(docSnap => {
+            const data = docSnap.data();
+            const emp = employees.find(e => e.id === data.employeeId);
+            if (emp) {
+              fetchedPayrolls.push({
+                id: docSnap.id,
+                employee: emp,
+                ...data
+              });
+            }
+          });
+        }
         setPayrollData(fetchedPayrolls);
 
         // Fetch Bulk Payrolls
@@ -305,14 +314,23 @@ export default function Payroll() {
           where('startDate', '==', startDate),
           where('endDate', '==', endDate)
         );
-        const bulkSnapshot = await getDocs(bulkQ);
+        let bulkSnapshot;
+        try {
+          bulkSnapshot = await getDocs(bulkQ);
+        } catch (e: any) {
+          console.warn("Bulk Payroll server fetch failed, trying cache...", e.message);
+          bulkSnapshot = await getDocsFromCache(bulkQ);
+        }
+
         const fetchedBulk: any[] = [];
-        bulkSnapshot.forEach(docSnap => {
-          const data = docSnap.data();
-          if (data.status !== 'paid') {
-            fetchedBulk.push({ id: docSnap.id, ...data });
-          }
-        });
+        if (bulkSnapshot) {
+          bulkSnapshot.forEach(docSnap => {
+            const data = docSnap.data();
+            if (data.status !== 'paid') {
+              fetchedBulk.push({ id: docSnap.id, ...data });
+            }
+          });
+        }
         setBulkPayrolls(fetchedBulk.sort((a, b) => b.generatedAt.localeCompare(a.generatedAt)));
       } catch (error: any) {
         if (!error?.message?.toLowerCase().includes('quota')) {
@@ -628,53 +646,53 @@ export default function Payroll() {
   return (
     <div className="h-full flex flex-col">
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Payroll</h1>
-        <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+        <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight uppercase italic shrink-0">Payroll</h1>
+        <div className="flex bg-slate-900/50 p-1 rounded-xl border border-white/10 backdrop-blur-md">
           <Button 
             variant={viewMode === 'process' ? 'secondary' : 'ghost'} 
-            className="h-8 text-xs rounded-lg"
+            className={`h-8 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${viewMode === 'process' ? 'bg-white text-blue-600' : 'text-slate-400 hover:text-white'}`}
             onClick={() => { setViewMode('process'); setSelectedBulkId(null); }}
           >Process</Button>
           <Button 
             variant={viewMode === 'archives' ? 'secondary' : 'ghost'} 
-            className="h-8 text-xs rounded-lg"
+            className={`h-8 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${viewMode === 'archives' ? 'bg-white text-blue-600' : 'text-slate-400 hover:text-white'}`}
             onClick={() => { setViewMode('archives'); setSelectedBulkId(null); }}
           >Archives</Button>
         </div>
       </div>
       
       {viewMode === 'process' && (
-        <div className="bento-card flex-col bg-white dark:bg-slate-800 p-4 mb-4 shrink-0">
+        <div className="bento-card flex-col bg-slate-900/80 backdrop-blur-xl p-6 border border-white/10 mb-4 shrink-0 shadow-2xl relative overflow-hidden">
           <div className="flex items-center gap-2 mb-4">
-            <Calendar className="w-5 h-5 text-blue-600" />
-            <h2 className="font-bold text-slate-900 dark:text-white">Pay Period</h2>
+            <Calendar className="w-5 h-5 text-blue-400" />
+            <h2 className="font-bold text-white uppercase tracking-tight">Pay Period</h2>
           </div>
           <div className="grid grid-cols-2 gap-3 mb-4">
             <div className="space-y-1">
-              <Label className="text-xs text-slate-500">Start Date</Label>
-              <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="rounded-xl h-10" />
+              <Label className="text-[9px] font-black text-slate-500 uppercase tracking-widest leading-none">Start Date</Label>
+              <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="rounded-xl h-10 border-white/10 bg-slate-950/50 text-white font-bold" />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs text-slate-500">End Date</Label>
-              <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="rounded-xl h-10" />
+              <Label className="text-[9px] font-black text-slate-500 uppercase tracking-widest leading-none">End Date</Label>
+              <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="rounded-xl h-10 border-white/10 bg-slate-950/50 text-white font-bold" />
             </div>
           </div>
           <div className="space-y-1 mb-4">
-            <Label className="text-xs text-slate-500">Employee Selection</Label>
+            <Label className="text-[9px] font-black text-slate-500 uppercase tracking-widest leading-none">Employee Selection</Label>
             <select 
               value={selectedEmployeeId} 
               onChange={e => {
                 setSelectedEmployeeId(e.target.value);
                 setSelectedBulkId(null);
               }}
-              className="flex h-10 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 dark:border-slate-800 dark:bg-slate-950 dark:ring-offset-slate-950 dark:focus-visible:ring-slate-300"
+              className="flex h-10 w-full rounded-xl border border-white/10 bg-slate-950/50 px-3 py-2 text-sm text-white font-bold tracking-tight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-all"
             >
               <option value="all">Bulk Payroll (All Employees)</option>
               {employees
                 .filter(e => e.status === 'active' || !e.status)
                 .sort((a, b) => a.fullName.localeCompare(b.fullName))
                 .map(emp => (
-                  <option key={emp.id} value={emp.id}>{emp.fullName}</option>
+                  <option key={emp.id} value={emp.id} className="bg-slate-950">{emp.fullName}</option>
                 ))}
             </select>
           </div>

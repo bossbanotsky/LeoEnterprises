@@ -132,17 +132,7 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-transparent overflow-x-hidden selection:bg-blue-200 selection:text-blue-900 relative font-sans">
-      {/* Universal Sync Background - Fixed Image for Top to Bottom Consistency */}
-      <div className="fixed inset-0 -z-10 bg-slate-950">
-        <img 
-          src="https://images.unsplash.com/photo-1516937941344-00b4e0337589?auto=format&fit=crop&q=80&w=2070" 
-          alt="Global Base Background" 
-          className="w-full h-full object-cover opacity-40 fixed"
-          referrerPolicy="no-referrer"
-        />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(2,6,23,0.8)_100%)]" />
-      </div>
-
+      <BrandBackground />
       <PWAInstallPrompt />
 
       {/* Navigation */}

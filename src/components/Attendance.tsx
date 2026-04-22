@@ -43,21 +43,32 @@ export default function Attendance() {
     
     const fetchData = async () => {
       try {
-        const { getDocs, collection, query, where } = await import('firebase/firestore');
+        const { getDocs, getDocsFromCache, collection, query, where } = await import('firebase/firestore');
         
         // Initial Attendance Fetch for selected range
         const queryStart = activeTab === 'mark' ? singleDate : startDate;
         const queryEnd = activeTab === 'mark' ? singleDate : endDate;
 
         const attQ = query(collection(db, 'attendance'), where('date', '>=', queryStart), where('date', '<=', queryEnd));
-        const attSnap = await getDocs(attQ);
-        const atts: Record<string, Partial<AttendanceType>> = {};
-        attSnap.forEach(doc => { 
-          const data = doc.data() as AttendanceType; 
-          atts[`${data.employeeId}_${data.date}`] = { ...data, id: doc.id }; 
-        });
-        setAttendanceData(atts);
+        
+        let attSnap;
+        try {
+          // Try server first
+          attSnap = await getDocs(attQ);
+        } catch (e: any) {
+          // If quota hit or offline, try cache
+          console.warn("Server fetch failed, trying local cache...", e.message);
+          attSnap = await getDocsFromCache(attQ);
+        }
 
+        const atts: Record<string, Partial<AttendanceType>> = {};
+        if (attSnap) {
+          attSnap.forEach(doc => { 
+            const data = doc.data() as AttendanceType; 
+            atts[`${data.employeeId}_${data.date}`] = { ...data, id: doc.id }; 
+          });
+        }
+        setAttendanceData(atts);
         setLoading(false);
       } catch (error: any) {
         // Silently handle quota
@@ -425,24 +436,24 @@ export default function Attendance() {
   return (
     <div className="h-full flex flex-col w-full p-2 sm:px-4 space-y-3 sm:space-y-4">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 px-1">
-        <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight shrink-0">Attendance</h1>
+        <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight shrink-0 uppercase italic">Attendance</h1>
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <button 
             onClick={() => setShowExportModal(true)}
-            className="hidden sm:flex items-center gap-2 px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-none font-bold text-sm rounded-xl shadow-sm hover:opacity-90 transition-opacity"
+            className="hidden sm:flex items-center gap-2 px-4 py-2 bg-white text-slate-900 border-none font-bold text-sm rounded-xl shadow-lg hover:bg-slate-100 transition-colors"
           >
             <Download className="w-4 h-4" />
             <span className="hidden sm:inline">Export PDF</span>
           </button>
-          <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700 flex-1 sm:flex-none">
+          <div className="flex bg-slate-900/50 p-1 rounded-xl border border-white/10 flex-1 sm:flex-none backdrop-blur-md">
             <button 
-              className={`flex-1 sm:px-6 py-2 text-sm font-semibold rounded-lg transition-all ${activeTab === 'mark' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
+              className={`flex-1 sm:px-6 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${activeTab === 'mark' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-white'}`}
               onClick={() => setActiveTab('mark')}
             >
               Mark
             </button>
             <button 
-              className={`flex-1 sm:px-6 py-2 text-sm font-semibold rounded-lg transition-all ${activeTab === 'report' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
+              className={`flex-1 sm:px-6 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${activeTab === 'report' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-white'}`}
               onClick={() => setActiveTab('report')}
             >
               Report
@@ -450,7 +461,7 @@ export default function Attendance() {
           </div>
           <button 
             onClick={() => setShowExportModal(true)}
-            className="sm:hidden flex items-center justify-center p-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl shadow-sm"
+            className="sm:hidden flex items-center justify-center p-2 bg-white text-slate-900 rounded-xl shadow-lg"
           >
             <Download className="w-5 h-5" />
           </button>
@@ -486,14 +497,14 @@ export default function Attendance() {
             </button>
           </div>
         ) : (
-          <div className="col-span-full grid grid-cols-2 gap-2 bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+          <div className="col-span-full grid grid-cols-2 gap-2 bg-slate-900/60 backdrop-blur-md p-3 rounded-xl border border-white/10 shadow-xl">
             <div className="space-y-1">
-              <Label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1 block leading-none">Start Date</Label>
-              <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="rounded-lg h-9 w-full font-semibold bg-slate-50 dark:bg-slate-900 border-0 text-sm" />
+              <Label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1 block leading-none">Start Date</Label>
+              <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="rounded-lg h-9 w-full font-bold bg-slate-950/50 border-white/10 text-white text-sm" />
             </div>
             <div className="space-y-1">
-              <Label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1 block leading-none">End Date</Label>
-              <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="rounded-lg h-9 w-full font-semibold bg-slate-50 dark:bg-slate-900 border-0 text-sm" />
+              <Label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1 block leading-none">End Date</Label>
+              <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="rounded-lg h-9 w-full font-bold bg-slate-950/50 border-white/10 text-white text-sm" />
             </div>
           </div>
         )}
@@ -514,10 +525,10 @@ export default function Attendance() {
               const isPakyaw = att.status === 'pakyaw';
 
               return (
-                <div key={emp.id} className="bento-card bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex flex-col p-4">
+                <div key={emp.id} className="bento-card bg-slate-900/80 backdrop-blur-md border border-white/10 flex flex-col p-4 shadow-xl">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center font-bold text-sm shrink-0 overflow-hidden">
+                      <div className="w-10 h-10 bg-blue-500/20 text-blue-400 rounded-full flex items-center justify-center font-bold text-sm shrink-0 overflow-hidden border border-blue-500/20">
                         {emp.photoURL ? (
                           <img src={emp.photoURL} alt={emp.fullName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                         ) : (
@@ -526,16 +537,16 @@ export default function Attendance() {
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
-                          <h3 className="font-bold text-slate-900 dark:text-white truncate">{emp.fullName}</h3>
-                          <span className="text-[10px] text-slate-400 font-medium">Rate: ₱{emp.dailySalary}</span>
+                          <h3 className="font-bold text-white truncate">{emp.fullName}</h3>
+                          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">₱{emp.dailySalary}/d</span>
                         </div>
                         <div className="flex gap-1 mt-0.5">
-                          <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider ${
-                            isPresent ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
-                            isPakyaw ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
-                            isHD ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' :
-                            isUT ? 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400' :
-                            'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400'
+                          <span className={`text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-widest ${
+                            isPresent ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
+                            isPakyaw ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
+                            isHD ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30' :
+                            isUT ? 'bg-sky-500/20 text-sky-400 border border-sky-500/30' :
+                            'bg-rose-500/20 text-rose-400 border border-rose-500/30'
                           }`}>
                             {isHD ? 'Half Day' : isPresent ? 'Present' : isPakyaw ? 'Pakyaw' : isUT ? 'UT' : 'Absent'}
                           </span>
@@ -543,8 +554,8 @@ export default function Attendance() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-sm font-black text-blue-600 dark:text-blue-400">₱{calculateDailyPay(emp, `${emp.id}_${singleDate}`).toLocaleString()}</div>
-                      <div className="text-[8px] text-slate-400 uppercase font-bold tracking-tighter">Earned Today</div>
+                      <div className="text-sm font-black text-cyan-400">₱{calculateDailyPay(emp, `${emp.id}_${singleDate}`).toLocaleString()}</div>
+                      <div className="text-[8px] text-slate-500 uppercase font-black tracking-widest leading-none">EARNED TODAY</div>
                     </div>
                   </div>
                   

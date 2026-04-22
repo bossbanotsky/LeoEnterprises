@@ -286,15 +286,27 @@ export default function EmployeeDashboard() {
 
   return (
     <div className="h-full flex flex-col space-y-6">
+      {/* Welcome Header */}
+      <div className="flex items-center justify-between px-1">
+        <div>
+          <h1 className="text-4xl md:text-5xl font-black text-white tracking-tighter leading-none uppercase italic">
+             Hello, {userData?.fullName?.split(' ')[0]}
+          </h1>
+          <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em] mt-2 italic opacity-80">
+            Portal Access • {companyInfo.name}
+          </p>
+        </div>
+      </div>
+
       {/* Notice Board Section */}
       {(activeAnnouncements.length > 0 || pastAnnouncements.length > 0) && (
         <section className="space-y-3">
           <div className="flex items-center justify-between px-1">
-            <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center gap-2">
-              <Megaphone className="w-3.5 h-3.5 text-blue-600" /> Company Notice Board
+            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+              <Megaphone className="w-3.5 h-3.5 text-blue-500" /> Notifications
             </h3>
             {unreadCount > 0 && (
-              <span className="flex items-center gap-1 text-[10px] font-bold bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full animate-bounce">
+              <span className="flex items-center gap-1 text-[10px] font-bold bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full animate-bounce border border-blue-500/20">
                 <Bell className="w-3 h-3" /> {unreadCount} NEW
               </span>
             )}
@@ -303,25 +315,25 @@ export default function EmployeeDashboard() {
             {activeAnnouncements.map(ann => {
               const hasViewed = ann.viewedBy.includes(user?.uid || '');
               return (
-                <div key={ann.id} className={`bento-card flex-col p-5 relative overflow-hidden transition-all ${
-                  !hasViewed ? 'ring-2 ring-blue-500/20 bg-blue-50/10 dark:bg-blue-900/5 border-blue-200 dark:border-blue-900/30' : 'bg-white dark:bg-slate-800'
+                <div key={ann.id} className={`bento-card flex-col p-5 relative overflow-hidden transition-all backdrop-blur-md border border-white/10 ${
+                  !hasViewed ? 'bg-blue-500/10 border-blue-500/30 ring-1 ring-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0.1)]' : 'bg-slate-900/40 shadow-xl'
                 }`}>
                   <div className={`absolute left-0 top-0 bottom-0 w-1 ${
-                    ann.priority === 'high' ? 'bg-red-500' : ann.priority === 'medium' ? 'bg-blue-500' : 'bg-slate-300'
+                    ann.priority === 'high' ? 'bg-red-500 shadow-[2px_0_10px_rgba(239,68,68,0.3)]' : ann.priority === 'medium' ? 'bg-blue-500 shadow-[2px_0_10px_rgba(59,130,246,0.3)]' : 'bg-slate-600'
                   }`}></div>
                   <div className="flex justify-between items-start gap-4">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <h4 className="font-bold text-slate-900 dark:text-white leading-tight">{ann.title}</h4>
+                        <h4 className="font-black text-white leading-tight uppercase italic text-sm tracking-tight">{ann.title}</h4>
                         {!hasViewed && (
-                          <span className="w-2 h-2 rounded-full bg-blue-600 shadow-sm shadow-blue-500/50"></span>
+                          <span className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)] animate-pulse"></span>
                         )}
                       </div>
-                      <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                      <p className="text-sm text-slate-300 leading-relaxed font-medium">
                         {ann.message}
                       </p>
-                      <div className="flex items-center gap-3 mt-3 text-[10px] font-semibold text-slate-500">
-                        <span className="text-blue-600 dark:text-blue-400">By {ann.authorName}</span>
+                      <div className="flex items-center gap-3 mt-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                        <span className="text-cyan-400">By {ann.authorName}</span>
                         <span>•</span>
                         <span>{format(parseISO(ann.createdAt), 'MMM d, h:mm a')}</span>
                       </div>

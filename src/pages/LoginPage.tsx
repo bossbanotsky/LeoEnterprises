@@ -70,15 +70,13 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-transparent flex items-center justify-center p-6 relative overflow-hidden font-sans">
       {/* Fixed Background Image - Full Visibility Aesthetic */}
-      <div className="fixed inset-0 -z-10">
-        <img 
-          src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=2070" 
-          alt="Modern Enterprise Background" 
-          className="w-full h-full object-cover"
-          referrerPolicy="no-referrer"
-        />
-        {/* Very subtle gradient overlay for text protection while maintaining full image visibility */}
-        <div className="absolute inset-0 bg-black/20" />
+      <div className="fixed inset-0 -z-10 bg-[#050b18]">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#050b18] via-[#0a192f] to-[#050b18]" />
+        <div className="absolute top-[-10%] right-[-10%] w-[60%] h-[60%] bg-blue-500/10 rounded-full blur-[120px]" />
+        <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-indigo-600/10 rounded-full blur-[100px]" />
+        {/* Grid Pattern for Industrial Feel */}
+        <div className="absolute inset-0 opacity-[0.03]" 
+             style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
       </div>
 
       <motion.div
@@ -87,14 +85,17 @@ export default function LoginPage() {
         transition={{ duration: 0.5, ease: "easeOut" }}
         className="w-full max-w-[480px] relative z-10"
       >
-        <div className="bg-slate-900/90 border border-white/10 shadow-[0_40px_80px_rgba(0,0,0,0.6)] rounded-[40px] overflow-hidden p-10 lg:p-14">
+        <div className="bg-slate-950/80 backdrop-blur-xl border border-white/5 shadow-[0_40px_80px_rgba(0,0,0,0.8)] rounded-[40px] overflow-hidden p-10 lg:p-14">
           <div className="flex items-center justify-between mb-12">
             <Link to="/">
               <div className="flex items-center gap-2 group cursor-pointer">
-                <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center rotate-3 border border-white/20">
-                  <span className="text-slate-950 font-black text-sm">L</span>
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-400 rounded-xl flex items-center justify-center rotate-3 border border-white/20 shadow-lg shadow-blue-500/20">
+                  <LayoutGrid className="w-6 h-6 text-white" />
                 </div>
-                <span className="font-bold text-sm tracking-tight text-white uppercase italic">LEO</span>
+                <div className="flex flex-col">
+                  <span className="font-black text-xs tracking-[0.2em] text-white uppercase italic leading-none">LEO</span>
+                  <span className="font-bold text-[8px] tracking-[0.1em] text-slate-500 uppercase mt-0.5">Enterprises</span>
+                </div>
               </div>
             </Link>
             <Link to="/">

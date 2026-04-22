@@ -4,7 +4,7 @@ import { LayoutGrid, UsersRound, Receipt, Clock, Settings2, WalletCards, Pickaxe
 import { motion, AnimatePresence } from 'motion/react';
 import { useCompanyInfo } from '../hooks/useCompanyInfo';
 import { Button } from './ui/button';
-import EtherealMeshBackground from './EtherealMeshBackground';
+import BrandBackground from './BrandBackground';
 
 export default function Layout() {
   const { user, userData, logout } = useAuth();
@@ -41,17 +41,17 @@ export default function Layout() {
       : employeeNavItems;
 
   return (
-    <div className="min-h-screen flex flex-col bg-background text-foreground overflow-hidden relative">
-      {/* Ethereal Mesh Background */}
-      <EtherealMeshBackground />
+    <div className="min-h-screen flex flex-col bg-slate-950 text-white overflow-hidden relative">
+      {/* Brand Background */}
+      <BrandBackground />
 
       {/* Header */}
-      <header className="h-16 bg-white/70 dark:bg-slate-800/70 backdrop-blur-md border-b border-blue-100 dark:border-blue-900/30 flex items-center justify-between px-4 sticky top-0 z-10">
-        <div className="font-bold text-lg text-blue-700 dark:text-blue-300 tracking-tight flex items-center gap-2 truncate pr-4">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/20 shrink-0">
-            <LayoutGrid className="w-5 h-5 text-white" />
+      <header className="h-16 bg-slate-950/40 backdrop-blur-xl border-b border-white/5 flex items-center justify-between px-4 sticky top-0 z-10 shadow-2xl">
+        <div className="font-bold text-lg text-white tracking-tight flex items-center gap-2 truncate pr-4">
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 overflow-hidden">
+            <img src="/logo.png" alt="LEO Enterprises" className="w-full h-full object-contain" />
           </div>
-          <span className="truncate">{companyInfo.name}</span>
+          <span className="truncate uppercase text-xs tracking-[0.2em] opacity-80">{companyInfo.name}</span>
         </div>
         <div className="flex items-center gap-3 shrink-0">
           <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-xl flex items-center justify-center font-bold text-sm shadow-md overflow-hidden border border-white/20">
@@ -61,7 +61,7 @@ export default function Layout() {
               userData?.fullName?.[0].toUpperCase() || user?.email?.[0].toUpperCase() || 'A'
             )}
           </div>
-          <Button variant="ghost" size="icon" onClick={logout} className="text-slate-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950">
+          <Button variant="ghost" size="icon" onClick={logout} className="text-slate-400 hover:text-red-400 hover:bg-red-500/10">
             <LogOut className="w-5 h-5" />
           </Button>
         </div>
@@ -85,17 +85,21 @@ export default function Layout() {
       </AnimatePresence>
 
       {/* Main Content Area */}
-      <main className="flex-1 overflow-x-hidden overflow-y-auto pb-24 relative z-1 bg-white/5 dark:bg-slate-900/5 backdrop-blur-sm border-x border-white/5 dark:border-slate-800/5 antialiased">
+      <main className="flex-1 overflow-x-hidden overflow-y-auto pb-24 relative z-1 antialiased">
         <AnimatePresence mode="popLayout" initial={false}>
           <motion.div
             key={location.pathname}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.3, ease: 'easeOut' }}
             className="h-full p-4 max-w-3xl mx-auto w-full"
           >
-            <Outlet />
+            <div className="bg-slate-900/80 backdrop-blur-xl rounded-3xl border border-white/10 p-4 sm:p-6 min-h-[60vh] shadow-2xl relative overflow-hidden">
+              {/* Subtle inner glow */}
+              <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-blue-500/50 to-transparent" />
+              <Outlet />
+            </div>
           </motion.div>
         </AnimatePresence>
       </main>
