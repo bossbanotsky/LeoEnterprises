@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { Link } from 'react-router-dom';
 import { 
   HardHat, 
@@ -45,7 +45,7 @@ const services = [
     description: "Comprehensive construction support from structural foundations to project finishing.",
     category: "Civil Works" as Category,
     color: "orange",
-    image: "https://images.unsplash.com/photo-1503387762-592dea58ef23?auto=format&fit=crop&q=80&w=1200"
+    image: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&q=80&w=1200"
   },
   {
     slug: "fabrication",
@@ -131,12 +131,16 @@ export default function LandingPage() {
   const [activeFilter, setActiveFilter] = useState<string>('All');
 
   return (
-    <div className="min-h-screen bg-slate-950 overflow-x-hidden selection:bg-blue-200 selection:text-blue-900 relative font-sans">
-      {/* Universal Sync Background - Top to Bottom */}
-      <div className="fixed inset-0 z-0">
-        <div className="absolute top-0 left-0 w-full h-[1500px] bg-[radial-gradient(circle_at_top_right,rgba(37,99,235,0.08)_0%,transparent_50%)]" />
-        <div className="absolute top-[20%] left-0 w-full h-[1000px] bg-[radial-gradient(circle_at_left,rgba(30,58,138,0.05)_0%,transparent_60%)]" />
-        <div className="absolute bottom-0 right-0 w-full h-[2000px] bg-[radial-gradient(circle_at_bottom_right,rgba(37,99,235,0.05)_0%,transparent_50%)]" />
+    <div className="min-h-screen bg-transparent overflow-x-hidden selection:bg-blue-200 selection:text-blue-900 relative font-sans">
+      {/* Universal Sync Background - Fixed Image for Top to Bottom Consistency */}
+      <div className="fixed inset-0 -z-10 bg-slate-950">
+        <img 
+          src="https://images.unsplash.com/photo-1516937941344-00b4e0337589?auto=format&fit=crop&q=80&w=2070" 
+          alt="Global Base Background" 
+          className="w-full h-full object-cover opacity-40 fixed"
+          referrerPolicy="no-referrer"
+        />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(2,6,23,0.8)_100%)]" />
       </div>
 
       <PWAInstallPrompt />
@@ -173,18 +177,8 @@ export default function LandingPage() {
 
       {/* Hero Section */}
       <section className="relative min-h-screen flex flex-col items-center justify-center text-center px-4 overflow-hidden pt-20">
-        {/* Full HD Hero Background */}
-        <div className="absolute inset-0 z-0">
-          <img 
-            src="https://images.unsplash.com/photo-1516937941344-00b4e0337589?auto=format&fit=crop&q=80&w=2070" 
-            alt="Industrial Background" 
-            className="w-full h-full object-cover"
-            referrerPolicy="no-referrer"
-          />
-          {/* Dark Industrial Scrim */}
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(15,23,42,0.4)_0%,rgba(15,23,42,0.85)_100%)]" />
-          <div className="absolute inset-0 bg-slate-900/40" />
-        </div>
+        {/* Using Global Fixed Background */}
+        <div className="absolute inset-0 z-0 bg-slate-950/10" />
 
         <motion.div 
           initial={{ opacity: 0, y: 30 }}
@@ -223,18 +217,7 @@ export default function LandingPage() {
       </section>
 
       {/* Services Grid Section */}
-      <section id="services" className="relative py-32 lg:py-48 overflow-hidden bg-slate-900">
-        {/* Full HD Background Image for Expertise Section */}
-        <div className="absolute inset-0 z-0">
-          <img 
-            src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80&w=2070" 
-            alt="Expertise Background"
-            className="w-full h-full object-cover opacity-30"
-            referrerPolicy="no-referrer"
-          />
-          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0.95)_0%,rgba(15,23,42,0.8)_50%,rgba(15,23,42,0.95)_100%)]" />
-        </div>
-
+      <section id="services" className="relative py-32 lg:py-48 overflow-hidden">
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center mb-32 max-w-4xl mx-auto">
             <h2 className="text-xs font-bold text-blue-400 uppercase tracking-[4px] mb-6">Our Expertise</h2>
@@ -287,7 +270,7 @@ export default function LandingPage() {
       </section>
 
       {/* About Section */}
-      <section id="about" className="py-32 lg:py-56 bg-slate-950 text-white overflow-hidden relative">
+      <section id="about" className="py-32 lg:py-56 bg-transparent text-white overflow-hidden relative">
         <div className="absolute top-0 right-0 w-1/2 h-full bg-blue-600/5 blur-[150px]" />
         <div className="absolute bottom-0 left-0 w-1/3 h-1/2 bg-blue-400/5 blur-[120px]" />
         
@@ -362,7 +345,7 @@ export default function LandingPage() {
       </section>
 
       {/* Portfolio / Projects Section */}
-      <section id="projects" className="py-32 lg:py-56 bg-slate-950 overflow-hidden border-y border-white/5">
+      <section id="projects" className="py-32 lg:py-56 bg-transparent overflow-hidden">
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-12 mb-24">
             <div className="max-w-2xl">
@@ -441,7 +424,7 @@ export default function LandingPage() {
       </section>
 
       {/* Why Choose Us */}
-      <section className="py-32 lg:py-48 bg-slate-900/50 relative overflow-hidden">
+      <section className="py-32 lg:py-48 bg-transparent relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center mb-24">
             <h2 className="text-[11px] font-bold text-blue-400 uppercase tracking-[4px] mb-8">Competitive Edge</h2>
@@ -477,7 +460,7 @@ export default function LandingPage() {
       </section>
 
       {/* Contact Section */}
-      <section id="contact" className="py-32 lg:py-56 bg-slate-950">
+      <section id="contact" className="py-32 lg:py-56 bg-transparent">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-24">
             <div>
@@ -491,7 +474,7 @@ export default function LandingPage() {
               
               <div className="space-y-8">
                 <div className="flex items-center gap-6 group cursor-pointer">
-                  <div className="w-14 h-14 rounded-full bg-slate-900 border border-white/10 flex items-center justify-center text-white group-hover:bg-blue-600 transition-colors">
+                  <div className="w-14 h-14 rounded-full bg-slate-900/40 border border-white/10 flex items-center justify-center text-white group-hover:bg-blue-600 transition-colors">
                     <Phone className="w-6 h-6" />
                   </div>
                   <div className="flex flex-col">
@@ -501,7 +484,7 @@ export default function LandingPage() {
                 </div>
                 
                 <div className="flex items-center gap-6 group cursor-pointer">
-                  <div className="w-14 h-14 rounded-full bg-slate-900 border border-white/10 flex items-center justify-center text-white group-hover:bg-blue-600 transition-colors">
+                  <div className="w-14 h-14 rounded-full bg-slate-900/40 border border-white/10 flex items-center justify-center text-white group-hover:bg-blue-600 transition-colors">
                     <Mail className="w-6 h-6" />
                   </div>
                   <div className="flex flex-col">
@@ -549,7 +532,7 @@ export default function LandingPage() {
       </section>
 
       {/* Trust & Partners */}
-      <section className="py-16 border-y border-white/5 bg-slate-900/30">
+      <section className="py-16 border-y border-white/5 bg-transparent">
         <div className="max-w-7xl mx-auto px-6 overflow-hidden">
           <div className="flex flex-wrap justify-center items-center gap-12 md:gap-24 opacity-30 grayscale scale-90">
             {['Hauling Systems', 'Structural Design', 'Security Ops', 'IT Infrastructure', 'Machine Works'].map((partner, i) => (
@@ -559,7 +542,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <footer className="bg-slate-950 py-24 text-white">
+      <footer className="bg-transparent py-24 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center text-center">
           <div className="flex items-center gap-3 mb-10 group cursor-pointer">
             <div className="w-14 h-14 bg-white text-slate-950 rounded-2xl flex items-center justify-center rotate-3 shadow-2xl group-hover:rotate-0 transition-transform duration-500">

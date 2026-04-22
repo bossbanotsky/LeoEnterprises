@@ -1,27 +1,32 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
-import { getFirestore, collection, addDoc, doc, getDocFromServer } from 'firebase/firestore';
+import { 
+  getFirestore, 
+  collection, 
+  addDoc, 
+  doc, 
+  enableIndexedDbPersistence,
+  initializeFirestore,
+  persistentLocalCache,
+  persistentSingleTabManager
+} from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import firebaseConfig from '../firebase-applet-config.json';
 
 const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+
+// Initialize Firestore with Persistent Cache to save daily quota
+export const db = initializeFirestore(app, {
+  localCache: persistentLocalCache({
+    tabManager: persistentSingleTabManager()
+  })
+}, firebaseConfig.firestoreDatabaseId);
+
 export const auth = getAuth(app);
 export const storage = getStorage(app);
 export const googleProvider = new GoogleAuthProvider();
 
-async function testConnection() {
-  try {
-    // Try to get a non-existent doc from server to test connectivity
-    await getDocFromServer(doc(db, '_connection_test_', 'ping'));
-    console.log("Firestore connection test successful.");
-  } catch (error) {
-    if (error instanceof Error && (error.message.includes('the client is offline') || error.message.includes('unavailable'))) {
-      console.error("Firestore configuration error: Could not reach backend. Please check your Firebase configuration and ensure the database is provisioned.");
-    }
-  }
-}
-testConnection();
+// Removed testConnection to save quota
 
 export const loginWithGoogle = async () => {
   try {
@@ -91,16 +96,22 @@ export async function handleFirestoreError(error: unknown, operationType: Operat
   console.error('Firestore Error: ', JSON.stringify(errInfo));
   
   if (auth.currentUser) {
-    try {
-      await addDoc(collection(db, 'logs'), {
-        message: `Firestore Error: ${operationType} on ${path}`,
-        level: 'error',
-        details: JSON.stringify(errInfo),
-        createdAt: new Date().toISOString(),
-        uid: auth.currentUser.uid
-      });
-    } catch (logError) {
-      console.error('Failed to log error to Firestore', logError);
+    // Don't try to log to Firestore if we already hit a quota limit or resource error
+    const isQuotaError = errInfo.error.toLowerCase().includes('quota') || 
+                        errInfo.error.toLowerCase().includes('resource-exhausted');
+    
+    if (!isQuotaError) {
+      try {
+        await addDoc(collection(db, 'logs'), {
+          message: `Firestore Error: ${operationType} on ${path}`,
+          level: 'error',
+          details: JSON.stringify(errInfo),
+          createdAt: new Date().toISOString(),
+          uid: auth.currentUser.uid
+        });
+      } catch (logError) {
+        console.error('Failed to log error to Firestore', logError);
+      }
     }
   }
 

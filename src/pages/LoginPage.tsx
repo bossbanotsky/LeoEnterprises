@@ -6,7 +6,7 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { LogIn, Mail, Lock, Loader2, ArrowLeft, ArrowRight, ShieldCheck, User } from 'lucide-react';
 import { Navigate, Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import EtherealMeshBackground from '../components/EtherealMeshBackground';
 
 export default function LoginPage() {
@@ -68,11 +68,17 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,#f8fafc_0%,#eef2f7_100%)] flex items-center justify-center p-6 relative overflow-hidden font-sans">
-      {/* Background Glass Elements */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-        <div className="absolute top-[-10%] right-[-5%] w-[600px] h-[600px] bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.08),transparent_60%)]"></div>
-        <div className="absolute bottom-[-10%] left-[-5%] w-[500px] h-[500px] bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.05),transparent_60%)]"></div>
+    <div className="min-h-screen bg-transparent flex items-center justify-center p-6 relative overflow-hidden font-sans">
+      {/* Fixed Background Image - Modern Enterprise Aesthetic */}
+      <div className="fixed inset-0 -z-10 bg-slate-950">
+        <img 
+          src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=2070" 
+          alt="Modern Enterprise Background" 
+          className="w-full h-full object-cover opacity-50"
+          referrerPolicy="no-referrer"
+        />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(2,6,23,0.85)_100%)]" />
+        <div className="absolute inset-0 bg-slate-950/40" />
       </div>
 
       <motion.div
@@ -81,78 +87,78 @@ export default function LoginPage() {
         transition={{ duration: 0.5, ease: "easeOut" }}
         className="w-full max-w-[480px] relative z-10"
       >
-        <div className="bg-white/55 backdrop-blur-[20px] border border-white/60 shadow-[0_40px_80px_rgba(37,99,235,0.08)] rounded-[40px] overflow-hidden p-10 lg:p-14">
+        <div className="bg-white/10 backdrop-blur-[32px] border border-white/20 shadow-[0_40px_80px_rgba(0,0,0,0.5)] rounded-[40px] overflow-hidden p-10 lg:p-14">
           <div className="flex items-center justify-between mb-12">
             <Link to="/">
               <div className="flex items-center gap-2 group cursor-pointer">
-                <div className="w-8 h-8 bg-slate-900 rounded-lg flex items-center justify-center rotate-3 border border-slate-700/50">
-                  <span className="text-white font-black text-sm">L</span>
+                <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center rotate-3 border border-white/20">
+                  <span className="text-slate-950 font-black text-sm">L</span>
                 </div>
-                <span className="font-bold text-sm tracking-tight text-slate-900 uppercase italic">LEO</span>
+                <span className="font-bold text-sm tracking-tight text-white uppercase italic">LEO</span>
               </div>
             </Link>
             <Link to="/">
-              <Button variant="ghost" className="text-[11px] font-bold text-slate-400 uppercase tracking-widest hover:text-blue-600 transition-colors">
+              <Button variant="ghost" className="text-[11px] font-bold text-white/50 uppercase tracking-widest hover:text-white transition-colors hover:bg-white/5">
                 <ArrowLeft className="w-3.5 h-3.5 mr-2" /> Exit
               </Button>
             </Link>
           </div>
 
-          <div className="mb-12">
-            <h1 className="text-4xl font-bold text-slate-900 tracking-[-0.04em] leading-none mb-3 uppercase italic">
+          <div className="mb-12 text-left">
+            <h1 className="text-4xl font-bold text-white tracking-[-0.04em] leading-none mb-3 uppercase italic">
               {role === 'admin' ? 'Strategic' : 'Operational'} <br /> 
-              <span className="text-blue-600">Access Portal.</span>
+              <span className="text-blue-400">Access Portal.</span>
             </h1>
-            <p className="text-sm font-medium text-slate-500 tracking-tight">Enter your secure credentials to log into the command center.</p>
+            <p className="text-sm font-medium text-slate-400 tracking-tight">Enter your secure credentials to log into the command center.</p>
           </div>
 
-          <div className="bg-slate-100/50 backdrop-blur-sm p-1 rounded-2xl mb-10 flex border border-slate-100">
+          <div className="bg-white/5 backdrop-blur-sm p-1 rounded-2xl mb-10 flex border border-white/10">
               <button 
                   onClick={() => setRole('employee')}
-                  className={`flex-1 flex items-center justify-center rounded-xl h-11 text-xs font-bold transition-all duration-300 ${role === 'employee' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                  className={`flex-1 flex items-center justify-center rounded-xl h-11 text-xs font-bold transition-all duration-300 ${role === 'employee' ? 'bg-white text-slate-950 shadow-sm' : 'text-slate-400 hover:text-slate-200'}`}
               >
                   <User className="w-3.5 h-3.5 mr-2" /> Employee
               </button>
               <button 
                   onClick={() => setRole('admin')}
-                  className={`flex-1 flex items-center justify-center rounded-xl h-11 text-xs font-bold transition-all duration-300 ${role === 'admin' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                  className={`flex-1 flex items-center justify-center rounded-xl h-11 text-xs font-bold transition-all duration-300 ${role === 'admin' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'}`}
               >
                   <ShieldCheck className="w-3.5 h-3.5 mr-2" /> Administrator
               </button>
           </div>
 
           {error && (
-            <div className="mb-8 p-5 text-[11px] text-red-600 bg-red-50/50 border border-red-100 rounded-2xl font-bold uppercase tracking-widest leading-relaxed">
+            <div className="mb-8 p-5 text-[11px] text-red-400 bg-red-400/10 border border-red-400/20 rounded-2xl font-bold uppercase tracking-widest leading-relaxed">
               {error}
             </div>
           )}
           
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <label className="text-[10px] font-bold uppercase text-slate-400 tracking-[2px] ml-1">Identity Resource</label>
+              <label className="text-[10px] font-bold uppercase text-slate-500 tracking-[2px] ml-1 text-left block">Identity Resource</label>
               <div className="relative">
-                <Mail className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
+                <Mail className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <Input 
                   type="email" 
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@leoenterprises.ph" 
-                  className="pl-14 h-14 md:h-16 rounded-[20px] border-slate-100 bg-white/50 focus:bg-white text-[15px] font-medium transition-all focus:ring-4 focus:ring-blue-600/5" 
+                  className="pl-14 h-14 md:h-16 rounded-[20px] border-white/10 bg-white/5 focus:bg-white/10 text-white text-[15px] font-medium transition-all focus:ring-4 focus:ring-blue-600/20" 
                   required
                 />
               </div>
             </div>
             
             <div className="space-y-2">
-              <label className="text-[10px] font-bold uppercase text-slate-400 tracking-[2px] ml-1">Security Descriptor</label>
+              <label className="text-[10px] font-bold uppercase text-slate-500 tracking-[2px] ml-1 text-left block">Security Descriptor</label>
               <div className="relative">
-                <Lock className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
+                <Lock className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <Input 
                   type="password" 
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••" 
-                  className="pl-14 h-14 md:h-16 rounded-[20px] border-slate-100 bg-white/50 focus:bg-white text-[15px] font-medium transition-all focus:ring-4 focus:ring-blue-600/5" 
+                  className="pl-14 h-14 md:h-16 rounded-[20px] border-white/10 bg-white/5 focus:bg-white/10 text-white text-[15px] font-medium transition-all focus:ring-4 focus:ring-blue-600/20" 
                   required
                 />
               </div>
@@ -160,10 +166,10 @@ export default function LoginPage() {
             
             <Button 
               type="submit"
-              className={`w-full h-16 md:h-20 rounded-full ${role === 'admin' ? 'bg-slate-900 border-slate-800' : 'bg-[linear-gradient(135deg,#1e3a8a,#2563eb)]'} text-white shadow-2xl ${role === 'admin' ? 'shadow-slate-900/10' : 'shadow-blue-600/30'} transition-all active:scale-95 font-bold uppercase italic italic tracking-tighter text-lg mt-6 group`}
+              className={`w-full h-16 md:h-20 rounded-full ${role === 'admin' ? 'bg-white text-slate-950 border-white' : 'bg-blue-600'} text-white shadow-2xl ${role === 'admin' ? 'shadow-white/10' : 'shadow-blue-600/30'} transition-all active:scale-95 font-bold uppercase italic tracking-tighter text-lg mt-6 group border-0`}
               disabled={isLoading}
             >
-              {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <span className="flex items-center">Authorize Application <ArrowRight className="ml-3 w-5 h-5 group-hover:translate-x-2 transition-transform duration-300" /></span>}
+              {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <span className="flex items-center text-inherit">{role === 'admin' ? <span className="text-slate-950">Authorize Application</span> : 'Authorize Application'} <ArrowRight className={`ml-3 w-5 h-5 group-hover:translate-x-2 transition-transform duration-300 ${role === 'admin' ? 'text-slate-950' : 'text-white'}`} /></span>}
             </Button>
           </form>
 
@@ -171,16 +177,16 @@ export default function LoginPage() {
               <div className="mt-10">
                   <div className="w-full relative py-6 flex items-center justify-center">
                     <div className="absolute inset-0 flex items-center">
-                        <div className="w-full border-t border-slate-100"></div>
+                        <div className="w-full border-t border-white/10"></div>
                     </div>
-                    <div className="relative bg-white/0 px-4 text-[10px] font-bold text-slate-300 uppercase tracking-[3px]">SSO Integration</div>
+                    <div className="relative bg-transparent px-4 text-[10px] font-bold text-slate-500 uppercase tracking-[3px]">SSO Integration</div>
                   </div>
 
                   <Button 
                     onClick={handleGoogleLogin} 
                     type="button"
                     variant="ghost"
-                    className="w-full h-14 rounded-2xl flex items-center justify-center border border-slate-100 hover:bg-slate-50 transition-all font-bold uppercase tracking-wider text-xs text-slate-500"
+                    className="w-full h-14 rounded-2xl flex items-center justify-center border border-white/10 hover:bg-white/5 transition-all font-bold uppercase tracking-wider text-xs text-slate-300"
                     disabled={isLoading}
                   >
                     <svg viewBox="0 0 24 24" className="w-4 h-4 mr-3">

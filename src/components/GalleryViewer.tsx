@@ -3,7 +3,7 @@ import { db } from '../firebase';
 import { collection, query, where, onSnapshot, getDocs, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { Category, Album, createAlbum, updateAlbum, deleteAlbum } from '../services/galleryService';
 import { X, Trash2, Folder as FolderImage, CheckSquare, Square, FolderInput, Loader2, Edit3 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { Skeleton } from './ui/Skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
 import { Button } from './ui/button';

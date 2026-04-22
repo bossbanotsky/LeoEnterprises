@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { 
   Truck, 
   HardHat, 
@@ -45,7 +45,7 @@ const serviceData: Record<string, any> = {
       "General construction services",
       "Facility renovation & expansion"
     ],
-    image: "https://images.unsplash.com/photo-1590644365607-1c5a519a7a37?auto=format&fit=crop&q=80&w=1200"
+    image: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&q=80&w=1200"
   },
   "fabrication": {
     title: "Fabrication & Metal Works",
@@ -84,7 +84,7 @@ const serviceData: Record<string, any> = {
       "Cloud system management",
       "Technical software support"
     ],
-    image: "https://images.unsplash.com/photo-1558494949-ef010cbdcc51?auto=format&fit=crop&q=80&w=1200"
+    image: "https://images.unsplash.com/photo-1510511459019-5dda7724fd87?auto=format&fit=crop&q=80&w=1200"
   },
   "cctv": {
     title: "CCTV & Security Systems",

@@ -29,24 +29,38 @@ export default function Announcements() {
   useEffect(() => {
     if (!user) return;
 
-    const q = query(collection(db, 'announcements'), orderBy('createdAt', 'desc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data: Announcement[] = [];
-      snapshot.forEach(doc => data.push({ id: doc.id, ...doc.data() } as Announcement));
-      setAnnouncements(data);
-      setLoading(false);
-    }, (err) => handleFirestoreError(err, OperationType.LIST, 'announcements'));
-
-    const unsubscribeEmps = onSnapshot(collection(db, 'employees'), (snapshot) => {
-      const emps: Employee[] = [];
-      snapshot.forEach(doc => emps.push({ id: doc.id, ...doc.data() } as Employee));
-      setEmployees(emps);
-    });
-
-    return () => {
-      unsubscribe();
-      unsubscribeEmps();
+    const fetchAnnouncements = async () => {
+      try {
+        const q = query(collection(db, 'announcements'), orderBy('createdAt', 'desc'));
+        const { getDocs } = await import('firebase/firestore');
+        const snapshot = await getDocs(q);
+        const data: Announcement[] = [];
+        snapshot.forEach(doc => data.push({ id: doc.id, ...doc.data() } as Announcement));
+        setAnnouncements(data);
+        setLoading(false);
+      } catch (err: any) {
+        // Silently handle quota errors
+        if (!err?.message?.toLowerCase().includes('quota')) {
+          handleFirestoreError(err, OperationType.LIST, 'announcements');
+        }
+        setLoading(false);
+      }
     };
+
+    const fetchEmployees = async () => {
+      try {
+        const { getDocs } = await import('firebase/firestore');
+        const snapshot = await getDocs(collection(db, 'employees'));
+        const emps: Employee[] = [];
+        snapshot.forEach(doc => emps.push({ id: doc.id, ...doc.data() } as Employee));
+        setEmployees(emps);
+      } catch (err) {
+        // Ignore employee fetch errors in announcements to keep board functional
+      }
+    };
+
+    fetchAnnouncements();
+    fetchEmployees();
   }, [user]);
 
   const handleCreate = async (e: React.FormEvent) => {

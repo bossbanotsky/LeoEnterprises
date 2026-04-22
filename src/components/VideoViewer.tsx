@@ -9,7 +9,7 @@ import { Skeleton } from './ui/Skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 
 export default function VideoViewer({ category, isAdminView = false }: { category: Category, isAdminView?: boolean }) {
   const [videos, setVideos] = useState<{ id: string, videoUrl: string, albumId?: string }[]>([]);
