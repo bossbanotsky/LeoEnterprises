@@ -67,8 +67,17 @@ export default function Dashboard() {
     hd: 0,
     pakyaw: 0,
     ot: 0,
+    presentIds: [] as string[],
+    absentIds: [] as string[],
+    utIds: [] as string[],
+    hdIds: [] as string[],
+    pakyawIds: [] as string[],
   });
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [selectedStatus, setSelectedStatus] = useState<{
+    category: string | null;
+    employeeIds: string[];
+  }>({ category: null, employeeIds: [] });
   const [attendances, setAttendances] = useState<Attendance[]>([]);
   const [pakyawJobs, setPakyawJobs] = useState<PakyawJob[]>([]);
   const [cashAdvances, setCashAdvances] = useState<CashAdvance[]>([]);
@@ -156,13 +165,18 @@ export default function Dashboard() {
         unsubscribeAtt = onSnapshot(
           q,
           (attSnapshot) => {
-            let present = 0;
-            let ut = 0;
-            let hd = 0;
-            let pakyaw = 0;
+            const presentIds: string[] = [];
+            const utIds: string[] = [];
+            const hdIds: string[] = [];
+            const pakyawIds: string[] = [];
+            const absentIds: string[] = [];
+            
             let ot = 0;
             const loggedIds = new Set<string>();
 
+            // Find all active employees who don't have a record
+            const allActiveEmpIds = Array.from(activeEmpIds);
+            
             attSnapshot.forEach((doc) => {
               const data = doc.data();
               if (activeEmpIds.has(data.employeeId)) {
@@ -180,10 +194,11 @@ export default function Dashboard() {
                   !isHD;
                 const isPresent = data.status === "present" && !isUT && !isHD;
 
-                if (isPresent) present++;
-                else if (isUT) ut++;
-                else if (isHD) hd++;
-                else if (data.status === "pakyaw") pakyaw++;
+                if (isPresent) presentIds.push(data.employeeId);
+                else if (isUT) utIds.push(data.employeeId);
+                else if (isHD) hdIds.push(data.employeeId);
+                else if (data.status === "pakyaw") pakyawIds.push(data.employeeId);
+                else if (data.status === "absent") absentIds.push(data.employeeId);
 
                 if (data.otHours && data.otHours > 0) {
                   ot += data.otHours;
@@ -191,26 +206,26 @@ export default function Dashboard() {
               }
             });
 
-            // Implicitly absent = active employees who are NOT logged or are logged as 'absent'
-            // Actually, we should count those explicitly 'absent' too
-            let explicitAbsent = 0;
-            attSnapshot.forEach((doc) => {
-              const data = doc.data();
-              if (activeEmpIds.has(data.employeeId) && data.status === "absent")
-                explicitAbsent++;
+            // Implicitly absent
+            allActiveEmpIds.forEach(id => {
+              if (!loggedIds.has(id)) {
+                absentIds.push(id);
+              }
             });
-
-            const totalHandledButLogged = loggedIds.size;
-            const missing = activeEmpIds.size - totalHandledButLogged;
 
             setStats((prev) => ({
               ...prev,
-              present,
-              ut,
-              hd,
-              pakyaw,
+              present: presentIds.length,
+              ut: utIds.length,
+              hd: hdIds.length,
+              pakyaw: pakyawIds.length,
               ot,
-              absent: missing + explicitAbsent,
+              absent: absentIds.length,
+              presentIds,
+              utIds,
+              hdIds,
+              pakyawIds,
+              absentIds,
             }));
           },
           (error) =>
@@ -491,7 +506,7 @@ export default function Dashboard() {
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-            <div className="bento-card flex-col bg-white dark:bg-slate-800 p-5 border-emerald-100 dark:border-emerald-900/30 relative overflow-hidden group">
+            <Interactive className="bento-card flex-col bg-white dark:bg-slate-800 p-5 border-emerald-100 dark:border-emerald-900/30 relative overflow-hidden group hover:border-emerald-300 transition-colors cursor-pointer" onClick={() => setSelectedStatus({category: "Present", employeeIds: stats.presentIds})}>
               <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 mb-2">
                 <CheckCircle className="w-4 h-4" />
                 <span className="text-[10px] font-bold uppercase tracking-widest">
@@ -501,9 +516,9 @@ export default function Dashboard() {
               <div className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
                 {loading ? <Skeleton className="h-9 w-16" /> : stats.present}
               </div>
-            </div>
+            </Interactive>
 
-            <div className="bento-card flex-col bg-white dark:bg-slate-800 p-5 border-sky-100 dark:border-sky-900/30 relative overflow-hidden group">
+            <Interactive className="bento-card flex-col bg-white dark:bg-slate-800 p-5 border-sky-100 dark:border-sky-900/30 relative overflow-hidden group hover:border-sky-300 transition-colors cursor-pointer" onClick={() => setSelectedStatus({category: "Undertime", employeeIds: stats.utIds})}>
               <div className="flex items-center gap-2 text-sky-600 dark:text-sky-400 mb-2">
                 <Clock className="w-4 h-4" />
                 <span className="text-[10px] font-bold uppercase tracking-widest">
@@ -513,9 +528,9 @@ export default function Dashboard() {
               <div className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
                 {loading ? <Skeleton className="h-9 w-16" /> : stats.ut}
               </div>
-            </div>
+            </Interactive>
 
-            <div className="bento-card flex-col bg-white dark:bg-slate-800 p-5 border-indigo-100 dark:border-indigo-900/30 relative overflow-hidden group">
+            <Interactive className="bento-card flex-col bg-white dark:bg-slate-800 p-5 border-indigo-100 dark:border-indigo-900/30 relative overflow-hidden group hover:border-indigo-300 transition-colors cursor-pointer" onClick={() => setSelectedStatus({category: "Half-Day", employeeIds: stats.hdIds})}>
               <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 mb-2">
                 <Clock className="w-4 h-4" />
                 <span className="text-[10px] font-bold uppercase tracking-widest">
@@ -525,7 +540,7 @@ export default function Dashboard() {
               <div className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
                 {loading ? <Skeleton className="h-9 w-16" /> : stats.hd}
               </div>
-            </div>
+            </Interactive>
 
             <div className="bento-card flex-col bg-white dark:bg-slate-800 p-5 border-blue-100 dark:border-blue-900/30 relative overflow-hidden group">
               <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 mb-2">
@@ -546,7 +561,7 @@ export default function Dashboard() {
               </div>
             </div>
 
-            <div className="bento-card flex-col bg-white dark:bg-slate-800 p-5 border-amber-100 dark:border-amber-900/30 relative overflow-hidden group">
+            <Interactive className="bento-card flex-col bg-white dark:bg-slate-800 p-5 border-amber-100 dark:border-amber-900/30 relative overflow-hidden group hover:border-amber-300 transition-colors cursor-pointer" onClick={() => setSelectedStatus({category: "Pakyaw", employeeIds: stats.pakyawIds})}>
               <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 mb-2">
                 <Hammer className="w-4 h-4" />
                 <span className="text-[10px] font-bold uppercase tracking-widest">
@@ -556,9 +571,9 @@ export default function Dashboard() {
               <div className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
                 {loading ? <Skeleton className="h-9 w-16" /> : stats.pakyaw}
               </div>
-            </div>
+            </Interactive>
 
-            <div className="bento-card flex-col bg-white dark:bg-slate-800 p-5 border-rose-100 dark:border-rose-900/30 relative overflow-hidden group">
+            <Interactive className="bento-card flex-col bg-white dark:bg-slate-800 p-5 border-rose-100 dark:border-rose-900/30 relative overflow-hidden group hover:border-rose-300 transition-colors cursor-pointer" onClick={() => setSelectedStatus({category: "Absent", employeeIds: stats.absentIds})}>
               <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400 mb-2">
                 <XCircle className="w-4 h-4" />
                 <span className="text-[10px] font-bold uppercase tracking-widest">
@@ -568,7 +583,7 @@ export default function Dashboard() {
               <div className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
                 {loading ? <Skeleton className="h-9 w-16" /> : stats.absent}
               </div>
-            </div>
+            </Interactive>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -971,6 +986,52 @@ export default function Dashboard() {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+      
+      {/* Status Drill-Down Modal */}
+      <Dialog
+        open={!!selectedStatus.category}
+        onOpenChange={(open) => !open && setSelectedStatus({ category: null, employeeIds: [] })}
+      >
+        <DialogContent className="sm:max-w-[400px] border-slate-200 dark:border-slate-800">
+          <DialogHeader>
+            <DialogTitle>Employees: {selectedStatus.category}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+            {selectedStatus.employeeIds.map((id) => {
+              const emp = employees.find((e) => e.id === id);
+              if (!emp) return null;
+              return (
+                <div key={emp.id} className="p-3 bg-slate-50 dark:bg-slate-900 rounded-xl flex items-center gap-3 border border-slate-100 dark:border-slate-800">
+                  <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden flex items-center justify-center font-bold text-slate-500 text-xs">
+                    {emp.photoURL ? (
+                      <img
+                        src={emp.photoURL}
+                        alt=""
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      emp.fullName.charAt(0)
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-bold text-sm text-slate-900 dark:text-white">
+                      {emp.fullName}
+                    </div>
+                    <div className="text-[10px] text-slate-500">
+                      {emp.position || "Staff"}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+            {selectedStatus.employeeIds.length === 0 && (
+              <div className="text-center py-8 text-xs text-slate-400">
+                No employees found in this category.
+              </div>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>
