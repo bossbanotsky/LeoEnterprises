@@ -78,6 +78,7 @@ export default function Payroll() {
 
         const pData = payrollDoc.data();
         const emp = employees.find(e => e.id === pData.employeeId);
+        /*
         if (emp?.email && emp.email.trim() !== '') {
           console.log(`Sending payslip email to ${emp.fullName} at ${emp.email}`);
           try {
@@ -98,6 +99,7 @@ export default function Payroll() {
             console.error('Failed to send email:', e);
           }
         }
+        */
       }));
 
       setSelectedBulkId(null);

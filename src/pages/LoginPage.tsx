@@ -74,7 +74,7 @@ export default function LoginPage() {
         transition={{ duration: 0.5, ease: "easeOut" }}
         className="w-full max-w-[480px] relative z-10"
       >
-        <div className="bg-black/20 backdrop-blur-xl border border-white/10 shadow-2xl rounded-[40px] overflow-hidden p-10 lg:p-14">
+        <div className="bg-black/25 border border-white/10 shadow-2xl rounded-[40px] overflow-hidden p-10 lg:p-14">
           <div className="flex items-center justify-between mb-12">
             <Link to="/">
               <div className="flex items-center gap-2 group cursor-pointer">

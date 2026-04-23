@@ -167,98 +167,36 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative min-h-screen flex flex-col items-center justify-center text-center px-4 overflow-hidden pt-20">
+      <section className="relative min-h-screen flex flex-col items-center justify-center text-center px-4 pt-20">
         {/* Using Global Fixed Background */}
         <div className="absolute inset-0 z-0 bg-transparent" />
 
         <motion.div 
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
           className="relative z-10 max-w-6xl"
         >
-          <div className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-blue-600/20 border border-blue-400/30 shadow-2xl text-blue-400 text-[12px] font-black uppercase tracking-[3px] mb-8">
-            <Zap className="w-4 h-4 fill-blue-400" />
-            Empowering Industrial Excellence
-          </div>
-          
-          <h1 className="text-6xl md:text-8xl lg:text-[110px] font-black text-white tracking-[-0.05em] leading-[0.9] mb-12 uppercase italic">
-            Complete <br />
-            <span className="text-transparent bg-clip-text bg-[linear-gradient(135deg,#3b82f6,#93c5fd)]">Industrial &</span> <br />
-            Technical Solutions.
+          <h1 className="text-6xl md:text-8xl lg:text-[130px] font-black italic tracking-[-0.05em] leading-[0.9] mb-10 uppercase">
+            <span className="text-[#2563EB]">COMPLETE</span> <br /> 
+            <span className="text-white">INDUSTRIAL &</span> <br /> 
+            <span className="text-white">TECHNICAL</span> <br /> 
+            <span className="text-[#2563EB]">SOLUTIONS.</span>
           </h1>
           
-          <p className="text-xl md:text-2xl text-white/90 max-w-3xl mx-auto mb-16 font-black leading-relaxed tracking-tight px-4 md:px-0">
+          <p className="text-xl md:text-2xl text-white max-w-3xl mx-auto font-bold leading-relaxed tracking-tight mb-16">
             From heavy-duty hauling to high-tech digital systems, we provide comprehensive services built for performance, reliability, and precision business growth.
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-8 md:gap-10">
-            <a href="#services">
-              <Button className="w-full sm:w-auto h-20 rounded-full bg-white hover:bg-slate-100 text-slate-950 text-[18px] font-black px-12 transition-all duration-300 shadow-2xl flex items-center gap-4 group uppercase italic tracking-tighter">
-                View Services <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform duration-300" />
-              </Button>
-            </a>
-            <a href="#contact">
-              <Button variant="outline" className="w-full sm:w-auto h-20 rounded-full border-2 border-white/30 text-white text-[18px] font-black px-12 hover:bg-white/10 transition-all duration-300 bg-transparent uppercase italic tracking-tighter">
-                Get a Quote
-              </Button>
-            </a>
-          </div>
+          <a href="#services">
+            <Button className="h-20 rounded-full bg-[#2563EB] hover:bg-blue-700 text-white text-[18px] font-black px-12 transition-all duration-300 shadow-2xl border-0 uppercase italic tracking-tighter">
+              View Services
+            </Button>
+          </a>
         </motion.div>
       </section>
 
-      {/* Services Grid Section */}
-      <section id="services" className="relative py-32 lg:py-48 overflow-hidden">
-        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="text-center mb-32 max-w-4xl mx-auto">
-            <h2 className="text-xs font-bold text-blue-400 uppercase tracking-[4px] mb-6">Our Expertise</h2>
-            <h3 className="text-5xl lg:text-7xl font-bold text-white tracking-[-0.04em] leading-[0.95] mb-10 uppercase italic">Multi-Industry <br /> Professional Services</h3>
-            <p className="text-xl text-white/80 leading-[1.6] font-bold tracking-tight">
-              We leverage modern technology and heavy industry experience to deliver end-to-end solutions for high-demand business environments.
-            </p>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-            {services.map((service, idx) => (
-              <Link
-                to={`/services/${service.slug}`}
-                key={service.title}
-                className="group p-10 lg:p-12 rounded-[32px] bg-slate-900 border border-white/10 shadow-[0_40px_80px_rgba(0,0,0,0.2)] hover:-translate-y-2 transition-all duration-500 ease-out flex flex-col relative overflow-hidden h-[550px]"
-              >
-                {/* 100% Visible HD Image Background */}
-                <div className="absolute inset-0 z-0">
-                  <img 
-                    src={service.image} 
-                    alt={service.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000 opacity-100"
-                    referrerPolicy="no-referrer"
-                  />
-                  {/* Premium Scrim for Text Readability */}
-                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0)_0%,rgba(15,23,42,0.4)_40%,rgba(15,23,42,0.95)_100%)]" />
-                </div>
-
-                <div className="relative z-10 h-full flex flex-col justify-end">
-                  <div className="w-16 h-16 rounded-2xl bg-white/10 shadow-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-all duration-500 border border-white/20">
-                    <service.icon className="w-8 h-8 text-white" />
-                  </div>
-                  
-                  <h4 className="text-3xl font-black text-white mb-4 tracking-[-0.02em] group-hover:text-blue-400 transition-colors uppercase italic">{service.title}</h4>
-                  <p className="text-slate-200 leading-[1.5] text-lg mb-8 font-medium tracking-tight opacity-90 line-clamp-3">
-                    {service.description}
-                  </p>
-                  
-                  <div className="pt-6 border-t border-white/10 flex items-center justify-between">
-                    <span className="text-[11px] font-bold text-white uppercase tracking-[3px] group-hover:text-blue-400 transition-colors">Learn More</span>
-                    <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-all duration-300 border border-white/20">
-                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform text-white" />
-                    </div>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* About Section */}
       <section id="about" className="py-32 lg:py-56 bg-transparent text-white overflow-hidden relative">
