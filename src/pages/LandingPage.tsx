@@ -23,9 +23,6 @@ import {
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import GalleryViewer from '../components/GalleryViewer';
-import VideoViewer from '../components/VideoViewer';
-import { Category } from '../services/galleryService';
 import PWAInstallPrompt from '../components/PWAInstallPrompt';
 
 const services = [
@@ -85,47 +82,6 @@ const services = [
   }
 ];
 
-const PortfolioSection = ({ category }: { category: Category }) => {
-  const [isInView, setIsInView] = useState(false);
-  const ref = React.useRef(null);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsInView(true);
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    if (ref.current) {
-      observer.observe(ref.current);
-    }
-
-    return () => observer.disconnect();
-  }, []);
-
-  return (
-    <div ref={ref}>
-      {isInView ? (
-        <>
-          <GalleryViewer category={category} isAdminView={false} />
-          <div className="my-12 h-px bg-slate-200 w-full opacity-50" />
-          <VideoViewer category={category} isAdminView={false} />
-        </>
-      ) : (
-        <div className="py-24 flex items-center justify-center">
-          <div className="flex flex-col items-center gap-4">
-            <div className="w-12 h-12 border-4 border-blue-600/20 border-t-blue-600 rounded-full animate-spin" />
-            <span className="text-xs font-black text-white/40 uppercase tracking-widest">Loading Portfolio...</span>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
 
 export default function LandingPage() {
   const [activeFilter, setActiveFilter] = useState<string>('All');
@@ -152,7 +108,6 @@ export default function LandingPage() {
           <div className="hidden md:flex items-center gap-8 text-[14px] font-bold text-white/70 tracking-tight uppercase">
             <a href="#services" className="hover:text-white transition-all duration-250 ease-out py-1 hover:tracking-widest">Services</a>
             <a href="#about" className="hover:text-white transition-all duration-250 ease-out py-1 hover:tracking-widest">About</a>
-            <a href="#projects" className="hover:text-white transition-all duration-250 ease-out py-1 hover:tracking-widest">Portfolio</a>
             <a href="#contact" className="hover:text-white transition-all duration-250 ease-out py-1 hover:tracking-widest">Contact</a>
           </div>
 
@@ -197,8 +152,58 @@ export default function LandingPage() {
       </section>
 
 
+      {/* Services Grid Section */}
+      <section id="services" className="relative py-32 lg:py-48 overflow-hidden">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="text-center mb-32 max-w-4xl mx-auto">
+            <h2 className="text-3xl md:text-4xl font-black text-[#2563EB] uppercase tracking-tight mb-8 [text-shadow:0_2px_4px_rgba(255,255,255,0.2)]">Our Expertise</h2>
+            <h3 className="text-5xl lg:text-7xl font-bold text-white tracking-[-0.04em] leading-[0.95] mb-10 uppercase italic">Multi-Industry <br /> Professional Services</h3>
+            <p className="text-xl text-white/80 leading-[1.6] font-bold tracking-tight">
+              We leverage modern technology and heavy industry experience to deliver end-to-end solutions for high-demand business environments.
+            </p>
+          </div>
 
-      {/* About Section */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+            {services.map((service, idx) => (
+              <Link
+                to={`/services/${service.slug}`}
+                key={service.title}
+                className="group p-10 lg:p-12 rounded-[32px] bg-slate-900 border border-white/10 shadow-[0_40px_80px_rgba(0,0,0,0.2)] hover:-translate-y-2 transition-all duration-500 ease-out flex flex-col relative overflow-hidden h-[550px]"
+              >
+                {/* 100% Visible HD Image Background */}
+                <div className="absolute inset-0 z-0">
+                  <img 
+                    src={service.image} 
+                    alt={service.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000 opacity-100"
+                    referrerPolicy="no-referrer"
+                  />
+                  {/* Premium Scrim for Text Readability */}
+                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0)_0%,rgba(15,23,42,0.4)_40%,rgba(15,23,42,0.95)_100%)]" />
+                </div>
+
+                <div className="relative z-10 h-full flex flex-col justify-end">
+                  <div className="w-16 h-16 rounded-2xl bg-white/10 shadow-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-all duration-500 border border-white/20">
+                    <service.icon className="w-8 h-8 text-white" />
+                  </div>
+                  
+                  <h4 className="text-3xl font-black text-white mb-4 tracking-[-0.02em] group-hover:text-blue-400 transition-colors uppercase italic">{service.title}</h4>
+                  <p className="text-slate-200 leading-[1.5] text-lg mb-8 font-medium tracking-tight opacity-90 line-clamp-3">
+                    {service.description}
+                  </p>
+                  
+                  <div className="pt-6 border-t border-white/10 flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-white uppercase tracking-[3px] group-hover:text-blue-400 transition-colors">Learn More</span>
+                    <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-all duration-300 border border-white/20">
+                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform text-white" />
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
       <section id="about" className="py-32 lg:py-56 bg-transparent text-white overflow-hidden relative">
         <div className="absolute top-0 right-0 w-1/2 h-full bg-blue-600/5 blur-[150px]" />
         <div className="absolute bottom-0 left-0 w-1/3 h-1/2 bg-blue-400/5 blur-[120px]" />
@@ -273,82 +278,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Portfolio / Projects Section */}
-      <section id="projects" className="py-32 lg:py-56 bg-transparent overflow-hidden">
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-12 mb-24">
-            <div className="max-w-2xl">
-              <h2 className="text-[11px] font-bold text-blue-400 uppercase tracking-[4px] mb-8">Selected Works</h2>
-              <h3 className="text-5xl lg:text-[100px] font-bold text-white tracking-[-0.05em] leading-[0.85] mb-0 uppercase italic whitespace-nowrap">
-                The Portfolio.
-              </h3>
-            </div>
-            
-            <div className="flex flex-wrap gap-4 pb-4 overflow-x-auto no-scrollbar">
-              {['All', ...services.map(s => s.title)].map(filter => (
-                <button
-                  key={filter}
-                  onClick={() => setActiveFilter(filter)}
-                  className={`px-8 py-3 rounded-full text-xs font-bold uppercase tracking-widest transition-all duration-300 whitespace-nowrap border-2 ${activeFilter === filter ? 'bg-white text-slate-950 border-white shadow-xl' : 'bg-transparent text-slate-500 border-white/10 hover:border-white/30'}`}
-                >
-                  {filter}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-32">
-            {services
-              .filter(s => activeFilter === 'All' || activeFilter === s.title)
-              .map((service, idx) => (
-                <motion.div
-                  key={service.title}
-                  initial={{ opacity: 1, scale: 0.98 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.6 }}
-                  className="space-y-12"
-                >
-                  <div className="flex items-center justify-between group">
-                    <Link to={`/services/${service.slug}`} className="flex items-center gap-6 group">
-                      <div className="h-0.5 w-12 bg-blue-500 group-hover:w-20 transition-all duration-500" />
-                      <h4 className="text-2xl font-bold uppercase tracking-tighter italic text-white group-hover:text-blue-400 transition-colors">{service.title} <span className="text-slate-700">/ 0{idx + 1}</span></h4>
-                    </Link>
-                    <Link to={`/services/${service.slug}`} className="bg-white text-slate-950 rounded-full p-4 opacity-0 group-hover:opacity-100 transition-all duration-500 hover:bg-blue-500 hover:text-white">
-                      <ArrowRight className="w-6 h-6" />
-                    </Link>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 gap-12">
-                     <motion.div 
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true, margin: "-100px" }}
-                        className="rounded-[40px] overflow-hidden relative min-h-[700px] flex flex-col p-8 md:p-12 border border-white/10 bg-slate-900 shadow-2xl"
-                      >
-                        {/* Service Background Image for Portfolio Section - High Visibility */}
-                        <div className="absolute inset-0 z-0">
-                          <img 
-                            src={service.image} 
-                            alt={service.title}
-                            className="w-full h-full object-cover opacity-100 transition-all duration-1000"
-                            referrerPolicy="no-referrer"
-                          />
-                          {/* Overlays removed for 100% image clarity as requested */}
-                        </div>
-                        
-                        <div className="relative z-10 w-full">
-          <div className="bg-slate-900/80 p-8 md:p-12 rounded-[30px] border border-white/10 shadow-xl mb-12">
-                            {/* Lazy load components only when they are visible to save quota */}
-                            <PortfolioSection category={service.category} />
-                          </div>
-                        </div>
-                     </motion.div>
-                  </div>
-                </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* Why Choose Us */}
       <section className="py-32 lg:py-48 bg-transparent relative overflow-hidden">
@@ -484,7 +413,6 @@ export default function LandingPage() {
           <div className="flex flex-wrap items-center justify-center gap-12 text-sm font-bold uppercase tracking-[2px] mb-16 text-slate-500">
             <a href="#services" className="hover:text-white transition-colors">Services</a>
             <a href="#about" className="hover:text-white transition-colors">Our Story</a>
-            <a href="#projects" className="hover:text-white transition-colors">Portfolio</a>
             <a href="#contact" className="hover:text-white transition-colors">Contact</a>
             <Link to="/login" className="text-blue-500 hover:text-blue-400">Portal</Link>
           </div>
