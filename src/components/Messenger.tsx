@@ -89,20 +89,38 @@ export default function Messenger() {
       orderBy('updatedAt', 'desc')
     );
 
-    const unsubscribeChats = onSnapshot(chatsQuery, (snapshot) => {
-      const chatList: Chat[] = [];
-      snapshot.forEach(doc => {
-        chatList.push({ id: doc.id, ...doc.data() } as Chat);
-      });
-      setChats(chatList);
-      setLoading(false);
+    const unsubscribeChats = onSnapshot(chatsQuery, {
+      next: (snapshot) => {
+        const chatList: Chat[] = [];
+        snapshot.forEach(doc => {
+          chatList.push({ id: doc.id, ...doc.data() } as Chat);
+        });
+        setChats(chatList);
+        // Save to cache for offline/quota recovery
+        localStorage.setItem(`chats_cache_${user.uid}`, JSON.stringify(chatList));
+        setLoading(false);
+      },
+      error: (error: any) => {
+        console.error("Chats listener error", error);
+        const isQuota = error?.message?.toLowerCase().includes('quota') || 
+                        error?.message?.toLowerCase().includes('resource-exhausted') ||
+                        error?.code === 'resource-exhausted';
+        if (isQuota) {
+          const cached = localStorage.getItem(`chats_cache_${user.uid}`);
+          if (cached) setChats(JSON.parse(cached));
+        }
+        setLoading(false);
+      }
     });
 
     // Load available contacts (employees + admin)
     const loadContacts = async () => {
       try {
-        const empSnapshot = await getDocs(collection(db, 'employees'));
-        const empList = empSnapshot.docs.map(doc => ({
+        const cachedContacts = localStorage.getItem(`contacts_cache_${user.uid}`);
+        if (cachedContacts) setContacts(JSON.parse(cachedContacts));
+
+        const empsSnapshot = await getDocs(collection(db, 'employees'));
+        const empList = empsSnapshot.docs.map(doc => ({
           uid: doc.data().uid,
           fullName: doc.data().fullName,
           role: 'employee',
@@ -112,13 +130,12 @@ export default function Messenger() {
         // Also add admin if current user is not admin
         if (userData?.role !== 'admin') {
           empList.push({
-            uid: 'admin_placeholder_uid', // This will be updated if we had a list of admins
+            uid: 'admin_placeholder_uid', 
             fullName: 'Administrator',
             role: 'admin'
           } as any);
         }
         
-        // Better way: get all users from users collection
         const usersSnapshot = await getDocs(collection(db, 'users'));
         const usersList = usersSnapshot.docs.map(doc => ({
           uid: doc.id,
@@ -128,8 +145,12 @@ export default function Messenger() {
         })).filter(u => u.uid !== user.uid);
 
         setContacts(usersList);
-      } catch (e) {
+        localStorage.setItem(`contacts_cache_${user.uid}`, JSON.stringify(usersList));
+      } catch (e: any) {
         console.error("Error loading contacts", e);
+        if (e?.code === 'resource-exhausted') {
+          setQuotaLimited?.(true);
+        }
       }
     };
     loadContacts();
@@ -158,12 +179,13 @@ export default function Messenger() {
               updatedAt: new Date().toISOString(),
               [`unreadCounts.${user.uid}`]: 0
             });
-          } else {
-            console.log("User already in group chat");
           }
         }
-      } catch (e) {
+      } catch (e: any) {
         console.error("Error ensuring group chat:", e);
+        if (e?.code === 'resource-exhausted') {
+          setQuotaLimited?.(true);
+        }
       }
     };
     ensureGroupChat();

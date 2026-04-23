@@ -36,8 +36,20 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const fetchCollections = useCallback(async () => {
     if (!user) return;
     
+    // Load from cache first for instant feedback if available
+    const cachedEmps = localStorage.getItem('cache_employees');
+    const cachedUsers = localStorage.getItem('cache_users');
+    const cachedJobs = localStorage.getItem('cache_pakyawJobs');
+    const cachedAnn = localStorage.getItem('cache_announcements');
+    const cachedCA = localStorage.getItem('cache_cashAdvances');
+
+    if (cachedEmps) setEmployees(JSON.parse(cachedEmps));
+    if (cachedUsers) setUsers(JSON.parse(cachedUsers));
+    if (cachedJobs) setPakyawJobs(JSON.parse(cachedJobs));
+    if (cachedAnn) setAnnouncements(JSON.parse(cachedAnn));
+    if (cachedCA) setCashAdvances(JSON.parse(cachedCA));
+
     try {
-      
       // Parallel fetch to save time and reduce overhead
       const snapsPromise = Promise.all([
         getDocs(collection(db, 'employees')),
@@ -78,13 +90,21 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setPakyawJobs(jobsList);
       setAnnouncements(annList);
       setCashAdvances(caList);
+
+      // Save to cache
+      localStorage.setItem('cache_employees', JSON.stringify(sortedEmps));
+      localStorage.setItem('cache_users', JSON.stringify(usersList));
+      localStorage.setItem('cache_pakyawJobs', JSON.stringify(jobsList));
+      localStorage.setItem('cache_announcements', JSON.stringify(annList));
+      localStorage.setItem('cache_cashAdvances', JSON.stringify(caList));
       
       setLoading(false);
       setQuotaLimited(false);
     } catch (error: any) {
       const isQuota = error?.message?.toLowerCase().includes('quota') || 
                       error?.message?.toLowerCase().includes('resource-exhausted') ||
-                      error?.message?.toLowerCase().includes('client is offline');
+                      error?.message?.toLowerCase().includes('client is offline') ||
+                      error?.code === 'resource-exhausted';
       if (isQuota) {
         setQuotaLimited(true);
       } else {

@@ -41,6 +41,25 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen flex flex-col bg-transparent text-white overflow-hidden relative">
+      {/* Quota Warning Banner */}
+      <AnimatePresence>
+        {useAuth().quotaLimited && (
+          <motion.div 
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="bg-amber-500/10 border-b border-amber-500/20 backdrop-blur-md overflow-hidden relative z-[200]"
+          >
+            <div className="max-w-7xl mx-auto px-4 py-1.5 flex items-center justify-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+              <span className="text-[10px] font-black text-amber-400 uppercase tracking-[0.2em] italic">
+                Strategic Reserve Triggered: Data Viewing Mode (Cached)
+              </span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Header */}
       <header className="h-24 bg-transparent backdrop-blur-sm border-b border-white/5 flex items-center justify-between px-4 sm:px-8 sticky top-0 z-[100] gap-4">
         {/* Subtle gradient fade at the very top for extra readability */}
@@ -99,7 +118,7 @@ export default function Layout() {
             transition={{ duration: 0.3, ease: 'easeOut' }}
             className="h-full p-2 sm:p-4 lg:p-8 max-w-7xl mx-auto w-full mb-28"
           >
-            <div className="bg-slate-950/30 backdrop-blur-3xl rounded-[40px] p-4 sm:p-10 min-h-[75vh] relative overflow-hidden border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)]">
+            <div className="bg-slate-950/20 backdrop-blur-3xl rounded-[40px] p-4 sm:p-10 min-h-[75vh] relative overflow-hidden border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)]">
               <div className="relative z-10 text-left">
                 <Outlet />
               </div>
@@ -109,7 +128,7 @@ export default function Layout() {
       </main>
 
       {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-slate-950/30 backdrop-blur-3xl border-t border-white/10 flex flex-row items-center overflow-x-auto overflow-y-hidden z-50 pb-[env(safe-area-inset-bottom)] h-[calc(4.5rem+env(safe-area-inset-bottom))] shadow-[0_-15px_30px_rgba(0,0,0,0.4)] snap-x snap-mandatory px-4 gap-1 scroll-smooth no-scrollbar">
+      <nav className="fixed bottom-0 left-0 right-0 bg-slate-950/20 backdrop-blur-3xl border-t border-white/10 flex flex-row items-center overflow-x-auto overflow-y-hidden z-50 pb-[env(safe-area-inset-bottom)] h-[calc(4.5rem+env(safe-area-inset-bottom))] shadow-[0_-15px_30px_rgba(0,0,0,0.4)] snap-x snap-mandatory px-4 gap-1 scroll-smooth no-scrollbar">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
           const Icon = item.icon;
