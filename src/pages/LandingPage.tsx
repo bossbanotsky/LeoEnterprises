@@ -92,15 +92,12 @@ export default function LandingPage() {
       <PWAInstallPrompt />
 
       {/* Navigation */}
-      <nav className="fixed top-0 w-full z-50 bg-slate-950/60 backdrop-blur-2xl border-b border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.3)]">
+      <nav className="fixed top-0 w-full z-50 bg-transparent transition-all duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2 group cursor-pointer">
-            <div className="flex flex-col">
-              <span className="font-black text-2xl tracking-tighter text-white leading-none group-hover:text-blue-500 transition-colors">
-                LEO <span className="font-black italic tracking-tight text-blue-500 underline decoration-blue-500/30 underline-offset-4">ENTERPRISES</span>
+          <Link to="/" className="flex items-center gap-2 group cursor-pointer whitespace-nowrap">
+              <span className="font-black text-2xl tracking-tighter leading-none group-hover:opacity-90 transition-opacity">
+                <span className="text-white">LEO</span> <span className="text-blue-500">ENTERPRISES</span>
               </span>
-              <span className="text-[10px] font-black text-white/50 uppercase tracking-[0.3em] mt-1 italic">Industrial Multi-Service</span>
-            </div>
           </Link>
           
           <div className="hidden md:flex items-center gap-8 text-[14px] font-bold text-white/80 tracking-tight uppercase">
@@ -111,8 +108,10 @@ export default function LandingPage() {
 
           <div className="flex items-center gap-4">
             <Link to="/login">
-              <Button className="rounded-full bg-white hover:bg-slate-100 text-slate-950 hover:shadow-[0_0_20px_rgba(255,255,255,0.4)] text-[14px] font-black px-8 py-5 transition-all duration-300 border-0 active:scale-95 uppercase tracking-widest">
-                Login Portal
+              <Button 
+                className="rounded-full bg-blue-600/10 backdrop-blur-xl border border-blue-500/30 text-white hover:bg-blue-600/20 hover:border-blue-400/40 text-[12px] font-bold px-8 py-5 transition-all duration-300 active:scale-95 uppercase tracking-widest shadow-[0_4px_20px_rgba(0,0,0,0.3)] hover:shadow-[0_0_30px_rgba(37,99,235,0.3)]"
+              >
+                Secure Access
               </Button>
             </Link>
           </div>
@@ -202,10 +201,8 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
-      <section id="about" className="py-32 lg:py-56 bg-transparent text-white overflow-hidden relative">
-        <div className="absolute top-0 right-0 w-1/2 h-full bg-blue-600/5 blur-[150px]" />
-        <div className="absolute bottom-0 left-0 w-1/3 h-1/2 bg-blue-400/5 blur-[120px]" />
-        
+      <section id="about" className="py-32 lg:py-56 bg-blue-600 text-white overflow-hidden relative">
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20"></div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="grid lg:grid-cols-2 gap-24 items-center">
             <motion.div
@@ -214,11 +211,11 @@ export default function LandingPage() {
               viewport={{ once: true }}
               transition={{ duration: 0.8 }}
             >
-              <h2 className="text-[11px] font-bold text-blue-400 uppercase tracking-[4px] mb-8">Our Identity</h2>
-              <h3 className="text-5xl lg:text-8xl font-bold tracking-[-0.04em] leading-[0.95] mb-12 uppercase italic">
-                Redefining <br /> <span className="text-blue-500">Service</span> Excellence.
+              <h2 className="text-3xl md:text-4xl font-black text-white uppercase tracking-tight mb-8 [text-shadow:0_2px_4px_rgba(37,99,235,0.2)]">Our Identity</h2>
+              <h3 className="text-5xl lg:text-8xl font-black tracking-[-0.04em] leading-[0.95] mb-12 uppercase italic">
+                Redefining <br /> <span className="opacity-70">Service</span> Excellence.
               </h3>
-              <p className="text-slate-400 text-xl font-medium leading-relaxed mb-12 tracking-tight">
+              <p className="text-white/80 text-xl font-medium leading-relaxed mb-12 tracking-tight">
                 Headquartered in Bauan, Batangas, Leo Enterprises delivers mission-critical technical services across the region. We combine elite operational safety with innovative problem-solving.
               </p>
               
@@ -278,11 +275,12 @@ export default function LandingPage() {
 
 
       {/* Why Choose Us */}
-      <section className="py-32 lg:py-48 bg-transparent relative overflow-hidden">
+      <section className="py-32 lg:py-48 bg-blue-600 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20"></div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center mb-24">
-            <h2 className="text-[11px] font-bold text-blue-400 uppercase tracking-[4px] mb-8">Competitive Edge</h2>
-            <h3 className="text-5xl lg:text-7xl font-bold text-white tracking-[-0.04em] leading-[0.95] uppercase italic">Why the Industry <br /> Prefers LEO</h3>
+            <h2 className="text-3xl md:text-4xl font-black text-white uppercase tracking-tight mb-8 [text-shadow:0_2px_4px_rgba(255,255,255,0.2)]">Competitive Edge</h2>
+            <h3 className="text-6xl lg:text-8xl font-black text-white tracking-[-0.04em] leading-[0.95] uppercase italic">Why the Industry <br /> Prefers LEO</h3>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -298,13 +296,13 @@ export default function LandingPage() {
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true }}
                 transition={{ delay: idx * 0.1 }}
-                className="p-10 rounded-[30px] bg-slate-900 border border-white/5 shadow-2xl group hover:bg-white hover:text-slate-950 transition-all duration-500"
+                className="p-10 rounded-[40px] bg-white/10 backdrop-blur-md border border-white/20 shadow-2xl group hover:bg-white hover:text-blue-900 transition-all duration-500"
               >
-                <div className="w-14 h-14 rounded-2xl bg-blue-900/30 flex items-center justify-center mb-8 group-hover:bg-blue-600 transition-colors">
-                  <item.icon className="w-6 h-6 text-blue-400 group-hover:text-white" />
+                <div className="w-16 h-16 rounded-3xl bg-white/20 backdrop-blur-sm flex items-center justify-center mb-8 group-hover:bg-blue-600 transition-colors">
+                  <item.icon className="w-8 h-8 text-white group-hover:text-white" />
                 </div>
-                <h4 className="text-xl font-bold mb-4 tracking-tight uppercase italic">{item.title}</h4>
-                <p className="text-slate-400 group-hover:text-slate-600 text-[15px] font-medium leading-relaxed tracking-tight">
+                <h4 className="text-2xl font-black mb-4 tracking-tight uppercase italic text-white group-hover:text-blue-900">{item.title}</h4>
+                <p className="text-white/80 group-hover:text-slate-600 text-[16px] font-medium leading-relaxed tracking-tight">
                   {item.desc}
                 </p>
               </motion.div>
@@ -313,37 +311,37 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Contact Section */}
-      <section id="contact" className="py-32 lg:py-56 bg-transparent">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-24">
+      <section id="contact" className="py-32 lg:py-56 bg-blue-600 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20 rotate-180"></div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="grid lg:grid-cols-2 gap-24 items-center">
             <div>
-              <h2 className="text-[11px] font-bold text-blue-400 uppercase tracking-[4px] mb-8 text-left">Initiate Project</h2>
-              <h3 className="text-5xl lg:text-8xl font-bold text-white tracking-[-0.05em] leading-[0.85] mb-12 uppercase italic text-left">
-                Let's Build <br /> <span className="text-blue-500">Together.</span>
+              <h2 className="text-3xl md:text-4xl font-black text-white uppercase tracking-tight mb-8 text-left [text-shadow:0_2px_4px_rgba(255,255,255,0.2)]">Initiate Project</h2>
+              <h3 className="text-6xl lg:text-8xl font-black text-white tracking-[-0.05em] leading-[0.85] mb-12 uppercase italic text-left">
+                Let's Build <br /> <span className="opacity-70">Together.</span>
               </h3>
-              <p className="text-xl text-white/80 font-bold leading-relaxed mb-12 tracking-tight">
+              <p className="text-2xl text-white/90 font-medium leading-relaxed mb-12 tracking-tight">
                 Ready to optimize your operations? Join the growing network of companies relying on Leo Enterprises for mission-critical industrial solutions.
               </p>
               
               <div className="space-y-8">
                 <div className="flex items-center gap-6 group cursor-pointer">
-                  <div className="w-14 h-14 rounded-full bg-slate-900/40 border border-white/10 flex items-center justify-center text-white group-hover:bg-blue-600 transition-colors">
-                    <Phone className="w-6 h-6" />
+                  <div className="w-16 h-16 rounded-full bg-blue-600/20 border border-white/10 flex items-center justify-center text-white group-hover:bg-blue-600 transition-colors">
+                    <Phone className="w-7 h-7" />
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Direct Hotline</span>
-                    <span className="text-2xl font-bold text-white tracking-tighter hover:text-blue-400 transition-colors">0994-606-4463</span>
+                    <span className="text-[12px] font-black text-blue-400 uppercase tracking-widest mb-1">Direct Hotline</span>
+                    <span className="text-3xl font-black text-white tracking-tighter hover:text-blue-400 transition-colors">0994-606-4463</span>
                   </div>
                 </div>
                 
                 <div className="flex items-center gap-6 group cursor-pointer">
-                  <div className="w-14 h-14 rounded-full bg-slate-900/40 border border-white/10 flex items-center justify-center text-white group-hover:bg-blue-600 transition-colors">
-                    <Mail className="w-6 h-6" />
+                  <div className="w-16 h-16 rounded-full bg-blue-600/20 border border-white/10 flex items-center justify-center text-white group-hover:bg-blue-600 transition-colors">
+                    <Mail className="w-7 h-7" />
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Official Email</span>
-                    <span className="text-2xl font-bold text-white tracking-tighter hover:text-blue-400 transition-colors">contact@leoenterprises.ph</span>
+                    <span className="text-[12px] font-black text-slate-500 uppercase tracking-widest mb-1">Official Email</span>
+                    <span className="text-3xl font-black text-white tracking-tighter hover:text-blue-400 transition-colors">contact@leoenterprises.ph</span>
                   </div>
                 </div>
               </div>
@@ -386,8 +384,12 @@ export default function LandingPage() {
       </section>
 
 
-      <footer className="bg-slate-950/50 backdrop-blur-sm border-t border-white/5 py-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <footer className="relative bg-slate-950 py-24 border-t border-white/10 overflow-hidden">
+        {/* Glossy Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-b from-blue-600/5 to-transparent pointer-events-none" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-px bg-gradient-to-r from-transparent via-blue-500/50 to-transparent shadow-[0_0_20px_rgba(59,130,246,0.5)]" />
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
             <div className="flex flex-col gap-4">
               <div className="flex items-center gap-3">
