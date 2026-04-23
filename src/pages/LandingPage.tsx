@@ -177,7 +177,7 @@ export default function LandingPage() {
           transition={{ duration: 0.8, ease: "easeOut" }}
           className="relative z-10 max-w-6xl"
         >
-          <div className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-blue-600/20 border border-blue-400/30 shadow-2xl text-blue-400 text-[12px] font-black uppercase tracking-[3px] mb-12">
+          <div className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-blue-600/20 border border-blue-400/30 shadow-2xl text-blue-400 text-[12px] font-black uppercase tracking-[3px] mb-8">
             <Zap className="w-4 h-4 fill-blue-400" />
             Empowering Industrial Excellence
           </div>

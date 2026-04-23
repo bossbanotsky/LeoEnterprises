@@ -194,7 +194,7 @@ export default function Layout() {
                   ${isActive ? 'text-white scale-110' : 'text-white/30 group-hover:text-white'}`} 
                 />
               </div>
-              <span className={`text-[8px] font-black tracking-widest uppercase transition-all duration-200 ${isActive ? labelColor : 'text-white/20'}`}>
+              <span className={`text-[8px] font-black tracking-widest uppercase transition-all duration-200 ${isActive ? labelColor : 'text-white/50'}`}>
                 {item.label}
               </span>
             </Link>

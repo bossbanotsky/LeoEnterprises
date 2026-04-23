@@ -32,8 +32,8 @@
   --bg: #050b18;
   --card-bg: rgba(255, 255, 255, 0.05);
   --text-primary: #ffffff;
-  --text-secondary: rgba(255, 255, 255, 0.85);
-  --text-muted: rgba(255, 255, 255, 0.65);
+  --text-secondary: rgba(255, 255, 255, 0.95);
+  --text-muted: rgba(255, 255, 255, 0.80);
   --border: rgba(255, 255, 255, 0.12);
   color-scheme: dark;
 }
