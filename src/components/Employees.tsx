@@ -180,7 +180,7 @@ export default function Employees() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 transition-colors group-focus-within:text-blue-500" />
           <Input 
             placeholder="Search employees..." 
-            className="pl-10 bg-slate-900/50 backdrop-blur-md border border-white/10 rounded-xl h-12 text-white placeholder:text-slate-500 focus-visible:ring-blue-500 transition-all font-bold"
+            className="pl-10 bg-transparent border border-white/10 rounded-xl h-12 text-white placeholder:text-slate-500 focus-visible:ring-blue-500 transition-all font-bold"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -210,7 +210,7 @@ export default function Employees() {
                   <Interactive 
                     key={emp.id} 
                     onClick={() => setSelectedEmployee(emp)}
-                    className="bento-card bg-slate-900/80 backdrop-blur-md p-4 flex flex-row items-center gap-4 border border-white/10 hover:border-blue-500 transition-all shadow-xl"
+                    className="bento-card bg-transparent p-4 flex flex-row items-center gap-4 border border-white/10 hover:border-blue-500 transition-all shadow-xl"
                   >
                     <div className="w-12 h-12 bg-blue-500/20 text-blue-400 rounded-full flex items-center justify-center font-bold text-lg shrink-0 overflow-hidden border border-blue-500/20">
                       {emp.photoURL ? (

@@ -125,7 +125,7 @@ export default function ServiceDetail() {
   return (
     <div className="min-h-screen bg-white">
       {/* Dynamic Header */}
-      <nav className="fixed top-0 w-full z-50 bg-white/60 backdrop-blur-xl border-b border-slate-100">
+      <nav className="fixed top-0 w-full z-50 bg-white/60 border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3 group">
             <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center group-hover:rotate-6 transition-transform">

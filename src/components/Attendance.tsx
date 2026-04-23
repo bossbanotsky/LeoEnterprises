@@ -43,7 +43,7 @@ export default function Attendance() {
     
     const fetchData = async () => {
       try {
-        const { getDocs, getDocsFromCache, collection, query, where } = await import('firebase/firestore');
+        const { getDocs, collection, query, where } = await import('firebase/firestore');
         
         // Initial Attendance Fetch for selected range
         const queryStart = activeTab === 'mark' ? singleDate : startDate;
@@ -53,12 +53,10 @@ export default function Attendance() {
         
         let attSnap;
         try {
-          // Try server first
+          // Try server fetch
           attSnap = await getDocs(attQ);
         } catch (e: any) {
-          // If quota hit or offline, try cache
-          console.warn("Server fetch failed, trying local cache...", e.message);
-          attSnap = await getDocsFromCache(attQ);
+          console.warn("Server fetch failed.", e.message);
         }
 
         const atts: Record<string, Partial<AttendanceType>> = {};
@@ -440,20 +438,20 @@ export default function Attendance() {
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <button 
             onClick={() => setShowExportModal(true)}
-            className="hidden sm:flex items-center gap-2 px-4 py-2 bg-white text-slate-900 border-none font-bold text-sm rounded-xl shadow-lg hover:bg-slate-100 transition-colors"
+            className="hidden sm:flex items-center gap-2 px-4 py-2 bg-white/10 text-white border border-white/20 font-black uppercase tracking-widest text-[10px] rounded-xl shadow-xl hover:bg-white/20 transition-all backdrop-blur-md"
           >
-            <Download className="w-4 h-4" />
-            <span className="hidden sm:inline">Export PDF</span>
+            <Download className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Export Report</span>
           </button>
-          <div className="flex bg-slate-900/50 p-1 rounded-xl border border-white/10 flex-1 sm:flex-none backdrop-blur-md">
+          <div className="flex bg-transparent p-1 rounded-xl border border-white/10 flex-1 sm:flex-none">
             <button 
-              className={`flex-1 sm:px-6 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${activeTab === 'mark' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-white'}`}
+              className={`flex-1 sm:px-6 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${activeTab === 'mark' ? 'bg-white/10 text-white shadow-xl border border-white/20' : 'text-white/40 hover:text-white'}`}
               onClick={() => setActiveTab('mark')}
             >
               Mark
             </button>
             <button 
-              className={`flex-1 sm:px-6 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${activeTab === 'report' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-white'}`}
+              className={`flex-1 sm:px-6 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${activeTab === 'report' ? 'bg-white/10 text-white shadow-xl border border-white/20' : 'text-white/40 hover:text-white'}`}
               onClick={() => setActiveTab('report')}
             >
               Report
@@ -497,7 +495,7 @@ export default function Attendance() {
             </button>
           </div>
         ) : (
-          <div className="col-span-full grid grid-cols-2 gap-2 bg-slate-900/60 backdrop-blur-md p-3 rounded-xl border border-white/10 shadow-xl">
+          <div className="col-span-full grid grid-cols-2 gap-2 bg-transparent p-3 rounded-xl border border-white/10 shadow-xl">
             <div className="space-y-1">
               <Label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1 block leading-none">Start Date</Label>
               <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="rounded-lg h-9 w-full font-bold bg-slate-950/50 border-white/10 text-white text-sm" />
@@ -525,7 +523,7 @@ export default function Attendance() {
               const isPakyaw = att.status === 'pakyaw';
 
               return (
-                <div key={emp.id} className="bento-card bg-slate-900/80 backdrop-blur-md border border-white/10 flex flex-col p-4 shadow-xl">
+                <div key={emp.id} className="bento-card bg-transparent border border-white/10 flex flex-col p-4 shadow-xl">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-blue-500/20 text-blue-400 rounded-full flex items-center justify-center font-bold text-sm shrink-0 overflow-hidden border border-blue-500/20">
@@ -560,38 +558,38 @@ export default function Attendance() {
                   </div>
                   
                    {(isPresent || isUT || isHD) && (
-                    <div className="space-y-3 mb-4 pt-2 border-t border-slate-100 dark:border-slate-700">
+                    <div className="space-y-3 mb-4 pt-2 border-t border-white/5">
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1">
-                          <Label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Time In</Label>
-                          <Input type="time" value={att?.timeIn || '07:00'} onChange={e => handleAttendanceChange(emp.id, singleDate, 'timeIn', e.target.value)} className="h-8 rounded-lg bg-slate-50 dark:bg-slate-900 border-0 font-mono text-xs p-2" />
+                          <Label className="text-[9px] font-black text-white/50 uppercase tracking-widest leading-none">Time In</Label>
+                          <Input type="time" value={att?.timeIn || '07:00'} onChange={e => handleAttendanceChange(emp.id, singleDate, 'timeIn', e.target.value)} className="h-8 rounded-lg bg-white/5 border border-white/10 font-mono text-xs p-2 text-white" />
                         </div>
                         <div className="space-y-1">
-                          <Label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Time Out</Label>
-                          <Input type="time" value={att?.timeOut || '16:00'} onChange={e => handleAttendanceChange(emp.id, singleDate, 'timeOut', e.target.value)} className="h-8 rounded-lg bg-slate-50 dark:bg-slate-900 border-0 font-mono text-xs p-2" />
+                          <Label className="text-[9px] font-black text-white/50 uppercase tracking-widest leading-none">Time Out</Label>
+                          <Input type="time" value={att?.timeOut || '16:00'} onChange={e => handleAttendanceChange(emp.id, singleDate, 'timeOut', e.target.value)} className="h-8 rounded-lg bg-white/5 border border-white/10 font-mono text-xs p-2 text-white" />
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2 p-2 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-100 dark:border-slate-800">
-                        <div className="flex-1 text-center border-r border-slate-100 dark:border-slate-800 last:border-0">
-                          <div className="text-[8px] font-bold text-slate-400 uppercase">Regular</div>
-                          <div className="text-xs font-black text-slate-900 dark:text-white">{att.regularHours || 0}h</div>
+                      <div className="flex items-center gap-2 p-2 bg-white/5 rounded-xl border border-white/10">
+                        <div className="flex-1 text-center border-r border-white/10 last:border-0">
+                          <div className="text-[8px] font-black text-white/40 uppercase tracking-widest">Regular</div>
+                          <div className="text-xs font-black text-white">{att.regularHours || 0}h</div>
                         </div>
-                        <div className="flex-1 text-center border-r border-slate-100 dark:border-slate-800 last:border-0">
-                          <div className="text-[8px] font-bold text-emerald-500 uppercase">Overtime</div>
-                          <div className="text-xs font-black text-emerald-600 dark:text-emerald-400">{(att.otHours || 0).toFixed(1)}h</div>
+                        <div className="flex-1 text-center border-r border-white/10 last:border-0">
+                          <div className="text-[8px] font-black text-emerald-400 uppercase tracking-widest">Overtime</div>
+                          <div className="text-xs font-black text-emerald-400">{(att.otHours || 0).toFixed(1)}h</div>
                         </div>
                         {(isUT || (att.regularHours || 0) < 8) && (
-                          <div className="flex-1 text-center border-r border-slate-100 dark:border-slate-800 last:border-0">
-                            <div className="text-[8px] font-bold text-amber-500 uppercase">Undertime</div>
-                            <div className="text-xs font-black text-amber-600 dark:text-amber-400">
+                          <div className="flex-1 text-center border-r border-white/10 last:border-0">
+                            <div className="text-[8px] font-black text-amber-400 uppercase tracking-widest">Undertime</div>
+                            <div className="text-xs font-black text-amber-400">
                               {Math.max(0, 8 - (att.regularHours || 0)).toFixed(1)}h
                             </div>
                           </div>
                         )}
                         <div className="flex-1 text-center">
-                          <div className="text-[8px] font-bold text-blue-500 uppercase tracking-tight">Daily Pay</div>
-                          <div className="text-xs font-black text-blue-600 dark:text-blue-400">
+                          <div className="text-[8px] font-black text-blue-400 uppercase tracking-widest">Daily Pay</div>
+                          <div className="text-xs font-black text-cyan-400">
                             ₱{calculateDailyPay(emp, `${emp.id}_${singleDate}`).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                           </div>
                         </div>
@@ -684,7 +682,7 @@ export default function Attendance() {
                     <Calculator className="w-3 h-3" />
                     Period Overview
                   </div>
-                  <span className="text-[10px] font-medium bg-white/20 px-2 py-0.5 rounded-full backdrop-blur-sm">
+                  <span className="text-[10px] font-medium bg-white/20 px-2 py-0.5 rounded-full">
                     {format(parseISO(startDate), 'MMM dd')} - {format(parseISO(endDate), 'MMM dd')}
                   </span>
                 </div>

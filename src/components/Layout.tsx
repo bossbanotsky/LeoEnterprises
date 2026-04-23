@@ -4,7 +4,6 @@ import { LayoutGrid, UsersRound, Receipt, Clock, Settings2, WalletCards, Pickaxe
 import { motion, AnimatePresence } from 'motion/react';
 import { useCompanyInfo } from '../hooks/useCompanyInfo';
 import { Button } from './ui/button';
-import BrandBackground from './BrandBackground';
 
 export default function Layout() {
   const { user, userData, logout } = useAuth();
@@ -41,29 +40,48 @@ export default function Layout() {
       : employeeNavItems;
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-950 text-white overflow-hidden relative">
-      {/* Brand Background */}
-      <BrandBackground />
-
+    <div className="min-h-screen flex flex-col bg-transparent text-white overflow-hidden relative">
       {/* Header */}
-      <header className="h-16 bg-slate-950/40 backdrop-blur-xl border-b border-white/5 flex items-center justify-between px-4 sticky top-0 z-10 shadow-2xl">
-        <div className="font-bold text-lg text-white tracking-tight flex items-center gap-2 truncate pr-4">
-          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-cyan-400 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/20 shrink-0">
-            <LayoutGrid className="w-5 h-5 text-white" />
-          </div>
-          <span className="truncate uppercase text-xs tracking-[0.2em] opacity-80">{companyInfo.name}</span>
+      <header className="h-24 bg-transparent border-b border-white/5 flex items-center justify-between px-4 sm:px-8 sticky top-0 z-[100] gap-4">
+        {/* Optional: Subtle gradient fade at the very top for extra readability if needed, but keeping it transparent as requested */}
+        <div className="absolute inset-x-0 top-0 h-full bg-gradient-to-b from-black/40 to-transparent pointer-events-none -z-10" />
+        
+        <div className="flex items-center gap-4 min-w-0 flex-shrink">
+          <Link to="/" className="flex items-center gap-2 sm:gap-3 group shrink-0">
+            <div className="w-12 h-12 bg-slate-900/80 rounded-2xl flex items-center justify-center shrink-0 overflow-hidden shadow-2xl border border-white/20 group-hover:rotate-3 transition-transform backdrop-blur-md">
+              <span className="text-white font-black text-2xl">L</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-xl font-black tracking-tighter text-white leading-none drop-shadow-md">
+                LEO <span className="text-blue-500 font-black italic tracking-normal">ENTERPRISES</span>
+              </span>
+              <span className="text-[10px] font-black text-white/60 uppercase tracking-[0.3em] mt-1 italic drop-shadow-sm">Industrial Multi-Service</span>
+            </div>
+          </Link>
         </div>
-        <div className="flex items-center gap-3 shrink-0">
-          <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-xl flex items-center justify-center font-bold text-sm shadow-md overflow-hidden border border-white/20">
+        
+        <div className="flex items-center gap-6 sm:gap-8">
+          <div className="flex flex-col items-end hidden md:flex">
+            <span className="text-sm font-black text-white uppercase tracking-wider drop-shadow-md">{userData?.fullName || 'User'}</span>
+            <span className="text-[11px] font-black text-blue-400 uppercase tracking-widest leading-none mt-1 drop-shadow-sm">{userData?.role || 'Portal'}</span>
+          </div>
+          <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-2xl flex items-center justify-center font-black text-lg shadow-2xl border border-white/30 overflow-hidden transform hover:scale-110 transition-transform ring-4 ring-white/5">
             {userData?.photoURL ? (
-              <img src={userData.photoURL} alt="Profile" className="w-full h-full object-cover" referrerPolicy="no-referrer" loading="lazy" decoding="async" />
+              <img src={userData.photoURL} alt="Profile" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
             ) : (
-              userData?.fullName?.[0].toUpperCase() || user?.email?.[0].toUpperCase() || 'A'
+              (userData?.fullName?.[0] || user?.email?.[0] || 'A').toUpperCase()
             )}
           </div>
-          <Button variant="ghost" size="icon" onClick={logout} className="text-slate-400 hover:text-red-400 hover:bg-red-500/10">
-            <LogOut className="w-5 h-5" />
-          </Button>
+          
+          <div className="h-8 w-px bg-white/20 mx-1 hidden sm:block"></div>
+
+          <button 
+            onClick={logout} 
+            className="p-3 bg-red-500/20 hover:bg-red-500 text-red-500 hover:text-white border border-red-500/30 rounded-2xl transition-all duration-300 shadow-lg group active:scale-90 ml-2"
+            title="Logout"
+          >
+            <LogOut className="w-6 h-6 group-hover:rotate-12 transition-transform" />
+          </button>
         </div>
       </header>
 
@@ -93,9 +111,9 @@ export default function Layout() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.3, ease: 'easeOut' }}
-            className="h-full p-4 max-w-3xl mx-auto w-full"
+            className="h-full p-4 lg:p-8 max-w-7xl mx-auto w-full"
           >
-            <div className="bg-slate-900/80 backdrop-blur-xl rounded-3xl border border-white/10 p-4 sm:p-6 min-h-[60vh] shadow-2xl relative overflow-hidden">
+            <div className="bg-transparent rounded-3xl p-4 sm:p-6 min-h-[60vh] relative overflow-hidden">
               {/* Subtle inner glow */}
               <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-blue-500/50 to-transparent" />
               <Outlet />
@@ -105,7 +123,7 @@ export default function Layout() {
       </main>
 
       {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white/10 dark:bg-slate-900/10 backdrop-blur-3xl border-t border-white/10 dark:border-slate-800/10 flex flex-row items-center overflow-x-auto overflow-y-hidden z-50 pb-[env(safe-area-inset-bottom)] h-[calc(4rem+env(safe-area-inset-bottom))] shadow-[0_-10px_15px_rgba(0,0,0,0.05)] snap-x snap-mandatory px-4 gap-1 scroll-smooth no-scrollbar will-change-transform">
+      <nav className="fixed bottom-0 left-0 right-0 bg-transparent border-t border-white/10 dark:border-slate-800/10 flex flex-row items-center overflow-x-auto overflow-y-hidden z-50 pb-[env(safe-area-inset-bottom)] h-[calc(4rem+env(safe-area-inset-bottom))] shadow-[0_-10px_15px_rgba(0,0,0,0.05)] snap-x snap-mandatory px-4 gap-1 scroll-smooth no-scrollbar will-change-transform">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
           const Icon = item.icon;
@@ -126,15 +144,15 @@ export default function Layout() {
                 )}
                 
                 {isActive ? null : (
-                  <div className="absolute inset-0 bg-slate-100/50 dark:bg-slate-800/50 backdrop-blur-md rounded-xl opacity-0 scale-50 group-hover:opacity-100 group-hover:scale-100 transition-all duration-200 z-0" />
+                  <div className="absolute inset-0 bg-slate-100/50 dark:bg-slate-800/50 rounded-xl opacity-0 scale-50 group-hover:opacity-100 group-hover:scale-100 transition-all duration-200 z-0" />
                 )}
 
                 <Icon 
                   className={`w-[18px] h-[18px] transition-all duration-300 z-10 relative 
-                  ${isActive ? 'text-white' : 'text-slate-400 dark:text-slate-500 group-hover:text-blue-600'}`} 
+                  ${isActive ? 'text-white' : 'text-white/40 group-hover:text-white'}`} 
                 />
               </div>
-              <span className={`text-[7px] sm:text-[8px] font-bold tracking-tight uppercase transition-all duration-200 ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'}`}>
+              <span className={`text-[7px] sm:text-[8px] font-black tracking-tight uppercase transition-all duration-200 ${isActive ? 'text-blue-400' : 'text-white/30'}`}>
                 {item.label}
               </span>
             </Link>

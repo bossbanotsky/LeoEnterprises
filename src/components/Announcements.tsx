@@ -159,34 +159,34 @@ export default function Announcements() {
                   placeholder="Write your announcement details here..."
                   value={form.message}
                   onChange={e => setForm({...form, message: e.target.value})}
-                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-white font-medium"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Duration (Days)</Label>
+                  <Label className="text-white/60 font-black uppercase text-[10px] tracking-widest leading-none">Duration (Days)</Label>
                   <select 
                     value={form.durationDays}
                     onChange={e => setForm({...form, durationDays: e.target.value})}
-                    className="w-full h-10 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 text-sm"
+                    className="w-full h-10 rounded-xl border border-white/10 bg-white/5 px-3 text-sm text-white font-bold"
                   >
-                    <option value="1">1 Day</option>
-                    <option value="3">3 Days</option>
-                    <option value="7">1 Week</option>
-                    <option value="14">2 Weeks</option>
-                    <option value="30">1 Month</option>
+                    <option value="1" className="bg-slate-900">1 Day</option>
+                    <option value="3" className="bg-slate-900">3 Days</option>
+                    <option value="7" className="bg-slate-900">1 Week</option>
+                    <option value="14" className="bg-slate-900">2 Weeks</option>
+                    <option value="30" className="bg-slate-900">1 Month</option>
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Priority</Label>
+                  <Label className="text-white/60 font-black uppercase text-[10px] tracking-widest leading-none">Priority</Label>
                   <select 
                     value={form.priority}
                     onChange={e => setForm({...form, priority: e.target.value as any})}
-                    className="w-full h-10 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 text-sm text"
+                    className="w-full h-10 rounded-xl border border-white/10 bg-white/5 px-3 text-sm text-white font-bold"
                   >
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
+                    <option value="low" className="bg-slate-900">Low</option>
+                    <option value="medium" className="bg-slate-900">Medium</option>
+                    <option value="high" className="bg-slate-900">High</option>
                   </select>
                 </div>
               </div>
@@ -204,33 +204,33 @@ export default function Announcements() {
         <section>
           <div className="flex items-center gap-2 mb-4">
             <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-            <h2 className="text-sm font-bold uppercase tracking-widest text-slate-500">Currently Active</h2>
+            <h2 className="text-sm font-black uppercase tracking-[0.3em] text-white italic">Currently Active</h2>
           </div>
           <div className="grid gap-4">
             {activeAnnouncements.length === 0 ? (
-              <div className="bg-slate-50 dark:bg-slate-800/50 border border-dashed border-slate-200 dark:border-slate-700 rounded-2xl py-8 text-center text-slate-400 text-sm">
-                No active announcements.
+              <div className="bg-white/5 border border-dashed border-white/20 rounded-2xl py-12 text-center text-white/40 text-[10px] font-black uppercase tracking-widest italic">
+                No active announcements
               </div>
             ) : (
               activeAnnouncements.map(ann => (
-                <div key={ann.id} className="bento-card p-5 group transition-all hover:border-blue-300 relative overflow-hidden">
+                <div key={ann.id} className="bento-card p-5 group transition-all hover:border-blue-500 relative overflow-hidden bg-transparent border border-white/10 shadow-xl">
                   <div className={`absolute left-0 top-0 bottom-0 w-1 ${
-                    ann.priority === 'high' ? 'bg-red-500' : ann.priority === 'medium' ? 'bg-blue-500' : 'bg-slate-300'
+                    ann.priority === 'high' ? 'bg-red-500' : ann.priority === 'medium' ? 'bg-blue-500' : 'bg-white/20'
                   }`}></div>
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-1">
-                        <h3 className="font-bold text-lg text-slate-900 dark:text-white">{ann.title}</h3>
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                          ann.priority === 'high' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="font-black text-lg text-white uppercase italic tracking-tight">{ann.title}</h3>
+                        <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest ${
+                          ann.priority === 'high' ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
                         }`}>
                           {ann.priority}
                         </span>
                       </div>
-                      <p className="text-slate-600 dark:text-slate-300 text-sm line-clamp-2 mb-4 leading-relaxed">
+                      <p className="text-white/70 text-sm line-clamp-2 mb-4 leading-relaxed font-medium">
                         {ann.message}
                       </p>
-                      <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500">
+                      <div className="flex flex-wrap items-center gap-4 text-[9px] font-bold text-white/40 uppercase tracking-widest italic">
                         <div className="flex items-center gap-1.5">
                           <Clock className="w-3.5 h-3.5" />
                           Posted {format(parseISO(ann.createdAt), 'MMM d, h:mm a')}

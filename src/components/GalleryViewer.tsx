@@ -239,9 +239,9 @@ export default function GalleryViewer({ category, isAdminView = false }: { categ
   if (loading) {
     return (
       <div className={isAdminView ? "py-4" : "py-12"}>
-        <h4 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-6">{category} Gallery</h4>
+        <h4 className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] mb-6">{category} Gallery</h4>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          <Skeleton count={4} className="aspect-square w-full rounded-2xl" />
+          <Skeleton count={4} className="aspect-square w-full rounded-2xl bg-white/5 border border-white/10" />
         </div>
       </div>
     );
@@ -251,8 +251,8 @@ export default function GalleryViewer({ category, isAdminView = false }: { categ
     if (isAdminView) {
       return (
         <div className="py-4">
-          <h4 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-2">{category}</h4>
-          <div className="text-slate-500 text-sm">No images uploaded yet.</div>
+          <h4 className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] mb-3">{category}</h4>
+          <div className="text-white/30 text-[11px] font-bold uppercase tracking-widest italic">No images currently in this category.</div>
         </div>
       );
     }
@@ -278,11 +278,11 @@ export default function GalleryViewer({ category, isAdminView = false }: { categ
   return (
     <div className={isAdminView ? "py-4 relative" : "py-12"}>
       <div className="flex justify-between items-center mb-6">
-        <h4 className="text-sm font-black text-slate-400 uppercase tracking-widest">{category} Gallery</h4>
+        <h4 className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">{category} Gallery</h4>
         {isAdminView && images.length > 0 && (
           <button 
             onClick={() => { setIsSelectionMode(!isSelectionMode); setSelectedIds([]); }}
-            className={`px-4 py-2 text-sm font-bold rounded-xl transition-all ${isSelectionMode ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+            className={`px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${isSelectionMode ? 'bg-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.4)]' : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10 border border-white/10'}`}
           >
             {isSelectionMode ? 'Cancel Selection' : 'Select Multiple'}
           </button>
@@ -298,20 +298,20 @@ export default function GalleryViewer({ category, isAdminView = false }: { categ
           const isEditing = editingAlbumId === album.id;
 
           return (
-            <div key={album.id} className="space-y-4">
-              <div className="bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 rounded-3xl relative group">
+            <div key={album.id} className="space-y-6">
+              <div className="bg-white/5 border border-white/10 p-6 rounded-3xl relative group backdrop-blur-md">
                 {isAdminView && !isEditing && (
-                  <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0">
                     <button 
                       onClick={() => handleEditAlbum(album)}
-                      className="p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 hover:text-blue-600 rounded-xl shadow-sm transition-colors"
+                      className="p-2 bg-slate-900/80 border border-white/10 text-white/60 hover:text-blue-400 rounded-xl shadow-xl transition-colors"
                       title="Edit Album"
                     >
                       <Edit3 size={16} />
                     </button>
                     <button 
                       onClick={() => handleDeleteAlbum(album.id)}
-                      className="p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 hover:text-red-600 rounded-xl shadow-sm transition-colors"
+                      className="p-2 bg-slate-900/80 border border-white/10 text-white/60 hover:text-red-400 rounded-xl shadow-xl transition-colors"
                       title="Delete Album"
                     >
                       <Trash2 size={16} />
@@ -326,7 +326,7 @@ export default function GalleryViewer({ category, isAdminView = false }: { categ
                         value={editAlbumTitle}
                         onChange={(e) => setEditAlbumTitle(e.target.value)}
                         placeholder="Album Title"
-                        className="font-bold text-xl h-12"
+                        className="font-black text-xl h-14 bg-white/5 border-white/10 text-white rounded-2xl italic uppercase tracking-tighter"
                         autoFocus
                       />
                     </div>
@@ -335,31 +335,31 @@ export default function GalleryViewer({ category, isAdminView = false }: { categ
                         value={editAlbumDesc}
                         onChange={(e) => setEditAlbumDesc(e.target.value)}
                         placeholder="Description (Optional)"
-                        className="w-full rounded-xl border border-slate-200 p-3 min-h-[80px] text-sm focus:ring-2 focus:ring-blue-500/20"
+                        className="w-full rounded-2xl border border-white/10 bg-white/5 p-4 min-h-[100px] text-sm text-white focus:ring-2 focus:ring-blue-500/20 placeholder:text-white/20"
                       />
                     </div>
-                    <div className="flex gap-2">
-                      <Button onClick={handleSaveAlbum} disabled={isSavingAlbum || !editAlbumTitle.trim()} className="bg-blue-600 hover:bg-blue-700 text-white font-bold h-10 px-6">
+                    <div className="flex gap-3">
+                      <Button onClick={handleSaveAlbum} disabled={isSavingAlbum || !editAlbumTitle.trim()} className="bg-blue-600 hover:bg-blue-700 text-white font-black h-12 px-8 rounded-2xl uppercase tracking-widest text-[10px]">
                         {isSavingAlbum ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                         Save Changes
                       </Button>
-                      <Button onClick={() => setEditingAlbumId(null)} variant="outline" className="h-10 px-6">
+                      <Button onClick={() => setEditingAlbumId(null)} variant="ghost" className="h-12 px-8 rounded-2xl font-black uppercase tracking-widest text-[10px] text-white/40 hover:text-white hover:bg-white/5">
                         Cancel
                       </Button>
                     </div>
                   </div>
                 ) : (
                   <>
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="p-3 bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-xl">
+                    <div className="flex items-center gap-4 mb-2">
+                      <div className="p-3.5 bg-blue-600/20 text-blue-400 border border-blue-500/30 rounded-2xl">
                         <FolderImage className="w-6 h-6" />
                       </div>
                       <div className="pr-16">
-                        <h3 className="text-xl font-bold text-slate-900 dark:text-white leading-tight">{album.title}</h3>
+                        <h3 className="text-xl font-black text-white leading-tight italic uppercase tracking-tighter">{album.title}</h3>
                       </div>
                     </div>
                     {album.description && (
-                      <p className="text-sm text-slate-600 dark:text-slate-400 mt-2 max-w-3xl leading-relaxed">
+                      <p className="text-xs font-bold text-white/60 mt-3 max-w-3xl leading-relaxed italic border-l-2 border-white/10 pl-4 py-1">
                         {album.description}
                       </p>
                     )}
@@ -368,23 +368,23 @@ export default function GalleryViewer({ category, isAdminView = false }: { categ
               </div>
 
               {albumImages.length > 0 ? (
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-5">
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
                   {albumImages.map(img => (
-                    <div key={img.id} onClick={() => handleImageClick(img.imageUrl, img.id)} className={`relative aspect-square rounded-[20px] overflow-hidden cursor-pointer hover:scale-[1.03] hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)] transition-all duration-300 ease-out group ${selectedIds.includes(img.id) ? 'ring-4 ring-blue-500 scale-[0.97]' : ''}`}>
-                      <img src={img.imageUrl} alt={category} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                      <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(0,0,0,0.4),transparent_50%)] opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-out pointer-events-none" />
+                    <div key={img.id} onClick={() => handleImageClick(img.imageUrl, img.id)} className={`relative aspect-square rounded-[24px] sm:rounded-[30px] overflow-hidden cursor-pointer hover:scale-[1.05] hover:shadow-[0_20px_50px_rgba(0,0,0,0.4)] transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] group border border-white/5 ${selectedIds.includes(img.id) ? 'ring-4 ring-blue-500 scale-[0.98]' : ''}`}>
+                      <img src={img.imageUrl} alt={category} className="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-110" referrerPolicy="no-referrer" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-out pointer-events-none" />
                       {isAdminView && !isSelectionMode && (
-                        <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                        <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-all transform translate-x-4 group-hover:translate-x-0 z-10">
                           <button 
                             onClick={(e) => handleQuickMove(img.id, e)}
-                            className="p-2 bg-white/20 backdrop-blur-md hover:bg-white/40 text-white rounded-full shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-colors"
+                            className="p-2.5 bg-slate-900/80 hover:bg-blue-600 text-white rounded-xl shadow-2xl backdrop-blur-md transition-all border border-white/10"
                             title="Move to Album"
                           >
                             <FolderInput size={16} />
                           </button>
                           <button 
                             onClick={(e) => handleDelete(img.id, e)}
-                            className="p-2 bg-red-500/80 backdrop-blur-md hover:bg-red-600 text-white rounded-full shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-colors"
+                            className="p-2.5 bg-red-600/80 hover:bg-red-600 text-white rounded-xl shadow-2xl backdrop-blur-md transition-all border border-white/10"
                             title="Delete Image"
                           >
                             <Trash2 size={16} />
@@ -392,15 +392,17 @@ export default function GalleryViewer({ category, isAdminView = false }: { categ
                         </div>
                       )}
                       {isAdminView && isSelectionMode && (
-                        <div className="absolute top-2 left-2 p-1.5 bg-white/90 backdrop-blur-md rounded-lg shadow-sm z-20" onClick={(e) => toggleSelection(img.id, e)}>
-                           {selectedIds.includes(img.id) ? <CheckSquare className="text-blue-600 w-5 h-5" /> : <Square className="text-slate-400 w-5 h-5" />}
+                        <div className="absolute top-3 left-3 p-2 bg-white/95 rounded-xl shadow-2xl z-20 transform transition-transform active:scale-90" onClick={(e) => toggleSelection(img.id, e)}>
+                           {selectedIds.includes(img.id) ? <CheckSquare className="text-blue-600 w-6 h-6" /> : <Square className="text-slate-400 w-6 h-6" />}
                         </div>
                       )}
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-[13px] font-semibold text-slate-400/80 uppercase tracking-wider">No images in this album</p>
+                <div className="py-8 text-center border-2 border-dashed border-white/5 rounded-[30px]">
+                  <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.3em]">No images in this album</p>
+                </div>
               )}
             </div>
           );
@@ -408,27 +410,31 @@ export default function GalleryViewer({ category, isAdminView = false }: { categ
 
         {/* Render Uncategorized Images */}
         {groupedImages['uncategorized'].length > 0 && (
-          <div className="space-y-4">
+          <div className="space-y-6">
             {albums.length > 0 && (
-              <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-[2px] mt-12 opacity-70">Other Photos</h3>
+              <div className="flex items-center gap-4 mt-16 mb-4">
+                <div className="flex-1 h-px bg-white/5" />
+                <h3 className="text-[10px] font-black text-white/30 uppercase tracking-[0.4em] italic whitespace-nowrap">Archives & General</h3>
+                <div className="flex-1 h-px bg-white/5" />
+              </div>
             )}
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-5">
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
               {groupedImages['uncategorized'].map(img => (
-                <div key={img.id} onClick={() => handleImageClick(img.imageUrl, img.id)} className={`relative aspect-square rounded-[20px] overflow-hidden cursor-pointer hover:scale-[1.03] hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)] transition-all duration-300 ease-out group ${selectedIds.includes(img.id) ? 'ring-4 ring-blue-500 scale-[0.97]' : ''}`}>
-                  <img src={img.imageUrl} alt={category} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                  <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(0,0,0,0.4),transparent_50%)] opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-out pointer-events-none" />
+                <div key={img.id} onClick={() => handleImageClick(img.imageUrl, img.id)} className={`relative aspect-square rounded-[24px] sm:rounded-[30px] overflow-hidden cursor-pointer hover:scale-[1.05] hover:shadow-[0_20px_50px_rgba(0,0,0,0.4)] transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] group border border-white/5 ${selectedIds.includes(img.id) ? 'ring-4 ring-blue-500 scale-[0.98]' : ''}`}>
+                  <img src={img.imageUrl} alt={category} className="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-110" referrerPolicy="no-referrer" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-out pointer-events-none" />
                   {isAdminView && !isSelectionMode && (
-                    <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                    <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-all transform translate-x-4 group-hover:translate-x-0 z-10">
                       <button 
                         onClick={(e) => handleQuickMove(img.id, e)}
-                        className="p-2 bg-white/20 backdrop-blur-md hover:bg-white/40 text-white rounded-full shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-colors"
+                        className="p-2.5 bg-slate-900/80 hover:bg-blue-600 text-white rounded-xl shadow-2xl backdrop-blur-md transition-all border border-white/10"
                         title="Move to Album"
                       >
                         <FolderInput size={16} />
                       </button>
                       <button 
                         onClick={(e) => handleDelete(img.id, e)}
-                        className="p-2 bg-red-500/80 backdrop-blur-md hover:bg-red-600 text-white rounded-full shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-colors"
+                        className="p-2.5 bg-red-600/80 hover:bg-red-600 text-white rounded-xl shadow-2xl backdrop-blur-md transition-all border border-white/10"
                         title="Delete Image"
                       >
                         <Trash2 size={16} />
@@ -436,8 +442,8 @@ export default function GalleryViewer({ category, isAdminView = false }: { categ
                     </div>
                   )}
                   {isAdminView && isSelectionMode && (
-                     <div className="absolute top-2 left-2 p-1.5 bg-white/90 backdrop-blur-md rounded-lg shadow-sm z-20" onClick={(e) => toggleSelection(img.id, e)}>
-                        {selectedIds.includes(img.id) ? <CheckSquare className="text-blue-600 w-5 h-5" /> : <Square className="text-slate-400 w-5 h-5" />}
+                     <div className="absolute top-3 left-3 p-2 bg-white/95 rounded-xl shadow-2xl z-20 transform transition-transform active:scale-90" onClick={(e) => toggleSelection(img.id, e)}>
+                        {selectedIds.includes(img.id) ? <CheckSquare className="text-blue-600 w-6 h-6" /> : <Square className="text-slate-400 w-6 h-6" />}
                      </div>
                   )}
                 </div>
@@ -548,7 +554,7 @@ export default function GalleryViewer({ category, isAdminView = false }: { categ
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-sm"
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/90"
             onClick={() => setSelectedImage(null)}
           >
             <button className="absolute top-8 right-8 text-white"><X size={32} /></button>

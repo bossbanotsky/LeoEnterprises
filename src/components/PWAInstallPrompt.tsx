@@ -48,7 +48,7 @@ export default function PWAInstallPrompt() {
           exit={{ y: 100, opacity: 0 }}
           className="fixed bottom-6 right-6 left-6 md:left-auto md:w-80 z-[100]"
         >
-          <div className="bg-white/80 backdrop-blur-xl border border-white/40 shadow-2xl rounded-2xl p-4 flex items-center gap-4 relative overflow-hidden group">
+          <div className="bg-white/80 border border-white/40 shadow-2xl rounded-2xl p-4 flex items-center gap-4 relative overflow-hidden group">
             <div className="absolute top-0 left-0 w-1 h-full bg-blue-600" />
             <div className="w-12 h-12 bg-blue-600/10 rounded-xl flex items-center justify-center shrink-0">
               <Download className="w-6 h-6 text-blue-600" />

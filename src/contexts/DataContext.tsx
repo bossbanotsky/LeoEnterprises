@@ -33,40 +33,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [cashAdvances, setCashAdvances] = useState<CashAdvance[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Cache timeout (1 hour)
-  const CACHE_TIMEOUT = 3600000;
-
-  const loadFromCache = () => {
-    try {
-      const cachedEmps = localStorage.getItem('cache_employees');
-      const cachedUsers = localStorage.getItem('cache_users');
-      const cachedJobs = localStorage.getItem('cache_pakyawJobs');
-      const cachedAnn = localStorage.getItem('cache_announcements');
-      const cachedCA = localStorage.getItem('cache_cashAdvances');
-      const cachedTime = localStorage.getItem('cache_timestamp');
-
-      if (cachedTime) {
-        const timeDiff = Date.now() - parseInt(cachedTime);
-        if (timeDiff < CACHE_TIMEOUT) {
-          if (cachedEmps) setEmployees(JSON.parse(cachedEmps));
-          if (cachedUsers) setUsers(JSON.parse(cachedUsers));
-          if (cachedJobs) setPakyawJobs(JSON.parse(cachedJobs));
-          if (cachedAnn) setAnnouncements(JSON.parse(cachedAnn));
-          if (cachedCA) setCashAdvances(JSON.parse(cachedCA));
-          return true;
-        }
-      }
-    } catch (e) {
-      console.error("Cache load error", e);
-    }
-    return false;
-  };
-
   const fetchCollections = useCallback(async () => {
     if (!user) return;
     
     try {
-      const { getDocsFromCache } = await import('firebase/firestore');
       
       // Parallel fetch to save time and reduce overhead
       const snapsPromise = Promise.all([
@@ -81,15 +51,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         snaps = await snapsPromise;
       } catch (e: any) {
-        // If server fails (quota), try cache for all
-        console.warn("DataContext server fetch failed, trying cache...", e.message);
-        snaps = await Promise.all([
-          getDocsFromCache(collection(db, 'employees')),
-          getDocsFromCache(collection(db, 'users')),
-          getDocsFromCache(query(collection(db, 'pakyawJobs'), orderBy('startDate', 'desc'))),
-          getDocsFromCache(query(collection(db, 'announcements'), orderBy('createdAt', 'desc'))),
-          getDocsFromCache(query(collection(db, 'cashAdvances'), orderBy('date', 'desc'), limit(500)))
-        ]);
+         console.warn("DataContext server fetch failed", e.message);
+         throw e; // rethrow to be caught by the outer catch
       }
 
       const [empsSnap, usersSnap, jobsSnap, annSnap, caSnap] = snaps;
@@ -116,19 +79,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setAnnouncements(annList);
       setCashAdvances(caList);
       
-      // Update cache
-      localStorage.setItem('cache_employees', JSON.stringify(sortedEmps));
-      localStorage.setItem('cache_users', JSON.stringify(usersList));
-      localStorage.setItem('cache_pakyawJobs', JSON.stringify(jobsList));
-      localStorage.setItem('cache_announcements', JSON.stringify(annList));
-      localStorage.setItem('cache_cashAdvances', JSON.stringify(caList));
-      localStorage.setItem('cache_timestamp', Date.now().toString());
-      
       setLoading(false);
       setQuotaLimited(false);
     } catch (error: any) {
       const isQuota = error?.message?.toLowerCase().includes('quota') || 
-                      error?.message?.toLowerCase().includes('resource-exhausted');
+                      error?.message?.toLowerCase().includes('resource-exhausted') ||
+                      error?.message?.toLowerCase().includes('client is offline');
       if (isQuota) {
         setQuotaLimited(true);
       } else {
@@ -143,18 +99,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
       return;
     }
-
-    const hasCache = loadFromCache();
-    if (hasCache) {
-      setLoading(false);
-      // Wait a bit before background fetch to prioritize initial render
-      const timer = setTimeout(() => {
-        fetchCollections();
-      }, 2000);
-      return () => clearTimeout(timer);
-    } else {
-      fetchCollections();
-    }
+    fetchCollections();
   }, [user, fetchCollections]);
 
   const refreshData = async (collectionName?: string) => {

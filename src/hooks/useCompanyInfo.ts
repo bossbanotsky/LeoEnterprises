@@ -30,8 +30,14 @@ export function useCompanyInfo() {
         }
         setLoading(false);
       } catch (error: any) {
-        // Silently handle quota errors
-        if (!error?.message?.toLowerCase().includes('quota')) {
+        // Silently handle quota errors and offline status which is often a side effect of quota
+        const errorMessage = error?.message?.toLowerCase() || "";
+        const isQuotaOrOffline = 
+          errorMessage.includes('quota') || 
+          errorMessage.includes('resource-exhausted') || 
+          errorMessage.includes('client is offline');
+
+        if (!isQuotaOrOffline) {
           console.error("Error fetching company info:", error);
         }
         setLoading(false);

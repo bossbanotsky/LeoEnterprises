@@ -119,7 +119,7 @@ const PortfolioSection = ({ category }: { category: Category }) => {
         <div className="py-24 flex items-center justify-center">
           <div className="flex flex-col items-center gap-4">
             <div className="w-12 h-12 border-4 border-blue-600/20 border-t-blue-600 rounded-full animate-spin" />
-            <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Loading Portfolio...</span>
+            <span className="text-xs font-black text-white/40 uppercase tracking-widest">Loading Portfolio...</span>
           </div>
         </div>
       )}
@@ -132,37 +132,28 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-transparent overflow-x-hidden selection:bg-blue-200 selection:text-blue-900 relative font-sans">
-      {/* Universal Sync Background - Fixed Image for Top to Bottom Consistency */}
-      <div className="fixed inset-0 -z-10 bg-slate-950">
-        <img 
-          src="https://images.unsplash.com/photo-1516937941344-00b4e0337589?auto=format&fit=crop&q=80&w=2070" 
-          alt="Global Base Background" 
-          className="w-full h-full object-cover opacity-40 fixed"
-          referrerPolicy="no-referrer"
-        />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(2,6,23,0.8)_100%)]" />
-      </div>
-
       <PWAInstallPrompt />
 
       {/* Navigation */}
-      <nav className="fixed top-0 w-full z-50 bg-slate-950/40 backdrop-blur-[20px] border-b border-white/5 shadow-[0_8px_40px_rgba(0,0,0,0.2)]">
+      <nav className="fixed top-0 w-full z-50 bg-slate-950/40 border-b border-white/5 shadow-[0_8px_40px_rgba(0,0,0,0.2)]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2 group cursor-pointer">
             <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center rotate-3 shadow-lg shadow-slate-900/10 border border-slate-700/50 group-hover:rotate-0 transition-transform duration-300">
               <span className="text-white font-black text-xl">L</span>
             </div>
             <div className="flex flex-col">
-              <span className="font-semibold text-xl tracking-tight text-white leading-none">LEO <span className="text-slate-400 font-medium tracking-tighter">ENTERPRISES</span></span>
-              <span className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mt-0.5">Industrial Multi-Service</span>
+              <span className="font-black text-2xl tracking-tighter text-white leading-none">
+                LEO <span className="text-blue-500 font-black italic tracking-normal">ENTERPRISES</span>
+              </span>
+              <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em] mt-1 italic">Industrial Multi-Service</span>
             </div>
           </Link>
           
-          <div className="hidden md:flex items-center gap-8 text-[14px] font-semibold text-slate-400">
-            <a href="#services" className="hover:text-white transition-colors duration-250 ease-out py-1">Services</a>
-            <a href="#about" className="hover:text-white transition-colors duration-250 ease-out py-1">Our Story</a>
-            <a href="#projects" className="hover:text-white transition-colors duration-250 ease-out py-1">Portfolio</a>
-            <a href="#contact" className="hover:text-white transition-colors duration-250 ease-out py-1">Contact</a>
+          <div className="hidden md:flex items-center gap-8 text-[14px] font-bold text-white/70 tracking-tight uppercase">
+            <a href="#services" className="hover:text-white transition-all duration-250 ease-out py-1 hover:tracking-widest">Services</a>
+            <a href="#about" className="hover:text-white transition-all duration-250 ease-out py-1 hover:tracking-widest">About</a>
+            <a href="#projects" className="hover:text-white transition-all duration-250 ease-out py-1 hover:tracking-widest">Portfolio</a>
+            <a href="#contact" className="hover:text-white transition-all duration-250 ease-out py-1 hover:tracking-widest">Contact</a>
           </div>
 
           <div className="flex items-center gap-4">
@@ -178,7 +169,7 @@ export default function LandingPage() {
       {/* Hero Section */}
       <section className="relative min-h-screen flex flex-col items-center justify-center text-center px-4 overflow-hidden pt-20">
         {/* Using Global Fixed Background */}
-        <div className="absolute inset-0 z-0 bg-slate-950/10" />
+        <div className="absolute inset-0 z-0 bg-transparent" />
 
         <motion.div 
           initial={{ opacity: 0, y: 30 }}
@@ -186,7 +177,7 @@ export default function LandingPage() {
           transition={{ duration: 0.8, ease: "easeOut" }}
           className="relative z-10 max-w-6xl"
         >
-          <div className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-blue-600/20 backdrop-blur-md border border-blue-400/30 shadow-2xl text-blue-400 text-[12px] font-black uppercase tracking-[3px] mb-12">
+          <div className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-blue-600/20 border border-blue-400/30 shadow-2xl text-blue-400 text-[12px] font-black uppercase tracking-[3px] mb-12">
             <Zap className="w-4 h-4 fill-blue-400" />
             Empowering Industrial Excellence
           </div>
@@ -197,7 +188,7 @@ export default function LandingPage() {
             Technical Solutions.
           </h1>
           
-          <p className="text-xl md:text-2xl text-slate-300 max-w-3xl mx-auto mb-16 font-bold leading-relaxed tracking-tight px-4 md:px-0 opacity-90">
+          <p className="text-xl md:text-2xl text-white/90 max-w-3xl mx-auto mb-16 font-black leading-relaxed tracking-tight px-4 md:px-0">
             From heavy-duty hauling to high-tech digital systems, we provide comprehensive services built for performance, reliability, and precision business growth.
           </p>
 
@@ -222,7 +213,7 @@ export default function LandingPage() {
           <div className="text-center mb-32 max-w-4xl mx-auto">
             <h2 className="text-xs font-bold text-blue-400 uppercase tracking-[4px] mb-6">Our Expertise</h2>
             <h3 className="text-5xl lg:text-7xl font-bold text-white tracking-[-0.04em] leading-[0.95] mb-10 uppercase italic">Multi-Industry <br /> Professional Services</h3>
-            <p className="text-xl text-slate-300 leading-[1.6] font-medium tracking-tight">
+            <p className="text-xl text-white/80 leading-[1.6] font-bold tracking-tight">
               We leverage modern technology and heavy industry experience to deliver end-to-end solutions for high-demand business environments.
             </p>
           </div>
@@ -247,7 +238,7 @@ export default function LandingPage() {
                 </div>
 
                 <div className="relative z-10 h-full flex flex-col justify-end">
-                  <div className="w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-xl shadow-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-all duration-500 border border-white/20">
+                  <div className="w-16 h-16 rounded-2xl bg-white/10 shadow-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-all duration-500 border border-white/20">
                     <service.icon className="w-8 h-8 text-white" />
                   </div>
                   
@@ -320,7 +311,7 @@ export default function LandingPage() {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-60" />
                   <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-700">
-                    <div className="w-24 h-24 rounded-full bg-blue-600/20 backdrop-blur-xl border border-white/30 flex items-center justify-center">
+                    <div className="w-24 h-24 rounded-full bg-blue-600/20 border border-white/30 flex items-center justify-center">
                       <ZapIcon className="w-10 h-10 text-white" />
                     </div>
                   </div>
@@ -328,7 +319,7 @@ export default function LandingPage() {
               </div>
               
               {/* Floating Stat Card */}
-              <div className="absolute -bottom-10 -left-10 bg-white/10 backdrop-blur-[20px] border border-white/20 p-8 rounded-[30px] shadow-2xl hidden md:block">
+              <div className="absolute -bottom-10 -left-10 bg-white/10 border border-white/20 p-8 rounded-[30px] shadow-2xl hidden md:block">
                 <div className="flex items-center gap-4 mb-3">
                   <div className="w-12 h-12 rounded-2xl bg-blue-600 flex items-center justify-center text-white">
                     <Users className="w-6 h-6" />
@@ -404,13 +395,11 @@ export default function LandingPage() {
                             className="w-full h-full object-cover opacity-100 transition-all duration-1000"
                             referrerPolicy="no-referrer"
                           />
-                          {/* Soft edge fade to keep the content section focused */}
-                          <div className="absolute inset-0 bg-gradient-to-b from-slate-950/80 via-slate-900/20 to-slate-950/80" />
-                          <div className="absolute inset-0 bg-slate-950/40" />
+                          {/* Overlays removed for 100% image clarity as requested */}
                         </div>
                         
                         <div className="relative z-10 w-full">
-                          <div className="bg-slate-900/80 backdrop-blur-md p-8 md:p-12 rounded-[30px] border border-white/10 shadow-xl mb-12">
+          <div className="bg-slate-900/80 p-8 md:p-12 rounded-[30px] border border-white/10 shadow-xl mb-12">
                             {/* Lazy load components only when they are visible to save quota */}
                             <PortfolioSection category={service.category} />
                           </div>
@@ -468,7 +457,7 @@ export default function LandingPage() {
               <h3 className="text-5xl lg:text-8xl font-bold text-white tracking-[-0.05em] leading-[0.85] mb-12 uppercase italic text-left">
                 Let's Build <br /> <span className="text-blue-500">Together.</span>
               </h3>
-              <p className="text-xl text-slate-400 font-medium leading-relaxed mb-12 tracking-tight">
+              <p className="text-xl text-white/80 font-bold leading-relaxed mb-12 tracking-tight">
                 Ready to optimize your operations? Join the growing network of companies relying on Leo Enterprises for mission-critical industrial solutions.
               </p>
               
@@ -478,7 +467,7 @@ export default function LandingPage() {
                     <Phone className="w-6 h-6" />
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Direct Hotline</span>
+                    <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Direct Hotline</span>
                     <span className="text-2xl font-bold text-white tracking-tighter hover:text-blue-400 transition-colors">0994-606-4463</span>
                   </div>
                 </div>
@@ -496,7 +485,7 @@ export default function LandingPage() {
             </div>
             
             <div className="relative">
-              <div className="bg-slate-900/50 backdrop-blur-xl border border-white/10 p-10 lg:p-14 rounded-[50px] shadow-2xl relative z-10 flex flex-col gap-8">
+              <div className="bg-slate-900/50 border border-white/10 p-10 lg:p-14 rounded-[50px] shadow-2xl relative z-10 flex flex-col gap-8">
                 <div className="space-y-2">
                   <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest px-1">Full Name</label>
                   <Input 

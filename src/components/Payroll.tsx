@@ -287,9 +287,11 @@ export default function Payroll() {
         let snapshot;
         try {
           snapshot = await getDocs(q);
-        } catch (e: any) {
-          console.warn("Payroll server fetch failed, trying cache...", e.message);
-          snapshot = await getDocsFromCache(q);
+        } catch (error: any) {
+          if (!error?.message?.toLowerCase().includes('quota')) {
+            handleFirestoreError(error, OperationType.GET, 'payrolls_process');
+          }
+          return;
         }
 
         const fetchedPayrolls: any[] = [];
@@ -317,9 +319,11 @@ export default function Payroll() {
         let bulkSnapshot;
         try {
           bulkSnapshot = await getDocs(bulkQ);
-        } catch (e: any) {
-          console.warn("Bulk Payroll server fetch failed, trying cache...", e.message);
-          bulkSnapshot = await getDocsFromCache(bulkQ);
+        } catch (error: any) {
+          if (!error?.message?.toLowerCase().includes('quota')) {
+            handleFirestoreError(error, OperationType.GET, 'bulkPayrolls_process');
+          }
+          return;
         }
 
         const fetchedBulk: any[] = [];
@@ -647,7 +651,7 @@ export default function Payroll() {
     <div className="h-full flex flex-col">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight uppercase italic shrink-0">Payroll</h1>
-        <div className="flex bg-slate-900/50 p-1 rounded-xl border border-white/10 backdrop-blur-md">
+        <div className="flex bg-transparent p-1 rounded-xl border border-white/10">
           <Button 
             variant={viewMode === 'process' ? 'secondary' : 'ghost'} 
             className={`h-8 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${viewMode === 'process' ? 'bg-white text-blue-600' : 'text-slate-400 hover:text-white'}`}
@@ -662,7 +666,7 @@ export default function Payroll() {
       </div>
       
       {viewMode === 'process' && (
-        <div className="bento-card flex-col bg-slate-900/80 backdrop-blur-xl p-6 border border-white/10 mb-4 shrink-0 shadow-2xl relative overflow-hidden">
+        <div className="bento-card flex-col bg-transparent p-6 border border-white/10 mb-4 shrink-0 shadow-2xl relative overflow-hidden">
           <div className="flex items-center gap-2 mb-4">
             <Calendar className="w-5 h-5 text-blue-400" />
             <h2 className="font-bold text-white uppercase tracking-tight">Pay Period</h2>
@@ -727,52 +731,53 @@ export default function Payroll() {
               {viewMode === 'process' ? 'Pending Runs' : 'Paid Runs'}
             </h3>
             {currentBulkRuns.map(bulk => (
-              <div 
-                key={bulk.id}
-                onClick={() => setSelectedBulkId(bulk.id)}
-                className="bento-card flex-row items-center justify-between bg-white dark:bg-slate-800 p-4 cursor-pointer hover:border-blue-300 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${viewMode === 'archives' ? 'bg-green-50 text-green-600' : 'bg-blue-50 text-blue-600'}`}>
-                    <FileText className="w-5 h-5" />
+                <div 
+                  key={bulk.id} 
+                  onClick={() => setSelectedBulkId(bulk.id)}
+                  className="bento-card flex-row items-center justify-between bg-white/5 p-4 border border-white/10 cursor-pointer shadow-xl relative overflow-hidden group hover:bg-white/10 transition-all duration-300"
+                >
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl -mr-12 -mt-12 transition-all group-hover:bg-blue-500/10"></div>
+                  <div className="flex items-center gap-3 relative z-10">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border transition-transform group-hover:scale-110 ${viewMode === 'archives' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-blue-500/10 text-blue-400 border-blue-500/20'}`}>
+                      <FileText className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        {viewMode === 'archives' ? (
+                          <span className="text-[9px] font-black text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded uppercase tracking-widest border border-emerald-500/30">Paid</span>
+                        ) : (
+                          <span className="text-[9px] font-black text-blue-400 bg-blue-500/20 px-2 py-0.5 rounded uppercase tracking-widest border border-blue-500/30">Pending</span>
+                        )}
+                        <span className="font-black text-white text-sm uppercase tracking-tight italic">
+                          {format(parseISO(bulk.generatedAt), 'MMM dd, yyyy')}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3 text-[10px] font-bold text-white/50 uppercase tracking-widest leading-none mt-1">
+                        <div className="flex items-center gap-1">
+                          <Users className="w-3 h-3" />
+                          <span>{bulk.employeeCount || 0} Staff</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-cyan-400 font-black italic">
+                          <span>₱{(bulk.totalCashRequired || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      {viewMode === 'archives' ? (
-                        <span className="text-[10px] font-bold text-green-700 bg-green-100 px-1.5 py-0.5 rounded uppercase leading-none">Paid</span>
-                      ) : (
-                        <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded uppercase leading-none">Pending</span>
-                      )}
-                      <span className="font-bold text-slate-900 dark:text-white text-sm truncate">
-                        {format(parseISO(bulk.generatedAt), 'MMM dd, yyyy')}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3 text-[11px] text-slate-500">
-                      <div className="flex items-center gap-1">
-                        <Users className="w-3 h-3" />
-                        <span>{bulk.employeeCount || 0} Staff</span>
-                      </div>
-                      <div className="flex items-center gap-1 font-bold text-slate-700 dark:text-slate-300">
-                        <span>₱{(bulk.totalCashRequired || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
-                      </div>
-                    </div>
+                  <div className="flex items-center gap-2 relative z-10">
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      className="h-8 w-8 p-0 text-white/40 hover:text-red-400 hover:bg-red-500/10"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteBulk(bulk.id);
+                      }}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                    <ChevronRight className="w-5 h-5 text-white/20" />
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button 
-                    size="sm" 
-                    variant="ghost" 
-                    className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteBulk(bulk.id);
-                    }}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                  <ChevronRight className="w-5 h-5 text-slate-400" />
-                </div>
-              </div>
             ))}
             {currentBulkRuns.length === 0 && !isLoading && (
               <div className="text-center py-10 text-slate-500 dark:text-slate-400">
@@ -804,39 +809,40 @@ export default function Payroll() {
                 </div>
 
                 {/* Grand Total Summary Card */}
-                <div className="bg-gradient-to-br from-blue-600 to-cyan-600 rounded-2xl p-4 text-white shadow-lg shadow-blue-500/20">
-                  <div className="flex justify-between items-start mb-2">
+                <div className="bg-gradient-to-br from-blue-600/40 to-cyan-600/40 backdrop-blur-xl rounded-2xl p-6 text-white shadow-2xl border border-white/10 relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 transition-transform group-hover:scale-150 duration-700"></div>
+                  <div className="flex justify-between items-start mb-4 relative z-10">
                     <div>
-                      <p className="text-[10px] font-bold uppercase tracking-wider opacity-80">Total Cash Required</p>
-                      <h2 className="text-2xl font-black">₱{totalCashRequired.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h2>
+                      <p className="stat-label mb-1">Total Cash Required</p>
+                      <h2 className="stat-value text-3xl">₱{totalCashRequired.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h2>
                     </div>
                     <div className="flex gap-2">
                       {viewMode === 'process' && (
                         <Button 
                           size="sm" 
                           variant="secondary" 
-                          className="h-9 gap-1 bg-green-500 hover:bg-green-600 text-white border-0 shadow-md" 
+                          className="h-10 gap-2 bg-emerald-500 hover:bg-emerald-600 text-white border-0 shadow-lg font-black uppercase tracking-widest text-[10px]" 
                           onClick={() => handleMarkAsPaid(selectedBulkId)}
                         >
-                          <CheckCircle className="w-4 h-4" />
+                          <CheckCircle className="w-3.5 h-3.5" />
                           Mark as Paid
                         </Button>
                       )}
                       <Button 
                         size="sm" 
                         variant="secondary" 
-                        className="h-9 gap-1 bg-white/20 hover:bg-white/30 text-white border-0" 
+                        className="h-10 gap-2 bg-white/10 hover:bg-white/20 text-white border border-white/10 font-black uppercase tracking-widest text-[10px] backdrop-blur-md" 
                         onClick={handleBulkExportPDF}
                         disabled={isExporting}
                       >
-                        {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                        {isExporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
                         {isExporting ? 'Exporting...' : 'Bulk PDF'}
                       </Button>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 text-[11px] font-medium opacity-90 border-t border-white/10 pt-2">
+                  <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-white/50 border-t border-white/10 pt-4 relative z-10">
                     <span>{totalEmployeesCount} Employees</span>
-                    <span className="w-1 h-1 rounded-full bg-white/40"></span>
+                    <span className="w-1 h-1 rounded-full bg-white/20"></span>
                     <span>Average ₱{(totalCashRequired / (totalEmployeesCount || 1)).toLocaleString(undefined, { maximumFractionDigits: 0 })}/person</span>
                   </div>
                 </div>

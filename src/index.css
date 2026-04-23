@@ -2,7 +2,7 @@
 
 @theme {
   --color-bg: #E0F2FE;
-  --color-card-bg: rgba(255, 255, 255, 0.8);
+  --color-card-bg: rgba(255, 255, 255, 0.05);
   --color-accent: #0284C7;
   --color-text-main: #0C4A6E;
   --color-text-sub: #0369A1;
@@ -14,40 +14,64 @@
 
 :root {
   --bg: #050b18;
-  --card-bg: rgba(15, 23, 42, 0.85);
-  --accent: #2563eb;
-  --text-main: #f8fafc;
-  --text-sub: #cbd5e1;
+  --card-bg: rgba(255, 255, 255, 0.05);
+  --accent: #3b82f6;
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.85); /* Slightly higher than requested (0.8) for even better accessibility */
+  --text-muted: rgba(255, 255, 255, 0.65);
   --border: rgba(255, 255, 255, 0.1);
   --success: #10b981;
   --danger: #ef4444;
   --warning: #f59e0b;
-  --radius: 1.25rem;
+  --radius: 1rem;
+  --card-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+  color-scheme: dark;
 }
 
 .dark {
   --bg: #050b18;
-  --card-bg: rgba(15, 23, 42, 0.9);
-  --text-main: #ffffff;
-  --text-sub: #94a3b8;
-  --border: rgba(255, 255, 255, 0.15);
+  --card-bg: rgba(255, 255, 255, 0.05);
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.85);
+  --text-muted: rgba(255, 255, 255, 0.65);
+  --border: rgba(255, 255, 255, 0.12);
+  color-scheme: dark;
 }
 
 body {
-  background-color: var(--bg);
-  color: var(--text-main);
+  background-color: transparent; /* Background image is handled by App.tsx */
+  color: var(--text-primary);
   font-family: 'Inter', sans-serif;
   -webkit-tap-highlight-color: transparent;
   min-height: 100vh;
 }
 
+/* Force Native Date & Time UI to use Dark Mode High Contrast */
+input[type="date"], input[type="time"], input[type="datetime-local"] {
+  color-scheme: dark;
+  color: #ffffff !important;
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 4px 8px;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(1.5);
+  opacity: 0.8;
+  cursor: pointer;
+}
+
 .bento-card {
   background: var(--card-bg);
-  backdrop-filter: blur(16px);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   border: 1px solid var(--border);
-  border-radius: 24px;
-  padding: 20px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: var(--card-shadow);
   display: flex;
   transition: all 0.3s cubic-bezier(0.16,1,0.3,1);
   will-change: transform, box-shadow;
@@ -55,8 +79,20 @@ body {
 
 .bento-card:hover {
   border-color: rgba(255, 255, 255, 0.2);
-  transform: translateY(-2px);
-  box-shadow: 0 25px 30px -5px rgba(0, 0, 0, 0.3), 0 15px 15px -5px rgba(0, 0, 0, 0.2);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+}
+
+.text-primary { color: var(--text-primary); }
+.text-secondary { color: var(--text-secondary); }
+.text-muted { color: var(--text-muted); }
+
+.stat-value {
+  font-size: 2.5rem;
+  line-height: 1;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.04em;
 }
 
 button:active {
@@ -66,9 +102,9 @@ button:active {
 .card-title {
   font-size: 0.75rem;
   font-weight: 800;
-  color: var(--text-main);
+  color: var(--text-primary);
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.15em;
   margin-bottom: 12px;
 }
 
@@ -285,7 +321,7 @@ button:active {
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-transparent text-foreground;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;

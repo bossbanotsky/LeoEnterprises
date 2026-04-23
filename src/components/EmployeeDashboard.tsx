@@ -289,10 +289,10 @@ export default function EmployeeDashboard() {
       {/* Welcome Header */}
       <div className="flex items-center justify-between px-1">
         <div>
-          <h1 className="text-2xl font-black text-white tracking-tight leading-none uppercase">
-             HELLO, {userData?.fullName?.split(' ')[0]}
+          <h1 className="text-4xl md:text-5xl font-black text-white tracking-tighter leading-none uppercase italic">
+             Hello, {userData?.fullName?.split(' ')[0]}
           </h1>
-          <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-1">
+          <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em] mt-2 italic opacity-80">
             Portal Access • {companyInfo.name}
           </p>
         </div>
@@ -315,8 +315,8 @@ export default function EmployeeDashboard() {
             {activeAnnouncements.map(ann => {
               const hasViewed = ann.viewedBy.includes(user?.uid || '');
               return (
-                <div key={ann.id} className={`bento-card flex-col p-5 relative overflow-hidden transition-all backdrop-blur-md border border-white/10 ${
-                  !hasViewed ? 'bg-blue-500/10 border-blue-500/30 ring-1 ring-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0.1)]' : 'bg-slate-900/40 shadow-xl'
+                <div key={ann.id} className={`bento-card flex-col p-5 relative overflow-hidden transition-all border border-white/10 ${
+                  !hasViewed ? 'bg-blue-500/10 border-blue-500/30 ring-1 ring-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0.1)]' : 'bg-transparent shadow-xl'
                 }`}>
                   <div className={`absolute left-0 top-0 bottom-0 w-1 ${
                     ann.priority === 'high' ? 'bg-red-500 shadow-[2px_0_10px_rgba(239,68,68,0.3)]' : ann.priority === 'medium' ? 'bg-blue-500 shadow-[2px_0_10px_rgba(59,130,246,0.3)]' : 'bg-slate-600'
@@ -380,8 +380,8 @@ export default function EmployeeDashboard() {
       {/* Header Profile */}
       <div className="relative group">
         <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl blur opacity-20 transition duration-1000"></div>
-        <div className="relative bento-card flex-col bg-white dark:bg-slate-800 p-6 overflow-hidden border-slate-200 dark:border-slate-700 shadow-sm">
-          <div className="flex items-center gap-5 relative">
+        <div className="relative bento-card flex-col bg-transparent p-6 overflow-hidden border border-white/10 shadow-xl">
+          <div className="flex items-center gap-5 relative z-10">
             <Button
               variant="outline"
               size="icon"
@@ -403,23 +403,23 @@ export default function EmployeeDashboard() {
               )}
             </div>
             <div className="flex-1 min-w-0 pr-8">
-              <h1 className="text-2xl font-bold text-slate-900 dark:text-white truncate">{employee.fullName}</h1>
+              <h1 className="text-2xl font-black text-white truncate">{employee.fullName}</h1>
               <div className="flex items-center gap-2 mt-1">
-                <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-[10px] font-bold uppercase tracking-wider rounded-md">
+                <span className="px-2 py-0.5 bg-blue-500/10 text-cyan-400 text-[10px] font-black uppercase tracking-wider rounded-md border border-blue-500/20">
                   {employee.position}
                 </span>
-                <span className="text-xs text-slate-500 dark:text-slate-400">ID: {employee.customId || employee.id.slice(0, 8)}</span>
+                <span className="text-xs text-white/60 font-medium tracking-tight">ID: {employee.customId || employee.id.slice(0, 8)}</span>
               </div>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4 mt-6">
-            <div className="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-100 dark:border-slate-700/50">
-              <div className="text-[10px] text-slate-500 uppercase font-bold tracking-wider mb-1">Daily Salary</div>
-              <div className="text-lg font-bold text-slate-900 dark:text-white">₱{employee.dailySalary.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+            <div className="bg-white/5 p-3 rounded-xl border border-white/10">
+              <div className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">Daily Salary</div>
+              <div className="stat-value text-xl">₱{employee.dailySalary.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
             </div>
-            <div className="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-100 dark:border-slate-700/50">
-              <div className="text-[10px] text-slate-500 uppercase font-bold tracking-wider mb-1">Hourly Rate</div>
-              <div className="text-lg font-bold text-slate-900 dark:text-white">₱{employee.hourlyRate.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+            <div className="bg-white/5 p-3 rounded-xl border border-white/10">
+              <div className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">Hourly Rate</div>
+              <div className="stat-value text-xl">₱{employee.hourlyRate.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
             </div>
           </div>
         </div>
@@ -436,18 +436,18 @@ export default function EmployeeDashboard() {
               type="date" 
               value={startDate} 
               onChange={e => setStartDate(e.target.value)}
-              className="h-7 text-[10px] w-28 rounded-lg bg-white dark:bg-slate-800"
+              className="h-7 text-[10px] w-28 rounded-lg bg-white/5 border-white/10"
             />
-            <span className="text-slate-400 text-xs">to</span>
+            <span className="text-white/40 text-xs">to</span>
             <Input 
               type="date" 
               value={endDate} 
               onChange={e => setEndDate(e.target.value)}
-              className="h-7 text-[10px] w-28 rounded-lg bg-white dark:bg-slate-800"
+              className="h-7 text-[10px] w-28 rounded-lg bg-white/5 border-white/10"
             />
           </div>
         </div>
-        <div className="bento-card flex-col bg-white dark:bg-slate-800 p-0 overflow-hidden border-slate-200 dark:border-slate-700 shadow-sm">
+        <div className="bento-card flex-col bg-transparent p-0 overflow-hidden border border-white/10 shadow-xl">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead className="bg-slate-50 dark:bg-slate-900/50 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
@@ -508,7 +508,7 @@ export default function EmployeeDashboard() {
           ) : (
             <>
               {pendingPayrolls.map(pay => (
-                <Interactive key={pay.id} className="bento-card flex-row items-center justify-between bg-white dark:bg-slate-800 p-4 border-slate-200 dark:border-slate-700 shadow-sm relative overflow-hidden">
+                <Interactive key={pay.id} className="bento-card flex-row items-center justify-between bg-transparent p-4 border border-white/10 shadow-xl relative overflow-hidden">
                   <div className="absolute top-0 right-0 bg-yellow-100 text-yellow-700 text-[9px] font-bold px-2 py-0.5 rounded-bl-lg uppercase tracking-wider">Unpaid</div>
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
@@ -548,20 +548,20 @@ export default function EmployeeDashboard() {
               <div key={pay.id} className="bento-card flex-row items-center justify-between bg-slate-50 dark:bg-slate-900/50 p-4 border-slate-200 dark:border-slate-700 shadow-sm opacity-90 relative overflow-hidden">
                 <div className="absolute top-0 right-0 bg-green-100 text-green-700 text-[9px] font-bold px-2 py-0.5 rounded-bl-lg uppercase tracking-wider">Paid</div>
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 flex items-center justify-center shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-blue-500/10 text-cyan-400 flex items-center justify-center shrink-0 border border-blue-500/20">
                     <CreditCard className="w-5 h-5" />
                   </div>
                   <div>
-                    <div className="font-bold text-slate-900 dark:text-white text-sm">
+                    <div className="font-black text-white text-sm uppercase tracking-tight">
                       {format(parseISO(pay.startDate), 'MMM dd')} - {format(parseISO(pay.endDate), 'MMM dd, yyyy')}
                     </div>
-                    <div className="text-[10px] text-slate-500 dark:text-slate-400">Paid on {format(parseISO(pay.generatedAt), 'MMM dd')}</div>
+                    <div className="text-[10px] font-bold text-white/50 uppercase tracking-widest mt-1">Paid on {format(parseISO(pay.generatedAt), 'MMM dd')}</div>
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-sm font-bold text-slate-700 dark:text-slate-300">₱{pay.totalPay.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
-                  <Button variant="outline" size="sm" className="mt-2 h-7 text-xs bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300" onClick={() => setSelectedPayslip({ ...pay, employee })}>
-                    View Past
+                  <div className="text-sm font-black text-white">₱{pay.totalPay.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+                  <Button variant="ghost" size="sm" className="mt-2 h-7 text-[10px] font-black uppercase tracking-widest bg-white/5 hover:bg-white/10 text-white/80 border border-white/10" onClick={() => setSelectedPayslip({ ...pay, employee })}>
+                    View Slip
                   </Button>
                 </div>
               </div>
@@ -577,14 +577,14 @@ export default function EmployeeDashboard() {
         </h3>
         <div className="space-y-3">
           {cashAdvances.map(ca => (
-            <div key={ca.id} className="bento-card flex-row items-center justify-between bg-white dark:bg-slate-800 p-4 border-slate-200 dark:border-slate-700 shadow-sm">
+                <div key={ca.id} className="bento-card flex-row items-center justify-between bg-transparent p-4 border border-white/10 shadow-xl">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 flex items-center justify-center shrink-0">
+                <div className="w-8 h-8 rounded-lg bg-orange-500/10 text-orange-400 flex items-center justify-center shrink-0 border border-orange-500/20">
                   <Wallet className="w-4 h-4" />
                 </div>
                 <div>
-                  <div className="font-bold text-slate-900 dark:text-white text-sm">₱{ca.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
-                  <div className="text-[10px] text-slate-500">{format(parseISO(ca.date), 'MMM dd, yyyy')} {ca.notes && `• ${ca.notes}`}</div>
+                  <div className="font-black text-white text-sm">₱{ca.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+                  <div className="text-[10px] font-bold text-white/50 uppercase tracking-widest">{format(parseISO(ca.date), 'MMM dd, yyyy')} {ca.notes && `• ${ca.notes}`}</div>
                 </div>
               </div>
             </div>
@@ -867,42 +867,42 @@ export default function EmployeeDashboard() {
               <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Government IDs</h4>
               
               <div className="space-y-1">
-                <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider">SSS Number</Label>
+                <Label className="text-xs font-black text-white/70 uppercase tracking-widest">SSS Number</Label>
                 <Input 
                   placeholder="XX-XXXXXXX-X"
                   value={profileData.sssNumber || ''} 
                   onChange={e => setProfileData(prev => ({ ...prev, sssNumber: e.target.value }))}
-                  className="rounded-xl border-slate-200 bg-slate-50 focus:bg-white"
+                  className="rounded-xl border-white/10 bg-white/5 focus:bg-white/10 text-white"
                 />
               </div>
               
               <div className="space-y-1">
-                <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider">PhilHealth Number</Label>
+                <Label className="text-xs font-black text-white/70 uppercase tracking-widest">PhilHealth Number</Label>
                 <Input 
                   placeholder="XX-XXXXXXXXX-X"
                   value={profileData.philhealthNumber || ''} 
                   onChange={e => setProfileData(prev => ({ ...prev, philhealthNumber: e.target.value }))}
-                  className="rounded-xl border-slate-200 bg-slate-50 focus:bg-white"
+                  className="rounded-xl border-white/10 bg-white/5 focus:bg-white/10 text-white"
                 />
               </div>
 
               <div className="space-y-1">
-                <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Pag-IBIG/HDMF Number</Label>
+                <Label className="text-xs font-black text-white/70 uppercase tracking-widest">Pag-IBIG/HDMF Number</Label>
                 <Input 
                   placeholder="XXXX-XXXX-XXXX"
                   value={profileData.pagibigNumber || ''} 
                   onChange={e => setProfileData(prev => ({ ...prev, pagibigNumber: e.target.value }))}
-                  className="rounded-xl border-slate-200 bg-slate-50 focus:bg-white"
+                  className="rounded-xl border-white/10 bg-white/5 focus:bg-white/10 text-white"
                 />
               </div>
 
               <div className="space-y-1">
-                <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider">TIN</Label>
+                <Label className="text-xs font-black text-white/70 uppercase tracking-widest">TIN</Label>
                 <Input 
                   placeholder="XXX-XXX-XXX-000"
                   value={profileData.tinNumber || ''} 
                   onChange={e => setProfileData(prev => ({ ...prev, tinNumber: e.target.value }))}
-                  className="rounded-xl border-slate-200 bg-slate-50 focus:bg-white"
+                  className="rounded-xl border-white/10 bg-white/5 focus:bg-white/10 text-white"
                 />
               </div>
             </div>

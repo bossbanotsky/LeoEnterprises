@@ -5,22 +5,14 @@ import {
   collection, 
   addDoc, 
   doc, 
-  enableIndexedDbPersistence,
-  initializeFirestore,
-  persistentLocalCache,
-  persistentSingleTabManager
 } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import firebaseConfig from '../firebase-applet-config.json';
 
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firestore with Persistent Cache to save daily quota
-export const db = initializeFirestore(app, {
-  localCache: persistentLocalCache({
-    tabManager: persistentSingleTabManager({})
-  })
-}, firebaseConfig.firestoreDatabaseId);
+// Initialize Firestore (no cache rules, direct backend connection required)
+export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 
 export const auth = getAuth(app);
 export const storage = getStorage(app);
@@ -98,7 +90,8 @@ export async function handleFirestoreError(error: unknown, operationType: Operat
   if (auth.currentUser) {
     // Don't try to log to Firestore if we already hit a quota limit or resource error
     const isQuotaError = errInfo.error.toLowerCase().includes('quota') || 
-                        errInfo.error.toLowerCase().includes('resource-exhausted');
+                        errInfo.error.toLowerCase().includes('resource-exhausted') ||
+                        errInfo.error.toLowerCase().includes('client is offline');
     
     if (!isQuotaError) {
       try {

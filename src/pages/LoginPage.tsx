@@ -7,7 +7,6 @@ import { Label } from '../components/ui/label';
 import { LogIn, Mail, Lock, Loader2, ArrowLeft, ArrowRight, ShieldCheck, User, LayoutGrid } from 'lucide-react';
 import { Navigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import EtherealMeshBackground from '../components/EtherealMeshBackground';
 
 export default function LoginPage() {
   const { user, userData, loading, loginWithEmail, loginWithGoogleContext } = useAuth();
@@ -69,23 +68,13 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-transparent flex items-center justify-center p-6 relative overflow-hidden font-sans">
-      {/* Fixed Background Image - Full Visibility Aesthetic */}
-      <div className="fixed inset-0 -z-10 bg-[#050b18]">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#050b18] via-[#0a192f] to-[#050b18]" />
-        <div className="absolute top-[-10%] right-[-10%] w-[60%] h-[60%] bg-blue-500/10 rounded-full blur-[120px]" />
-        <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-indigo-600/10 rounded-full blur-[100px]" />
-        {/* Grid Pattern for Industrial Feel */}
-        <div className="absolute inset-0 opacity-[0.03]" 
-             style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
-      </div>
-
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
         className="w-full max-w-[480px] relative z-10"
       >
-        <div className="bg-slate-950/80 backdrop-blur-xl border border-white/5 shadow-[0_40px_80px_rgba(0,0,0,0.8)] rounded-[40px] overflow-hidden p-10 lg:p-14">
+        <div className="bg-black/20 backdrop-blur-xl border border-white/10 shadow-2xl rounded-[40px] overflow-hidden p-10 lg:p-14">
           <div className="flex items-center justify-between mb-12">
             <Link to="/">
               <div className="flex items-center gap-2 group cursor-pointer">
@@ -94,7 +83,7 @@ export default function LoginPage() {
                 </div>
                 <div className="flex flex-col">
                   <span className="font-black text-xs tracking-[0.2em] text-white uppercase italic leading-none">LEO</span>
-                  <span className="font-bold text-[8px] tracking-[0.1em] text-slate-500 uppercase mt-0.5">Enterprises</span>
+                  <span className="font-bold text-[8px] tracking-[0.1em] text-white/60 uppercase mt-0.5">Enterprises</span>
                 </div>
               </div>
             </Link>
@@ -106,14 +95,14 @@ export default function LoginPage() {
           </div>
 
           <div className="mb-12 text-left">
-            <h1 className="text-4xl font-bold text-white tracking-[-0.04em] leading-none mb-3 uppercase italic">
+            <h1 className="text-4xl font-black text-white tracking-[-0.04em] leading-none mb-3 uppercase italic">
               {role === 'admin' ? 'Strategic' : 'Operational'} <br /> 
-              <span className="text-blue-400">Access Portal.</span>
+              <span className="text-blue-500">Access Portal.</span>
             </h1>
-            <p className="text-sm font-medium text-slate-400 tracking-tight">Enter your secure credentials to log into the command center.</p>
+            <p className="text-sm font-semibold text-white/80 tracking-tight">Enter your secure credentials to log into the command center.</p>
           </div>
 
-          <div className="bg-white/5 backdrop-blur-sm p-1 rounded-2xl mb-10 flex border border-white/10">
+          <div className="bg-white/5 p-1 rounded-2xl mb-10 flex border border-white/10">
               <button 
                   onClick={() => setRole('employee')}
                   className={`flex-1 flex items-center justify-center rounded-xl h-11 text-xs font-bold transition-all duration-300 ${role === 'employee' ? 'bg-white text-slate-950 shadow-sm' : 'text-slate-400 hover:text-slate-200'}`}

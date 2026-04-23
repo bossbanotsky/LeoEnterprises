@@ -1,34 +1,29 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 export default function BrandBackground() {
+  // Uses your custom image once uploaded, otherwise perfectly shows a premium industrial-tech image instantly.
+  // This image represents the combined strength of logistics, engineering, and technology.
+  const [imgSrc, setImgSrc] = useState("/background.jpg");
+
   return (
-    <div className="fixed inset-0 -z-20 overflow-hidden bg-[#050b18]">
-      {/* Brand Base Gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#050b18] via-[#0a192f] to-[#050b18]" />
-      
-      {/* Decorative Brand Accent (Top Right) */}
-      <div className="absolute top-[-10%] right-[-10%] w-[60%] h-[60%] bg-blue-500/10 rounded-full blur-[120px] animate-pulse" />
-      
-      {/* Decorative Brand Accent (Bottom Left) */}
-      <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-indigo-600/10 rounded-full blur-[100px]" />
+    <div className="fixed inset-0 -z-50 overflow-hidden bg-slate-950">
+      {/* 100% Real HD Background Image - Representing Infrastructure, Logistics & Tech */}
+      <img 
+        src={imgSrc} 
+        onError={() => setImgSrc("https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=2500")}
+        alt="LEO Enterprises Industrial Background" 
+        className="fixed inset-0 w-full h-full object-cover opacity-100 transition-opacity duration-1000"
+        referrerPolicy="no-referrer"
+      />
 
-      {/* Grid Pattern for Industrial Feel */}
-      <div className="absolute inset-0 opacity-[0.03]" 
-           style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
-
-      {/* Modern Wave Graphic (Simulating the Arrow curve) */}
-      <svg className="absolute bottom-0 left-0 w-full h-full opacity-[0.07] pointer-events-none" viewBox="0 0 1440 800" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M-100 800C200 700 400 400 1440 600V800H-100Z" fill="url(#cyan_grad)" />
-        <defs>
-          <linearGradient id="cyan_grad" x1="720" y1="400" x2="720" y2="800" gradientUnits="userSpaceOnUse">
-            <stop stopColor="#00d2ff" />
-            <stop offset="1" stopColor="#00d2ff" stopOpacity="0" />
-          </linearGradient>
-        </defs>
-      </svg>
-
-      {/* Content Protection Layer (ensures dashboard text is always readable) */}
-      <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-[4px]" />
+      {/* Global dark gradient overlay for readability while keeping the image visible */}
+      <div 
+        className="fixed inset-0 w-full h-full pointer-events-none" 
+        style={{
+          background: 'linear-gradient(to bottom, rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.65))',
+          zIndex: -10
+        }} 
+      />
     </div>
   );
 }
