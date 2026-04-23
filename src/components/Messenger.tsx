@@ -13,7 +13,7 @@ import { Skeleton } from './ui/Skeleton';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function Messenger() {
-  const { user, userData } = useAuth();
+  const { user, userData, setQuotaLimited } = useAuth();
   const [chats, setChats] = useState<Chat[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeChat, setActiveChat] = useState<Chat | null>(null);

@@ -18,6 +18,7 @@ import {
 import { Category } from '../services/galleryService';
 import GalleryViewer from '../components/GalleryViewer';
 import VideoViewer from '../components/VideoViewer';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 import { Button } from '../components/ui/button';
 
 const serviceData: Record<string, any> = {
@@ -228,8 +229,12 @@ export default function ServiceDetail() {
           </div>
           
           <div className="rounded-[50px] bg-slate-50/50 border border-slate-100 p-8 md:p-12">
-            <GalleryViewer category={service.category as Category} isAdminView={false} />
-            <VideoViewer category={service.category as Category} isAdminView={false} />
+            <ErrorBoundary>
+              <GalleryViewer category={service.category as Category} isAdminView={false} />
+            </ErrorBoundary>
+            <ErrorBoundary>
+              <VideoViewer category={service.category as Category} isAdminView={false} />
+            </ErrorBoundary>
           </div>
         </div>
       </section>

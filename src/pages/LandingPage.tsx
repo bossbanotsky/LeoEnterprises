@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
+import { Category } from '../services/galleryService';
 import PWAInstallPrompt from '../components/PWAInstallPrompt';
 
 const services = [
@@ -91,29 +92,26 @@ export default function LandingPage() {
       <PWAInstallPrompt />
 
       {/* Navigation */}
-      <nav className="fixed top-0 w-full z-50 bg-slate-950/40 border-b border-white/5 shadow-[0_8px_40px_rgba(0,0,0,0.2)]">
+      <nav className="fixed top-0 w-full z-50 bg-slate-950/60 backdrop-blur-2xl border-b border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.3)]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2 group cursor-pointer">
-            <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center rotate-3 shadow-lg shadow-slate-900/10 border border-slate-700/50 group-hover:rotate-0 transition-transform duration-300">
-              <span className="text-white font-black text-xl">L</span>
-            </div>
             <div className="flex flex-col">
               <span className="font-black text-2xl tracking-tighter text-white leading-none group-hover:text-blue-500 transition-colors">
                 LEO <span className="font-black italic tracking-tight text-blue-500 underline decoration-blue-500/30 underline-offset-4">ENTERPRISES</span>
               </span>
-              <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em] mt-1 italic">Industrial Multi-Service</span>
+              <span className="text-[10px] font-black text-white/50 uppercase tracking-[0.3em] mt-1 italic">Industrial Multi-Service</span>
             </div>
           </Link>
           
-          <div className="hidden md:flex items-center gap-8 text-[14px] font-bold text-white/70 tracking-tight uppercase">
-            <a href="#services" className="hover:text-white transition-all duration-250 ease-out py-1 hover:tracking-widest">Services</a>
-            <a href="#about" className="hover:text-white transition-all duration-250 ease-out py-1 hover:tracking-widest">About</a>
-            <a href="#contact" className="hover:text-white transition-all duration-250 ease-out py-1 hover:tracking-widest">Contact</a>
+          <div className="hidden md:flex items-center gap-8 text-[14px] font-bold text-white/80 tracking-tight uppercase">
+            <a href="#services" className="hover:text-white hover:text-blue-400 transition-all duration-300 py-1 hover:tracking-[0.1em]">Services</a>
+            <a href="#about" className="hover:text-white hover:text-blue-400 transition-all duration-300 py-1 hover:tracking-[0.1em]">About</a>
+            <a href="#contact" className="hover:text-white hover:text-blue-400 transition-all duration-300 py-1 hover:tracking-[0.1em]">Contact</a>
           </div>
 
           <div className="flex items-center gap-4">
             <Link to="/login">
-              <Button className="rounded-full bg-[linear-gradient(135deg,#1e3a8a,#2563eb)] hover:opacity-95 text-white shadow-[0_6px_20px_rgba(37,99,235,0.3)] hover:shadow-[0_8px_30px_rgba(37,99,235,0.4)] text-[14px] font-bold px-8 py-5 transition-all duration-300 border-0 active:scale-95">
+              <Button className="rounded-full bg-white hover:bg-slate-100 text-slate-950 hover:shadow-[0_0_20px_rgba(255,255,255,0.4)] text-[14px] font-black px-8 py-5 transition-all duration-300 border-0 active:scale-95 uppercase tracking-widest">
                 Login Portal
               </Button>
             </Link>
@@ -352,30 +350,30 @@ export default function LandingPage() {
             </div>
             
             <div className="relative">
-              <div className="bg-slate-900/50 border border-white/10 p-10 lg:p-14 rounded-[50px] shadow-2xl relative z-10 flex flex-col gap-8">
-                <div className="space-y-2">
-                  <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest px-1">Full Name</label>
+              <div className="bg-slate-50 border border-slate-100 p-10 lg:p-14 rounded-[50px] shadow-2xl relative z-10 flex flex-col gap-8">
+                <div className="space-y-3">
+                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Full Name</label>
                   <Input 
                     placeholder="Enter your name" 
-                    className="h-14 lg:h-16 rounded-[20px] border-white/10 bg-white/5 focus:bg-white/10 text-white text-lg font-medium px-6 focus:ring-4 focus:ring-blue-600/20 transition-all shadow-sm"
+                    className="h-16 lg:h-18 rounded-[20px] border-slate-200 bg-white text-slate-900 text-lg font-medium px-6 focus:ring-4 focus:ring-blue-600/10 transition-all shadow-sm placeholder:text-slate-400"
                   />
                 </div>
-                <div className="space-y-2">
-                  <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest px-1">Company / Phone</label>
+                <div className="space-y-3">
+                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Company / Phone</label>
                   <Input 
                     placeholder="Phone or Organization" 
-                    className="h-14 lg:h-16 rounded-[20px] border-white/10 bg-white/5 focus:bg-white/10 text-white text-lg font-medium px-6 focus:ring-4 focus:ring-blue-600/20 transition-all shadow-sm"
+                    className="h-16 lg:h-18 rounded-[20px] border-slate-200 bg-white text-slate-900 text-lg font-medium px-6 focus:ring-4 focus:ring-blue-600/10 transition-all shadow-sm placeholder:text-slate-400"
                   />
                 </div>
-                <div className="space-y-2">
-                  <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest px-1">Project Message</label>
+                <div className="space-y-3">
+                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Project Message</label>
                   <textarea 
-                    className="w-full min-h-[160px] rounded-[30px] border border-white/10 bg-white/5 p-6 text-white text-lg font-medium outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/20 transition-all shadow-sm resize-none"
+                    className="w-full min-h-[160px] rounded-[30px] border border-slate-200 bg-white p-6 text-slate-900 text-lg font-medium outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 transition-all shadow-sm resize-none placeholder:text-slate-400"
                     placeholder="Brief description of your project requirements"
                   />
                 </div>
                 
-                <Button className="h-16 lg:h-20 rounded-[25px] bg-blue-600 hover:bg-blue-700 text-white text-xl font-bold uppercase italic tracking-tighter transition-all active:scale-95 shadow-xl shadow-blue-600/20 mt-4 group">
+                <Button className="h-16 lg:h-20 rounded-[25px] bg-blue-600 hover:bg-blue-700 text-white text-xl font-bold uppercase italic tracking-tighter transition-all active:scale-95 shadow-xl shadow-blue-600/10 mt-4 group">
                   Submit Proposal <ArrowRight className="ml-4 w-6 h-6 group-hover:translate-x-2 transition-transform duration-300" />
                 </Button>
               </div>
@@ -387,44 +385,49 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Trust & Partners */}
-      <section className="py-16 border-y border-white/5 bg-transparent">
-        <div className="max-w-7xl mx-auto px-6 overflow-hidden">
-          <div className="flex flex-wrap justify-center items-center gap-12 md:gap-24 opacity-30 grayscale scale-90">
-            {['Hauling Systems', 'Structural Design', 'Security Ops', 'IT Infrastructure', 'Machine Works'].map((partner, i) => (
-              <span key={i} className="text-2xl md:text-3xl font-black text-white tracking-tighter uppercase italic pointer-events-none select-none">{partner}</span>
-            ))}
-          </div>
-        </div>
-      </section>
 
-      <footer className="bg-transparent py-24 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center text-center">
-          <div className="flex items-center gap-3 group cursor-pointer">
-            <div className="w-14 h-14 bg-white text-slate-950 rounded-2xl flex items-center justify-center rotate-3 shadow-2xl group-hover:rotate-0 transition-transform duration-500 border-2 border-blue-600">
-              <span className="font-black text-3xl">L</span>
+      <footer className="bg-slate-950/50 backdrop-blur-sm border-t border-white/5 py-24">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                  <span className="font-black text-white text-xl">L</span>
+                </div>
+                <span className="font-black text-white text-lg tracking-tight uppercase italic">LEO ENTERPRISES</span>
+              </div>
+              <p className="text-slate-400 text-xs leading-relaxed">
+                Industrial Multi-Service solutions delivered with precision and technical excellence.
+              </p>
             </div>
-            <div className="flex flex-col text-left">
-              <span className="font-black text-3xl tracking-tight leading-none uppercase italic text-white">LEO <span className="text-blue-500">ENTERPRISES</span></span>
-              <span className="text-[11px] font-bold text-blue-400 uppercase tracking-[0.3em] mt-1">Operational Command System</span>
+            
+            <div className="flex flex-col gap-4">
+              <h4 className="text-white font-bold uppercase tracking-widest text-xs mb-2">Company</h4>
+              <a href="#services" className="text-slate-400 hover:text-white text-sm transition-colors">Services</a>
+              <a href="#about" className="text-slate-400 hover:text-white text-sm transition-colors">Our Story</a>
+              <a href="#contact" className="text-slate-400 hover:text-white text-sm transition-colors">Contact</a>
             </div>
-          </div>
-          
-          <div className="flex flex-wrap items-center justify-center gap-12 text-sm font-bold uppercase tracking-[2px] mb-16 text-slate-500">
-            <a href="#services" className="hover:text-white transition-colors">Services</a>
-            <a href="#about" className="hover:text-white transition-colors">Our Story</a>
-            <a href="#contact" className="hover:text-white transition-colors">Contact</a>
-            <Link to="/login" className="text-blue-500 hover:text-blue-400">Portal</Link>
+
+            <div className="flex flex-col gap-4">
+              <h4 className="text-white font-bold uppercase tracking-widest text-xs mb-2">Access</h4>
+              <Link to="/login" className="text-blue-500 hover:text-blue-400 text-sm transition-colors">Employee Portal</Link>
+            </div>
+
+            <div className="flex flex-col gap-4">
+              <h4 className="text-white font-bold uppercase tracking-widest text-xs mb-2">PWA Performance</h4>
+              <p className="text-slate-500 text-xs italic">
+                Built with precision, deployed for high-demand business environments.
+              </p>
+            </div>
           </div>
           
           <div className="w-full h-px bg-white/10 mb-12" />
           
-          <p className="text-slate-500 text-sm font-medium mb-4 italic tracking-tight">
-            Built with Precision. Deployed with PWA Performance. 
-          </p>
-          <p className="text-slate-500 text-xs font-semibold uppercase tracking-[3px] opacity-40">
-            © 2026 Leo Enterprises ERP — All Rights Reserved.
-          </p>
+          <div className="flex flex-col items-center text-center">
+             <p className="text-slate-600 text-[10px] font-semibold uppercase tracking-[0.2em]">
+               © 2026 LEO ENTERPRISES ERP — ALL RIGHTS RESERVED.
+             </p>
+          </div>
         </div>
       </footer>
     </div>

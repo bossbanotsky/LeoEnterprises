@@ -43,7 +43,7 @@ export default function Layout() {
     <div className="min-h-screen flex flex-col bg-transparent text-white overflow-hidden relative">
       {/* Quota Warning Banner */}
       <AnimatePresence>
-        {useAuth().quotaLimited && (
+        {useAuth().isQuotaLimited && (
           <motion.div 
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
