@@ -207,54 +207,56 @@ export default function Employees() {
               </h2>
               <div className="space-y-4">
                 {groupedEmployees[position].sort((a, b) => a.fullName.localeCompare(b.fullName)).map(emp => (
-                  <Interactive 
-                    key={emp.id} 
-                    onClick={() => setSelectedEmployee(emp)}
-                    className="bento-card bg-transparent p-4 flex flex-row items-center gap-4 border border-white/10 hover:border-blue-500 transition-all shadow-xl"
-                  >
-                    <div className="w-12 h-12 bg-blue-500/20 text-blue-400 rounded-full flex items-center justify-center font-bold text-lg shrink-0 overflow-hidden border border-blue-500/20">
-                      {emp.photoURL ? (
-                        <img src={emp.photoURL} alt={emp.fullName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                      ) : (
-                        emp.fullName.charAt(0).toUpperCase()
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-bold text-white truncate">{emp.fullName}</h3>
-                        {emp.customId && (
-                          <span className="text-[9px] font-black text-slate-400 bg-white/5 border border-white/10 px-2 py-0.5 rounded uppercase tracking-tighter">
-                            {emp.customId}
-                          </span>
+                    <Interactive 
+                      key={emp.id} 
+                      onClick={() => setSelectedEmployee(emp)}
+                      className="bg-white/5 backdrop-blur-xl p-4 flex flex-row items-center gap-4 border border-white/10 hover:border-blue-500 transition-all rounded-[24px] shadow-2xl relative overflow-hidden group"
+                    >
+                      <div className="w-12 h-12 bg-blue-500/20 text-blue-400 rounded-2xl flex items-center justify-center font-black text-lg shrink-0 overflow-hidden border border-blue-500/20 shadow-inner group-hover:scale-110 transition-transform">
+                        {emp.photoURL ? (
+                          <img src={emp.photoURL} alt={emp.fullName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                        ) : (
+                          emp.fullName.charAt(0).toUpperCase()
                         )}
-                        {users[emp.id] && (
-                          <div className="w-4 h-4 bg-blue-500/20 text-blue-400 rounded-full flex items-center justify-center border border-blue-500/30" title="Account Linked">
-                            <CheckCircle2 className="w-2.5 h-2.5" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                          <h3 className="font-black text-white italic uppercase tracking-tighter text-sm sm:text-base leading-none">{emp.fullName}</h3>
+                          {emp.customId && (
+                            <span className="text-[8px] font-black text-blue-400 bg-blue-500/10 border border-blue-500/20 px-1.5 py-0.5 rounded uppercase tracking-widest whitespace-nowrap">
+                              {emp.customId}
+                            </span>
+                          )}
+                          {users[emp.id] && (
+                            <div className="w-4 h-4 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center border border-emerald-500/30 shadow-[0_0_10px_rgba(16,185,129,0.2)]" title="Account Linked">
+                              <ShieldCheck className="w-2.5 h-2.5" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-3 text-[10px] sm:text-xs mt-2">
+                          <div className="flex items-center gap-1.5 text-white/50 font-black uppercase tracking-wider">
+                            <Briefcase className="w-3 h-3 text-blue-500" />
+                            <span className="truncate max-w-[80px] sm:max-w-none">{emp.position || 'Staff'}</span>
                           </div>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-4 text-xs mt-1">
-                        <div className="flex items-center gap-1 text-slate-400 truncate font-semibold uppercase tracking-tight">
-                          <Briefcase className="w-3 h-3" />
-                          <span className="truncate">{emp.position || 'Staff'}</span>
-                        </div>
-                        <div className="font-black text-cyan-400 flex items-center gap-0.5 whitespace-nowrap">
-                          <span className="text-[10px] opacity-70 italic shadow-sm">₱</span>
-                          <span className="tracking-tight">{emp.dailySalary.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                          <div className="font-black text-cyan-400 flex items-center gap-0.5 whitespace-nowrap shadow-sm italic">
+                            <span className="text-[9px] opacity-70">₱</span>
+                            <span className="tracking-widest">{emp.dailySalary.toLocaleString(undefined, { minimumFractionDigits: 0 })}</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <div className="shrink-0 flex items-center gap-2">
-                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border transition-colors ${
-                        emp.status === 'active' || !emp.status 
-                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 shadow-[0_0_10px_rgba(16,185,129,0.1)]' 
-                          : 'bg-slate-500/10 text-slate-400 border-slate-500/30'
-                      }`}>
-                        {emp.status || 'Active'}
-                      </span>
-                      <ChevronRight className="w-4 h-4 text-slate-600 group-hover:text-white transition-colors" />
-                    </div>
-                  </Interactive>
+                      <div className="shrink-0 flex items-center gap-2">
+                        <span className={`px-2 py-0.5 rounded-lg text-[8px] font-black uppercase tracking-[0.15em] border transition-colors hidden xs:block ${
+                          emp.status === 'active' || !emp.status 
+                            ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40 shadow-[0_0_15px_rgba(16,185,129,0.2)]' 
+                            : 'bg-white/5 text-white/30 border-white/10'
+                        }`}>
+                          {emp.status || 'Active'}
+                        </span>
+                        <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-blue-600 transition-colors">
+                          <ChevronRight className="w-4 h-4 text-white/40 group-hover:text-white" />
+                        </div>
+                      </div>
+                    </Interactive>
                 ))}
               </div>
             </div>

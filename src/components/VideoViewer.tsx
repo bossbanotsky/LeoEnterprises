@@ -258,19 +258,20 @@ export default function VideoViewer({ category, isAdminView = false }: { categor
 
           return (
             <div key={album.id} className="space-y-6">
-              <div className="bg-white/5 border border-white/10 p-6 rounded-3xl relative group backdrop-blur-md">
+              <div className="bg-white/5 border border-white/10 p-5 sm:p-8 rounded-[32px] relative group backdrop-blur-2xl shadow-2xl overflow-hidden">
+                <div className="absolute inset-0 bg-blue-600/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
                 {isAdminView && !isEditing && (
-                  <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0">
+                  <div className="absolute top-4 right-4 flex gap-2">
                     <button 
                       onClick={() => handleEditAlbum(album)}
-                      className="p-2 bg-slate-900/80 border border-white/10 text-white/60 hover:text-blue-400 rounded-xl shadow-xl transition-colors"
+                      className="p-2.5 bg-slate-950/80 border border-white/10 text-blue-400 hover:bg-blue-600 hover:text-white rounded-xl shadow-xl transition-all"
                       title="Edit Album"
                     >
                       <Edit3 size={16} />
                     </button>
                     <button 
                       onClick={() => handleDeleteAlbum(album.id)}
-                      className="p-2 bg-slate-900/80 border border-white/10 text-white/60 hover:text-red-400 rounded-xl shadow-xl transition-colors"
+                      className="p-2.5 bg-slate-950/80 border border-white/10 text-red-400 hover:bg-red-600 hover:text-white rounded-xl shadow-xl transition-all"
                       title="Delete Album"
                     >
                       <Trash2 size={16} />
@@ -326,10 +327,16 @@ export default function VideoViewer({ category, isAdminView = false }: { categor
                 )}
               </div>
 
-              {albumVideos.length > 0 ? (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
+              {albumVideos.length > 0 ? 
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 w-full">
                   {albumVideos.map(vid => (
-                    <div key={vid.id} onClick={(e) => isSelectionMode && toggleSelection(vid.id, e)} className={`relative aspect-video rounded-[30px] overflow-hidden bg-white/5 shadow-2xl cursor-pointer hover:scale-[1.02] hover:shadow-[0_20px_60px_rgba(0,0,0,0.5)] transition-all duration-500 ease-out group border border-white/5 ${selectedIds.includes(vid.id) ? 'ring-4 ring-blue-500 scale-[0.98]' : ''}`}>
+                    <motion.div 
+                      key={vid.id} 
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      onClick={(e) => isSelectionMode && toggleSelection(vid.id, e)} 
+                      className={`relative aspect-video rounded-[24px] sm:rounded-[30px] overflow-hidden bg-slate-950/40 shadow-2xl cursor-pointer hover:scale-[1.02] transition-all duration-500 ease-out group border border-white/10 ${selectedIds.includes(vid.id) ? 'ring-4 ring-blue-500 shadow-[0_0_30px_rgba(37,99,235,0.4)]' : ''}`}
+                    >
                       {/* @ts-ignore */}
                       <ReactPlayer 
                         url={vid.videoUrl} 
@@ -366,14 +373,14 @@ export default function VideoViewer({ category, isAdminView = false }: { categor
                            {selectedIds.includes(vid.id) ? <CheckSquare className="text-blue-600 w-6 h-6" /> : <Square className="text-slate-400 w-6 h-6" />}
                         </div>
                       )}
-                    </div>
+                    </motion.div>
                   ))}
                 </div>
-              ) : (
-                <div className="py-12 text-center border-2 border-dashed border-white/5 rounded-[30px]">
+               : 
+                <div className="py-12 text-center border-2 border-dashed border-white/5 rounded-[30px] w-full">
                   <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.3em]">No videos in this album</p>
                 </div>
-              )}
+              }
             </div>
           );
         })}
@@ -388,9 +395,15 @@ export default function VideoViewer({ category, isAdminView = false }: { categor
                 <div className="flex-1 h-px bg-white/5" />
               </div>
             )}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 w-full">
               {groupedVideos['uncategorized'].map(vid => (
-                <div key={vid.id} onClick={(e) => isSelectionMode && toggleSelection(vid.id, e)} className={`relative aspect-video rounded-[30px] overflow-hidden bg-white/5 shadow-2xl cursor-pointer hover:scale-[1.02] hover:shadow-[0_20px_60px_rgba(0,0,0,0.5)] transition-all duration-500 ease-out group border border-white/5 ${selectedIds.includes(vid.id) ? 'ring-4 ring-blue-500 scale-[0.98]' : ''}`}>
+                <motion.div 
+                  key={vid.id} 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  onClick={(e) => isSelectionMode && toggleSelection(vid.id, e)} 
+                  className={`relative aspect-video rounded-[24px] sm:rounded-[30px] overflow-hidden bg-slate-950/40 shadow-2xl cursor-pointer hover:scale-[1.02] transition-all duration-500 ease-out group border border-white/10 ${selectedIds.includes(vid.id) ? 'ring-4 ring-blue-500 shadow-[0_0_30px_rgba(37,99,235,0.4)]' : ''}`}
+                >
                   {/* @ts-ignore */}
                   <ReactPlayer 
                     url={vid.videoUrl} 
@@ -427,7 +440,7 @@ export default function VideoViewer({ category, isAdminView = false }: { categor
                        {selectedIds.includes(vid.id) ? <CheckSquare className="text-blue-600 w-6 h-6" /> : <Square className="text-slate-400 w-6 h-6" />}
                     </div>
                   )}
-                </div>
+                </motion.div>
               ))}
             </div>
           </div>

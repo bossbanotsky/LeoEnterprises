@@ -468,28 +468,28 @@ export default function Attendance() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 shrink-0">
         {activeTab === 'mark' ? (
-          <div className="bg-white dark:bg-slate-800 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center gap-1 max-w-sm group">
+          <div className="bg-white/5 p-2 rounded-2xl border border-white/10 shadow-2xl flex items-center gap-1 max-w-sm group backdrop-blur-xl">
             <button 
               onClick={handlePrevDate}
-              className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-colors text-slate-500"
+              className="p-2.5 hover:bg-white/10 rounded-xl transition-all text-white/50 hover:text-white"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <div className="flex-1 bg-slate-50 dark:bg-slate-900 px-3 py-1.5 rounded-xl flex items-center gap-2">
-              <Calendar className="w-3.5 h-3.5 text-blue-500" />
+            <div className="flex-1 bg-slate-950/40 px-3 py-2 rounded-xl flex items-center gap-2 border border-white/5">
+              <div className="w-1 h-6 bg-blue-600 rounded-full shadow-[0_0_10px_rgba(37,99,235,0.5)]" />
               <div className="flex flex-col flex-1">
-                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider leading-none">Selected Date</span>
+                <span className="text-[8px] font-black text-blue-400 uppercase tracking-widest leading-none mb-1">Selected Date</span>
                 <Input 
                   type="date" 
                   value={singleDate} 
                   onChange={e => setSingleDate(e.target.value)} 
-                  className="rounded-none h-6 w-full font-black bg-transparent border-0 text-xs p-0 focus-visible:ring-0 focus-visible:ring-offset-0" 
+                  className="rounded-none h-6 w-full font-black bg-transparent border-0 text-xs p-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-white cursor-pointer [color-scheme:dark]" 
                 />
               </div>
             </div>
             <button 
               onClick={handleNextDate}
-              className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-colors text-slate-500"
+              className="p-2.5 hover:bg-white/10 rounded-xl transition-all text-white/50 hover:text-white"
             >
               <ChevronRight className="w-4 h-4" />
             </button>
@@ -497,12 +497,12 @@ export default function Attendance() {
         ) : (
           <div className="col-span-full grid grid-cols-2 gap-2 bg-transparent p-3 rounded-xl border border-white/10 shadow-xl">
             <div className="space-y-1">
-              <Label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1 block leading-none">Start Date</Label>
-              <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="rounded-lg h-9 w-full font-bold bg-slate-950/50 border-white/10 text-white text-sm" />
+              <Label className="text-[9px] font-black text-blue-400 uppercase tracking-[0.2em] mb-1 block leading-none">Start Date</Label>
+              <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="rounded-lg h-10 w-full font-black bg-slate-950/50 border border-white/10 text-white text-sm focus:ring-2 focus:ring-blue-500/20 [color-scheme:dark]" />
             </div>
             <div className="space-y-1">
-              <Label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1 block leading-none">End Date</Label>
-              <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="rounded-lg h-9 w-full font-bold bg-slate-950/50 border-white/10 text-white text-sm" />
+              <Label className="text-[9px] font-black text-blue-400 uppercase tracking-[0.2em] mb-1 block leading-none">End Date</Label>
+              <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="rounded-lg h-10 w-full font-black bg-slate-950/50 border border-white/10 text-white text-sm focus:ring-2 focus:ring-blue-500/20 [color-scheme:dark]" />
             </div>
           </div>
         )}
@@ -640,31 +640,31 @@ export default function Attendance() {
                   <div className="grid grid-cols-5 gap-1.5 mt-auto">
                     <button 
                       onClick={() => handleAttendanceChange(emp.id, singleDate, 'status', 'present')} 
-                      className={`py-2 text-[9px] rounded-xl font-bold transition-all border ${isPresent ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' : 'bg-white dark:bg-slate-900 text-slate-500 border-slate-200 dark:border-slate-700 hover:border-emerald-300'}`}
+                      className={`py-2 text-[9px] rounded-xl font-black uppercase tracking-widest transition-all border ${isPresent ? 'bg-emerald-600 text-white border-emerald-500/50 shadow-xl' : 'bg-white/5 text-white/40 border-white/10 hover:border-emerald-300'}`}
                     >
                       Present
                     </button>
                     <button 
                       onClick={() => handleAttendanceChange(emp.id, singleDate, 'status', 'pakyaw')} 
-                      className={`py-2 text-[9px] rounded-xl font-bold transition-all border ${isPakyaw ? 'bg-amber-500 text-white border-amber-500 shadow-sm' : 'bg-white dark:bg-slate-900 text-slate-500 border-slate-200 dark:border-slate-700 hover:border-amber-300'}`}
+                      className={`py-2 text-[9px] rounded-xl font-black uppercase tracking-widest transition-all border ${isPakyaw ? 'bg-amber-600 text-white border-amber-500/50 shadow-xl' : 'bg-white/5 text-white/40 border-white/10 hover:border-amber-300'}`}
                     >
                       Pakyaw
                     </button>
                     <button 
                       onClick={() => handleAttendanceChange(emp.id, singleDate, 'status', 'hd')} 
-                      className={`py-2 text-[9px] rounded-xl font-bold transition-all border ${isHD ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-white dark:bg-slate-900 text-slate-500 border-slate-200 dark:border-slate-700 hover:border-indigo-300'}`}
+                      className={`py-2 text-[9px] rounded-xl font-black uppercase tracking-widest transition-all border ${isHD ? 'bg-indigo-600 text-white border-indigo-500/50 shadow-xl' : 'bg-white/5 text-white/40 border-white/10 hover:border-indigo-300'}`}
                     >
                       HD
                     </button>
                     <button 
                       onClick={() => handleAttendanceChange(emp.id, singleDate, 'status', 'ut')} 
-                      className={`py-2 text-[9px] rounded-xl font-bold transition-all border ${isUT ? 'bg-sky-500 text-white border-sky-500 shadow-sm' : 'bg-white dark:bg-slate-900 text-slate-500 border-slate-200 dark:border-slate-700 hover:border-sky-300'}`}
+                      className={`py-2 text-[9px] rounded-xl font-black uppercase tracking-widest transition-all border ${isUT ? 'bg-sky-600 text-white border-sky-500/50 shadow-xl' : 'bg-white/5 text-white/40 border-white/10 hover:border-sky-300'}`}
                     >
                       UT
                     </button>
                     <button 
                       onClick={() => handleAttendanceChange(emp.id, singleDate, 'status', 'absent')} 
-                      className={`py-2 text-[9px] rounded-xl font-bold transition-all border ${att.status === 'absent' ? 'bg-rose-600 text-white border-rose-600 shadow-sm' : 'bg-white dark:bg-slate-900 text-slate-500 border-slate-200 dark:border-slate-700 hover:border-rose-300'}`}
+                      className={`py-2 text-[9px] rounded-xl font-black uppercase tracking-widest transition-all border ${att.status === 'absent' ? 'bg-rose-600 text-white border-rose-500/50 shadow-xl' : 'bg-white/5 text-white/40 border-white/10 hover:border-rose-300'}`}
                     >
                       Absent
                     </button>

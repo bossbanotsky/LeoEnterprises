@@ -66,15 +66,24 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
 
 .bento-card {
   background: var(--card-bg);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 24px;
+  border-radius: 24px;
+  padding: 16px;
   box-shadow: var(--card-shadow);
   display: flex;
+  flex-direction: column;
   transition: all 0.3s cubic-bezier(0.16,1,0.3,1);
   will-change: transform, box-shadow;
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .bento-card {
+    padding: 24px;
+    border-radius: 32px;
+  }
 }
 
 .bento-card:hover {

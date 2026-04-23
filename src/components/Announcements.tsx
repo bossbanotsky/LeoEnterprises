@@ -120,21 +120,21 @@ export default function Announcements() {
   }
 
   return (
-    <div className="h-full flex flex-col relative space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <Megaphone className="w-6 h-6 text-blue-600" />
+    <div className="h-full flex flex-col relative space-y-6 text-left">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full">
+        <div className="text-left">
+          <h1 className="text-2xl sm:text-3xl font-black text-white flex items-center gap-3 italic uppercase tracking-tight">
+            <Megaphone className="w-6 h-6 sm:w-8 sm:h-8 text-blue-500" />
             Announcement Board
           </h1>
-          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
-            Post important updates and track employee engagement.
+          <p className="text-white/50 text-[10px] sm:text-sm mt-1 font-bold uppercase tracking-widest italic">
+            Post important updates and track engagement.
           </p>
         </div>
         <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-          <DialogTrigger render={<Button className="rounded-xl flex items-center gap-2 bg-blue-600 hover:bg-blue-700 h-11" />}>
-            <Plus className="w-4 h-4" />
-            New Announcement
+          <DialogTrigger render={<Button className="rounded-[20px] flex items-center gap-2 bg-blue-600 hover:bg-blue-700 h-12 px-6 shadow-[0_0_20px_rgba(37,99,235,0.3)] border border-white/20 sm:w-auto w-full" />}>
+            <Plus className="w-5 h-5" />
+            <span className="font-black uppercase tracking-widest text-[11px]">New Alert</span>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[500px] rounded-2xl">
             <DialogHeader>
@@ -213,83 +213,86 @@ export default function Announcements() {
               </div>
             ) : (
               activeAnnouncements.map(ann => (
-                <div key={ann.id} className="bento-card p-5 group transition-all hover:border-blue-500 relative overflow-hidden bg-transparent border border-white/10 shadow-xl">
-                  <div className={`absolute left-0 top-0 bottom-0 w-1 ${
-                    ann.priority === 'high' ? 'bg-red-500' : ann.priority === 'medium' ? 'bg-blue-500' : 'bg-white/20'
-                  }`}></div>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="font-black text-lg text-white uppercase italic tracking-tight">{ann.title}</h3>
-                        <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest ${
-                          ann.priority === 'high' ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                        }`}>
-                          {ann.priority}
-                        </span>
-                      </div>
-                      <p className="text-white/70 text-sm line-clamp-2 mb-4 leading-relaxed font-medium">
-                        {ann.message}
-                      </p>
-                      <div className="flex flex-wrap items-center gap-4 text-[9px] font-bold text-white/40 uppercase tracking-widest italic">
-                        <div className="flex items-center gap-1.5">
-                          <Clock className="w-3.5 h-3.5" />
-                          Posted {format(parseISO(ann.createdAt), 'MMM d, h:mm a')}
+                        <div key={ann.id} className="bento-card p-6 group transition-all hover:border-blue-500 relative overflow-hidden bg-slate-900/40 backdrop-blur-md border border-white/10 shadow-2xl">
+                          <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${
+                            ann.priority === 'high' ? 'bg-red-500 shadow-[0_0_15px_rgba(239,68,68,0.5)]' : ann.priority === 'medium' ? 'bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.5)]' : 'bg-white/20'
+                          }`}></div>
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1 text-left">
+                              <div className="flex flex-wrap items-center gap-3 mb-3">
+                                <h3 className="font-black text-xl text-white uppercase italic tracking-tight leading-tight">{ann.title}</h3>
+                                <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest ${
+                                  ann.priority === 'high' ? 'bg-red-500/20 text-red-100 border border-red-500/30' : 'bg-blue-500/20 text-blue-100 border border-blue-500/30'
+                                }`}>
+                                  {ann.priority}
+                                </span>
+                              </div>
+                              <p className="text-white text-base mb-6 leading-relaxed font-medium drop-shadow-sm">
+                                {ann.message}
+                              </p>
+                              <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-[10px] font-black text-white/50 uppercase tracking-[0.2em] italic border-t border-white/5 pt-4">
+                                <div className="flex items-center gap-2">
+                                  <Clock className="w-4 h-4 text-blue-500" />
+                                  Posted {format(parseISO(ann.createdAt), 'MMM d, h:mm a')}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <AlertCircle className="w-4 h-4 text-orange-500" />
+                                  Ends {format(parseISO(ann.expiresAt), 'MMM d')}
+                                </div>
+                                <button 
+                                  onClick={() => {
+                                    setSelectedAnnouncement(ann);
+                                    setIsViewOpen(true);
+                                  }}
+                                  className="flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors"
+                                >
+                                  <Eye className="w-4 h-4" />
+                                  Seen by {ann.viewedBy.length}
+                                </button>
+                              </div>
+                            </div>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              onClick={() => handleDelete(ann.id)}
+                              className="text-white/20 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all shrink-0"
+                            >
+                              <Trash2 className="w-5 h-5" />
+                            </Button>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1.5">
-                          <AlertCircle className="w-3.5 h-3.5" />
-                          Expires {format(parseISO(ann.expiresAt), 'MMM d')}
-                        </div>
-                        <button 
-                          onClick={() => {
-                            setSelectedAnnouncement(ann);
-                            setIsViewOpen(true);
-                          }}
-                          className="flex items-center gap-1.5 text-blue-600 hover:underline font-semibold"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                          Viewed by {ann.viewedBy.length} employees
-                        </button>
-                      </div>
-                    </div>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      onClick={() => handleDelete(ann.id)}
-                      className="text-slate-400 hover:text-red-500 hover:bg-red-50"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
               ))
             )}
           </div>
         </section>
 
         {/* Past Section */}
-        <section className="pb-10">
-          <div className="flex items-center gap-2 mb-4">
-            <History className="w-4 h-4 text-slate-400" />
-            <h2 className="text-sm font-bold uppercase tracking-widest text-slate-500">Archived History</h2>
+        <section className="pb-24">
+          <div className="flex items-center gap-3 mb-6">
+            <History className="w-5 h-5 text-blue-400" />
+            <h2 className="text-xs font-black uppercase tracking-[0.5em] text-white/30 italic">Archived Repository</h2>
           </div>
-          <div className="space-y-3">
+          <div className="grid gap-3">
             {pastAnnouncements.map(ann => (
-              <div key={ann.id} className="bg-slate-50 dark:bg-slate-800/40 p-4 rounded-xl flex items-center justify-between border border-slate-200 dark:border-slate-700 opacity-70 hover:opacity-100 transition-opacity">
-                <div>
-                  <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm">{ann.title}</h4>
-                  <div className="text-[10px] text-slate-500 mt-1 uppercase font-semibold">
-                    Expired {format(parseISO(ann.expiresAt), 'MMM d, yyyy')} • Seen by {ann.viewedBy.length}
+              <div key={ann.id} className="bg-slate-900/40 backdrop-blur-sm p-5 rounded-[24px] flex items-center justify-between border border-white/5 opacity-60 hover:opacity-100 transition-all group overflow-hidden relative">
+                <div className="absolute inset-y-0 left-0 w-1 bg-white/10 group-hover:bg-blue-500/50 transition-colors" />
+                <div className="text-left">
+                  <h4 className="font-black text-white text-base uppercase italic tracking-tight">{ann.title}</h4>
+                  <div className="text-[10px] text-white/40 mt-1.5 uppercase font-black tracking-widest italic flex items-center gap-3">
+                    <span>Expired {format(parseISO(ann.expiresAt), 'MMM d, yyyy')}</span>
+                    <span className="w-1 h-1 rounded-full bg-white/20" />
+                    <span className="text-blue-400">Audited by {ann.viewedBy.length}</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button variant="ghost" size="icon" onClick={() => {
+                <div className="flex items-center gap-1 sm:gap-2">
+                  <Button variant="ghost" size="icon" className="text-white/20 hover:text-blue-400 hover:bg-blue-400/10 rounded-xl" onClick={() => {
                     setSelectedAnnouncement(ann);
                     setIsViewOpen(true);
                   }}>
-                    <Eye className="w-4 h-4 text-slate-400" />
+                    <Eye className="w-5 h-5" />
                   </Button>
-                  <Button variant="ghost" size="icon" onClick={() => handleDelete(ann.id)}>
-                    <Trash2 className="w-4 h-4 text-slate-400" />
+                  <Button variant="ghost" size="icon" className="text-white/20 hover:text-red-400 hover:bg-red-400/10 rounded-xl" onClick={() => handleDelete(ann.id)}>
+                    <Trash2 className="w-5 h-5" />
                   </Button>
                 </div>
               </div>

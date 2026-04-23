@@ -142,8 +142,8 @@ export default function LandingPage() {
               <span className="text-white font-black text-xl">L</span>
             </div>
             <div className="flex flex-col">
-              <span className="font-black text-2xl tracking-tighter text-white leading-none">
-                LEO <span className="text-blue-500 font-black italic tracking-normal">ENTERPRISES</span>
+              <span className="font-black text-2xl tracking-tighter text-white leading-none group-hover:text-blue-500 transition-colors">
+                LEO <span className="font-black italic tracking-tight text-blue-500 underline decoration-blue-500/30 underline-offset-4">ENTERPRISES</span>
               </span>
               <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em] mt-1 italic">Industrial Multi-Service</span>
             </div>
@@ -533,13 +533,13 @@ export default function LandingPage() {
 
       <footer className="bg-transparent py-24 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center text-center">
-          <div className="flex items-center gap-3 mb-10 group cursor-pointer">
-            <div className="w-14 h-14 bg-white text-slate-950 rounded-2xl flex items-center justify-center rotate-3 shadow-2xl group-hover:rotate-0 transition-transform duration-500">
+          <div className="flex items-center gap-3 group cursor-pointer">
+            <div className="w-14 h-14 bg-white text-slate-950 rounded-2xl flex items-center justify-center rotate-3 shadow-2xl group-hover:rotate-0 transition-transform duration-500 border-2 border-blue-600">
               <span className="font-black text-3xl">L</span>
             </div>
             <div className="flex flex-col text-left">
-              <span className="font-bold text-3xl tracking-tight leading-none uppercase italic">LEO <span className="text-slate-500">ENTERPRISES</span></span>
-              <span className="text-[11px] font-bold text-blue-500 uppercase tracking-widest mt-1">Operational Command System</span>
+              <span className="font-black text-3xl tracking-tight leading-none uppercase italic text-white">LEO <span className="text-blue-500">ENTERPRISES</span></span>
+              <span className="text-[11px] font-bold text-blue-400 uppercase tracking-[0.3em] mt-1">Operational Command System</span>
             </div>
           </div>
           

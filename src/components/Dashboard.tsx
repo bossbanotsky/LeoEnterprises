@@ -413,13 +413,13 @@ export default function Dashboard() {
             <ChevronLeft className="w-4 h-4" />
           </button>
 
-          <div className="flex items-center gap-1.5 px-1 py-1 bg-white/5 rounded-xl border border-white/10">
+          <div className="flex items-center gap-1.5 px-1 py-1 bg-slate-950/40 rounded-xl border border-white/10">
             <Calendar className="w-3.5 h-3.5 text-blue-500 ml-1" />
             <Input
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="border-0 h-7 text-xs font-black bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 w-[110px] p-0"
+              className="border-0 h-7 text-xs font-black bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 w-[110px] p-0 text-white [color-scheme:dark]"
             />
           </div>
 
@@ -568,31 +568,31 @@ export default function Dashboard() {
                   <Calendar className="w-4 h-4 text-blue-400" /> Period
                 </h3>
               </div>
-              <div className="flex items-center gap-2">
-                <Input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setStartDate(val);
-                    localStorage.setItem("payrollStartDate", val);
-                    window.dispatchEvent(new Event("payrollDateChange"));
-                  }}
-                  className="h-9 text-xs rounded-xl bg-white/5 border-white/10 text-white"
-                />
-                <span className="text-white/40">to</span>
-                <Input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setEndDate(val);
-                    localStorage.setItem("payrollEndDate", val);
-                    window.dispatchEvent(new Event("payrollDateChange"));
-                  }}
-                  className="h-9 text-xs rounded-xl bg-white/5 border-white/10 text-white"
-                />
-              </div>
+            <div className="flex items-center gap-2">
+              <Input
+                type="date"
+                value={startDate}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setStartDate(val);
+                  localStorage.setItem("payrollStartDate", val);
+                  window.dispatchEvent(new Event("payrollDateChange"));
+                }}
+                className="h-9 text-xs rounded-xl bg-slate-950/40 border-white/10 text-white [color-scheme:dark]"
+              />
+              <span className="text-white/40 font-black uppercase tracking-widest text-[9px]">to</span>
+              <Input
+                type="date"
+                value={endDate}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setEndDate(val);
+                  localStorage.setItem("payrollEndDate", val);
+                  window.dispatchEvent(new Event("payrollDateChange"));
+                }}
+                className="h-9 text-xs rounded-xl bg-slate-950/40 border-white/10 text-white [color-scheme:dark]"
+              />
+            </div>
             </div>
           </div>
 
@@ -656,57 +656,57 @@ export default function Dashboard() {
         </div>
 
         {/* Announcements Preview */}
-        <div className="bento-card flex-col bg-white dark:bg-slate-800 p-6 border-slate-200 dark:border-slate-700 h-full">
+        <div className="bento-card flex-col bg-slate-900/40 backdrop-blur-md p-6 border border-white/10 shadow-2xl h-full">
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-2">
-              <Megaphone className="w-4 h-4 text-blue-600" />
-              <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500">
-                Recent Notices
+              <Megaphone className="w-4 h-4 text-blue-500" />
+              <h3 className="text-[11px] font-black uppercase tracking-widest text-white/40 italic">
+                Strategic Notices
               </h3>
             </div>
             <Link
               to="/admin-dashboard/announcements"
-              className="p-1 px-2 bg-blue-50 dark:bg-blue-900/40 text-[9px] font-bold text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 transition-colors uppercase"
+              className="p-1 px-3 bg-blue-500/20 text-[9px] font-black text-blue-400 rounded-lg hover:bg-blue-500/30 transition-all uppercase tracking-widest border border-blue-500/20"
             >
-              Manage
+              Command Board
             </Link>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-4 text-left">
             {loading ? (
-              <Skeleton count={3} className="h-16 w-full mb-3" />
+              <Skeleton count={3} className="h-16 w-full mb-3 bg-white/5" />
             ) : recentAnnouncements.length === 0 ? (
-              <div className="py-10 text-center flex flex-col items-center gap-2 opacity-40">
-                <Megaphone className="w-8 h-8 text-slate-300" />
-                <p className="text-xs font-bold uppercase tracking-widest">
-                  No New Notices
+              <div className="py-10 text-center flex flex-col items-center gap-2 opacity-30">
+                <Megaphone className="w-8 h-8 text-white" />
+                <p className="text-[9px] font-black uppercase tracking-widest text-white">
+                  Clear Channel
                 </p>
               </div>
             ) : (
               recentAnnouncements.map((ann, idx) => (
                 <div
                   key={ann.id}
-                  className={`group flex flex-col gap-1 pb-4 ${idx !== recentAnnouncements.length - 1 ? "border-b border-slate-50 dark:border-slate-800" : ""}`}
+                  className={`group flex flex-col gap-1 pb-4 transition-all hover:translate-x-1 ${idx !== recentAnnouncements.length - 1 ? "border-b border-white/5" : ""}`}
                 >
                   <div className="flex items-center justify-between">
-                    <h4 className="font-bold text-xs text-slate-800 dark:text-slate-200 line-clamp-1 group-hover:text-blue-600 transition-colors">
+                    <h4 className="font-black text-xs text-white uppercase italic tracking-tight line-clamp-1 group-hover:text-blue-400 transition-colors">
                       {ann.title}
                     </h4>
                     {isPast(parseISO(ann.expiresAt)) && (
-                      <span className="text-[8px] bg-slate-100 text-slate-400 px-1.5 py-0.5 rounded font-bold uppercase">
+                      <span className="text-[7px] bg-white/5 text-white/30 px-1.5 py-0.5 rounded font-black uppercase tracking-widest border border-white/5">
                         Archived
                       </span>
                     )}
                   </div>
-                  <p className="text-[11px] text-slate-500 line-clamp-1 italic">
+                  <p className="text-[11px] text-white/60 line-clamp-2 leading-relaxed font-medium">
                     {ann.message}
                   </p>
                   <Link
                     to="/admin-dashboard/announcements"
-                    className="flex items-center gap-2 mt-1"
+                    className="flex items-center gap-2 mt-2"
                   >
-                    <div className="flex items-center gap-1 text-[9px] text-slate-400">
-                      <Eye className="w-3 h-3" /> Seen by {ann.viewedBy.length}
+                    <div className="flex items-center gap-1.5 text-[8px] font-black text-white/30 uppercase tracking-widest">
+                      <Eye className="w-3 h-3 text-blue-500/60" /> Audited by {ann.viewedBy.length}
                     </div>
                   </Link>
                 </div>

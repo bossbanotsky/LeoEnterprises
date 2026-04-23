@@ -82,8 +82,8 @@ export default function LoginPage() {
                   <LayoutGrid className="w-6 h-6 text-white" />
                 </div>
                 <div className="flex flex-col">
-                  <span className="font-black text-xs tracking-[0.2em] text-white uppercase italic leading-none">LEO</span>
-                  <span className="font-bold text-[8px] tracking-[0.1em] text-white/60 uppercase mt-0.5">Enterprises</span>
+                  <span className="font-black text-sm tracking-tight text-white uppercase italic leading-none">LEO <span className="text-blue-500">ENTERPRISES</span></span>
+                  <span className="font-bold text-[8px] tracking-[0.2em] text-white/40 uppercase mt-1">Operational Command</span>
                 </div>
               </div>
             </Link>

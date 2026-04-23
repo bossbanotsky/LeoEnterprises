@@ -160,7 +160,7 @@ export default function GalleryManagement() {
 
   return (
     <div className="space-y-6 w-full max-w-full overflow-hidden">
-      <div className="flex gap-2 sm:gap-3 p-1 sm:p-1.5 bg-white/5 rounded-3xl w-fit border border-white/10 backdrop-blur-xl mx-auto sm:ml-0">
+      <div className="flex gap-2 sm:gap-3 p-1 sm:p-1.5 bg-white/5 rounded-3xl w-fit border border-white/10 backdrop-blur-xl ml-0">
         <button 
           className={`flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-2xl font-black uppercase tracking-widest text-[9px] sm:text-[10px] transition-all ${activeTab === 'images' ? 'bg-white/10 text-white shadow-xl' : 'text-white/40 hover:text-white'}`}
           onClick={() => setActiveTab('images')}

@@ -466,20 +466,20 @@ export default function Messenger() {
   );
 
   return (
-    <div className="h-[calc(100vh-140px)] flex flex-col bg-white dark:bg-slate-900 rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-xl relative mt-2 mb-2">
+    <div className="h-[calc(100vh-160px)] flex flex-col bg-slate-950/40 backdrop-blur-xl rounded-[32px] overflow-hidden border border-white/10 shadow-2xl relative mt-2 mb-2">
       <div className="flex h-full">
         {/* Sidebar */}
-        <div className={`w-full md:w-80 flex-col border-r border-slate-100 dark:border-slate-800 ${isMobileView && mobileChatOpen ? 'hidden' : 'flex'}`}>
-          <div className="p-4 border-b border-slate-100 dark:border-slate-800">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
-                <MessageSquare className="w-5 h-5 text-blue-600" /> Messenger
+        <div className={`w-full md:w-80 flex-col border-r border-white/5 ${isMobileView && mobileChatOpen ? 'hidden' : 'flex'} bg-black/20`}>
+          <div className="p-6 border-b border-white/5">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-xl font-black text-white tracking-tighter flex items-center gap-2 uppercase italic">
+                <MessageSquare className="w-5 h-5 text-blue-500" /> Ops-Chat
               </h2>
               <div className="flex items-center gap-1">
                 <Button 
                   size="sm" 
                   variant="ghost" 
-                  className={`rounded-xl h-9 w-9 p-0 ${soundEnabled ? 'text-blue-600' : 'text-slate-400'}`}
+                  className={`rounded-xl h-10 w-10 p-0 transition-all ${soundEnabled ? 'text-blue-400 bg-blue-500/10' : 'text-white/20'}`}
                   onClick={() => setSoundEnabled(!soundEnabled)}
                 >
                   {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
@@ -487,26 +487,28 @@ export default function Messenger() {
                 <Button 
                   size="sm" 
                   variant="ghost" 
-                  className="rounded-xl h-9 w-9 p-0"
+                  className="rounded-xl h-10 w-10 p-0 text-white/20 hover:text-white"
                   onClick={() => setShowContacts(true)}
                 >
-                  <Users className="w-5 h-5 text-slate-500" />
+                  <Users className="w-5 h-5" />
                 </Button>
               </div>
             </div>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
               <Input 
-                placeholder="Search chats..." 
-                className="pl-9 h-10 rounded-xl bg-slate-50 dark:bg-slate-800 border-none text-sm"
+                placeholder="Secure frequency..." 
+                className="pl-11 h-12 rounded-[20px] bg-slate-950/60 border-white/5 text-sm font-bold text-white placeholder:text-white/20 focus:ring-blue-500/30"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-2 space-y-1">
+          <div className="flex-1 overflow-y-auto p-3 space-y-2 no-scrollbar">
             {loading ? (
-              <div className="space-y-1 p-2">
-                <Skeleton count={6} className="h-16 w-full rounded-2xl mb-1" />
+              <div className="space-y-3 p-2">
+                <Skeleton count={6} className="h-20 w-full rounded-[24px] bg-white/5" />
               </div>
             ) : chats.map(chat => (
               <button
@@ -515,34 +517,34 @@ export default function Messenger() {
                   setActiveChat(chat);
                   setMobileChatOpen(true);
                 }}
-                className={`w-full p-3 rounded-2xl flex items-center gap-3 transition-all ${
+                className={`w-full p-4 rounded-[28px] flex items-center gap-4 transition-all group relative overflow-hidden ${
                   activeChat?.id === chat.id 
-                    ? 'bg-blue-50 dark:bg-blue-900/30 ring-1 ring-blue-100 dark:ring-blue-800' 
-                    : 'hover:bg-slate-50 dark:hover:bg-slate-800'
+                    ? 'bg-blue-600/20 border border-blue-500/30' 
+                    : 'hover:bg-white/5 border border-transparent'
                 }`}
               >
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-sm overflow-hidden border border-slate-100 dark:border-slate-800 bg-slate-100 dark:bg-slate-800`}>
+                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-lg overflow-hidden border border-white/10 bg-slate-900 group-hover:scale-105 transition-transform`}>
                   {chat.photoURL ? (
                     <img src={chat.photoURL} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                   ) : (
-                    <div className={`w-full h-full flex items-center justify-center ${chat.type === 'group' ? 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-600'}`}>
-                      {chat.type === 'group' ? <Users className="w-6 h-6" /> : <User className="w-6 h-6" />}
+                    <div className={`w-full h-full flex items-center justify-center ${chat.type === 'group' ? 'bg-indigo-500/20 text-indigo-400' : 'bg-slate-800 text-white/20'}`}>
+                      {chat.type === 'group' ? <Users className="w-7 h-7" /> : <User className="w-7 h-7" />}
                     </div>
                   )}
                 </div>
                 <div className="flex-1 text-left min-w-0">
-                  <div className="flex justify-between items-baseline">
-                    <h3 className="font-bold text-sm text-slate-900 dark:text-white truncate">{getChatName(chat)}</h3>
+                  <div className="flex justify-between items-baseline mb-1">
+                    <h3 className="font-black text-sm text-white truncate uppercase italic tracking-tight">{getChatName(chat)}</h3>
                     {chat.lastMessageAt && (
-                      <span className="text-[10px] text-slate-400">{format(new Date(chat.lastMessageAt), 'p')}</span>
+                      <span className="text-[9px] font-black text-white/30 uppercase tracking-widest">{format(new Date(chat.lastMessageAt), 'p')}</span>
                     )}
                   </div>
-                  <div className="flex justify-between items-center mt-0.5">
-                    <p className={`text-xs truncate flex-1 ${chat.unreadCounts?.[user?.uid || ''] ? 'font-bold text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400'}`}>
-                      {chat.lastSenderId === user?.uid ? 'You: ' : ''}{chat.lastMessage || 'No messages yet'}
+                  <div className="flex justify-between items-center">
+                    <p className={`text-[11px] truncate flex-1 leading-none ${chat.unreadCounts?.[user?.uid || ''] ? 'font-black text-white' : 'text-white/40 font-medium'}`}>
+                      {chat.lastSenderId === user?.uid ? 'YOU: ' : ''}{chat.lastMessage || 'Channel established...'}
                     </p>
                     {chat.unreadCounts?.[user?.uid || ''] ? (
-                      <div className="ml-2 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-in zoom-in duration-300">
+                      <div className="ml-3 w-5 h-5 bg-blue-600 text-white text-[10px] font-black rounded-full flex items-center justify-center shadow-[0_0_15px_rgba(37,99,235,0.4)]">
                         {chat.unreadCounts[user?.uid || '']}
                       </div>
                     ) : null}
@@ -554,29 +556,32 @@ export default function Messenger() {
         </div>
 
         {/* Chat Area */}
-        <div className={`flex-1 flex flex-col bg-slate-50 dark:bg-slate-950 transition-all ${isMobileView && !mobileChatOpen ? 'hidden md:flex' : 'flex'}`}>
+        <div className={`flex-1 flex flex-col transition-all ${isMobileView && !mobileChatOpen ? 'hidden md:flex' : 'flex'} bg-black/40`}>
           {activeChat ? (
             <>
               {/* Chat Header */}
-              <div className="h-16 flex items-center justify-between px-6 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 z-10 shrink-0">
-                <div className="flex items-center gap-3">
+              <div className="h-20 flex items-center justify-between px-8 bg-slate-950/60 backdrop-blur-md border-b border-white/5 z-10 shrink-0">
+                <div className="flex items-center gap-4 text-left">
                   {isMobileView && (
-                    <Button variant="ghost" size="icon" onClick={() => setMobileChatOpen(false)} className="mr-1">
-                      <ChevronLeft className="w-5 h-5" />
+                    <Button variant="ghost" size="icon" onClick={() => setMobileChatOpen(false)} className="mr-1 text-white/40">
+                      <ChevronLeft className="w-6 h-6" />
                     </Button>
                   )}
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800`}>
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center overflow-hidden border border-white/10 bg-slate-900`}>
                     {activeChat.photoURL ? (
                       <img src={activeChat.photoURL} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                     ) : (
-                      <div className={`w-full h-full flex items-center justify-center ${activeChat.type === 'group' ? 'bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600' : 'bg-slate-50 dark:bg-slate-800 text-slate-600'}`}>
-                        {activeChat.type === 'group' ? <Users className="w-5 h-5" /> : <User className="w-5 h-5" />}
+                      <div className={`w-full h-full flex items-center justify-center ${activeChat.type === 'group' ? 'bg-indigo-500/20 text-indigo-400' : 'bg-slate-800 text-white/20'}`}>
+                        {activeChat.type === 'group' ? <Users className="w-6 h-6" /> : <User className="w-6 h-6" />}
                       </div>
                     )}
                   </div>
                   <div>
-                    <h2 className="font-bold text-slate-900 dark:text-white leading-tight">{getChatName(activeChat)}</h2>
-                    <span className="text-[10px] text-emerald-500 font-bold uppercase tracking-wider">Online</span>
+                    <h2 className="font-black text-lg text-white uppercase italic tracking-tight leading-none">{getChatName(activeChat)}</h2>
+                    <div className="flex items-center gap-2 mt-1.5">
+                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)] animate-pulse" />
+                      <span className="text-[9px] text-emerald-400 font-black uppercase tracking-[0.2em] italic">Established</span>
+                    </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
