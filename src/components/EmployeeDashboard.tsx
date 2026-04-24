@@ -555,7 +555,9 @@ export default function EmployeeDashboard() {
                 <tr>
                   <th className="px-4 py-3">Date</th>
                   <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3">Hours</th>
+                  <th className="px-4 py-3 text-center">In</th>
+                  <th className="px-4 py-3 text-center">Out</th>
+                  <th className="px-4 py-3 text-right">Hours</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
@@ -565,7 +567,9 @@ export default function EmployeeDashboard() {
                     date: date,
                     status: 'absent',
                     regularHours: 0,
-                    otHours: 0
+                    otHours: 0,
+                    timeIn: '',
+                    timeOut: ''
                   } as Attendance;
 
                   const dateObj = parseISO(date);
@@ -574,7 +578,7 @@ export default function EmployeeDashboard() {
 
                   return (
                     <tr key={date}>
-                      <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">{format(dateObj, 'EEE, MMM dd')}</td>
+                      <td className="px-4 py-3 font-medium text-slate-900 dark:text-white whitespace-nowrap">{format(dateObj, 'EEE, MMM dd')}</td>
                       <td className="px-4 py-3">
                         <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
                           displayStatus === 'present' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
@@ -586,8 +590,14 @@ export default function EmployeeDashboard() {
                           {displayStatus}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-slate-500 dark:text-slate-400">
-                        {displayHours}h {(att.otHours || 0) > 0 && `(+${att.otHours}h OT)`}
+                      <td className="px-4 py-3 text-center text-[10px] font-mono text-slate-500 dark:text-slate-400">
+                        {att.timeIn || '—'}
+                      </td>
+                      <td className="px-4 py-3 text-center text-[10px] font-mono text-slate-500 dark:text-slate-400">
+                        {att.timeOut || '—'}
+                      </td>
+                      <td className="px-4 py-3 text-right text-slate-500 dark:text-slate-400 font-medium font-mono text-xs">
+                        {displayHours}h{(att.otHours || 0) > 0 && <span className="text-emerald-500 ml-1">+{att.otHours}h</span>}
                       </td>
                     </tr>
                   );

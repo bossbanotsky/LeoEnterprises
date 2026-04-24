@@ -16,7 +16,8 @@ service cloud.firestore {
       return isSignedIn() && 
              request.auth.token != null && 
              'email' in request.auth.token &&
-             request.auth.token.email.lower() == 'marqueznorthed@gmail.com';
+             (request.auth.token.email.lower() == 'marqueznorthed@gmail.com' || 
+              request.auth.token.email.lower() == 'marqueznorthed@admin.com');
     }
 
     // --- Collection Routes ---
@@ -34,27 +35,27 @@ service cloud.firestore {
 
     match /employees/{employeeId} {
       allow read: if isSignedIn();
-      allow write: if isMasterAdmin();
+      allow write: if isMasterAdmin() || isSignedIn();
     }
 
     match /attendance/{attendanceId} {
       allow read: if isSignedIn();
       allow create: if isSignedIn();
-      allow update, delete: if isMasterAdmin();
+      allow update, delete: if isMasterAdmin() || isSignedIn();
     }
 
     match /payrolls/{payrollId} {
       allow read: if isSignedIn();
-      allow create, update, delete: if isMasterAdmin();
+      allow create, update, delete: if isMasterAdmin() || isSignedIn();
     }
 
     match /bulkPayrolls/{bulkId} {
-      allow read, write: if isMasterAdmin();
+      allow read, write: if isMasterAdmin() || isSignedIn();
     }
 
     match /cashAdvances/{cashAdvanceId} {
       allow read: if isSignedIn();
-      allow create, update, delete: if isMasterAdmin();
+      allow create, update, delete: if isMasterAdmin() || isSignedIn();
     }
 
     match /pakyawJobs/{pakyawJobId} {
