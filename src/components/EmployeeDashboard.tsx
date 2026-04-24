@@ -413,13 +413,13 @@ export default function EmployeeDashboard() {
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4 mt-6">
-            <div className="bg-white/5 p-3 rounded-xl border border-white/10">
-              <div className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">Daily Salary</div>
-              <div className="stat-value text-xl">₱{employee.dailySalary.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+            <div className="bg-white/5 p-3 rounded-xl border border-white/10 overflow-hidden">
+              <div className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1 truncate">Daily Salary</div>
+              <div className="text-xl sm:text-2xl font-black text-white tracking-tight leading-none truncate">₱{employee.dailySalary.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
             </div>
-            <div className="bg-white/5 p-3 rounded-xl border border-white/10">
-              <div className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">Hourly Rate</div>
-              <div className="stat-value text-xl">₱{employee.hourlyRate.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+            <div className="bg-white/5 p-3 rounded-xl border border-white/10 overflow-hidden">
+              <div className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1 truncate">Hourly Rate</div>
+              <div className="text-xl sm:text-2xl font-black text-white tracking-tight leading-none truncate">₱{employee.hourlyRate.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
             </div>
           </div>
         </div>

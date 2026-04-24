@@ -9,6 +9,7 @@ import {
 } from "firebase/firestore";
 import { db, handleFirestoreError, OperationType } from "../firebase";
 import { useAuth } from "../contexts/AuthContext";
+import { useData } from "../contexts/DataContext";
 import { useCompanyInfo } from "../hooks/useCompanyInfo";
 import {
   Announcement,
@@ -54,6 +55,7 @@ import { ErrorBoundary } from "./ErrorBoundary";
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const { employees: contextEmployees, pakyawJobs: contextPakyawJobs, cashAdvances: contextCashAdvances, announcements: contextAnnouncements, loading: dataLoading } = useData();
   const { companyInfo } = useCompanyInfo();
   const [selectedDate, setSelectedDate] = useState(
     () =>
@@ -126,30 +128,26 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || dataLoading) return;
 
-    const fetchData = async () => {
+    // Use context data instead of fetching
+    const activeEmpIds = new Set<string>();
+    const emps = contextEmployees.map(emp => {
+      if ((emp.status === "active" || !emp.status) && emp.role !== "ceo" && emp.role !== "admin") {
+        activeEmpIds.add(emp.id);
+      }
+      return emp;
+    });
+    setEmployees(emps);
+    setStats((prev) => ({ ...prev, totalEmployees: activeEmpIds.size }));
+    setPakyawJobs(contextPakyawJobs);
+    setCashAdvances(contextCashAdvances);
+    setRecentAnnouncements(contextAnnouncements.slice(0, 3));
+
+    const fetchAttendance = async () => {
       try {
-        const { getDocs, collection, query, where, orderBy, limit } = await import('firebase/firestore');
+        const { getDocs, collection, query, where } = await import('firebase/firestore');
         
-        // 1. Employees (Single Fetch)
-        const empsSnapshot = await getDocs(collection(db, "employees"));
-        const emps: Employee[] = [];
-        const activeEmpIds = new Set<string>();
-        empsSnapshot.forEach((doc) => {
-          const data = doc.data();
-          emps.push({ id: doc.id, ...data } as Employee);
-          if (
-            (data.status === "active" || !data.status) &&
-            data.role !== "ceo" &&
-            data.role !== "admin"
-          ) {
-            activeEmpIds.add(doc.id);
-          }
-        });
-        setEmployees(emps);
-        setStats((prev) => ({ ...prev, totalEmployees: activeEmpIds.size }));
-
         // 2. Attendance for current dashboard date
         const attDayQ = query(
           collection(db, "attendance"),
@@ -197,7 +195,7 @@ export default function Dashboard() {
           presentIds, utIds, hdIds, pakyawIds, absentIds,
         }));
 
-        // 3. Attendance for Projection Range (Optimization: Fetch only needed range)
+        // 3. Attendance for Projection Range
         const attRangeQ = query(
           collection(db, "attendance"),
           where("date", ">=", startDate),
@@ -207,29 +205,6 @@ export default function Dashboard() {
         const allAtts: Attendance[] = [];
         attRangeSnapshot.forEach((doc) => allAtts.push({ id: doc.id, ...doc.data() } as Attendance));
         setAttendances(allAtts);
-
-        // 4. Pakyaw Jobs
-        const pjSnapshot = await getDocs(collection(db, "pakyawJobs"));
-        const pj: PakyawJob[] = [];
-        pjSnapshot.forEach((doc) => pj.push({ id: doc.id, ...doc.data() } as PakyawJob));
-        setPakyawJobs(pj);
-
-        // 5. Cash Advances
-        const caSnapshot = await getDocs(collection(db, "cashAdvances"));
-        const ca: CashAdvance[] = [];
-        caSnapshot.forEach((doc) => ca.push({ id: doc.id, ...doc.data() } as CashAdvance));
-        setCashAdvances(ca);
-
-        // 6. Announcements
-        const qAnn = query(
-          collection(db, "announcements"),
-          orderBy("createdAt", "desc"),
-          limit(3),
-        );
-        const annSnapshot = await getDocs(qAnn);
-        const dataAnn: Announcement[] = [];
-        annSnapshot.forEach((doc) => dataAnn.push({ id: doc.id, ...doc.data() } as Announcement));
-        setRecentAnnouncements(dataAnn);
         
         setLoading(false);
       } catch (error: any) {
@@ -240,8 +215,8 @@ export default function Dashboard() {
       }
     };
 
-    fetchData();
-  }, [user, selectedDate, startDate, endDate]);
+    fetchAttendance();
+  }, [user, selectedDate, startDate, endDate, contextEmployees, contextPakyawJobs, contextCashAdvances, contextAnnouncements, dataLoading]);
 
   const projection = useMemo(() => {
     let grandTotal = 0;

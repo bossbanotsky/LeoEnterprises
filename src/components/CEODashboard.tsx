@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "../firebase";
 import { useAuth } from "../contexts/AuthContext";
+import { useData } from "../contexts/DataContext";
 import {
   Employee,
   Attendance,
@@ -37,6 +38,7 @@ import html2canvas from "html2canvas";
 
 export default function CEODashboard() {
   const { user } = useAuth();
+  const { employees: contextEmployees, pakyawJobs: contextPakyawJobs, cashAdvances: contextCashAdvances, loading: dataLoading } = useData();
   const { companyInfo } = useCompanyInfo();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [attendances, setAttendances] = useState<Attendance[]>([]);
@@ -81,43 +83,43 @@ export default function CEODashboard() {
   const payslipRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || dataLoading) return;
+
+    setEmployees(contextEmployees);
+    setPakyawJobs(contextPakyawJobs);
+    setCashAdvances(contextCashAdvances);
 
     const fetchData = async () => {
       try {
-        const { getDocs, collection } = await import('firebase/firestore');
+        const { getDocs, collection, query, where, limit, orderBy } = await import('firebase/firestore');
         
-        // Parallel fetching for faster response and clean quota usage
-        const [empsSnap, attsSnap, payrollsSnap, pjSnap, caSnap] = await Promise.all([
-          getDocs(collection(db, "employees")),
-          getDocs(collection(db, "attendance")),
-          getDocs(collection(db, "payrolls")),
-          getDocs(collection(db, "pakyawJobs")),
-          getDocs(collection(db, "cashAdvances"))
-        ]);
+        // 1. Attendance for Projection Range ONLY
+        const attRangeQ = query(
+          collection(db, "attendance"),
+          where("date", ">=", startDate),
+          where("date", "<=", endDate)
+        );
 
-        const emps: Employee[] = [];
-        empsSnap.forEach((doc) => emps.push({ id: doc.id, ...doc.data() } as Employee));
-        setEmployees(emps.sort((a, b) => (a.fullName || "").localeCompare(b.fullName || "")));
+        // 2. Paid payrolls ONLY
+        const payrollQ = query(
+          collection(db, "payrolls"),
+          where("status", "==", "paid"),
+          orderBy("createdAt", "desc"),
+          limit(20)
+        );
+
+        const [attsSnap, payrollsSnap] = await Promise.all([
+          getDocs(attRangeQ),
+          getDocs(payrollQ)
+        ]);
 
         const atts: Attendance[] = [];
         attsSnap.forEach((doc) => atts.push({ id: doc.id, ...doc.data() } as Attendance));
         setAttendances(atts);
 
         const payrollRes: Payroll[] = [];
-        payrollsSnap.forEach((doc) => {
-          const data = doc.data();
-          if (data.status === "paid") payrollRes.push({ id: doc.id, ...data } as Payroll);
-        });
-        setPayrolls(payrollRes.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
-
-        const pj: PakyawJob[] = [];
-        pjSnap.forEach((doc) => pj.push({ id: doc.id, ...doc.data() } as PakyawJob));
-        setPakyawJobs(pj);
-
-        const ca: CashAdvance[] = [];
-        caSnap.forEach((doc) => ca.push({ id: doc.id, ...doc.data() } as CashAdvance));
-        setCashAdvances(ca);
+        payrollsSnap.forEach((doc) => payrollRes.push({ id: doc.id, ...doc.data() } as Payroll));
+        setPayrolls(payrollRes);
 
         setLoading(false);
       } catch (error: any) {
@@ -132,7 +134,7 @@ export default function CEODashboard() {
     };
 
     fetchData();
-  }, [user]);
+  }, [user, startDate, endDate, contextEmployees, contextPakyawJobs, contextCashAdvances, dataLoading]);
 
   // Calculate upcoming payroll projections
   const projection = useMemo(() => {
