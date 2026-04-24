@@ -90,6 +90,7 @@ export interface Payroll {
   totalPay: number;
   bulkId: string | null;
   status?: 'paid';
+  dailyAttendanceLog?: { date: string, status: string, regHrs: number, otHrs: number, isWorkDay: boolean }[];
   uid: string;
   generatedAt: string;
   createdAt: string;

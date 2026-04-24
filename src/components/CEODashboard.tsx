@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { collection, onSnapshot } from "firebase/firestore";
+import { collection, onSnapshot, query, where, orderBy } from "firebase/firestore";
 import { db } from "../firebase";
 import { useAuth } from "../contexts/AuthContext";
 import { useData } from "../contexts/DataContext";
@@ -104,51 +104,37 @@ export default function CEODashboard() {
     setPakyawJobs(contextPakyawJobs);
     setCashAdvances(contextCashAdvances);
 
-    const fetchData = async () => {
-      try {
-        const { getDocs, collection, query, where, limit, orderBy } = await import('firebase/firestore');
-        
-        // 1. Attendance for Projection Range ONLY
-        const attRangeQ = query(
-          collection(db, "attendance"),
-          where("date", ">=", startDate),
-          where("date", "<=", endDate)
-        );
+    const qAtt = query(
+      collection(db, "attendance"),
+      where("date", ">=", startDate),
+      where("date", "<=", endDate)
+    );
+    const unsubAttCount = onSnapshot(qAtt, (snapshot) => {
+      const atts: Attendance[] = [];
+      snapshot.forEach(doc => atts.push({ id: doc.id, ...doc.data() } as Attendance));
+      setAttendances(atts);
+    }, (error) => {
+      if (!error?.message?.toLowerCase().includes('quota')) console.error("CEO Att Error:", error);
+    });
 
-        // 2. Paid payrolls ONLY
-        const payrollQ = query(
-          collection(db, "payrolls"),
-          where("status", "==", "paid"),
-          orderBy("createdAt", "desc"),
-          limit(20)
-        );
+    const qPayroll = query(
+      collection(db, "payrolls"),
+      where("status", "==", "paid"),
+      orderBy("createdAt", "desc")
+    );
+    const unsubPayroll = onSnapshot(qPayroll, (snapshot) => {
+      const payrollRes: Payroll[] = [];
+      snapshot.forEach(doc => payrollRes.push({ id: doc.id, ...doc.data() } as Payroll));
+      setPayrolls(payrollRes);
+      setLoading(false);
+    }, (error) => {
+      if (!error?.message?.toLowerCase().includes('quota')) console.error("CEO Payroll Error:", error);
+    });
 
-        const [attsSnap, payrollsSnap] = await Promise.all([
-          getDocs(attRangeQ),
-          getDocs(payrollQ)
-        ]);
-
-        const atts: Attendance[] = [];
-        attsSnap.forEach((doc) => atts.push({ id: doc.id, ...doc.data() } as Attendance));
-        setAttendances(atts);
-
-        const payrollRes: Payroll[] = [];
-        payrollsSnap.forEach((doc) => payrollRes.push({ id: doc.id, ...doc.data() } as Payroll));
-        setPayrolls(payrollRes);
-
-        setLoading(false);
-      } catch (error: any) {
-        // Silently fail on quota
-        const isQuota = error?.message?.toLowerCase().includes('quota') || 
-                        error?.message?.toLowerCase().includes('resource-exhausted');
-        if (!isQuota) {
-          console.error("Error fetching CEO data:", error);
-        }
-        setLoading(false);
-      }
+    return () => {
+      unsubAttCount();
+      unsubPayroll();
     };
-
-    fetchData();
   }, [user, startDate, endDate, contextEmployees, contextPakyawJobs, contextCashAdvances, dataLoading]);
 
   // Calculate upcoming payroll projections
@@ -220,6 +206,7 @@ export default function CEODashboard() {
       let absentDays = 0;
       let pakyawDays = 0;
       let regularHoursCount = 0;
+      let dailyAttendanceLog: { date: string, status: string, regHrs: number, otHrs: number, isWorkDay: boolean }[] = [];
 
       combinedAttendances.forEach((att) => {
         const { regHrs, otHrs: calculatedOtHrs } = calculateAttendanceHours(att);
@@ -240,10 +227,20 @@ export default function CEODashboard() {
           !isHD;
         const isPresent = att.status === "present" && !isUT && !isHD;
 
+        let statusLabel: string = att.status;
         if (isPresent || isHD || isUT) {
-          if (isPresent) presentDays++;
-          else if (isHD) hdDays++;
-          else if (isUT) utDays++;
+          if (isPresent) {
+            presentDays++;
+            statusLabel = 'present';
+          }
+          else if (isHD) {
+            hdDays++;
+            statusLabel = 'halfday';
+          }
+          else if (isUT) {
+            utDays++;
+            statusLabel = 'undertime';
+          }
           
           regularHoursCount += regHrs;
         } else if (att.status === "absent") {
@@ -251,6 +248,14 @@ export default function CEODashboard() {
         } else if (att.status === "pakyaw") {
           pakyawDays++;
         }
+
+        dailyAttendanceLog.push({
+          date: att.date,
+          status: statusLabel,
+          regHrs,
+          otHrs: calculatedOtHrs,
+          isWorkDay: att.userId !== 'system'
+        });
       });
 
       // Pakyaw Pay Calculation (Sync with Payroll.tsx - only completed jobs)
@@ -294,6 +299,7 @@ export default function CEODashboard() {
         totalCA,
         totalToBePaid,
         attendances: combinedAttendances,
+        dailyAttendanceLog, // ADDED
         hourlyRate,
       };
     });
@@ -390,15 +396,26 @@ export default function CEODashboard() {
           startDate,
           endDate,
           employee: emp,
+          totalPresent: emp.presentDays,
+          totalHalfDays: emp.hdDays,
+          totalUndertimeDays: emp.utDays,
+          totalUndertimeHours: emp.attendances.reduce((acc, att) => {
+             const { regHrs } = calculateAttendanceHours(att);
+             return acc + (att.status === 'ut' ? regHrs : 0);
+          }, 0),
           totalRegularHours: emp.presentDays * 8 + emp.hdDays * 4 + emp.utDays * 4, // Simple approximation for view
-          regularPay: (emp.presentDays * 8 + emp.hdDays * 4 + emp.utDays * 4) * emp.hourlyRate,
+          regularPay: (emp.attendances.reduce((sum, att) => {
+             const { regHrs } = calculateAttendanceHours(att);
+             return sum + (att.status === 'absent' ? 0 : regHrs);
+          }, 0)) * emp.hourlyRate,
           totalOtHours: emp.otHours,
           otPay: emp.otHours * emp.hourlyRate,
           totalPakyawPay: emp.pakyawPay,
-          totalGrossPay: (emp.presentDays * 8 + emp.hdDays * 4 + emp.utDays * 4) * emp.hourlyRate + emp.otHours * emp.hourlyRate + emp.pakyawPay,
+          totalGrossPay: emp.totalToBePaid + emp.totalCA,
           cashAdvanceDeduction: emp.totalCA,
           totalPay: emp.totalToBePaid,
-          status: 'projection'
+          status: 'projection',
+          dailyAttendanceLog: emp.dailyAttendanceLog
         };
 
         setSelectedPayslip(mockPayslip as any);
@@ -860,17 +877,49 @@ export default function CEODashboard() {
                       <div className="flex justify-between items-center group">
                         <div className="flex flex-col">
                           <span className="text-slate-500 font-bold text-[10px] uppercase tracking-wide">Basic Pay</span>
-                          <span className="text-slate-900 font-medium">{selectedPayslip.totalRegularHours} Regular Hours</span>
+                          <span className="text-slate-900 font-medium">
+                            {selectedPayslip.totalPresent + (selectedPayslip.totalHalfDays || 0) + (selectedPayslip.totalUndertimeDays || 0)} Work Days
+                          </span>
                         </div>
                         <span className="font-black text-slate-900">₱ {selectedPayslip.regularPay.toFixed(2)}</span>
                       </div>
-                      <div className="flex justify-between items-center group">
-                        <div className="flex flex-col">
-                          <span className="text-green-600 font-bold text-[10px] uppercase tracking-wide">Overtime</span>
-                          <span className="text-slate-900 font-medium">{selectedPayslip.totalOtHours} OT Hours</span>
+                      
+                      {selectedPayslip.totalOtHours > 0 && (
+                        <div className="flex justify-between items-center group">
+                          <div className="flex flex-col">
+                            <span className="text-green-600 font-bold text-[10px] uppercase tracking-wide">Overtime</span>
+                            <span className="text-slate-900 font-medium">
+                              {selectedPayslip.totalOtHours.toFixed(1)} Hrs @ ₱{((selectedPayslip.employee?.dailySalary || 0) / 8).toFixed(2)}/hr
+                            </span>
+                          </div>
+                          <span className="font-black text-green-600">₱ {selectedPayslip.otPay.toFixed(2)}</span>
                         </div>
-                        <span className="font-black text-green-600">₱ {selectedPayslip.otPay.toFixed(2)}</span>
-                      </div>
+                      )}
+
+                      {selectedPayslip.totalHalfDays > 0 && (
+                        <div className="flex justify-between items-center group border-t border-slate-50 pt-1">
+                          <div className="flex flex-col">
+                            <span className="text-amber-600 font-bold text-[10px] uppercase tracking-wide">Half-Day Total</span>
+                            <span className="text-slate-500 text-[10px]">
+                              {selectedPayslip.totalHalfDays} Days @ 4.0 Hrs/day
+                            </span>
+                          </div>
+                          <span className="font-bold text-slate-400">Incl. in Basic</span>
+                        </div>
+                      )}
+
+                      {selectedPayslip.totalUndertimeHours > 0 && (
+                        <div className="flex justify-between items-center group border-t border-slate-50 pt-1">
+                          <div className="flex flex-col">
+                            <span className="text-amber-600 font-bold text-[10px] uppercase tracking-wide">Undertime Hours</span>
+                            <span className="text-slate-900 font-medium font-mono text-[11px]">
+                              {selectedPayslip.totalUndertimeHours.toFixed(1)} Hrs Worked
+                            </span>
+                          </div>
+                          <span className="font-bold text-slate-400">Incl. in Basic</span>
+                        </div>
+                      )}
+
                       {selectedPayslip.totalPakyawPay > 0 && (
                         <div className="flex justify-between items-center group">
                           <div className="flex flex-col">
@@ -880,6 +929,7 @@ export default function CEODashboard() {
                           <span className="font-black text-indigo-600">₱ {selectedPayslip.totalPakyawPay.toFixed(2)}</span>
                         </div>
                       )}
+                      
                       <div className="flex justify-between items-center border-t border-slate-100 pt-3 mt-3">
                         <span className="text-slate-900 font-black uppercase italic text-xs tracking-wider">Gross Total</span>
                         <span className="text-slate-900 font-black text-lg font-mono tracking-tighter italic">₱ {selectedPayslip.totalGrossPay.toFixed(2)}</span>
@@ -929,6 +979,47 @@ export default function CEODashboard() {
                   </div>
                 </div>
               </div>
+              
+              {/* Daily Attendance Logs */}
+              {selectedPayslip.dailyAttendanceLog && (
+                <div className="mt-8 pt-6 border-t-2 border-slate-100 font-sans">
+                  <h3 className="text-[10px] font-black text-slate-400 mb-4 uppercase tracking-[0.3em]">Daily Attendance Breakdown</h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+                    {selectedPayslip.dailyAttendanceLog.map((log: any, i: number) => (
+                      <div key={i} className={`p-2 rounded-xl border flex flex-col items-center justify-center text-center transition-all ${
+                        log.status === 'present' ? 'bg-green-50 border-green-100' :
+                        log.status === 'absent' ? 'bg-red-50 border-red-100' :
+                        log.status === 'halfday' ? 'bg-blue-50 border-blue-100' :
+                        log.status === 'undertime' ? 'bg-amber-50 border-amber-100' :
+                        'bg-slate-50 border-slate-100'
+                      }`}>
+                        <div className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">
+                          {format(parseISO(log.date), 'EEE, MMM dd')}
+                        </div>
+                        <div className={`text-[10px] font-black uppercase italic ${
+                          log.status === 'present' ? 'text-green-600' :
+                          log.status === 'absent' ? 'text-red-600' :
+                          log.status === 'halfday' ? 'text-blue-600' :
+                          log.status === 'undertime' ? 'text-amber-600' :
+                          'text-slate-400'
+                        }`}>
+                          {log.status}
+                        </div>
+                        {log.otHrs > 0 && (
+                          <div className="text-[8px] font-bold text-green-700 bg-green-200/50 px-1.5 py-0.5 rounded-full mt-1">
+                            +{log.otHrs}h OT
+                          </div>
+                        )}
+                        {log.status === 'undertime' && (
+                          <div className="text-[8px] font-bold text-amber-700 mt-0.5">
+                            {log.regHrs}h Work
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </DialogContent>

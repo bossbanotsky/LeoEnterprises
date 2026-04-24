@@ -4,7 +4,7 @@ import { db, handleFirestoreError, OperationType } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useCompanyInfo } from '../hooks/useCompanyInfo';
 import { Employee, Attendance, Payroll, CashAdvance, Announcement } from '../types';
-import { format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, isPast } from 'date-fns';
+import { format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, isPast, isSunday } from 'date-fns';
 import { Calendar, FileText, Wallet, Clock, User, Briefcase, CreditCard, ChevronRight, UserPen, Loader2, Upload, Megaphone, Bell, Lock, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from './ui/button';
@@ -28,8 +28,8 @@ export default function EmployeeDashboard() {
   const [cashAdvances, setCashAdvances] = useState<CashAdvance[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   
-  const [startDate, setStartDate] = useState(() => localStorage.getItem('attendanceStartDate') || format(startOfMonth(new Date()), 'yyyy-MM-dd'));
-  const [endDate, setEndDate] = useState(() => localStorage.getItem('attendanceEndDate') || format(endOfMonth(new Date()), 'yyyy-MM-dd'));
+  const [startDate, setStartDate] = useState(() => localStorage.getItem('payrollStartDate') || format(startOfMonth(new Date()), 'yyyy-MM-dd'));
+  const [endDate, setEndDate] = useState(() => localStorage.getItem('payrollEndDate') || format(endOfMonth(new Date()), 'yyyy-MM-dd'));
   const [loading, setLoading] = useState(true);
   const [loadingPayrolls, setLoadingPayrolls] = useState(true);
   const [selectedPayslip, setSelectedPayslip] = useState<any>(null);
@@ -161,77 +161,89 @@ export default function EmployeeDashboard() {
   };
 
   useEffect(() => {
-    localStorage.setItem('attendanceStartDate', startDate);
-    localStorage.setItem('attendanceEndDate', endDate);
+    localStorage.setItem('payrollStartDate', startDate);
+    localStorage.setItem('payrollEndDate', endDate);
+    window.dispatchEvent(new Event('payrollDateChange'));
   }, [startDate, endDate]);
+
+  useEffect(() => {
+    const handleStorage = () => {
+      const savedStart = localStorage.getItem("payrollStartDate");
+      const savedEnd = localStorage.getItem("payrollEndDate");
+      if (savedStart) setStartDate(savedStart);
+      if (savedEnd) setEndDate(savedEnd);
+    };
+    window.addEventListener("storage", handleStorage);
+    window.addEventListener("payrollDateChange", handleStorage);
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      window.removeEventListener("payrollDateChange", handleStorage);
+    };
+  }, []);
 
   useEffect(() => {
     if (!userData?.employeeId) return;
 
-    const fetchData = async () => {
-      try {
-        const { getDoc, getDocs, doc, collection, query, where, orderBy } = await import('firebase/firestore');
-        
-        // 1. Employee Data
-        const empDoc = await getDoc(doc(db, 'employees', userData.employeeId!));
-        if (empDoc.exists()) {
-          setEmployee({ id: empDoc.id, ...empDoc.data() } as Employee);
-        }
-
-        // 2. Attendance within Range
-        const qAtt = query(
-          collection(db, 'attendance'),
-          where('employeeId', '==', userData.employeeId),
-          where('date', '>=', startDate),
-          where('date', '<=', endDate)
-        );
-        const attSnap = await getDocs(qAtt);
-        const atts: Attendance[] = [];
-        attSnap.forEach(doc => atts.push({ id: doc.id, ...doc.data() } as Attendance));
-        setAttendances(atts.sort((a, b) => b.date.localeCompare(a.date)));
-
-        // 3. User Payrolls
-        const qPayroll = query(
-          collection(db, 'payrolls'),
-          where('employeeId', '==', userData.employeeId)
-        );
-        const payrollSnap = await getDocs(qPayroll);
-        const pays: Payroll[] = [];
-        payrollSnap.forEach(doc => pays.push({ id: doc.id, ...doc.data() } as Payroll));
-        setPayrolls(pays.sort((a, b) => b.generatedAt.localeCompare(a.generatedAt)));
-        setLoadingPayrolls(false);
-
-        // 4. Cash Advances
-        const qCA = query(
-          collection(db, 'cashAdvances'),
-          where('employeeId', '==', userData.employeeId)
-        );
-        const caSnap = await getDocs(qCA);
-        const cas: CashAdvance[] = [];
-        caSnap.forEach(doc => cas.push({ id: doc.id, ...doc.data() } as CashAdvance));
-        setCashAdvances(cas.sort((a, b) => b.date.localeCompare(a.date)));
-
-        // 5. Announcements
-        const qAnn = query(collection(db, 'announcements'), orderBy('createdAt', 'desc'));
-        const annSnap = await getDocs(qAnn);
-        const dataAnn: Announcement[] = [];
-        annSnap.forEach(doc => dataAnn.push({ id: doc.id, ...doc.data() } as Announcement));
-        setAnnouncements(dataAnn);
-
+    // 1. Employee Data (Keep getDoc for one-time fetch)
+    const fetchEmp = async () => {
+      const empDoc = await getDoc(doc(db, 'employees', userData.employeeId!));
+      if (empDoc.exists()) {
+        setEmployee({ id: empDoc.id, ...empDoc.data() } as Employee);
         setLoading(false);
-      } catch (error: any) {
-        // Silently handle quota errors
-        const isQuota = error?.message?.toLowerCase().includes('quota') || 
-                        error?.message?.toLowerCase().includes('resource-exhausted');
-        if (!isQuota) {
-          handleFirestoreError(error, OperationType.GET, 'employee_dashboard');
-        }
-        setLoading(false);
-        setLoadingPayrolls(false);
       }
     };
+    fetchEmp();
 
-    fetchData();
+    // 2. Attendance within Range (Real-time)
+    const qAtt = query(
+      collection(db, 'attendance'),
+      where('employeeId', '==', userData.employeeId),
+      where('date', '>=', startDate),
+      where('date', '<=', endDate)
+    );
+    const unsubAtt = onSnapshot(qAtt, (snapshot) => {
+      const atts: Attendance[] = [];
+      snapshot.forEach(docSnap => atts.push({ id: docSnap.id, ...docSnap.data() } as Attendance));
+      setAttendances(atts.sort((a, b) => b.date.localeCompare(a.date)));
+    });
+
+    // 3. User Payrolls (Real-time)
+    const qPayroll = query(
+      collection(db, 'payrolls'),
+      where('employeeId', '==', userData.employeeId)
+    );
+    const unsubPayroll = onSnapshot(qPayroll, (snapshot) => {
+      const pays: Payroll[] = [];
+      snapshot.forEach(docSnap => pays.push({ id: docSnap.id, ...docSnap.data() } as Payroll));
+      setPayrolls(pays.sort((a, b) => b.generatedAt.localeCompare(a.generatedAt)));
+      setLoadingPayrolls(false);
+    });
+
+    // 4. Cash Advances (Real-time)
+    const qCA = query(
+      collection(db, 'cashAdvances'),
+      where('employeeId', '==', userData.employeeId)
+    );
+    const unsubCA = onSnapshot(qCA, (snapshot) => {
+      const cas: CashAdvance[] = [];
+      snapshot.forEach(docSnap => cas.push({ id: docSnap.id, ...docSnap.data() } as CashAdvance));
+      setCashAdvances(cas.sort((a, b) => b.date.localeCompare(a.date)));
+    });
+
+    // 5. Announcements (Real-time)
+    const qAnn = query(collection(db, 'announcements'), orderBy('createdAt', 'desc'));
+    const unsubAnn = onSnapshot(qAnn, (snapshot) => {
+      const dataAnn: Announcement[] = [];
+      snapshot.forEach(docSnap => dataAnn.push({ id: docSnap.id, ...docSnap.data() } as Announcement));
+      setAnnouncements(dataAnn);
+    });
+
+    return () => {
+      unsubAtt();
+      unsubPayroll();
+      unsubCA();
+      unsubAnn();
+    };
   }, [userData, startDate, endDate]);
 
   const handleMarkAsViewed = async (annId: string) => {
@@ -516,23 +528,23 @@ export default function EmployeeDashboard() {
 
       {/* Attendance Section */}
       <section className="space-y-3">
-        <div className="flex items-center justify-between px-1">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 px-1">
           <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center gap-2">
             <Clock className="w-3.5 h-3.5" /> Attendance
           </h3>
-          <div className="flex gap-2 items-center">
+          <div className="flex gap-2 items-center w-full sm:w-auto">
             <Input 
               type="date" 
               value={startDate} 
               onChange={e => setStartDate(e.target.value)}
-              className="h-7 text-[10px] w-28 rounded-lg bg-white/5 border-white/10"
+              className="h-8 text-[10px] flex-1 sm:w-28 rounded-lg bg-white/5 border-white/10"
             />
-            <span className="text-white/40 text-xs">to</span>
+            <span className="text-white/40 text-[10px] uppercase font-bold">to</span>
             <Input 
               type="date" 
               value={endDate} 
               onChange={e => setEndDate(e.target.value)}
-              className="h-7 text-[10px] w-28 rounded-lg bg-white/5 border-white/10"
+              className="h-8 text-[10px] flex-1 sm:w-28 rounded-lg bg-white/5 border-white/10"
             />
           </div>
         </div>
@@ -556,21 +568,26 @@ export default function EmployeeDashboard() {
                     otHours: 0
                   } as Attendance;
 
+                  const dateObj = parseISO(date);
+                  const displayStatus = att.status;
+                  const displayHours = att.regularHours || 0;
+
                   return (
                     <tr key={date}>
-                      <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">{format(parseISO(date), 'MMM dd, yyyy')}</td>
+                      <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">{format(dateObj, 'EEE, MMM dd')}</td>
                       <td className="px-4 py-3">
                         <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                          att.status === 'present' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-                          att.status === 'absent' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
-                          att.status === 'ut' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
+                          displayStatus === 'present' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                          displayStatus === 'absent' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
+                          displayStatus === 'ut' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
+                          displayStatus === 'hd' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' :
                           'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
                         }`}>
-                          {att.status}
+                          {displayStatus}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-slate-500 dark:text-slate-400">
-                        {att.regularHours || 0}h {(att.otHours || 0) > 0 && `(+${att.otHours}h OT)`}
+                        {displayHours}h {(att.otHours || 0) > 0 && `(+${att.otHours}h OT)`}
                       </td>
                     </tr>
                   );
@@ -837,6 +854,21 @@ export default function EmployeeDashboard() {
                 </div>
               </div>
               
+              <div className="grid grid-cols-3 gap-2 mb-6 p-3 bg-slate-50 border border-slate-100 rounded-2xl">
+                <div className="flex flex-col">
+                  <span className="text-[8px] font-black text-slate-400 mb-1 uppercase tracking-widest">Daily Rate</span>
+                  <span className="text-xs font-black text-slate-900 font-mono">₱ {(selectedPayslip.employee?.dailySalary || 0).toFixed(2)}</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[8px] font-black text-slate-400 mb-1 uppercase tracking-widest">Hourly Rate</span>
+                  <span className="text-xs font-black text-slate-900 font-mono">₱ {((selectedPayslip.employee?.dailySalary || 0) / 8).toFixed(2)}</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[8px] font-black text-slate-400 mb-1 uppercase tracking-widest">OT Hourly</span>
+                  <span className="text-xs font-black text-emerald-600 font-mono">₱ {((selectedPayslip.employee?.dailySalary || 0) / 8).toFixed(2)}</span>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-6">
                   <div>
@@ -844,20 +876,68 @@ export default function EmployeeDashboard() {
                       Earnings <span>Amount</span>
                     </h3>
                     <div className="space-y-3 text-sm">
-                      <div className="flex justify-between items-center group">
-                        <div className="flex flex-col">
-                          <span className="text-slate-500 font-bold text-[10px] uppercase tracking-wide">Basic Pay</span>
-                          <span className="text-slate-900 font-medium">{selectedPayslip.totalRegularHours} Regular Hours</span>
+                      <div className="space-y-1.5 border-b border-slate-50 pb-3 mb-3">
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-slate-500 font-bold text-[10px] uppercase tracking-wide">Basic Pay Breakdown</span>
+                          <span className="font-black text-slate-900">₱ {selectedPayslip.regularPay.toFixed(2)}</span>
                         </div>
-                        <span className="font-black text-slate-900">₱ {selectedPayslip.regularPay.toFixed(2)}</span>
-                      </div>
-                      <div className="flex justify-between items-center group">
-                        <div className="flex flex-col">
-                          <span className="text-green-600 font-bold text-[10px] uppercase tracking-wide">Overtime</span>
-                          <span className="text-slate-900 font-medium">{selectedPayslip.totalOtHours} OT Hours</span>
+                        
+                        {(selectedPayslip.totalPresent || 0) > 0 && (
+                          <div className="flex justify-between items-center text-[11px]">
+                            <span className="text-slate-600 flex items-center gap-1.5">
+                              <div className="w-1 h-1 bg-emerald-400 rounded-full" />
+                              {selectedPayslip.totalPresent} Full Days (8.0h)
+                            </span>
+                            <span className="text-slate-400 font-mono">
+                              ₱ {(selectedPayslip.totalPresent * (selectedPayslip.employee?.dailySalary || 0)).toFixed(2)}
+                            </span>
+                          </div>
+                        )}
+
+                        {(selectedPayslip.totalHalfDays || 0) > 0 && (
+                          <div className="flex justify-between items-center text-[11px]">
+                            <span className="text-slate-600 flex items-center gap-1.5">
+                              <div className="w-1 h-1 bg-indigo-400 rounded-full" />
+                              {selectedPayslip.totalHalfDays} Half Days (5.0h)
+                            </span>
+                            <span className="text-slate-400 font-mono">
+                              ₱ {((selectedPayslip.totalHalfDays * 5 / 8) * (selectedPayslip.employee?.dailySalary || 0)).toFixed(2)}
+                            </span>
+                          </div>
+                        )}
+
+                        {(selectedPayslip.totalUndertimeHours || 0) > 0 && (
+                          <div className="flex justify-between items-center text-[11px]">
+                            <span className="text-slate-600 flex items-center gap-1.5">
+                              <div className="w-1 h-1 bg-amber-400 rounded-full" />
+                              {selectedPayslip.totalUndertimeHours.toFixed(1)} Undertime Hours
+                            </span>
+                            <span className="text-slate-400 font-mono">
+                              ₱ {((selectedPayslip.totalUndertimeHours / 8) * (selectedPayslip.employee?.dailySalary || 0)).toFixed(2)}
+                            </span>
+                          </div>
+                        )}
+                        
+                        <div className="flex justify-between items-center pt-1 border-t border-slate-50 mt-1">
+                          <span className="text-[9px] font-bold text-slate-400 uppercase italic">Total Volume</span>
+                          <span className="text-[10px] font-black text-slate-900 underline decoration-slate-200">
+                            {selectedPayslip.totalRegularHours.toFixed(2)} Total Hours
+                          </span>
                         </div>
-                        <span className="font-black text-green-600">₱ {selectedPayslip.otPay.toFixed(2)}</span>
                       </div>
+
+                      {selectedPayslip.totalOtHours > 0 && (
+                        <div className="flex justify-between items-center group">
+                          <div className="flex flex-col">
+                            <span className="text-green-600 font-bold text-[10px] uppercase tracking-wide">Overtime</span>
+                            <span className="text-slate-900 font-medium">
+                              {selectedPayslip.totalOtHours.toFixed(1)} Hrs @ ₱{((selectedPayslip.employee?.dailySalary || 0) / 8).toFixed(2)}/hr
+                            </span>
+                          </div>
+                          <span className="font-black text-green-600">₱ {selectedPayslip.otPay.toFixed(2)}</span>
+                        </div>
+                      )}
+
                       {selectedPayslip.totalPakyawPay > 0 && (
                         <div className="flex justify-between items-center group">
                           <div className="flex flex-col">
@@ -867,6 +947,7 @@ export default function EmployeeDashboard() {
                           <span className="font-black text-indigo-600">₱ {selectedPayslip.totalPakyawPay.toFixed(2)}</span>
                         </div>
                       )}
+                      
                       <div className="flex justify-between items-center border-t border-slate-100 pt-3 mt-3">
                         <span className="text-slate-900 font-black uppercase italic text-xs tracking-wider">Gross Total</span>
                         <span className="text-slate-900 font-black text-lg font-mono tracking-tighter italic">₱ {selectedPayslip.totalGrossPay.toFixed(2)}</span>
@@ -917,28 +998,56 @@ export default function EmployeeDashboard() {
                 </div>
               </div>
               
-              <div className="mt-8 pt-6 border-t-2 border-slate-100">
-                <h3 className="text-[10px] font-black text-slate-400 mb-4 uppercase tracking-[0.3em]">Performance Metrics</h3>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 text-sm mb-6">
-                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 group hover:bg-white hover:shadow-lg transition-all">
-                    <div className="text-[9px] text-slate-400 mb-1 uppercase font-black tracking-widest">Present</div>
-                    <div className="font-black text-slate-900 italic text-lg">{selectedPayslip.totalPresent} Days</div>
+              {/* Daily Attendance Logs */}
+              {selectedPayslip.dailyAttendanceLog && (
+                <div className="mt-8 pt-6 border-t-2 border-slate-100 font-sans px-1">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Daily Detailed Log</h3>
+                    <div className="text-[8px] font-bold text-slate-400 uppercase bg-slate-50 px-2 py-0.5 rounded">Transparency Audit</div>
                   </div>
-                  <div className="bg-amber-50/50 p-4 rounded-2xl text-left border border-amber-100 group hover:bg-white hover:shadow-lg transition-all">
-                    <div className="text-[9px] text-amber-600 mb-1 uppercase font-black tracking-widest">Undertime</div>
-                    <div className="font-black text-amber-700 italic text-lg">{selectedPayslip.totalUndertimeHours?.toFixed(1) || '0.0'} Hrs</div>
-                  </div>
-                  <div className="bg-red-50/50 p-4 rounded-2xl text-left border border-red-100 group hover:bg-white hover:shadow-lg transition-all">
-                    <div className="text-[9px] text-red-500 mb-1 uppercase font-black tracking-widest">Absent</div>
-                    <div className="font-black text-red-600 italic text-lg">{selectedPayslip.totalAbsent} Days</div>
-                  </div>
-                  <div className="bg-green-50/50 p-4 rounded-2xl text-left border border-green-100 group hover:bg-white hover:shadow-lg transition-all">
-                    <div className="text-[9px] text-green-600 mb-1 uppercase font-black tracking-widest">Overtime</div>
-                    <div className="font-black text-green-600 italic text-lg">{selectedPayslip.totalOtHours.toFixed(1)} Hrs</div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+                    {selectedPayslip.dailyAttendanceLog.map((log: any, i: number) => (
+                      <div key={i} className={`p-2 rounded-xl border flex flex-col items-center justify-center text-center transition-all ${
+                        log.status === 'present' ? 'bg-emerald-50 border-emerald-100' :
+                        log.status === 'absent' ? 'bg-rose-50 border-rose-100' :
+                        log.status === 'halfday' ? 'bg-indigo-50 border-indigo-100' :
+                        log.status === 'undertime' ? 'bg-amber-50 border-amber-100' :
+                        log.status === 'pakyaw' ? 'bg-violet-50 border-violet-100' :
+                        'bg-slate-50 border-slate-100'
+                      }`}>
+                        <div className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">
+                          {format(parseISO(log.date), 'EEE, MMM dd')}
+                        </div>
+                        <div className={`text-[10px] font-black uppercase italic ${
+                          log.status === 'present' ? 'text-emerald-600' :
+                          log.status === 'absent' ? 'text-rose-600' :
+                          log.status === 'halfday' ? 'text-indigo-600' :
+                          log.status === 'undertime' ? 'text-amber-600' :
+                          log.status === 'pakyaw' ? 'text-violet-600' :
+                          'text-slate-400'
+                        }`}>
+                          {log.status === 'halfday' ? 'Half-Day' : 
+                           log.status}
+                        </div>
+                        <div className="flex gap-1 mt-1 justify-center">
+                          {log.status !== 'absent' && log.status !== 'pakyaw' && (
+                            <div className="text-[8px] font-bold text-slate-500 bg-slate-200/50 px-1 py-0.5 rounded">
+                              {log.regHrs}h
+                            </div>
+                          )}
+                          {log.otHrs > 0 && (
+                            <div className="text-[8px] font-bold text-emerald-700 bg-emerald-200/50 px-1 py-0.5 rounded">
+                              +{log.otHrs}h OT
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              )}
+
+              <div className="mt-8 pt-6 border-t font-sans">
                   {selectedPayslip.pakyawDetails && selectedPayslip.pakyawDetails.length > 0 && (
                     <div className="text-[10px] text-slate-500 bg-indigo-50/30 p-4 rounded-2xl border border-indigo-100/50">
                       <span className="font-black text-indigo-700 uppercase tracking-widest block mb-2">Projects & Pakyaw</span>
@@ -960,8 +1069,7 @@ export default function EmployeeDashboard() {
                   </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
         </DialogContent>
       </Dialog>
 

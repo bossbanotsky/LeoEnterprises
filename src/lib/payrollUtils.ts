@@ -58,7 +58,7 @@ export function calculateAttendanceHours(att: Attendance) {
     } else if (att.status === 'ut') {
       regHrs = 5; 
     } else if (att.status === 'hd') {
-      regHrs = 4;
+      regHrs = 5; // 7am - 12pm is 5 hours
     } else {
       regHrs = 0;
     }

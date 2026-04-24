@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
 import { useCompanyInfo } from '../hooks/useCompanyInfo';
 import { Employee, Attendance, CashAdvance, PakyawJob } from '../types';
-import { format, parseISO, eachDayOfInterval, isWithinInterval } from "date-fns";
+import { format, parseISO, eachDayOfInterval, isWithinInterval, isSunday } from "date-fns";
 import { calculateAttendanceHours } from "../lib/payrollUtils";
 import { Calendar, ChevronRight, FileText, Download, Trash2, Loader2, Users, CreditCard, CheckCircle, Search, Upload } from 'lucide-react';
 import { Button } from './ui/button';
@@ -353,128 +353,81 @@ export default function Payroll() {
     }
   };
 
+  // Real-time listener for Bulk Payrolls (Both Pending and Archived)
   useEffect(() => {
-    if (!user || employees.length === 0 || viewMode !== 'process') return;
+    if (!user) return;
+
+    const bulkQ = query(
+      collection(db, "bulkPayrolls"),
+      where("userId", "==", user.uid)
+    );
+
+    const unsubscribe = onSnapshot(bulkQ, (snapshot) => {
+      const allBulk: any[] = [];
+      snapshot.forEach(docSnap => {
+        allBulk.push({ id: docSnap.id, ...docSnap.data() });
+      });
+
+      // Split into pending and archived
+      const pending = allBulk.filter(b => b.status !== 'paid')
+        .sort((a, b) => b.generatedAt.localeCompare(a.generatedAt));
+      const archived = allBulk.filter(b => b.status === 'paid')
+        .sort((a, b) => b.generatedAt.localeCompare(a.generatedAt));
+
+      setBulkPayrolls(pending);
+      setArchivedBulkRuns(archived);
+    }, (error) => {
+      if (!error?.message?.toLowerCase().includes('quota')) {
+        handleFirestoreError(error, OperationType.GET, 'bulkPayrolls_live');
+      }
+    });
+
+    return () => unsubscribe();
+  }, [user]);
+
+  // Fetch individual payrolls when a Bulk ID is selected or a single employee is selected
+  useEffect(() => {
+    if (!user || employees.length === 0) return;
     
-    const fetchData = async () => {
-      try {
-        const { query, collection, where, getDocs, getDocsFromCache } = await import('firebase/firestore');
-        const q = query(
-          collection(db, 'payrolls'),
-          where('startDate', '==', startDate),
-          where('endDate', '==', endDate)
-        );
+    let q;
+    if (selectedBulkId) {
+      // If a bulk batch is selected, fetch everything for that batch regardless of date filters
+      q = query(collection(db, 'payrolls'), where('bulkId', '==', selectedBulkId));
+    } else if (selectedEmployeeId !== 'all') {
+      // If a specific employee is chosen, fetch their records for the filtered dates
+      q = query(
+        collection(db, 'payrolls'),
+        where('employeeId', '==', selectedEmployeeId),
+        where('startDate', '==', startDate),
+        where('endDate', '==', endDate)
+      );
+    } else {
+      // Default: Fetch all for current dates (used for calculations/summaries)
+      q = query(
+        collection(db, 'payrolls'),
+        where('startDate', '==', startDate),
+        where('endDate', '==', endDate)
+      );
+    }
 
-        let snapshot;
-        try {
-          snapshot = await getDocs(q);
-        } catch (error: any) {
-          if (!error?.message?.toLowerCase().includes('quota')) {
-            handleFirestoreError(error, OperationType.GET, 'payrolls_process');
-          }
-          return;
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const fetched: any[] = [];
+      snapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        const emp = employees.find(e => e.id === data.employeeId);
+        if (emp) {
+          fetched.push({ id: docSnap.id, employee: emp, ...data });
         }
-
-        const fetchedPayrolls: any[] = [];
-        if (snapshot) {
-          snapshot.forEach(docSnap => {
-            const data = docSnap.data();
-            const emp = employees.find(e => e.id === data.employeeId);
-            if (emp) {
-              fetchedPayrolls.push({
-                id: docSnap.id,
-                employee: emp,
-                ...data
-              });
-            }
-          });
-        }
-        setPayrollData(fetchedPayrolls);
-
-        // Fetch Bulk Payrolls
-        const bulkQ = query(
-          collection(db, 'bulkPayrolls'),
-          where('startDate', '==', startDate),
-          where('endDate', '==', endDate)
-        );
-        let bulkSnapshot;
-        try {
-          bulkSnapshot = await getDocs(bulkQ);
-        } catch (error: any) {
-          if (!error?.message?.toLowerCase().includes('quota')) {
-            handleFirestoreError(error, OperationType.GET, 'bulkPayrolls_process');
-          }
-          return;
-        }
-
-        const fetchedBulk: any[] = [];
-        if (bulkSnapshot) {
-          bulkSnapshot.forEach(docSnap => {
-            const data = docSnap.data();
-            if (data.status !== 'paid') {
-              fetchedBulk.push({ id: docSnap.id, ...data });
-            }
-          });
-        }
-        setBulkPayrolls(fetchedBulk.sort((a, b) => b.generatedAt.localeCompare(a.generatedAt)));
-      } catch (error: any) {
-        if (!error?.message?.toLowerCase().includes('quota')) {
-          handleFirestoreError(error, OperationType.GET, 'payrolls_process');
-        }
+      });
+      setPayrollData(fetched);
+    }, (error) => {
+      if (!error?.message?.toLowerCase().includes('quota')) {
+        handleFirestoreError(error, OperationType.GET, 'payrolls_live');
       }
-    };
+    });
 
-    fetchData();
-  }, [user, employees, startDate, endDate, viewMode]);
-
-  // Fetch Archives
-  useEffect(() => {
-    if (!user || viewMode !== 'archives') return;
-    const fetchData = async () => {
-      try {
-        const { query, collection, where, getDocs } = await import('firebase/firestore');
-        const q = query(collection(db, 'bulkPayrolls'), where('status', '==', 'paid'));
-        const snapshot = await getDocs(q);
-        const runs: any[] = [];
-        snapshot.forEach(doc => runs.push({ id: doc.id, ...doc.data() }));
-        runs.sort((a, b) => b.generatedAt.localeCompare(a.generatedAt));
-        setArchivedBulkRuns(runs);
-      } catch (error: any) {
-        if (!error?.message?.toLowerCase().includes('quota')) {
-          handleFirestoreError(error, OperationType.GET, 'bulkPayrolls_archives');
-        }
-      }
-    };
-    fetchData();
-  }, [user, viewMode]);
-
-  // Fetch individual payrolls for a selected archive run
-  useEffect(() => {
-    if (!user || employees.length === 0 || viewMode !== 'archives' || !selectedBulkId) return;
-    const fetchData = async () => {
-      try {
-        const { query, collection, where, getDocs, updateDoc, doc } = await import('firebase/firestore');
-        const q = query(collection(db, 'payrolls'), where('bulkId', '==', selectedBulkId));
-        const snapshot = await getDocs(q);
-        const fetchedPayrolls: any[] = [];
-        
-        for (const docSnap of snapshot.docs) {
-          const data = docSnap.data();
-          if (data.status !== 'paid') {
-            await updateDoc(doc(db, 'payrolls', docSnap.id), { status: 'paid' });
-          }
-          const emp = employees.find(e => e.id === data.employeeId);
-          if (emp) fetchedPayrolls.push({ id: docSnap.id, employee: emp, ...data });
-        }
-        setPayrollData(fetchedPayrolls);
-      } catch (error: any) {
-        if (!error?.message?.toLowerCase().includes('quota')) {
-          handleFirestoreError(error, OperationType.GET, 'payrolls_archive_details');
-        }
-      }
-    };
-    fetchData();
-  }, [user, employees, viewMode, selectedBulkId]);
+    return () => unsubscribe();
+  }, [user, employees, selectedBulkId, selectedEmployeeId, startDate, endDate]);
 
   const handlePreviewPayroll = async () => {
     if (!startDate || !endDate || employees.length === 0) return;
@@ -522,6 +475,7 @@ export default function Payroll() {
         let cashAdvanceDetails: string[] = [];
         let totalPakyawPay = 0;
         let pakyawDetails: string[] = [];
+        let dailyAttendanceLog: { date: string, status: string, regHrs: number, otHrs: number, isWorkDay: boolean }[] = [];
 
         empCa.forEach(ca => {
           cashAdvanceDeduction += ca.amount;
@@ -543,40 +497,51 @@ export default function Payroll() {
           
           if (att) {
             const { regHrs, otHrs } = calculateAttendanceHours(att);
-
             const dailyWorkLog = `${format(parseISO(date), 'MMM dd')}: ${regHrs}h Reg${otHrs ? `, ${otHrs}h OT` : ''}${att.status === 'hd' ? ' (HD)' : ''}`;
-
-            const isHDRun = att.status === 'hd' || (att.timeIn === '07:00' && att.timeOut === '12:00');
-
+            
+            let statusLabel: string = att.status;
             if (att.status === 'present' || att.status === 'ut' || att.status === 'hd') {
-              // Check for Undertime (total worked hours < 8)
-              if (isHDRun) {
-                // Count as HD but add to total regular hours
+              if (att.status === 'hd' || (att.timeIn === '07:00' && att.timeOut === '12:00')) {
                 totalHalfDays++;
                 totalRegularHours += regHrs;
-              } else if ((regHrs + otHrs) < 8) {
+                statusLabel = 'halfday';
+              } else if (regHrs < 8) { 
                 totalUndertimeDays++;
                 totalUndertimeHours += regHrs;
                 totalRegularHours += regHrs;
                 undertimeDetails.push(dailyWorkLog);
+                statusLabel = 'undertime';
               } else {
-                // IT IS FULL DAY OR MORE
                 totalPresent++;
                 totalRegularHours += regHrs;
+                statusLabel = 'present';
               }
-              
-              // Always add OT if present
               totalOtHours += otHrs;
             } else if (att.status === 'pakyaw') {
-              // Logged as pakyaw, ignore for regular time calculation
+              statusLabel = 'pakyaw';
             } else if (att.status === 'absent') {
               totalAbsent++;
               absentDates.push(format(parseISO(date), 'MMM dd'));
             }
+
+            dailyAttendanceLog.push({ 
+              date, 
+              status: statusLabel, 
+              regHrs, 
+              otHrs,
+              isWorkDay: true 
+            });
           } else {
-            // Not logged: Treat as absent
+            // No attendance record for this date
             totalAbsent++;
             absentDates.push(format(parseISO(date), 'MMM dd'));
+            dailyAttendanceLog.push({ 
+              date, 
+              status: 'absent', 
+              regHrs: 0, 
+              otHrs: 0,
+              isWorkDay: false 
+            });
           }
         });
 
@@ -605,6 +570,7 @@ export default function Payroll() {
           otPay,
           totalPakyawPay,
           pakyawDetails,
+          dailyAttendanceLog, // NEW FIELD
           totalGrossPay,
           cashAdvanceDeduction,
           cashAdvanceDetails,
@@ -694,20 +660,23 @@ export default function Payroll() {
   const totalEmployeesCount = displayedPayrolls.length;
 
   const handleDeleteBulk = async (bulkId: string) => {
-    if (!user) return;
+    if (!user || !bulkId) return;
     try {
+      setIsLoading(true);
       await deleteDoc(doc(db, 'bulkPayrolls', bulkId));
       
-      // Correctly delete all associated payrolls from the database
+      // Delete all associated payrolls
       const q = query(collection(db, 'payrolls'), where('bulkId', '==', bulkId));
       const snapshot = await getDocs(q);
-      for (const pDoc of snapshot.docs) {
-        await deleteDoc(doc(db, 'payrolls', pDoc.id));
-      }
+      
+      const deletePromises = snapshot.docs.map(pDoc => deleteDoc(doc(db, 'payrolls', pDoc.id)));
+      await Promise.all(deletePromises);
       
       if (selectedBulkId === bulkId) setSelectedBulkId(null);
     } catch (error) {
       handleFirestoreError(error, OperationType.DELETE, 'bulkPayrolls');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -882,21 +851,22 @@ export default function Payroll() {
                       <p className="stat-label mb-1">Total Cash Required</p>
                       <h2 className="stat-value text-3xl">₱{totalCashRequired.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h2>
                     </div>
-                    <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-3 relative z-10 w-full sm:w-auto">
+                    <div className="grid grid-cols-2 sm:flex gap-3 w-full">
                       <Button 
                         size="sm" 
                         variant="secondary" 
-                        className="h-10 gap-2 bg-white/10 hover:bg-white/20 text-white border border-white/10 font-black uppercase tracking-widest text-[10px] backdrop-blur-md" 
+                        className="h-12 sm:h-10 gap-2 bg-white/10 hover:bg-white/20 text-white border border-white/10 font-black uppercase tracking-widest text-[10px] backdrop-blur-md flex-1 sm:flex-none shadow-lg" 
                         onClick={handleBulkExport}
                         disabled={isExporting}
                       >
-                        {isExporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5 rotate-180" />}
-                        Bulk PDF
+                        {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4 rotate-180" />}
+                        <span className="truncate">Bulk PDF</span>
                       </Button>
                       <Button 
                         size="sm" 
                         variant="secondary" 
-                        className="h-10 gap-2 bg-red-500 hover:bg-red-600 text-white border-0 shadow-lg font-black uppercase tracking-widest text-[10px]" 
+                        className="h-12 sm:h-10 gap-2 bg-red-500 hover:bg-red-600 text-white border-0 shadow-lg font-black uppercase tracking-widest text-[10px] flex-1 sm:flex-none" 
                         onClick={() => {
                           if (window.confirm('Are you sure you want to delete this entire payroll batch? All associated payslips will be permanently removed.')) {
                             handleDeleteBulk(selectedBulkId);
@@ -904,31 +874,34 @@ export default function Payroll() {
                         }}
                         disabled={isExporting}
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        Delete Batch
+                        <Trash2 className="w-4 h-4" />
+                        <span className="truncate">Delete Batch</span>
                       </Button>
+                    </div>
+                    <div className="grid grid-cols-2 sm:flex gap-3 w-full">
                       {viewMode === 'process' && (
                         <Button 
                           size="sm" 
                           variant="secondary" 
-                          className="h-10 gap-2 bg-emerald-500 hover:bg-emerald-600 text-white border-0 shadow-lg font-black uppercase tracking-widest text-[10px]" 
+                          className="h-12 sm:h-10 gap-2 bg-emerald-500 hover:bg-emerald-600 text-white border-0 shadow-lg font-black uppercase tracking-widest text-[10px] flex-1 sm:flex-none" 
                           onClick={() => handleMarkAsPaid(selectedBulkId)}
                         >
-                          <CheckCircle className="w-3.5 h-3.5" />
-                          Mark as Paid
+                          <CheckCircle className="w-4 h-4" />
+                          <span className="truncate">Mark as Paid</span>
                         </Button>
                       )}
                       <Button 
                         size="sm" 
                         variant="secondary" 
-                        className="h-10 gap-2 bg-white/10 hover:bg-white/20 text-white border border-white/10 font-black uppercase tracking-widest text-[10px] backdrop-blur-md" 
+                        className="h-12 sm:h-10 gap-2 bg-white/10 hover:bg-white/20 text-white border border-white/10 font-black uppercase tracking-widest text-[10px] backdrop-blur-md flex-1 sm:flex-none shadow-lg" 
                         onClick={handleBulkExportPDF}
                         disabled={isExporting}
                       >
-                        {isExporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
-                        {isExporting ? 'Exporting...' : 'Bulk PDF'}
+                        {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                        <span className="truncate">{isExporting ? 'Exporting...' : 'Bulk PDF'}</span>
                       </Button>
                     </div>
+                  </div>
                   </div>
                   <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-white/50 border-t border-white/10 pt-4 relative z-10">
                     <span>{totalEmployeesCount} Employees</span>
@@ -945,7 +918,7 @@ export default function Payroll() {
                 className="bento-card flex-col bg-white dark:bg-slate-800 p-4 cursor-pointer hover:border-blue-300 transition-colors"
               >
                 <div className="flex justify-between items-center mb-3">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
                     <div className="w-6 h-6 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center font-bold text-[10px] overflow-hidden shrink-0">
                       {data.employee.photoURL ? (
                         <img src={data.employee.photoURL} alt={data.employee.fullName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
@@ -953,9 +926,9 @@ export default function Payroll() {
                         data.employee.fullName.charAt(0).toUpperCase()
                       )}
                     </div>
-                    <div className="font-bold text-slate-900 dark:text-white truncate">{data.employee.fullName}</div>
+                    <div className="font-bold text-slate-900 dark:text-white truncate text-sm">{data.employee.fullName}</div>
                   </div>
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1 shrink-0">
                     <Button 
                       size="sm" 
                       variant="ghost" 
@@ -1083,6 +1056,21 @@ export default function Payroll() {
                 </div>
               </div>
               
+              <div className="grid grid-cols-3 gap-2 mb-6 p-3 bg-slate-50 border border-slate-100 rounded-2xl">
+                <div className="flex flex-col">
+                  <span className="text-[8px] font-black text-slate-400 mb-1 uppercase tracking-widest">Daily Rate</span>
+                  <span className="text-xs font-black text-slate-900 font-mono">₱ {(selectedPayslip.employee.dailySalary || 0).toFixed(2)}</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[8px] font-black text-slate-400 mb-1 uppercase tracking-widest">Hourly Rate</span>
+                  <span className="text-xs font-black text-slate-900 font-mono">₱ {((selectedPayslip.employee.dailySalary || 0) / 8).toFixed(2)}</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[8px] font-black text-slate-400 mb-1 uppercase tracking-widest">OT Hourly</span>
+                  <span className="text-xs font-black text-emerald-600 font-mono">₱ {((selectedPayslip.employee.dailySalary || 0) / 8).toFixed(2)}</span>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 font-sans">
                 <div className="space-y-6">
                   <div>
@@ -1090,20 +1078,68 @@ export default function Payroll() {
                       Earnings <span>Amount</span>
                     </h3>
                     <div className="space-y-3 text-sm">
-                      <div className="flex justify-between items-center group">
-                        <div className="flex flex-col">
-                          <span className="text-slate-500 font-bold text-[10px] uppercase tracking-wide">Basic Pay</span>
-                          <span className="text-slate-900 font-medium">{selectedPayslip.totalRegularHours} Regular Hours</span>
+                      <div className="space-y-1.5 border-b border-slate-50 pb-3 mb-3">
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-slate-500 font-bold text-[10px] uppercase tracking-wide">Basic Pay Breakdown</span>
+                          <span className="font-black text-slate-900">₱ {selectedPayslip.regularPay.toFixed(2)}</span>
                         </div>
-                        <span className="font-black text-slate-900">₱ {selectedPayslip.regularPay.toFixed(2)}</span>
-                      </div>
-                      <div className="flex justify-between items-center group">
-                        <div className="flex flex-col">
-                          <span className="text-green-600 font-bold text-[10px] uppercase tracking-wide">Overtime</span>
-                          <span className="text-slate-900 font-medium">{selectedPayslip.totalOtHours} OT Hours</span>
+                        
+                        {selectedPayslip.totalPresent > 0 && (
+                          <div className="flex justify-between items-center text-[11px]">
+                            <span className="text-slate-600 flex items-center gap-1.5">
+                              <div className="w-1 h-1 bg-emerald-400 rounded-full" />
+                              {selectedPayslip.totalPresent} Full Days (8.0h)
+                            </span>
+                            <span className="text-slate-400 font-mono">
+                              ₱ {(selectedPayslip.totalPresent * (selectedPayslip.employee.dailySalary || 0)).toFixed(2)}
+                            </span>
+                          </div>
+                        )}
+
+                        {selectedPayslip.totalHalfDays > 0 && (
+                          <div className="flex justify-between items-center text-[11px]">
+                            <span className="text-slate-600 flex items-center gap-1.5">
+                              <div className="w-1 h-1 bg-indigo-400 rounded-full" />
+                              {selectedPayslip.totalHalfDays} Half Days (5.0h)
+                            </span>
+                            <span className="text-slate-400 font-mono">
+                              ₱ {((selectedPayslip.totalHalfDays * 5 / 8) * (selectedPayslip.employee.dailySalary || 0)).toFixed(2)}
+                            </span>
+                          </div>
+                        )}
+
+                        {selectedPayslip.totalUndertimeHours > 0 && (
+                          <div className="flex justify-between items-center text-[11px]">
+                            <span className="text-slate-600 flex items-center gap-1.5">
+                              <div className="w-1 h-1 bg-amber-400 rounded-full" />
+                              {selectedPayslip.totalUndertimeHours.toFixed(1)} Undertime Hours
+                            </span>
+                            <span className="text-slate-400 font-mono">
+                              ₱ {((selectedPayslip.totalUndertimeHours / 8) * (selectedPayslip.employee.dailySalary || 0)).toFixed(2)}
+                            </span>
+                          </div>
+                        )}
+                        
+                        <div className="flex justify-between items-center pt-1 border-t border-slate-50 mt-1">
+                          <span className="text-[9px] font-bold text-slate-400 uppercase italic">Total Volume</span>
+                          <span className="text-[10px] font-black text-slate-900 underline decoration-slate-200">
+                            {selectedPayslip.totalRegularHours.toFixed(2)} Total Hours
+                          </span>
                         </div>
-                        <span className="font-black text-green-600">₱ {selectedPayslip.otPay.toFixed(2)}</span>
                       </div>
+
+                      {selectedPayslip.totalOtHours > 0 && (
+                        <div className="flex justify-between items-center group">
+                          <div className="flex flex-col">
+                            <span className="text-green-600 font-bold text-[10px] uppercase tracking-wide">Overtime</span>
+                            <span className="text-slate-900 font-medium">
+                              {selectedPayslip.totalOtHours.toFixed(1)} Hrs @ ₱{(selectedPayslip.employee.dailySalary / 8).toFixed(2)}/hr
+                            </span>
+                          </div>
+                          <span className="font-black text-green-600">₱ {selectedPayslip.otPay.toFixed(2)}</span>
+                        </div>
+                      )}
+
                       {selectedPayslip.totalPakyawPay > 0 && (
                         <div className="flex justify-between items-center group">
                           <div className="flex flex-col">
@@ -1113,6 +1149,7 @@ export default function Payroll() {
                           <span className="font-black text-indigo-600">₱ {selectedPayslip.totalPakyawPay.toFixed(2)}</span>
                         </div>
                       )}
+                      
                       <div className="flex justify-between items-center border-t border-slate-100 pt-3 mt-3">
                         <span className="text-slate-900 font-black uppercase italic text-xs tracking-wider">Gross Total</span>
                         <span className="text-slate-900 font-black text-lg font-mono tracking-tighter italic">₱ {selectedPayslip.totalGrossPay.toFixed(2)}</span>
@@ -1163,31 +1200,57 @@ export default function Payroll() {
                 </div>
               </div>
               
-              <div className="mt-8 pt-6 border-t-2 border-slate-100 font-sans">
-                <h3 className="text-[10px] font-black text-slate-400 mb-4 uppercase tracking-[0.3em]">Performance Metrics</h3>
-                <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 text-sm mb-6">
-                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 group hover:bg-white hover:shadow-lg transition-all">
-                    <div className="text-[9px] text-slate-400 mb-1 uppercase font-black tracking-widest">Present</div>
-                    <div className="font-black text-slate-900 italic text-lg">{selectedPayslip.totalPresent} Days</div>
+              {/* Daily Attendance Logs */}
+              {selectedPayslip.dailyAttendanceLog && (
+                <div className="mt-8 pt-6 border-t-2 border-slate-100 font-sans">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Daily Detailed Log</h3>
+                    <div className="text-[8px] font-bold text-slate-400 uppercase bg-slate-50 px-2 py-0.5 rounded">Transparency Audit</div>
                   </div>
-                  <div className="bg-indigo-50/50 p-4 rounded-2xl text-left border border-indigo-100 group hover:bg-white hover:shadow-lg transition-all">
-                    <div className="text-[9px] text-indigo-600 mb-1 uppercase font-black tracking-widest">Half Day</div>
-                    <div className="font-black text-indigo-700 italic text-lg">{selectedPayslip.totalHalfDays || 0} Days</div>
-                  </div>
-                  <div className="bg-amber-50/50 p-4 rounded-2xl text-left border border-amber-100 group hover:bg-white hover:shadow-lg transition-all">
-                    <div className="text-[9px] text-amber-600 mb-1 uppercase font-black tracking-widest">Undertime</div>
-                    <div className="font-black text-amber-700 italic text-lg">{selectedPayslip.totalUndertimeHours?.toFixed(1) || '0.0'} Hrs</div>
-                  </div>
-                  <div className="bg-red-50/50 p-4 rounded-2xl text-left border border-red-100 group hover:bg-white hover:shadow-lg transition-all">
-                    <div className="text-[9px] text-red-500 mb-1 uppercase font-black tracking-widest">Absent</div>
-                    <div className="font-black text-red-600 italic text-lg">{selectedPayslip.totalAbsent} Days</div>
-                  </div>
-                  <div className="bg-green-50/50 p-4 rounded-2xl text-left border border-green-100 group hover:bg-white hover:shadow-lg transition-all">
-                    <div className="text-[9px] text-green-600 mb-1 uppercase font-black tracking-widest">Overtime</div>
-                    <div className="font-black text-green-600 italic text-lg">{selectedPayslip.totalOtHours.toFixed(1)} Hrs</div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+                    {selectedPayslip.dailyAttendanceLog.map((log: any, i: number) => (
+                      <div key={i} className={`p-2 rounded-xl border flex flex-col items-center justify-center text-center transition-all ${
+                        log.status === 'present' ? 'bg-emerald-50 border-emerald-100' :
+                        log.status === 'absent' ? 'bg-rose-50 border-rose-100' :
+                        log.status === 'halfday' ? 'bg-indigo-50 border-indigo-100' :
+                        log.status === 'undertime' ? 'bg-amber-50 border-amber-100' :
+                        log.status === 'pakyaw' ? 'bg-violet-50 border-violet-100' :
+                        'bg-slate-50 border-slate-100'
+                      }`}>
+                        <div className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">
+                          {format(parseISO(log.date), 'EEE, MMM dd')}
+                        </div>
+                        <div className={`text-[10px] font-black uppercase italic ${
+                          log.status === 'present' ? 'text-emerald-600' :
+                          log.status === 'absent' ? 'text-rose-600' :
+                          log.status === 'halfday' ? 'text-indigo-600' :
+                          log.status === 'undertime' ? 'text-amber-600' :
+                          log.status === 'pakyaw' ? 'text-violet-600' :
+                          'text-slate-400'
+                        }`}>
+                          {log.status === 'halfday' ? 'Half-Day' : 
+                           log.status}
+                        </div>
+                        <div className="flex gap-1 mt-1 justify-center">
+                          {log.status !== 'absent' && log.status !== 'pakyaw' && (
+                            <div className="text-[8px] font-bold text-slate-500 bg-slate-200/50 px-1 py-0.5 rounded">
+                              {log.regHrs}h
+                            </div>
+                          )}
+                          {log.otHrs > 0 && (
+                            <div className="text-[8px] font-bold text-emerald-700 bg-emerald-200/50 px-1 py-0.5 rounded">
+                              +{log.otHrs}h OT
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
-                
+              )}
+
+              
+              <div className="mt-8 pt-6 border-t-2 border-slate-100 font-sans">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {selectedPayslip.pakyawDetails && selectedPayslip.pakyawDetails.length > 0 && (
                     <div className="text-[10px] text-slate-500 bg-indigo-50/30 p-4 rounded-2xl border border-indigo-100/50 font-sans">

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { collection, onSnapshot, query, where, doc, setDoc, orderBy, deleteField } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, doc, setDoc, orderBy, deleteField, deleteDoc } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
@@ -18,69 +18,85 @@ export default function Attendance() {
   const { employees: allEmps, pakyawJobs, loading: dataLoading } = useData();
   const [activeTab, setActiveTab] = useState<'mark' | 'report'>('mark');
   const [singleDate, setSingleDate] = useState(() => format(new Date(), 'yyyy-MM-dd'));
-  const [startDate, setStartDate] = useState(() => localStorage.getItem('attendanceStartDate') || format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd'));
-  const [endDate, setEndDate] = useState(() => localStorage.getItem('attendanceEndDate') || format(endOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd'));
+  const [startDate, setStartDate] = useState(() => localStorage.getItem('payrollStartDate') || format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd'));
+  const [endDate, setEndDate] = useState(() => localStorage.getItem('payrollEndDate') || format(endOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd'));
   const [attendanceData, setAttendanceData] = useState<Record<string, Partial<AttendanceType>>>({});
   const [error, setError] = useState<string | null>(null);
   const [expandedEmp, setExpandedEmp] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const employees = useMemo(() => {
-    return allEmps.filter(e => (e.status === 'active' || !e.status) && e.role !== 'ceo' && e.role !== 'admin').sort((a, b) => a.fullName.localeCompare(b.fullName));
-  }, [allEmps]);
+    return allEmps
+      .filter(e => (e.status === 'active' || !e.status) && e.role !== 'ceo' && e.role !== 'admin')
+      .filter(e => e.fullName.toLowerCase().includes(searchTerm.toLowerCase()))
+      .sort((a, b) => a.fullName.localeCompare(b.fullName));
+  }, [allEmps, searchTerm]);
   
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportScope, setExportScope] = useState<'bulk' | 'individual'>('bulk');
   const [exportEmpId, setExportEmpId] = useState<string>('all');
 
   useEffect(() => {
-    localStorage.setItem('attendanceStartDate', startDate);
-    localStorage.setItem('attendanceEndDate', endDate);
+    localStorage.setItem('payrollStartDate', startDate);
+    localStorage.setItem('payrollEndDate', endDate);
+    window.dispatchEvent(new Event('payrollDateChange'));
   }, [startDate, endDate]);
+
+  useEffect(() => {
+    const handleStorage = () => {
+      const savedStart = localStorage.getItem("payrollStartDate");
+      const savedEnd = localStorage.getItem("payrollEndDate");
+      if (savedStart) setStartDate(savedStart);
+      if (savedEnd) setEndDate(savedEnd);
+    };
+    window.addEventListener("storage", handleStorage);
+    window.addEventListener("payrollDateChange", handleStorage);
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      window.removeEventListener("payrollDateChange", handleStorage);
+    };
+  }, []);
 
   useEffect(() => {
     if (!user) return;
     
-    const fetchData = async () => {
-      try {
-        const { getDocs, collection, query, where } = await import('firebase/firestore');
-        
-        // Initial Attendance Fetch for selected range
-        const queryStart = activeTab === 'mark' ? singleDate : startDate;
-        const queryEnd = activeTab === 'mark' ? singleDate : endDate;
+    // Initial Attendance Fetch for selected range
+    const queryStart = activeTab === 'mark' ? singleDate : startDate;
+    const queryEnd = activeTab === 'mark' ? singleDate : endDate;
 
-        const attQ = query(collection(db, 'attendance'), where('date', '>=', queryStart), where('date', '<=', queryEnd));
-        
-        let attSnap;
-        try {
-          // Try server fetch
-          attSnap = await getDocs(attQ);
-        } catch (e: any) {
-          console.warn("Server fetch failed.", e.message);
-        }
+    const attQ = query(
+      collection(db, 'attendance'), 
+      where('date', '>=', queryStart), 
+      where('date', '<=', queryEnd)
+    );
 
-        const atts: Record<string, Partial<AttendanceType>> = {};
-        if (attSnap) {
-          attSnap.forEach(doc => { 
-            const data = doc.data() as AttendanceType; 
-            atts[`${data.employeeId}_${data.date}`] = { ...data, id: doc.id }; 
-          });
+    const unsubscribe = onSnapshot(attQ, (snapshot) => {
+      const atts: Record<string, Partial<AttendanceType>> = {};
+      snapshot.forEach(docSnap => { 
+        const data = docSnap.data() as AttendanceType; 
+        const key = `${data.employeeId}_${data.date}`;
+        const deterministicId = `${data.employeeId}_${data.date}`;
+        
+        // STRENGTHENED: If multiple exist, always prioritize the one with the correct ID.
+        // If we haven't seen this key yet, or if this doc's ID is the correct one, use it.
+        if (!atts[key] || docSnap.id === deterministicId) {
+          atts[key] = { ...data, id: docSnap.id }; 
         }
-        setAttendanceData(atts);
-        setLoading(false);
-      } catch (error: any) {
-        // Silently handle quota
-        const isQuota = error?.message?.toLowerCase().includes('quota') || 
-                        error?.message?.toLowerCase().includes('resource-exhausted');
-        if (!isQuota) {
-          setError('Failed to load data');
-          handleFirestoreError(error, OperationType.GET, 'attendance_fetch');
-        }
-        setLoading(false);
+      });
+      setAttendanceData(atts);
+      setLoading(false);
+    }, (error) => {
+      const isQuota = error?.message?.toLowerCase().includes('quota') || 
+                      error?.message?.toLowerCase().includes('resource-exhausted');
+      if (!isQuota) {
+        setError('Failed to load data');
+        handleFirestoreError(error, OperationType.GET, 'attendance_live');
       }
-    };
+      setLoading(false);
+    });
 
-    fetchData();
+    return () => unsubscribe();
   }, [user, activeTab, startDate, endDate, singleDate]);
 
   const dates = useMemo(() => {
@@ -138,14 +154,17 @@ export default function Attendance() {
     // Create new updated object
     let updated: Partial<AttendanceType> = { ...current, [field]: value };
     
-    // Auto-calculate for Present status
-    if (field === 'status' && (value === 'present' || value === 'hd') && !updated.timeIn) { 
+    // Auto-calculate for status changes to ensure times match the intent
+    if (field === 'status') {
       if (value === 'hd') {
         updated.timeIn = '07:00'; 
         updated.timeOut = '12:00';
-      } else {
+      } else if (value === 'present') {
         updated.timeIn = '07:00'; 
         updated.timeOut = '16:00'; 
+      } else if (value === 'absent' || value === 'pakyaw') {
+        updated.timeIn = deleteField() as any;
+        updated.timeOut = deleteField() as any;
       }
     }
     
@@ -206,9 +225,27 @@ export default function Attendance() {
     // Persist to Firebase
     if (!user) return;
     try {
-      const docId = updated.id || `${employeeId}_${date}`;
+      const docId = `${employeeId}_${date}`;
       const { id, ...dataToSave } = updated;
       
+      // AGGRESSIVE CLEANUP: Find all records for this employee/date and delete them
+      // to resolve the "duplicate entry" issue reported by the user.
+      const existingQ = query(
+        collection(db, 'attendance'),
+        where('employeeId', '==', employeeId),
+        where('date', '==', date)
+      );
+      const { getDocs } = await import('firebase/firestore');
+      const existingSnap = await getDocs(existingQ);
+      
+      const deletePromises = existingSnap.docs
+        .filter(d => d.id !== docId) // Don't delete our target ID if it exists (setDoc handles it)
+        .map(d => deleteDoc(doc(db, 'attendance', d.id)));
+      
+      if (deletePromises.length > 0) {
+        await Promise.all(deletePromises);
+      }
+
       const finalDataToSave = { ...dataToSave };
       if (finalDataToSave.pakyawJobId === undefined) {
          finalDataToSave.pakyawJobId = deleteField() as any;
@@ -467,45 +504,62 @@ export default function Attendance() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 shrink-0">
-        {activeTab === 'mark' ? (
-          <div className="bg-white/5 p-2 rounded-2xl border border-white/10 shadow-2xl flex items-center gap-1 max-w-sm group backdrop-blur-xl">
-            <button 
-              onClick={handlePrevDate}
-              className="p-2.5 hover:bg-white/10 rounded-xl transition-all text-white/50 hover:text-white"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <div className="flex-1 bg-slate-950/40 px-3 py-2 rounded-xl flex items-center gap-2 border border-white/5">
-              <div className="w-1 h-6 bg-blue-600 rounded-full shadow-[0_0_10px_rgba(37,99,235,0.5)]" />
-              <div className="flex flex-col flex-1">
-                <span className="text-[8px] font-black text-blue-400 uppercase tracking-widest leading-none mb-1">Selected Date</span>
-                <Input 
-                  type="date" 
-                  value={singleDate} 
-                  onChange={e => setSingleDate(e.target.value)} 
-                  className="rounded-none h-6 w-full font-black bg-transparent border-0 text-xs p-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-white cursor-pointer [color-scheme:dark]" 
-                />
+        <div className="flex gap-2">
+          {activeTab === 'mark' ? (
+            <div className="bg-white/5 p-2 rounded-2xl border border-white/10 shadow-2xl flex items-center gap-1 flex-1 group backdrop-blur-xl">
+              <button 
+                onClick={handlePrevDate}
+                className="p-2.5 hover:bg-white/10 rounded-xl transition-all text-white/50 hover:text-white"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <div className="flex-1 bg-slate-950/40 px-3 py-2 rounded-xl flex items-center gap-2 border border-white/5">
+                <div className="w-1 h-6 bg-blue-600 rounded-full shadow-[0_0_10px_rgba(37,99,235,0.5)]" />
+                <div className="flex flex-col flex-1">
+                  <span className="text-[8px] font-black text-blue-400 uppercase tracking-widest leading-none mb-1">Selected Date</span>
+                  <Input 
+                    type="date" 
+                    value={singleDate} 
+                    onChange={e => setSingleDate(e.target.value)} 
+                    className="rounded-none h-6 w-full font-black bg-transparent border-0 text-xs p-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-white cursor-pointer [color-scheme:dark]" 
+                  />
+                </div>
+              </div>
+              <button 
+                onClick={handleNextDate}
+                className="p-2.5 hover:bg-white/10 rounded-xl transition-all text-white/50 hover:text-white"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-2 bg-transparent p-3 rounded-xl border border-white/10 shadow-xl flex-1 text-white">
+              <div className="space-y-1">
+                <Label className="text-[9px] font-black text-blue-400 uppercase tracking-[0.2em] mb-1 block leading-none">Start Date</Label>
+                <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="rounded-lg h-10 w-full font-black bg-slate-950/50 border border-white/10 text-white text-sm focus:ring-2 focus:ring-blue-500/20 [color-scheme:dark]" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[9px] font-black text-blue-400 uppercase tracking-[0.2em] mb-1 block leading-none">End Date</Label>
+                <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="rounded-lg h-10 w-full font-black bg-slate-950/50 border border-white/10 text-white text-sm focus:ring-2 focus:ring-blue-500/20 [color-scheme:dark]" />
               </div>
             </div>
-            <button 
-              onClick={handleNextDate}
-              className="p-2.5 hover:bg-white/10 rounded-xl transition-all text-white/50 hover:text-white"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-        ) : (
-          <div className="col-span-full grid grid-cols-2 gap-2 bg-transparent p-3 rounded-xl border border-white/10 shadow-xl">
-            <div className="space-y-1">
-              <Label className="text-[9px] font-black text-blue-400 uppercase tracking-[0.2em] mb-1 block leading-none">Start Date</Label>
-              <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="rounded-lg h-10 w-full font-black bg-slate-950/50 border border-white/10 text-white text-sm focus:ring-2 focus:ring-blue-500/20 [color-scheme:dark]" />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-[9px] font-black text-blue-400 uppercase tracking-[0.2em] mb-1 block leading-none">End Date</Label>
-              <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="rounded-lg h-10 w-full font-black bg-slate-950/50 border border-white/10 text-white text-sm focus:ring-2 focus:ring-blue-500/20 [color-scheme:dark]" />
+          )}
+        </div>
+        
+        <div className="bg-white/5 p-2 rounded-2xl border border-white/10 shadow-2xl flex items-center gap-1 group backdrop-blur-xl">
+           <div className="flex-1 bg-slate-950/40 px-3 py-2 rounded-xl flex items-center gap-2 border border-white/5">
+            <div className="w-1 h-6 bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+            <div className="flex flex-col flex-1">
+              <span className="text-[8px] font-black text-emerald-400 uppercase tracking-widest leading-none mb-1">Search Employee</span>
+              <Input 
+                placeholder="Type name..."
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                className="rounded-none h-6 w-full font-black bg-transparent border-0 text-xs p-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-white placeholder:text-white/20"
+              />
             </div>
           </div>
-        )}
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto pb-20 px-1">
