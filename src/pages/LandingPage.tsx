@@ -108,7 +108,7 @@ export default function LandingPage() {
               </span>
           </Link>
           
-          <div className="hidden md:flex items-center gap-8 text-[12px] font-bold text-white/60 tracking-widest uppercase">
+          <div className="hidden md:flex items-center gap-8 text-[12px] font-bold text-white/80 tracking-widest uppercase">
             <a href="#services" className="hover:text-white hover:text-blue-400 transition-all duration-300 py-1">Services</a>
             <a href="#about" className="hover:text-white hover:text-blue-400 transition-all duration-300 py-1">About</a>
             <a href="#contact" className="hover:text-white hover:text-blue-400 transition-all duration-300 py-1">Contact</a>

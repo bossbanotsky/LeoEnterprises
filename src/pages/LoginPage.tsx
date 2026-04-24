@@ -125,7 +125,7 @@ export default function LoginPage() {
           
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <label className="text-[10px] font-bold uppercase text-slate-500 tracking-[2px] ml-1 text-left block">Identity Resource</label>
+              <label className="text-[10px] font-bold uppercase text-slate-300 tracking-[2px] ml-1 text-left block">Identity Resource</label>
               <div className="relative">
                 <Mail className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <Input 
@@ -140,7 +140,7 @@ export default function LoginPage() {
             </div>
             
             <div className="space-y-2">
-              <label className="text-[10px] font-bold uppercase text-slate-500 tracking-[2px] ml-1 text-left block">Security Descriptor</label>
+              <label className="text-[10px] font-bold uppercase text-slate-300 tracking-[2px] ml-1 text-left block">Security Descriptor</label>
               <div className="relative">
                 <Lock className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <Input 
@@ -169,7 +169,7 @@ export default function LoginPage() {
                     <div className="absolute inset-0 flex items-center">
                         <div className="w-full border-t border-white/10"></div>
                     </div>
-                    <div className="relative bg-transparent px-4 text-[10px] font-bold text-slate-500 uppercase tracking-[3px]">SSO Integration</div>
+                    <div className="relative bg-transparent px-4 text-[10px] font-bold text-slate-300 uppercase tracking-[3px]">SSO Integration</div>
                   </div>
 
                   <Button 

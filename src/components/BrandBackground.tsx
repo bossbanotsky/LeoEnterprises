@@ -20,7 +20,7 @@ export default function BrandBackground() {
       <div 
         className="fixed inset-0 w-full h-full pointer-events-none" 
         style={{
-          background: 'linear-gradient(to bottom, rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.65))',
+          background: 'linear-gradient(to bottom, rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0.9))',
           zIndex: -10
         }} 
       />

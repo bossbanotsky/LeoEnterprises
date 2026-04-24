@@ -425,7 +425,7 @@ export default function Dashboard() {
             <div className="stat-value">
               {loading ? <Skeleton className="h-10 w-24 bg-white/10" /> : stats.totalEmployees}
             </div>
-            <div className="text-[10px] text-slate-500 mt-2 font-black uppercase tracking-[0.2em] italic opacity-70">
+            <div className="text-[10px] text-slate-300 mt-2 font-black uppercase tracking-[0.2em] italic opacity-90">
               Active Personnel
             </div>
           </div>
@@ -480,7 +480,7 @@ export default function Dashboard() {
                 ) : (
                   <>
                     {stats.ot.toFixed(1)}{" "}
-                    <span className="text-sm font-bold text-slate-400">h</span>
+                    <span className="text-sm font-bold text-slate-300">h</span>
                   </>
                 )}
               </div>
@@ -533,15 +533,15 @@ export default function Dashboard() {
                   </>
                 )}
               </div>
-              <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] italic mt-3 relative z-10 bg-white/5 inline-block px-4 py-1.5 rounded-full border border-white/10 mx-auto md:ml-0">
+              <div className="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em] italic mt-3 relative z-10 bg-white/5 inline-block px-4 py-1.5 rounded-full border border-white/10 mx-auto md:ml-0">
                 {format(parseISO(startDate), "MMM dd")} -{" "}
                 {format(parseISO(endDate), "MMM dd")}
               </div>
             </div>
 
-            <div className="bento-card flex-col bg-slate-900/40 p-6 border border-white/10 space-y-4 shadow-xl">
+              <div className="bento-card flex-col bg-slate-900/40 p-6 border border-white/10 space-y-4 shadow-xl">
               <div className="flex items-center justify-between">
-                <h3 className="text-xs font-black uppercase tracking-[0.3em] text-slate-400 flex items-center gap-2 italic">
+                <h3 className="text-xs font-black uppercase tracking-[0.3em] text-slate-300 flex items-center gap-2 italic">
                   <Calendar className="w-4 h-4 text-blue-400" /> Period
                 </h3>
               </div>

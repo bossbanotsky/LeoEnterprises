@@ -387,7 +387,7 @@ export default function EmployeeDashboard() {
           <h1 className="text-4xl md:text-5xl font-black text-white tracking-tighter leading-none uppercase italic">
              Hello, {userData?.fullName?.split(' ')[0]}
           </h1>
-          <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em] mt-2 italic opacity-80">
+          <p className="text-slate-300 text-[10px] font-black uppercase tracking-[0.3em] mt-2 italic opacity-90">
             Portal Access • {companyInfo.name}
           </p>
         </div>
@@ -397,7 +397,7 @@ export default function EmployeeDashboard() {
       {(activeAnnouncements.length > 0 || pastAnnouncements.length > 0) && (
         <section className="space-y-3">
           <div className="flex items-center justify-between px-1">
-            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+            <h3 className="text-xs font-bold text-slate-300 uppercase tracking-widest flex items-center gap-2">
               <Megaphone className="w-3.5 h-3.5 text-blue-500" /> Notifications
             </h3>
             {unreadCount > 0 && (
@@ -427,7 +427,7 @@ export default function EmployeeDashboard() {
                       <p className="text-sm text-slate-300 leading-relaxed font-medium">
                         {ann.message}
                       </p>
-                      <div className="flex items-center gap-3 mt-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                      <div className="flex items-center gap-3 mt-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                         <span className="text-cyan-400">By {ann.authorName}</span>
                         <span>•</span>
                         <span>{format(parseISO(ann.createdAt), 'MMM d, h:mm a')}</span>
@@ -453,7 +453,7 @@ export default function EmployeeDashboard() {
             {pastAnnouncements.length > 0 && (
               <div className="pt-2">
                  <details className="group">
-                   <summary className="text-[10px] font-bold text-slate-400 uppercase tracking-widest cursor-pointer hover:text-slate-500 transition-colors list-none flex items-center gap-2 px-1">
+                   <summary className="text-[10px] font-bold text-slate-300 uppercase tracking-widest cursor-pointer hover:text-slate-200 transition-colors list-none flex items-center gap-2 px-1">
                      <ChevronRight className="w-3 h-3 group-open:rotate-90 transition-transform" />
                      Past Notices ({pastAnnouncements.length})
                    </summary>
@@ -515,11 +515,11 @@ export default function EmployeeDashboard() {
           </div>
           <div className="grid grid-cols-2 gap-4 mt-6">
             <div className="bg-white/5 p-3 rounded-xl border border-white/10 overflow-hidden">
-              <div className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1 truncate">Daily Salary</div>
+              <div className="text-[10px] text-slate-300 uppercase font-bold tracking-wider mb-1 truncate">Daily Salary</div>
               <div className="text-xl sm:text-2xl font-black text-white tracking-tight leading-none truncate">₱{employee.dailySalary.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
             </div>
             <div className="bg-white/5 p-3 rounded-xl border border-white/10 overflow-hidden">
-              <div className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1 truncate">Hourly Rate</div>
+              <div className="text-[10px] text-slate-300 uppercase font-bold tracking-wider mb-1 truncate">Hourly Rate</div>
               <div className="text-xl sm:text-2xl font-black text-white tracking-tight leading-none truncate">₱{employee.hourlyRate.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
             </div>
           </div>
@@ -529,7 +529,7 @@ export default function EmployeeDashboard() {
       {/* Attendance Section */}
       <section className="space-y-3">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 px-1">
-          <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center gap-2">
+          <h3 className="text-xs font-bold text-slate-300 dark:text-slate-200 uppercase tracking-widest flex items-center gap-2">
             <Clock className="w-3.5 h-3.5" /> Attendance
           </h3>
           <div className="flex gap-2 items-center w-full sm:w-auto">
@@ -551,7 +551,7 @@ export default function EmployeeDashboard() {
         <div className="bento-card flex-col bg-slate-900/40 p-0 overflow-hidden border border-white/10 shadow-xl">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="bg-slate-50 dark:bg-slate-900/50 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+              <thead className="bg-slate-50 dark:bg-slate-900/50 text-[10px] font-bold text-slate-300 uppercase tracking-wider">
                 <tr>
                   <th className="px-4 py-3">Date</th>
                   <th className="px-4 py-3">Status</th>
