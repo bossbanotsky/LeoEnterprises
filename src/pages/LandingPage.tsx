@@ -34,7 +34,7 @@ const services = [
     description: "Industry-leading heavy-duty hauling and logistics solutions optimized for reliability and safety.",
     category: "Hauling Services" as Category,
     color: "blue",
-    image: "https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?auto=format&fit=crop&q=80&w=1200"
+    image: "https://images.unsplash.com/photo-1580674684081-7619685050b8?auto=format&fit=crop&q=80&w=1200"
   },
   {
     slug: "civil-works",
@@ -79,7 +79,7 @@ const services = [
     description: "Integrated security protocols and multi-monitor surveillance rooms for 24/7 protection.",
     category: "CCTV Installation" as Category,
     color: "red",
-    image: "https://images.unsplash.com/photo-1551033406-611cf9a28f67?auto=format&fit=crop&q=80&w=1200"
+    image: "https://images.unsplash.com/photo-1557597774-9d2739f85a76?auto=format&fit=crop&q=80&w=1200"
   }
 ];
 
@@ -313,7 +313,7 @@ export default function LandingPage() {
                 icon: Zap, 
                 title: "Fast Response", 
                 desc: "Agile project deployment and 24/7 technical support accessibility.",
-                image: "https://images.unsplash.com/photo-1590674867585-81c0534bfe71?auto=format&fit=crop&q=80&w=800"
+                image: "https://images.unsplash.com/photo-1516321497487-e288fb19713f?auto=format&fit=crop&q=80&w=800"
               },
               { 
                 icon: Award, 
