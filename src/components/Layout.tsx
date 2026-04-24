@@ -12,7 +12,6 @@ export default function Layout() {
 
   const adminNavItems = [
     { path: '/admin-dashboard', label: 'Dash', icon: LayoutGrid },
-    { path: '/admin-dashboard/messenger', label: 'Chat', icon: MessageSquare },
     { path: '/admin-dashboard/announcements', label: 'News', icon: Megaphone },
     { path: '/admin-dashboard/employees', label: 'Staff', icon: UsersRound },
     { path: '/admin-dashboard/attendance', label: 'Attend', icon: Clock },
@@ -25,12 +24,10 @@ export default function Layout() {
 
   const employeeNavItems = [
     { path: '/employee-dashboard', label: 'Portal', icon: LayoutGrid },
-    { path: '/employee-dashboard/messenger', label: 'Chat', icon: MessageSquare },
   ];
 
   const ceoNavItems = [
     { path: '/ceo-dashboard', label: 'Executive', icon: LayoutGrid },
-    { path: '/ceo-dashboard/messenger', label: 'Chat', icon: MessageSquare },
   ];
 
   const navItems = userData?.role === 'admin' 

@@ -18,7 +18,6 @@ import GalleryManagement from './components/GalleryManagement';
 import Settings from './components/Settings';
 import Logs from './components/Logs';
 import Announcements from './components/Announcements';
-import Messenger from './components/Messenger';
 import EmployeeDashboard from './components/EmployeeDashboard';
 import CEODashboard from './components/CEODashboard';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -91,7 +90,6 @@ export default function App() {
                     {/* Admin Routes */}
                     <Route path="/admin-dashboard" element={<ProtectedRoute allowedRoles={['admin']}><Layout /></ProtectedRoute>}>
                       <Route index element={<Dashboard />} />
-                      <Route path="messenger" element={<Messenger />} />
                       <Route path="employees" element={<Employees />} />
                       <Route path="attendance" element={<Attendance />} />
                       <Route path="cash-advance" element={<CashAdvance />} />
@@ -106,13 +104,11 @@ export default function App() {
                     {/* CEO Routes */}
                     <Route path="/ceo-dashboard" element={<ProtectedRoute allowedRoles={['ceo']}><Layout /></ProtectedRoute>}>
                       <Route index element={<CEODashboard />} />
-                      <Route path="messenger" element={<Messenger />} />
                     </Route>
 
                     {/* Employee Routes */}
                     <Route path="/employee-dashboard" element={<ProtectedRoute allowedRoles={['employee']}><Layout /></ProtectedRoute>}>
                       <Route index element={<EmployeeDashboard />} />
-                      <Route path="messenger" element={<Messenger />} />
                     </Route>
 
                     {/* Fallback */}
