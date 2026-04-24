@@ -616,11 +616,11 @@ export default function Attendance() {
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1">
                           <Label className="text-[9px] font-black text-white/50 uppercase tracking-widest leading-none">Time In</Label>
-                          <Input type="time" value={att?.timeIn || '07:00'} onChange={e => handleAttendanceChange(emp.id, singleDate, 'timeIn', e.target.value)} className="h-8 rounded-lg bg-white/5 border border-white/10 font-mono text-xs p-2 text-white" />
+                          <Input type="time" value={att?.timeIn || '07:00'} onChange={e => handleAttendanceChange(emp.id, singleDate, 'timeIn', e.target.value)} className="h-8 rounded-lg bg-white/5 border border-white/10 font-mono text-xs p-2 text-white [color-scheme:dark]" />
                         </div>
                         <div className="space-y-1">
                           <Label className="text-[9px] font-black text-white/50 uppercase tracking-widest leading-none">Time Out</Label>
-                          <Input type="time" value={att?.timeOut || '16:00'} onChange={e => handleAttendanceChange(emp.id, singleDate, 'timeOut', e.target.value)} className="h-8 rounded-lg bg-white/5 border border-white/10 font-mono text-xs p-2 text-white" />
+                          <Input type="time" value={att?.timeOut || '16:00'} onChange={e => handleAttendanceChange(emp.id, singleDate, 'timeOut', e.target.value)} className="h-8 rounded-lg bg-white/5 border border-white/10 font-mono text-xs p-2 text-white [color-scheme:dark]" />
                         </div>
                       </div>
 
@@ -870,8 +870,8 @@ export default function Attendance() {
                           
                           {(att?.status === 'present' || att?.status === 'ut' || att?.status === 'hd') && (
                             <div className="grid grid-cols-2 gap-2">
-                              <Input type="time" value={att?.timeIn || '07:00'} onChange={e => handleAttendanceChange(emp.id, date, 'timeIn', e.target.value)} className="h-9 text-xs font-mono rounded-lg bg-white dark:bg-slate-800 border-0" />
-                              <Input type="time" value={att?.timeOut || '16:00'} onChange={e => handleAttendanceChange(emp.id, date, 'timeOut', e.target.value)} className="h-9 text-xs font-mono rounded-lg bg-white dark:bg-slate-800 border-0" />
+                              <Input type="time" value={att?.timeIn || '07:00'} onChange={e => handleAttendanceChange(emp.id, date, 'timeIn', e.target.value)} className="h-9 text-xs font-mono rounded-lg bg-white dark:bg-slate-800 border-0 text-white [color-scheme:dark]" />
+                              <Input type="time" value={att?.timeOut || '16:00'} onChange={e => handleAttendanceChange(emp.id, date, 'timeOut', e.target.value)} className="h-9 text-xs font-mono rounded-lg bg-white dark:bg-slate-800 border-0 text-white [color-scheme:dark]" />
                             </div>
                           )}
                         </div>

@@ -590,13 +590,13 @@ export default function EmployeeDashboard() {
                           {displayStatus}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-center text-[10px] font-mono text-slate-500 dark:text-slate-400">
+                      <td className="px-4 py-3 text-center text-[10px] font-mono text-white">
                         {att.timeIn || '—'}
                       </td>
-                      <td className="px-4 py-3 text-center text-[10px] font-mono text-slate-500 dark:text-slate-400">
+                      <td className="px-4 py-3 text-center text-[10px] font-mono text-white">
                         {att.timeOut || '—'}
                       </td>
-                      <td className="px-4 py-3 text-right text-slate-500 dark:text-slate-400 font-medium font-mono text-xs">
+                      <td className="px-4 py-3 text-right text-white font-medium font-mono text-xs">
                         {displayHours}h{(att.otHours || 0) > 0 && <span className="text-emerald-500 ml-1">+{att.otHours}h</span>}
                       </td>
                     </tr>
