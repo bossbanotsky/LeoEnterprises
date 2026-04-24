@@ -380,7 +380,7 @@ export default function EmployeeDashboard() {
       {/* Header Profile */}
       <div className="relative group">
         <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl blur opacity-20 transition duration-1000"></div>
-        <div className="relative bento-card flex-col bg-transparent p-6 overflow-hidden border border-white/10 shadow-xl">
+        <div className="relative bento-card flex-col bg-slate-900/40 p-6 overflow-hidden border border-white/10 shadow-xl">
           <div className="flex items-center gap-5 relative z-10">
             <Button
               variant="outline"
@@ -404,11 +404,17 @@ export default function EmployeeDashboard() {
             </div>
             <div className="flex-1 min-w-0 pr-8">
               <h1 className="text-2xl font-black text-white truncate">{employee.fullName}</h1>
-              <div className="flex items-center gap-2 mt-1">
+              <div className="flex flex-wrap items-center gap-2 mt-2">
                 <span className="px-2 py-0.5 bg-blue-500/10 text-cyan-400 text-[10px] font-black uppercase tracking-wider rounded-md border border-blue-500/20">
                   {employee.position}
                 </span>
                 <span className="text-xs text-white/60 font-medium tracking-tight">ID: {employee.customId || employee.id.slice(0, 8)}</span>
+                {employee.sex && (
+                  <span className="text-[10px] text-white/70 font-bold tracking-wider px-2 py-0.5 bg-white/5 rounded border border-white/10 uppercase">{employee.sex}</span>
+                )}
+                {employee.civilStatus && (
+                  <span className="text-[10px] text-white/70 font-bold tracking-wider px-2 py-0.5 bg-white/5 rounded border border-white/10 uppercase">{employee.civilStatus}</span>
+                )}
               </div>
             </div>
           </div>
@@ -447,7 +453,7 @@ export default function EmployeeDashboard() {
             />
           </div>
         </div>
-        <div className="bento-card flex-col bg-transparent p-0 overflow-hidden border border-white/10 shadow-xl">
+        <div className="bento-card flex-col bg-slate-900/40 p-0 overflow-hidden border border-white/10 shadow-xl">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead className="bg-slate-50 dark:bg-slate-900/50 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
@@ -508,7 +514,7 @@ export default function EmployeeDashboard() {
           ) : (
             <>
               {pendingPayrolls.map(pay => (
-                <Interactive key={pay.id} className="bento-card flex-row items-center justify-between bg-transparent p-4 border border-white/10 shadow-xl relative overflow-hidden">
+                <Interactive key={pay.id} className="bento-card flex-row  bg-slate-900/40 p-4 border border-white/10 shadow-xl relative overflow-hidden">
                   <div className="absolute top-0 right-0 bg-yellow-100 text-yellow-700 text-[9px] font-bold px-2 py-0.5 rounded-bl-lg uppercase tracking-wider">Unpaid</div>
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
@@ -577,7 +583,7 @@ export default function EmployeeDashboard() {
         </h3>
         <div className="space-y-3">
           {cashAdvances.map(ca => (
-                <div key={ca.id} className="bento-card flex-row items-center justify-between bg-transparent p-4 border border-white/10 shadow-xl">
+                <div key={ca.id} className="bento-card flex-row  bg-slate-900/40 p-4 border border-white/10 shadow-xl">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-orange-500/10 text-orange-400 flex items-center justify-center shrink-0 border border-orange-500/20">
                   <Wallet className="w-4 h-4" />

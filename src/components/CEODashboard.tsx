@@ -354,7 +354,7 @@ export default function CEODashboard() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bento-card flex-col bg-transparent p-6 border border-white/10 shadow-xl overflow-hidden relative group">
+        <div className="bento-card flex-col bg-slate-900/40 p-6 border border-white/10 shadow-xl overflow-hidden relative group">
           <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/10 rounded-full -mr-12 -mt-12 group-hover:scale-125 transition-transform duration-500"></div>
           <div className="flex items-center gap-3 text-cyan-400 mb-2 relative z-10">
             <Users className="w-5 h-5" />
@@ -372,7 +372,7 @@ export default function CEODashboard() {
           </div>
         </div>
 
-        <div className="bento-card flex-col bg-transparent p-6 border border-white/10 relative overflow-hidden group shadow-xl">
+        <div className="bento-card flex-col bg-slate-900/40 p-6 border border-white/10 relative overflow-hidden group shadow-xl">
           <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-[40px] -mr-16 -mt-16 group-hover:bg-emerald-500/20 transition-all duration-700"></div>
           <div className="flex items-center gap-3 text-emerald-400 mb-2 relative z-10">
             <PhilippinePeso className="w-5 h-5" />
@@ -398,7 +398,7 @@ export default function CEODashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Projection Filters & List */}
-        <div className="bento-card flex-col space-y-4 bg-transparent border border-white/10 shadow-xl">
+        <div className="bento-card flex-col  bg-slate-900/40 border border-white/10 shadow-xl">
           <h3 className="font-black uppercase tracking-[0.2em] text-xs text-white flex items-center gap-2 italic">
             <Calendar className="w-4 h-4 text-slate-400" /> Projection Filter
           </h3>

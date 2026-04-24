@@ -19,7 +19,7 @@ import html2canvas from 'html2canvas';
 export default function Payroll() {
   const { user } = useAuth();
   const { companyInfo } = useCompanyInfo();
-  const { employees, loading: dataLoading } = useData();
+  const { employees, pakyawJobs, cashAdvances, loading: dataLoading } = useData();
   const [startDate, setStartDate] = useState(() => localStorage.getItem('payrollStartDate') || format(new Date(), 'yyyy-MM-01'));
   const [endDate, setEndDate] = useState(() => localStorage.getItem('payrollEndDate') || format(new Date(), 'yyyy-MM-15'));
 
@@ -414,23 +414,8 @@ export default function Payroll() {
       const allAtts: Attendance[] = [];
       snapshot.forEach(doc => allAtts.push({ id: doc.id, ...doc.data() } as Attendance));
 
-      const caQuery = query(
-        collection(db, 'cashAdvances'),
-        where('date', '>=', startDate),
-        where('date', '<=', endDate)
-      );
-      const caSnapshot = await getDocs(caQuery);
-      const allCa: CashAdvance[] = [];
-      caSnapshot.forEach(doc => allCa.push({ id: doc.id, ...doc.data() } as CashAdvance));
-
-      const pjQuery = query(
-        collection(db, 'pakyawJobs'),
-        where('startDate', '>=', startDate),
-        where('startDate', '<=', endDate)
-      );
-      const pjSnapshot = await getDocs(pjQuery);
-      const allPj: any[] = [];
-      pjSnapshot.forEach(doc => allPj.push({ id: doc.id, ...doc.data() }));
+      const allCa = cashAdvances.filter(ca => ca.date >= startDate && ca.date <= endDate);
+      const allPj = pakyawJobs.filter(pj => pj.startDate >= startDate && pj.startDate <= endDate);
 
       const dateRange = eachDayOfInterval({
         start: parseISO(startDate),
@@ -668,7 +653,7 @@ export default function Payroll() {
       </div>
       
       {viewMode === 'process' && (
-        <div className="bento-card flex-col bg-transparent p-6 border border-white/10 mb-4 shrink-0 shadow-2xl relative overflow-hidden">
+        <div className="bento-card flex-col bg-slate-900/40 p-6 border border-white/10 mb-4 shrink-0 shadow-2xl relative overflow-hidden">
           <div className="flex items-center gap-2 mb-4">
             <Calendar className="w-5 h-5 text-blue-400" />
             <h2 className="font-bold text-white uppercase tracking-tight">Pay Period</h2>

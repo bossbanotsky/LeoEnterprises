@@ -523,7 +523,7 @@ export default function Attendance() {
               const isPakyaw = att.status === 'pakyaw';
 
               return (
-                <div key={emp.id} className="bento-card bg-transparent border border-white/10 flex flex-col p-4 shadow-xl">
+                <div key={emp.id} className="bg-slate-900/40">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-blue-500/20 text-blue-400 rounded-full flex items-center justify-center font-bold text-sm shrink-0 overflow-hidden border border-blue-500/20">
