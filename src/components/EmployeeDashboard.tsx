@@ -900,7 +900,7 @@ export default function EmployeeDashboard() {
           {selectedPayslip && (
             <div 
               ref={payslipRef}
-              className="p-8 max-h-[80vh] overflow-y-auto payslip-mockup bg-white" 
+              className="p-4 max-h-[70vh] overflow-y-auto payslip-mockup bg-white" 
               style={{ backgroundColor: '#ffffff' }}
             >
               <div className="flex justify-between border-b-2 border-slate-900 pb-6 mb-6">
