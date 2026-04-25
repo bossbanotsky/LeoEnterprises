@@ -381,7 +381,7 @@ export default function EmployeeDashboard() {
       
       payslipRef.current.style.maxHeight = originalStyle;
       
-      const imgData = canvas.toDataURL('image/png');
+      const imgData = canvas.toDataURL('image/jpeg', 1.0);
       
       // A4 Landscape
       const pdf = new jsPDF({

@@ -304,7 +304,7 @@ export default function Payroll() {
       // Restore original style
       payslipRef.current.style.maxHeight = originalStyle;
       
-      const imgData = canvas.toDataURL('image/png');
+      const imgData = canvas.toDataURL('image/jpeg', 1.0);
       
       // A4 Landscape, splitting horizontally for two payslips per page
       const pdf = new jsPDF({
