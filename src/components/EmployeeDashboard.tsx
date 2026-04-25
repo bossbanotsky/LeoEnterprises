@@ -310,10 +310,10 @@ export default function EmployeeDashboard() {
       const pdf = new jsPDF({
         orientation: 'landscape',
         unit: 'mm',
-        format: 'a5'
+        format: 'a4'
       });
       
-      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfWidth = pdf.internal.pageSize.getWidth() / 2;
       const pdfHeight = pdf.internal.pageSize.getHeight();
       
       const imgRatio = canvas.height / canvas.width;
@@ -351,21 +351,19 @@ export default function EmployeeDashboard() {
       payslipRef.current.style.maxHeight = 'none';
       
       const canvas = await html2canvas(payslipRef.current, {
-        scale: 2,
+        scale: 3,
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
-        windowWidth: payslipRef.current.scrollWidth,
-        windowHeight: payslipRef.current.scrollHeight,
+        width: payslipRef.current.offsetWidth,
         onclone: (clonedDoc) => {
           clonedDoc.querySelectorAll('style').forEach(tag => tag.remove());
           const payslip = clonedDoc.querySelector('.payslip-mockup');
           if (payslip) {
-            // Force hex colors on the clone to avoid oklch issues
+            (payslip as HTMLElement).style.width = `${payslipRef.current!.offsetWidth}px`;
             (payslip as HTMLElement).style.color = '#0f172a';
             (payslip as HTMLElement).style.backgroundColor = '#ffffff';
             
-            // Recursively find and fix oklch/oklab colors in computed styles
             const allElements = payslip.querySelectorAll('*');
             allElements.forEach(el => {
               const style = window.getComputedStyle(el);
@@ -381,20 +379,18 @@ export default function EmployeeDashboard() {
         }
       });
       
-      // Restore original style
       payslipRef.current.style.maxHeight = originalStyle;
       
       const imgData = canvas.toDataURL('image/png');
       
-      // A5 is exactly half of A4 (A4 is 210x297mm, A5 is 148.5x210mm)
-      // When orientation is landscape, it's 210mm wide by 148.5mm high
+      // A4 Landscape
       const pdf = new jsPDF({
         orientation: 'landscape',
         unit: 'mm',
-        format: 'a5'
+        format: 'a4'
       });
       
-      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfWidth = pdf.internal.pageSize.getWidth() / 2;
       const pdfHeight = pdf.internal.pageSize.getHeight();
       
       const imgRatio = canvas.height / canvas.width;

@@ -415,10 +415,10 @@ export default function CEODashboard() {
       const pdf = new jsPDF({
         orientation: "landscape",
         unit: "mm",
-        format: "a5",
+        format: "a4",
       });
       
-      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfWidth = pdf.internal.pageSize.getWidth() / 2;
       const pdfHeight = pdf.internal.pageSize.getHeight();
       
       const imgRatio = canvas.height / canvas.width;
