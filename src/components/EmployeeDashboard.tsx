@@ -869,7 +869,7 @@ export default function EmployeeDashboard() {
 
       {/* Payslip Dialog */}
       <Dialog open={!!selectedPayslip} onOpenChange={(open) => !open && setSelectedPayslip(null)}>
-        <DialogContent className="sm:max-w-[700px] p-0 overflow-hidden bg-white rounded-3xl w-[95vw] max-w-2xl mx-auto border-none shadow-2xl">
+        <DialogContent className="sm:max-w-[900px] p-0 overflow-hidden bg-white rounded-3xl w-[95vw] max-w-4xl mx-auto border-none shadow-2xl">
           <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 backdrop-blur-sm sticky top-0 z-10">
             <DialogTitle className="flex items-center gap-2 text-slate-900 font-black uppercase italic tracking-tight text-lg">
               <FileText className="w-5 h-5 text-blue-600" />
@@ -900,7 +900,7 @@ export default function EmployeeDashboard() {
           {selectedPayslip && (
             <div 
               ref={payslipRef}
-              className="p-4 max-h-[70vh] overflow-y-auto payslip-mockup bg-white" 
+              className="p-2 max-h-[85vh] overflow-y-auto payslip-mockup bg-white text-xs" 
               style={{ backgroundColor: '#ffffff' }}
             >
               <div className="flex justify-between border-b-2 border-slate-900 pb-6 mb-6">
