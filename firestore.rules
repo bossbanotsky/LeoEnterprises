@@ -11,13 +11,32 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Simple Admin check by email - extremely robust for the main user
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
     function isMasterAdmin() {
       return isSignedIn() && 
              request.auth.token != null && 
              'email' in request.auth.token &&
              (request.auth.token.email.lower() == 'marqueznorthed@gmail.com' || 
               request.auth.token.email.lower() == 'marqueznorthed@admin.com');
+    }
+
+    function isValidAttendance(data) {
+      return data.employeeId is string &&
+             data.date is string &&
+             data.date.matches('^\\d{4}-\\d{2}-\\d{2}$') &&
+             data.status is string &&
+             (data.status == 'present' || data.status == 'absent' || data.status == 'hd' || data.status == 'ut' || data.status == 'pakyaw');
     }
 
     // --- Collection Routes ---
@@ -39,8 +58,8 @@ service cloud.firestore {
     }
 
     match /attendance/{attendanceId} {
-      allow read: if isSignedIn();
-      allow create: if isSignedIn();
+      allow read: if isSignedIn(); // Simplified for now to avoid permission leaks
+      allow create: if isSignedIn() && isValidAttendance(incoming());
       allow update, delete: if isMasterAdmin() || isSignedIn();
     }
 

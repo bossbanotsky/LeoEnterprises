@@ -30,6 +30,7 @@ import {
   Loader2,
   Upload,
   Trash2,
+  Printer,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Button } from "./ui/button";
@@ -320,6 +321,7 @@ export default function CEODashboard() {
         logging: false,
         backgroundColor: "#ffffff",
         onclone: (clonedDoc) => {
+          clonedDoc.querySelectorAll('style').forEach(tag => tag.remove());
           const payslip = clonedDoc.querySelector('.payslip-mockup');
           if (payslip) {
             (payslip as HTMLElement).style.color = '#0f172a';
@@ -370,6 +372,74 @@ export default function CEODashboard() {
       );
     } catch (error) {
       console.error("Error exporting PDF:", error);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handlePrint = async () => {
+    if (!selectedPayslip || !payslipRef.current) return;
+    setIsExporting(true);
+    try {
+      const originalStyle = payslipRef.current.style.maxHeight;
+      payslipRef.current.style.maxHeight = "none";
+      
+      const canvas = await html2canvas(payslipRef.current, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: "#ffffff",
+        onclone: (clonedDoc) => {
+          clonedDoc.querySelectorAll('style').forEach(tag => tag.remove());
+          const payslip = clonedDoc.querySelector('.payslip-mockup');
+          if (payslip) {
+            (payslip as HTMLElement).style.color = '#0f172a';
+            (payslip as HTMLElement).style.backgroundColor = '#ffffff';
+            const allElements = payslip.querySelectorAll('*');
+            allElements.forEach(el => {
+              const style = window.getComputedStyle(el);
+              const isUnsupported = (val: string) => val.includes('oklch') || val.includes('oklab');
+              if (isUnsupported(style.color)) (el as HTMLElement).style.setProperty('color', '#0f172a', 'important');
+              if (isUnsupported(style.backgroundColor) && !style.backgroundColor.includes('rgba(0, 0, 0, 0)')) {
+                (el as HTMLElement).style.setProperty('background-color', '#ffffff', 'important');
+              }
+              if (isUnsupported(style.borderColor)) (el as HTMLElement).style.setProperty('border-color', '#e2e8f0', 'important');
+            });
+          }
+        }
+      });
+      
+      payslipRef.current.style.maxHeight = originalStyle;
+      
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF({
+        orientation: "landscape",
+        unit: "mm",
+        format: "a5",
+      });
+      
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      
+      const imgRatio = canvas.height / canvas.width;
+      const pdfRatio = pdfHeight / pdfWidth;
+      
+      let finalWidth = pdfWidth;
+      let finalHeight = pdfWidth * imgRatio;
+      
+      if (imgRatio > pdfRatio) {
+        finalHeight = pdfHeight;
+        finalWidth = pdfHeight / imgRatio;
+      }
+      
+      const marginX = (pdfWidth - finalWidth) / 2;
+      const marginY = (pdfHeight - finalHeight) / 2;
+      
+      pdf.addImage(imgData, "PNG", marginX, marginY, finalWidth, finalHeight);
+      pdf.autoPrint();
+      window.open(pdf.output('bloburl'), '_blank');
+    } catch (error) {
+      console.error("Error printing PDF:", error);
     } finally {
       setIsExporting(false);
     }
@@ -431,6 +501,7 @@ export default function CEODashboard() {
             logging: false,
             backgroundColor: '#ffffff',
             onclone: (clonedDoc) => {
+              clonedDoc.querySelectorAll('style').forEach(tag => tag.remove());
               const domPayslip = clonedDoc.querySelector('.payslip-mockup');
               if (domPayslip) {
                 (domPayslip as HTMLElement).style.color = '#0f172a';
@@ -509,6 +580,7 @@ export default function CEODashboard() {
             logging: false,
             backgroundColor: '#ffffff',
             onclone: (clonedDoc) => {
+              clonedDoc.querySelectorAll('style').forEach(tag => tag.remove());
               const domPayslip = clonedDoc.querySelector('.payslip-mockup');
               if (domPayslip) {
                 (domPayslip as HTMLElement).style.color = '#0f172a';
@@ -808,16 +880,28 @@ export default function CEODashboard() {
               <FileText className="w-5 h-5 text-blue-600" />
               Payslip Details
             </DialogTitle>
-            <Button 
-              size="sm" 
-              variant="outline" 
-              className="h-8 gap-1.5 rounded-xl border-slate-200 text-slate-600 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-all font-bold text-[10px] uppercase tracking-widest"
-              onClick={handleExportPDF}
-              disabled={isExporting}
-            >
-              {isExporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5 rotate-180" />}
-              {isExporting ? 'Exporting...' : 'Export PDF'}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button 
+                size="sm" 
+                variant="outline" 
+                className="h-8 gap-1.5 rounded-xl border-slate-200 text-slate-600 hover:bg-green-50 hover:text-green-600 hover:border-green-200 transition-all font-bold text-[10px] uppercase tracking-widest"
+                onClick={handlePrint}
+                disabled={isExporting}
+              >
+                {isExporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Printer className="w-3.5 h-3.5" />}
+                {isExporting ? 'Printing...' : 'Print'}
+              </Button>
+              <Button 
+                size="sm" 
+                variant="outline" 
+                className="h-8 gap-1.5 rounded-xl border-slate-200 text-slate-600 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-all font-bold text-[10px] uppercase tracking-widest"
+                onClick={handleExportPDF}
+                disabled={isExporting}
+              >
+                {isExporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5 rotate-180" />}
+                {isExporting ? 'Exporting...' : 'Export PDF'}
+              </Button>
+            </div>
           </div>
 
           {selectedPayslip && selectedPayslip.employee && (
