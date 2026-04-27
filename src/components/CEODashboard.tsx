@@ -120,7 +120,6 @@ export default function CEODashboard() {
 
     const qPayroll = query(
       collection(db, "payrolls"),
-      where("status", "==", "paid"),
       orderBy("createdAt", "desc")
     );
     const unsubPayroll = onSnapshot(qPayroll, (snapshot) => {
@@ -802,6 +801,7 @@ export default function CEODashboard() {
                 <div className="text-lg font-black text-emerald-600 dark:text-emerald-400">
                   ₱{" "}
                   {payrolls
+                    .filter(pr => pr.status === 'paid')
                     .reduce((sum, pr) => sum + (pr.totalPay || 0), 0)
                     .toLocaleString(undefined, {
                       minimumFractionDigits: 2,

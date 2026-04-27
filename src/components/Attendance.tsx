@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
 import { Employee, Attendance as AttendanceType, PakyawJob } from '../types';
 import { format, parseISO, eachDayOfInterval, startOfWeek, endOfWeek, addDays, subDays } from 'date-fns';
-import { ChevronDown, ChevronUp, Check, X, ChevronLeft, ChevronRight, Calendar, Calculator, Download } from 'lucide-react';
+import { ChevronDown, ChevronUp, Check, X, ChevronLeft, ChevronRight, Calendar, Calculator, Download, Plus } from 'lucide-react';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Skeleton } from './ui/Skeleton';
@@ -20,7 +20,7 @@ export default function Attendance() {
   const [singleDate, setSingleDate] = useState(() => format(new Date(), 'yyyy-MM-dd'));
   const [startDate, setStartDate] = useState(() => localStorage.getItem('payrollStartDate') || format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd'));
   const [endDate, setEndDate] = useState(() => localStorage.getItem('payrollEndDate') || format(endOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd'));
-  const [attendanceData, setAttendanceData] = useState<Record<string, Partial<AttendanceType>>>({});
+  const [attendanceData, setAttendanceData] = useState<Record<string, AttendanceType[]>>({});
   const [error, setError] = useState<string | null>(null);
   const [expandedEmp, setExpandedEmp] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -72,17 +72,12 @@ export default function Attendance() {
     );
 
     const unsubscribe = onSnapshot(attQ, (snapshot) => {
-      const atts: Record<string, Partial<AttendanceType>> = {};
+      const atts: Record<string, AttendanceType[]> = {};
       snapshot.forEach(docSnap => { 
         const data = docSnap.data() as AttendanceType; 
         const key = `${data.employeeId}_${data.date}`;
-        const deterministicId = `${data.employeeId}_${data.date}`;
-        
-        // STRENGTHENED: If multiple exist, always prioritize the one with the correct ID.
-        // If we haven't seen this key yet, or if this doc's ID is the correct one, use it.
-        if (!atts[key] || docSnap.id === deterministicId) {
-          atts[key] = { ...data, id: docSnap.id }; 
-        }
+        if (!atts[key]) atts[key] = [];
+        atts[key].push({ ...data, id: docSnap.id });
       });
       setAttendanceData(atts);
       setLoading(false);
@@ -110,15 +105,33 @@ export default function Attendance() {
   }, [activeTab, startDate, endDate, singleDate]);
 
   const calculateDailyPay = useCallback((emp: Employee, key: string) => {
-    const att = attendanceData[key];
-    if (!att || att.status === 'absent') return 0;
-    if (att.status === 'pakyaw') {
-      const date = key.split('_')[1];
-      const jobs = pakyawJobs.filter(j => j.startDate === date && j.employeeIds.includes(emp.id));
-      return jobs.reduce((sum, j) => sum + (j.totalPrice / (j.employeeIds.length || 1)), 0);
-    }
+    const atts = attendanceData[key] || [];
+    if (atts.length === 0) return 0;
+    
+    let total = 0;
+    const date = key.split('_')[1];
     const hourlyRate = emp.dailySalary / 8;
-    return ((att.regularHours || 0) + (att.otHours || 0)) * hourlyRate;
+
+    atts.forEach(att => {
+      if (att.status === 'absent') return;
+      if (att.status === 'pakyaw') {
+        const jobId = att.pakyawJobId;
+        if (jobId) {
+          const job = pakyawJobs.find(j => j.id === jobId);
+          if (job) {
+             total += (job.totalPrice / (job.employeeIds.length || 1));
+          }
+        } else {
+          // Fallback legacy calculation or if no specific job linked
+          const jobs = pakyawJobs.filter(j => j.startDate === date && j.employeeIds.includes(emp.id));
+          total += jobs.reduce((sum, j) => sum + (j.totalPrice / (j.employeeIds.length || 1)), 0) / Math.max(1, atts.filter(a => a.status === 'pakyaw').length);
+        }
+      } else {
+        total += ((att.regularHours || 0) + (att.otHours || 0)) * hourlyRate;
+      }
+    });
+
+    return total;
   }, [attendanceData, pakyawJobs]);
 
   const calculatePeriodTotal = useCallback((emp: Employee) => {
@@ -137,25 +150,67 @@ export default function Attendance() {
     setSingleDate(prev => format(addDays(parseISO(prev), 1), 'yyyy-MM-dd'));
   };
 
-  const handleAttendanceChange = async (employeeId: string, date: string, field: keyof AttendanceType, value: any) => {
+  const deleteAttendance = async (id: string, employeeId: string, date: string) => {
+    if (!user) return;
+    try {
+      await deleteDoc(doc(db, 'attendance', id));
+    } catch (error) {
+      setError('Delete failed');
+      handleFirestoreError(error, OperationType.DELETE, 'attendance');
+    }
+  };
+
+  const handleAttendanceChange = async (employeeId: string, date: string, field: keyof AttendanceType, value: any, recordId?: string) => {
     setError(null);
+
+    // FIX: If we are clearing a pakyaw job ID, delete the record.
+    if (field === 'pakyawJobId' && (!value || value === '')) {
+       if (recordId) {
+         try {
+           await deleteDoc(doc(db, 'attendance', recordId));
+           return; 
+         } catch (error) {
+           setError('Remove failed');
+           handleFirestoreError(error, OperationType.DELETE, 'attendance');
+           return;
+         }
+       }
+    }
+
     const key = `${employeeId}_${date}`;
-    const current = attendanceData[key] || { 
-      employeeId, 
-      date, 
-      status: 'absent', 
-      timeIn: '07:00', 
-      timeOut: '16:00', 
-      regularHours: 0, 
-      otHours: 0,
-      pakyawJobId: undefined
-    };
+    const allRecords = attendanceData[key] || [];
+    
+    let current: Partial<AttendanceType>;
+    if (recordId) {
+      current = allRecords.find(r => r.id === recordId) || { id: recordId };
+    } else {
+      // If we are changing status to something that didn't exist, check if we should update an empty record or add new
+      current = { 
+        employeeId, 
+        date, 
+        status: 'present', 
+        timeIn: '07:00', 
+        timeOut: '16:00', 
+        regularHours: 0, 
+        otHours: 0,
+        pakyawJobId: undefined
+      };
+    }
     
     // Create new updated object
     let updated: Partial<AttendanceType> = { ...current, [field]: value };
     
     // Auto-calculate for status changes to ensure times match the intent
     if (field === 'status') {
+      if (value === 'absent') {
+          // Delete all other records for this employee and date to prevent multiple records
+          for (const rec of allRecords) {
+              if (rec.id !== recordId) {
+                 await deleteDoc(doc(db, 'attendance', rec.id));
+              }
+          }
+      }
+
       if (value === 'hd') {
         updated.timeIn = '07:00'; 
         updated.timeOut = '12:00';
@@ -219,33 +274,12 @@ export default function Attendance() {
       updated.pakyawJobId = undefined;
     }
 
-    // Immediate local update for responsiveness
-    setAttendanceData(prev => ({ ...prev, [key]: updated }));
-
     // Persist to Firebase
     if (!user) return;
     try {
-      const docId = `${employeeId}_${date}`;
+      const docId = recordId || `${employeeId}_${date}_${Date.now()}`;
       const { id, ...dataToSave } = updated;
       
-      // AGGRESSIVE CLEANUP: Find all records for this employee/date and delete them
-      // to resolve the "duplicate entry" issue reported by the user.
-      const existingQ = query(
-        collection(db, 'attendance'),
-        where('employeeId', '==', employeeId),
-        where('date', '==', date)
-      );
-      const { getDocs } = await import('firebase/firestore');
-      const existingSnap = await getDocs(existingQ);
-      
-      const deletePromises = existingSnap.docs
-        .filter(d => d.id !== docId) // Don't delete our target ID if it exists (setDoc handles it)
-        .map(d => deleteDoc(doc(db, 'attendance', d.id)));
-      
-      if (deletePromises.length > 0) {
-        await Promise.all(deletePromises);
-      }
-
       const finalDataToSave = { ...dataToSave };
       if (finalDataToSave.pakyawJobId === undefined) {
          finalDataToSave.pakyawJobId = deleteField() as any;
@@ -293,30 +327,21 @@ export default function Attendance() {
       }
 
       const tableData = dates.map(date => {
-        const att = attendanceData[`${emp.id}_${date}`];
-        let statusDisplay = 'Absent';
-        let timeInOut = '-- / --';
-        let reg = '0.0';
-        let ot = '0.0';
+        const atts = attendanceData[`${emp.id}_${date}`] || [];
+        let statusDisplay = atts.length === 0 ? 'Absent' : atts.map(a => a.status.charAt(0).toUpperCase() + a.status.slice(1)).join(', ');
+        let timeInOut = atts.map(a => (a.timeIn && a.timeOut) ? `${a.timeIn}-${a.timeOut}` : '').filter(Boolean).join('\n') || '-- / --';
+        let reg = atts.reduce((s, a) => s + (a.regularHours || 0), 0).toFixed(1);
+        let ot = atts.reduce((s, a) => s + (a.otHours || 0), 0).toFixed(1);
         let detail = `₱${calculateDailyPay(emp, `${emp.id}_${date}`).toLocaleString(undefined, {minimumFractionDigits: 2})}`;
 
-        if (att) {
-          if (att.status === 'hd') statusDisplay = 'Half Day';
-          else if (att.status === 'present') statusDisplay = 'Present';
-          else if (att.status === 'pakyaw') statusDisplay = 'Pakyaw';
-          else if (att.status === 'ut') statusDisplay = 'Undertime';
+        const pakyawDeets = atts.filter(a => a.status === 'pakyaw')
+          .map(a => {
+            const job = pakyawJobs.find(j => j.id === a.pakyawJobId);
+            return job ? job.description : '';
+          }).filter(Boolean).join(', ');
           
-          if (att.status === 'present' || att.status === 'ut' || att.status === 'hd') {
-            timeInOut = `${att.timeIn || '--'} - ${att.timeOut || '--'}`;
-            reg = (att.regularHours || 0).toString();
-            ot = (att.otHours || 0).toString();
-          }
-          if (att.status === 'pakyaw') {
-            const jobs = pakyawJobs.filter(j => j.startDate === date && j.employeeIds.includes(emp.id));
-            if (jobs.length > 0) {
-               detail += ` (${jobs.map(j => j.description).join(', ')})`;
-            }
-          }
+        if (pakyawDeets) {
+          detail += ` [${pakyawDeets}]`;
         }
 
         return [
@@ -357,20 +382,12 @@ export default function Attendance() {
       // Bulk view: summarize by employee rather than per day, or flattened if single date
       if (activeTab === 'mark') {
          const bulkData = employeesToExport.map(emp => {
-            const att = attendanceData[`${emp.id}_${singleDate}`];
-            let statusDisplay = 'Absent';
-            let timeInOut = '-- / --';
-            let reg = '0.0';
-            let ot = '0.0';
-            if (att) {
-              if (att.status === 'hd') statusDisplay = 'Half Day';
-              else if (att.status === 'present') statusDisplay = 'Present';
-              else if (att.status === 'pakyaw') statusDisplay = 'Pakyaw';
-              else if (att.status === 'ut') statusDisplay = 'Undertime';
-              timeInOut = `${att.timeIn || '--:--'} - ${att.timeOut || '--:--'}`;
-              reg = (att.regularHours || 0).toString();
-              ot = (att.otHours || 0).toString();
-            }
+            const atts = attendanceData[`${emp.id}_${singleDate}`] || [];
+            let statusDisplay = atts.length === 0 ? 'Absent' : atts.map(a => a.status.charAt(0).toUpperCase() + a.status.slice(1)).join(', ');
+            let timeInOut = atts.map(a => (a.timeIn && a.timeOut) ? `${a.timeIn}-${a.timeOut}` : '').filter(Boolean).join('\n') || '-- / --';
+            let reg = atts.reduce((s, a) => s + (a.regularHours || 0), 0).toFixed(1);
+            let ot = atts.reduce((s, a) => s + (a.otHours || 0), 0).toFixed(1);
+            
             return [
               emp.fullName,
               statusDisplay,
@@ -400,47 +417,37 @@ export default function Attendance() {
             let periodTotal = 0;
 
             dates.forEach(d => {
-               const att = attendanceData[`${emp.id}_${d}`];
-               
-               let statusDisplay = 'Absent';
-               let timeInOut = '-- / --';
-               let reg = '0.0';
-               let ot = '0.0';
-               
-               const dailyPay = calculateDailyPay(emp, `${emp.id}_${d}`);
-               periodTotal += dailyPay;
-               
-               let detail = `₱${dailyPay.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+                const atts = attendanceData[`${emp.id}_${d}`] || [];
+                
+                const dailyPay = calculateDailyPay(emp, `${emp.id}_${d}`);
+                periodTotal += dailyPay;
+                
+                let statusDisplay = atts.length === 0 ? 'Absent' : atts.map(a => a.status.charAt(0).toUpperCase() + a.status.slice(1)).join(', ');
+                let timeInOut = atts.map(a => (a.timeIn && a.timeOut) ? `${a.timeIn}-${a.timeOut}` : '').filter(Boolean).join('\n') || '-- / --';
+                let reg = atts.reduce((s, a) => s + (a.regularHours || 0), 0).toFixed(1);
+                let ot = atts.reduce((s, a) => s + (a.otHours || 0), 0).toFixed(1);
+                let detail = `₱${dailyPay.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
 
-               if (att) {
-                 if (att.status === 'hd') statusDisplay = 'Half Day';
-                 else if (att.status === 'present') statusDisplay = 'Present';
-                 else if (att.status === 'pakyaw') statusDisplay = 'Pakyaw';
-                 else if (att.status === 'ut') statusDisplay = 'Undertime';
-                 
-                 if (att.status === 'present' || att.status === 'ut' || att.status === 'hd') {
-                   timeInOut = `${att.timeIn || '--'} - ${att.timeOut || '--'}`;
-                   reg = (att.regularHours || 0).toString();
-                   ot = (att.otHours || 0).toString();
-                 }
-                 if (att.status === 'pakyaw') {
-                   const jobs = pakyawJobs.filter(j => j.startDate === d && j.employeeIds.includes(emp.id));
-                   if (jobs.length > 0) {
-                      detail += ` (${jobs.map(j => j.description).join(', ')})`;
-                   }
-                 }
-               }
-               
-               bulkData.push([
-                 format(parseISO(d), 'MMM dd'),
-                 '', // Empty Name column since we used a group header
-                 statusDisplay,
-                 timeInOut,
-                 reg,
-                 ot,
-                 detail
-               ]);
-            });
+                const pakyawDeets = atts.filter(a => a.status === 'pakyaw')
+                  .map(a => {
+                    const job = pakyawJobs.find(j => j.id === a.pakyawJobId);
+                    return job ? job.description : '';
+                  }).filter(Boolean).join(', ');
+                  
+                if (pakyawDeets) {
+                  detail += ` [${pakyawDeets}]`;
+                }
+                
+                bulkData.push([
+                  format(parseISO(d), 'MMM dd'),
+                  '', // Empty Name column since we used a group header
+                  statusDisplay,
+                  timeInOut,
+                  reg,
+                  ot,
+                  detail
+                ]);
+             });
 
             // Employee Subtotal
             bulkData.push([{ content: `Subtotal`, colSpan: 6, styles: { halign: 'right', fontStyle: 'bold' } }, { content: `₱${periodTotal.toLocaleString(undefined, {minimumFractionDigits: 2})}`, styles: { fontStyle: 'bold' } }]);
@@ -570,14 +577,11 @@ export default function Attendance() {
         ) : activeTab === 'mark' ? (
           <div className="grid grid-cols-1 gap-3">
             {employees.map(emp => {
-              const att = attendanceData[`${emp.id}_${singleDate}`] || { status: 'absent', timeIn: '07:00', timeOut: '16:00' };
-              const isHD = att.status === 'hd' || (att.timeIn === '07:00' && att.timeOut === '12:00');
-              const isUT = (att.status === 'ut' || (att.status === 'present' && (att.regularHours || 0) < 8 && (att.regularHours || 0) > 0)) && !isHD;
-              const isPresent = att.status === 'present' && !isUT && !isHD;
-              const isPakyaw = att.status === 'pakyaw';
-
+              const atts = attendanceData[`${emp.id}_${singleDate}`] || [];
+              const hasRecords = atts.length > 0;
+              
               return (
-                <div key={emp.id} className="bg-slate-900/40">
+                <div key={emp.id} className="bg-slate-900/40 p-4 rounded-3xl border border-white/5 backdrop-blur-md">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-blue-500/20 text-blue-400 rounded-full flex items-center justify-center font-bold text-sm shrink-0 overflow-hidden border border-blue-500/20">
@@ -593,15 +597,23 @@ export default function Attendance() {
                           <span className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">₱{emp.dailySalary}/d</span>
                         </div>
                         <div className="flex gap-1 mt-0.5">
-                          <span className={`text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-widest ${
-                            isPresent ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
-                            isPakyaw ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
-                            isHD ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30' :
-                            isUT ? 'bg-sky-500/20 text-sky-400 border border-sky-500/30' :
-                            'bg-rose-500/20 text-rose-400 border border-rose-500/30'
-                          }`}>
-                            {isHD ? 'Half Day' : isPresent ? 'Present' : isPakyaw ? 'Pakyaw' : isUT ? 'UT' : 'Absent'}
-                          </span>
+                          {atts.length > 0 ? (
+                            atts.map((a, i) => (
+                              <span key={`${a.id || 'new'}_${i}`} className={`text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-widest ${
+                                a.status === 'present' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
+                                a.status === 'pakyaw' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
+                                a.status === 'hd' ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30' :
+                                a.status === 'ut' ? 'bg-sky-500/20 text-sky-400 border border-sky-500/30' :
+                                'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+                              }`}>
+                                {a.status}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-widest bg-rose-500/20 text-rose-400 border border-rose-500/30">
+                              Absent
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -611,116 +623,136 @@ export default function Attendance() {
                     </div>
                   </div>
                   
-                   {(isPresent || isUT || isHD) && (
-                    <div className="space-y-3 mb-4 pt-2 border-t border-white/5">
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1">
-                          <Label className="text-[9px] font-black text-white/50 uppercase tracking-widest leading-none">Time In</Label>
-                          <Input type="time" value={att?.timeIn || '07:00'} onChange={e => handleAttendanceChange(emp.id, singleDate, 'timeIn', e.target.value)} className="h-8 rounded-lg bg-white/5 border border-white/10 font-mono text-xs p-2 text-white [color-scheme:dark]" />
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-[9px] font-black text-white/50 uppercase tracking-widest leading-none">Time Out</Label>
-                          <Input type="time" value={att?.timeOut || '16:00'} onChange={e => handleAttendanceChange(emp.id, singleDate, 'timeOut', e.target.value)} className="h-8 rounded-lg bg-white/5 border border-white/10 font-mono text-xs p-2 text-white [color-scheme:dark]" />
-                        </div>
-                      </div>
+                  {atts.map((att, idx) => {
+                    const isHD = att.status === 'hd' || (att.timeIn === '07:00' && att.timeOut === '12:00');
+                    const isUT = (att.status === 'ut' || (att.status === 'present' && (att.regularHours || 0) < 8 && (att.regularHours || 0) > 0)) && !isHD;
+                    const isPresent = att.status === 'present' && !isUT && !isHD;
+                    const isPakyaw = att.status === 'pakyaw';
 
-                      <div className="flex items-center gap-2 p-2 bg-white/5 rounded-xl border border-white/10">
-                        <div className="flex-1 text-center border-r border-white/10 last:border-0">
-                          <div className="text-[8px] font-black text-white/40 uppercase tracking-widest">Regular</div>
-                          <div className="text-xs font-black text-white">{att.regularHours || 0}h</div>
-                        </div>
-                        <div className="flex-1 text-center border-r border-white/10 last:border-0">
-                          <div className="text-[8px] font-black text-emerald-400 uppercase tracking-widest">Overtime</div>
-                          <div className="text-xs font-black text-emerald-400">{(att.otHours || 0).toFixed(1)}h</div>
-                        </div>
-                        {(isUT || (att.regularHours || 0) < 8) && (
-                          <div className="flex-1 text-center border-r border-white/10 last:border-0">
-                            <div className="text-[8px] font-black text-amber-400 uppercase tracking-widest">Undertime</div>
-                            <div className="text-xs font-black text-amber-400">
-                              {Math.max(0, 8 - (att.regularHours || 0)).toFixed(1)}h
+                    return (
+                      <div key={`${att.id || 'new'}_${idx}`} className="mb-4 pt-4 border-t border-white/5 bg-white/5 p-3 rounded-2xl relative group/card">
+                        <button 
+                          onClick={() => deleteAttendance(att.id, emp.id, singleDate)}
+                          className="absolute -top-2 -right-2 w-6 h-6 bg-rose-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover/card:opacity-100 transition-opacity shadow-lg"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                        
+                        {(isPresent || isUT || isHD) && (
+                          <div className="space-y-3 mb-4">
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="space-y-1">
+                                <Label className="text-[9px] font-black text-white/50 uppercase tracking-widest leading-none">Time In</Label>
+                                <Input type="time" value={att?.timeIn || '07:00'} onChange={e => handleAttendanceChange(emp.id, singleDate, 'timeIn', e.target.value, att.id)} className="h-8 rounded-lg bg-white/5 border border-white/10 font-mono text-xs p-2 text-white [color-scheme:dark]" />
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-[9px] font-black text-white/50 uppercase tracking-widest leading-none">Time Out</Label>
+                                <Input type="time" value={att?.timeOut || '16:00'} onChange={e => handleAttendanceChange(emp.id, singleDate, 'timeOut', e.target.value, att.id)} className="h-8 rounded-lg bg-white/5 border border-white/10 font-mono text-xs p-2 text-white [color-scheme:dark]" />
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 p-2 bg-slate-950/40 rounded-xl border border-white/5">
+                              <div className="flex-1 text-center border-r border-white/10 last:border-0">
+                                <div className="text-[8px] font-black text-white/40 uppercase tracking-widest">Regular</div>
+                                <div className="text-xs font-black text-white">{att.regularHours || 0}h</div>
+                              </div>
+                              <div className="flex-1 text-center border-r border-white/10 last:border-0">
+                                <div className="text-[8px] font-black text-emerald-400 uppercase tracking-widest">Overtime</div>
+                                <div className="text-xs font-black text-emerald-400">{(att.otHours || 0).toFixed(1)}h</div>
+                              </div>
+                              {(isUT || (att.regularHours || 0) < 8) && (
+                                <div className="flex-1 text-center border-r border-white/10 last:border-0">
+                                  <div className="text-[8px] font-black text-amber-400 uppercase tracking-widest">Undertime</div>
+                                  <div className="text-xs font-black text-amber-400">
+                                    {Math.max(0, 8 - (att.regularHours || 0)).toFixed(1)}h
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           </div>
                         )}
-                        <div className="flex-1 text-center">
-                          <div className="text-[8px] font-black text-blue-400 uppercase tracking-widest">Daily Pay</div>
-                          <div className="text-xs font-black text-cyan-400">
-                            ₱{calculateDailyPay(emp, `${emp.id}_${singleDate}`).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                        
+                        {isPakyaw && (
+                          <div className="space-y-3 mb-4">
+                            <div>
+                               <Label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">Assigned Pakyaw Job</Label>
+                               <select 
+                                 value={att?.pakyawJobId || ''} 
+                                 onChange={(e) => handleAttendanceChange(emp.id, singleDate, 'pakyawJobId', e.target.value, att.id)} 
+                                 className="w-full h-9 px-3 rounded-xl border-0 bg-slate-950/40 text-white text-xs font-semibold focus:ring-2 focus:ring-blue-500/20"
+                               >
+                                <option value="">-- Select Job --</option>
+                                {pakyawJobs
+                                  .filter(job => job.status === 'pending' || job.id === att.pakyawJobId)
+                                  .map(job => <option key={job.id} value={job.id}>{job.description} (₱{job.totalPrice.toLocaleString()})</option>)
+                                }
+                              </select>
+                            </div>
+
+                            {att.pakyawJobId && (
+                               <div className="flex items-center justify-between p-2 bg-amber-500/10 rounded-xl border border-amber-500/20">
+                                  <span className="text-[9px] font-bold text-amber-400 uppercase tracking-wider">Pakyaw Share</span>
+                                  <span className="text-sm font-black text-amber-300">
+                                    {(() => {
+                                      const job = pakyawJobs.find(j => j.id === att.pakyawJobId);
+                                      return job ? `₱${(job.totalPrice / (job.employeeIds.length || 1)).toLocaleString()}` : '₱0';
+                                    })()}
+                                  </span>
+                               </div>
+                            )}
                           </div>
+                        )}
+
+                        <div className="grid grid-cols-5 gap-1.5 mt-auto">
+                          <button 
+                            onClick={() => handleAttendanceChange(emp.id, singleDate, 'status', 'present', att.id)} 
+                            className={`py-2 text-[8px] rounded-lg font-black uppercase tracking-widest transition-all border ${att.status === 'present' ? 'bg-emerald-600 text-white border-emerald-500/50 shadow-lg' : 'bg-white/5 text-white/40 border-white/10'}`}
+                          >
+                            Present
+                          </button>
+                          <button 
+                            onClick={() => handleAttendanceChange(emp.id, singleDate, 'status', 'pakyaw', att.id)} 
+                            className={`py-2 text-[8px] rounded-lg font-black uppercase tracking-widest transition-all border ${att.status === 'pakyaw' ? 'bg-amber-600 text-white border-amber-500/50 shadow-lg' : 'bg-white/5 text-white/40 border-white/10'}`}
+                          >
+                            Pakyaw
+                          </button>
+                          <button 
+                            onClick={() => handleAttendanceChange(emp.id, singleDate, 'status', 'hd', att.id)} 
+                            className={`py-2 text-[8px] rounded-lg font-black uppercase tracking-widest transition-all border ${att.status === 'hd' ? 'bg-indigo-600 text-white border-indigo-500/50 shadow-lg' : 'bg-white/5 text-white/40 border-white/10'}`}
+                          >
+                            HD
+                          </button>
+                          <button 
+                            onClick={() => handleAttendanceChange(emp.id, singleDate, 'status', 'ut', att.id)} 
+                            className={`py-2 text-[8px] rounded-lg font-black uppercase tracking-widest transition-all border ${att.status === 'ut' ? 'bg-sky-600 text-white border-sky-500/50 shadow-lg' : 'bg-white/5 text-white/40 border-white/10'}`}
+                          >
+                            UT
+                          </button>
+                          <button 
+                            onClick={() => handleAttendanceChange(emp.id, singleDate, 'status', 'absent', att.id)} 
+                            className={`py-2 text-[8px] rounded-lg font-black uppercase tracking-widest transition-all border ${att.status === 'absent' ? 'bg-rose-600 text-white border-rose-500/50 shadow-lg' : 'bg-white/5 text-white/40 border-white/10'}`}
+                          >
+                            Absent
+                          </button>
                         </div>
                       </div>
-                    </div>
-                  )}
+                    );
+                  })}
                   
-                  {isPakyaw && (
-                    <div className="space-y-3 mb-4 pt-2 border-t border-slate-100 dark:border-slate-700">
-                       <div className="space-y-1">
-                         <Label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">Assigned Contracts (This Date)</Label>
-                         {pakyawJobs.filter(j => j.startDate === singleDate && j.employeeIds.includes(emp.id)).length > 0 ? (
-                           <div className="space-y-1">
-                             {pakyawJobs.filter(j => j.startDate === singleDate && j.employeeIds.includes(emp.id)).map(job => (
-                               <div key={job.id} className="flex justify-between items-center text-[10px] px-2.5 py-1.5 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-100 dark:border-slate-800">
-                                 <div className="flex flex-col">
-                                   <span className="text-slate-700 dark:text-slate-300 font-bold truncate max-w-[140px] leading-tight">{job.description}</span>
-                                   <span className="text-[8px] text-slate-400 font-medium uppercase">{job.status}</span>
-                                 </div>
-                                 <span className={`font-black ${job.status === 'completed' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'}`}>
-                                   ₱{(job.totalPrice / Math.max(1, job.employeeIds.length)).toLocaleString()}
-                                 </span>
-                               </div>
-                             ))}
-                           </div>
-                         ) : (
-                           <div className="text-[10px] text-slate-400 italic px-2 py-1">No contracts found for this date.</div>
-                         )}
-                       </div>
-
-                       <div>
-                         <Label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">Primary Reference Job</Label>
-                         <select value={att?.pakyawJobId || ''} onChange={(e) => handleAttendanceChange(emp.id, singleDate, 'pakyawJobId', e.target.value)} className="w-full h-9 px-3 rounded-lg border-0 bg-slate-50 dark:bg-slate-900 text-xs font-semibold">
-                          <option value="">-- Select Job --</option>
-                          {pakyawJobs.map(job => <option key={job.id} value={job.id}>{job.description}</option>)}
-                        </select>
-                       </div>
-
-                       <div className="flex items-center justify-between p-2 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-100 dark:border-amber-900/30">
-                          <span className="text-[9px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">Estimated Pakyaw Pay</span>
-                          <span className="text-sm font-black text-amber-700 dark:text-amber-300">
-                            ₱{calculateDailyPay(emp, `${emp.id}_${singleDate}`).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                          </span>
-                       </div>
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-5 gap-1.5 mt-auto">
+                  <div className="flex gap-2">
                     <button 
-                      onClick={() => handleAttendanceChange(emp.id, singleDate, 'status', 'present')} 
-                      className={`py-2 text-[9px] rounded-xl font-black uppercase tracking-widest transition-all border ${isPresent ? 'bg-emerald-600 text-white border-emerald-500/50 shadow-xl' : 'bg-white/5 text-white/40 border-white/10 hover:border-emerald-300'}`}
+                      onClick={() => handleAttendanceChange(emp.id, singleDate, 'status', 'present')}
+                      className="flex-1 py-3 bg-white/5 hover:bg-white/10 rounded-2xl border border-white/10 text-[10px] font-black text-white/60 uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2"
                     >
-                      Present
+                      <Plus className="w-3.5 h-3.5 text-blue-400" />
+                      Add Record
                     </button>
                     <button 
-                      onClick={() => handleAttendanceChange(emp.id, singleDate, 'status', 'pakyaw')} 
-                      className={`py-2 text-[9px] rounded-xl font-black uppercase tracking-widest transition-all border ${isPakyaw ? 'bg-amber-600 text-white border-amber-500/50 shadow-xl' : 'bg-white/5 text-white/40 border-white/10 hover:border-amber-300'}`}
+                      onClick={() => handleAttendanceChange(emp.id, singleDate, 'status', 'pakyaw')}
+                      className="flex-1 py-3 bg-amber-500/10 hover:bg-amber-500/20 rounded-2xl border border-amber-500/20 text-[10px] font-black text-amber-500 uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2"
                     >
-                      Pakyaw
-                    </button>
-                    <button 
-                      onClick={() => handleAttendanceChange(emp.id, singleDate, 'status', 'hd')} 
-                      className={`py-2 text-[9px] rounded-xl font-black uppercase tracking-widest transition-all border ${isHD ? 'bg-indigo-600 text-white border-indigo-500/50 shadow-xl' : 'bg-white/5 text-white/40 border-white/10 hover:border-indigo-300'}`}
-                    >
-                      HD
-                    </button>
-                    <button 
-                      onClick={() => handleAttendanceChange(emp.id, singleDate, 'status', 'ut')} 
-                      className={`py-2 text-[9px] rounded-xl font-black uppercase tracking-widest transition-all border ${isUT ? 'bg-sky-600 text-white border-sky-500/50 shadow-xl' : 'bg-white/5 text-white/40 border-white/10 hover:border-sky-300'}`}
-                    >
-                      UT
-                    </button>
-                    <button 
-                      onClick={() => handleAttendanceChange(emp.id, singleDate, 'status', 'absent')} 
-                      className={`py-2 text-[9px] rounded-xl font-black uppercase tracking-widest transition-all border ${att.status === 'absent' ? 'bg-rose-600 text-white border-rose-500/50 shadow-xl' : 'bg-white/5 text-white/40 border-white/10 hover:border-rose-300'}`}
-                    >
-                      Absent
+                      <Plus className="w-3.5 h-3.5 text-amber-400" />
+                      Add Pakyaw
                     </button>
                   </div>
                 </div>
@@ -776,31 +808,42 @@ export default function Attendance() {
                       <div className="flex flex-wrap gap-1 mt-1">
                           <span className="text-[8px] font-bold text-emerald-700 bg-emerald-50 dark:bg-emerald-900/20 dark:text-emerald-400 px-1.5 py-0.5 rounded uppercase tracking-wider">
                             {dates.filter(d => {
-                              const att = attendanceData[`${emp.id}_${d}`];
-                              return att?.status === 'present' && (att.regularHours === undefined || att.regularHours >= 8);
+                              const atts = attendanceData[`${emp.id}_${d}`] || [];
+                              return atts.some(a => a.status === 'present' && (a.regularHours === undefined || a.regularHours >= 8));
                             }).length} Pres
                           </span>
                           <span className="text-[8px] font-bold text-rose-700 bg-rose-50 dark:bg-rose-900/20 dark:text-rose-400 px-1.5 py-0.5 rounded uppercase tracking-wider">
-                            {dates.filter(d => !attendanceData[`${emp.id}_${d}`] || attendanceData[`${emp.id}_${d}`]?.status === 'absent').length} Abs
+                            {dates.filter(d => {
+                              const atts = attendanceData[`${emp.id}_${d}`] || [];
+                              return atts.length === 0 || atts.every(a => a.status === 'absent');
+                            }).length} Abs
                           </span>
                           <span className="text-[8px] font-bold text-amber-700 bg-amber-50 dark:bg-amber-900/20 dark:text-amber-400 px-1.5 py-0.5 rounded uppercase tracking-wider">
-                            {dates.filter(d => attendanceData[`${emp.id}_${d}`]?.status === 'pakyaw').length} Paky
+                            {dates.filter(d => {
+                              const atts = attendanceData[`${emp.id}_${d}`] || [];
+                              return atts.some(a => a.status === 'pakyaw');
+                            }).length} Paky
                           </span>
                           <span className="text-[8px] font-bold text-sky-700 bg-sky-50 dark:bg-sky-900/20 dark:text-sky-400 px-1.5 py-0.5 rounded uppercase tracking-wider">
                             {dates.filter(d => {
-                              const att = attendanceData[`${emp.id}_${d}`];
-                              const isHDLocal = att?.status === 'hd' || (att?.timeIn === '07:00' && att?.timeOut === '12:00');
-                              return (att?.status === 'ut' || (att?.status === 'present' && att?.regularHours !== undefined && att?.regularHours < 8)) && !isHDLocal;
+                              const atts = attendanceData[`${emp.id}_${d}`] || [];
+                              return atts.some(att => {
+                                const isHDLocal = att?.status === 'hd' || (att?.timeIn === '07:00' && att?.timeOut === '12:00');
+                                return (att?.status === 'ut' || (att?.status === 'present' && att?.regularHours !== undefined && att?.regularHours < 8)) && !isHDLocal;
+                              });
                             }).length} UT
                           </span>
                           <span className="text-[8px] font-bold text-indigo-700 bg-indigo-50 dark:bg-indigo-900/20 dark:text-indigo-400 px-1.5 py-0.5 rounded uppercase tracking-wider">
                             {dates.filter(d => {
-                              const att = attendanceData[`${emp.id}_${d}`];
-                              return att?.status === 'hd' || (att?.timeIn === '07:00' && att?.timeOut === '12:00');
+                              const atts = attendanceData[`${emp.id}_${d}`] || [];
+                              return atts.some(att => att?.status === 'hd' || (att?.timeIn === '07:00' && att?.timeOut === '12:00'));
                             }).length} HD
                           </span>
                           <span className="text-[8px] font-bold text-blue-700 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400 px-1.5 py-0.5 rounded uppercase tracking-wider">
-                            {dates.reduce((sum, d) => sum + (attendanceData[`${emp.id}_${d}`]?.otHours || 0), 0).toFixed(1)} OT
+                            {dates.reduce((sum, d) => {
+                              const atts = attendanceData[`${emp.id}_${d}`] || [];
+                              return sum + atts.reduce((s, a) => s + (a.otHours || 0), 0);
+                            }, 0).toFixed(1)} OT
                           </span>
                       </div>
                     </div>
@@ -819,61 +862,97 @@ export default function Attendance() {
                 {expandedEmp === emp.id && (
                   <div className="px-4 pb-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/30">
                     {dates.map(date => {
-                      const att = attendanceData[`${emp.id}_${date}`] || { status: 'absent', timeIn: '07:00', timeOut: '16:00' };
-                      const isHD_detail = att.status === 'hd' || (att.timeIn === '07:00' && att.timeOut === '12:00');
-                      const isUT_detail = (att.status === 'ut' || (att.status === 'present' && (att.regularHours || 0) < 8 && (att.regularHours || 0) > 0)) && !isHD_detail;
-                      const isPresent_detail = att.status === 'present' && !isUT_detail && !isHD_detail;
-                      const isAbs_detail = (att.status === 'absent' || (!att.status && !att.regularHours)) && !isHD_detail && !isUT_detail && !isPresent_detail;
+                      const atts = attendanceData[`${emp.id}_${date}`] || [];
+                      const hasRecordsDetail = atts.length > 0;
 
                       return (
                         <div key={date} className="pt-4 first:pt-4 border-b last:border-0 border-slate-100 dark:border-slate-800 pb-4">
                           <div className="flex justify-between items-center mb-3">
                             <span className="font-bold text-sm text-slate-700 dark:text-slate-200">{format(parseISO(date), 'MMM dd, EEE')}</span>
-                            <div className="flex gap-2 text-[10px] font-bold text-slate-500 bg-white dark:bg-slate-800 px-3 py-1 rounded-full border border-slate-100 dark:border-slate-700">
-                               {(isPresent_detail || isUT_detail || isHD_detail) && (
-                                  <>
-                                    <span className="text-slate-500">Reg: {att.regularHours || 0}h</span>
-                                    {att.otHours ? <span className="text-emerald-600">OT: {att.otHours.toFixed(1)}h</span> : null}
-                                    {isUT_detail ? <span className="text-amber-600">UT: {(8 - (att.regularHours || 0)).toFixed(1)}h</span> : null}
-                                    {isHD_detail ? <span className="text-indigo-600">HD</span> : null}
-                                    <span className="text-blue-600 dark:text-blue-400 border-l border-slate-200 dark:border-slate-700 ml-1 pl-2">₱{calculateDailyPay(emp, `${emp.id}_${date}`).toLocaleString()}</span>
-                                  </>
-                               )}
-                               {isAbs_detail && <span className="text-rose-600">Absent</span>}
-                               {att?.status === 'pakyaw' && (
-                                 <>
-                                   <span className="text-amber-600">Pakyaw</span>
-                                   <span className="text-blue-600 dark:text-blue-400 border-l border-slate-200 dark:border-slate-700 ml-1 pl-2 font-black">
-                                     ₱{calculateDailyPay(emp, `${emp.id}_${date}`).toLocaleString()}
-                                   </span>
-                                 </>
-                               )}
+                            <div className="text-right">
+                               <div className="text-[11px] font-black text-blue-600 dark:text-blue-400">₱{calculateDailyPay(emp, `${emp.id}_${date}`).toLocaleString()}</div>
+                               <div className="text-[8px] text-slate-400 uppercase font-bold tracking-tighter leading-none">Day Total</div>
                             </div>
-                            {att?.status === 'pakyaw' && (
-                              <div className="flex flex-wrap gap-1 mt-2">
-                                {pakyawJobs.filter(j => j.startDate === date && j.employeeIds.includes(emp.id)).map(job => (
-                                  <span key={job.id} className="text-[8px] bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded border border-amber-100 dark:border-amber-900/30">
-                                    {job.description}: ₱{(job.totalPrice / Math.max(1, job.employeeIds.length)).toLocaleString()}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
                           </div>
 
-                          <div className="flex gap-2 mb-3">
-                            <button onClick={() => handleAttendanceChange(emp.id, date, 'status', 'present')} className={`flex-1 py-2 text-[10px] font-bold rounded-lg ${isPresent_detail ? 'bg-emerald-600 text-white' : 'bg-white dark:bg-slate-800 text-slate-600 border border-slate-200 dark:border-slate-700'}`}>Present</button>
-                            <button onClick={() => handleAttendanceChange(emp.id, date, 'status', 'pakyaw')} className={`flex-1 py-2 text-[10px] font-bold rounded-lg ${att?.status === 'pakyaw' ? 'bg-amber-500 text-white' : 'bg-white dark:bg-slate-800 text-slate-600 border border-slate-200 dark:border-slate-700'}`}>Pakyaw</button>
-                            <button onClick={() => handleAttendanceChange(emp.id, date, 'status', 'hd')} className={`flex-1 py-2 text-[10px] font-bold rounded-lg ${isHD_detail ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-slate-800 text-slate-600 border border-slate-200 dark:border-slate-700'}`}>HD</button>
-                            <button onClick={() => handleAttendanceChange(emp.id, date, 'status', 'ut')} className={`flex-1 py-2 text-[10px] font-bold rounded-lg ${isUT_detail ? 'bg-sky-500 text-white' : 'bg-white dark:bg-slate-800 text-slate-600 border border-slate-200 dark:border-slate-700'}`}>UT</button>
-                            <button onClick={() => handleAttendanceChange(emp.id, date, 'status', 'absent')} className={`flex-1 py-2 text-[10px] font-bold rounded-lg ${isAbs_detail ? 'bg-rose-600 text-white' : 'bg-white dark:bg-slate-800 text-slate-600 border border-slate-200 dark:border-slate-700'}`}>Absent</button>
+                          <div className="space-y-3">
+                            {atts.map((att, attIdx) => {
+                               const isHD_detail = att.status === 'hd' || (att.timeIn === '07:00' && att.timeOut === '12:00');
+                               const isUT_detail = (att.status === 'ut' || (att.status === 'present' && (att.regularHours || 0) < 8 && (att.regularHours || 0) > 0)) && !isHD_detail;
+                               const isPresent_detail = att.status === 'present' && !isUT_detail && !isHD_detail;
+                               const isAbs_detail = att.status === 'absent';
+                               const isPakyaw_detail = att.status === 'pakyaw';
+
+                               return (
+                                 <div key={att.id || attIdx} className="bg-white/50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-100 dark:border-slate-700">
+                                   <div className="flex justify-between items-center mb-2">
+                                     <div className="flex gap-2 text-[10px] font-bold p-1">
+                                        {isPresent_detail && <span className="text-emerald-600">Present</span>}
+                                        {isUT_detail && <span className="text-sky-600">Undertime</span>}
+                                        {isHD_detail && <span className="text-indigo-600">Half Day</span>}
+                                        {isAbs_detail && <span className="text-rose-600">Absent</span>}
+                                        {isPakyaw_detail && <span className="text-amber-600">Pakyaw</span>}
+                                     </div>
+                                     <div className="flex gap-2 text-[10px] font-bold text-slate-500">
+                                       {(isPresent_detail || isUT_detail || isHD_detail) && (
+                                         <>
+                                           <span>{att.timeIn} - {att.timeOut}</span>
+                                           <span className="text-slate-400">({att.regularHours}h {att.otHours ? `+ ${att.otHours}h OT` : ''})</span>
+                                         </>
+                                       )}
+                                       {isPakyaw_detail && (
+                                         <span className="text-amber-600">
+                                           {pakyawJobs.find(j => j.id === att.pakyawJobId)?.description || 'Job Assigned'}
+                                         </span>
+                                       )}
+                                       <button 
+                                         onClick={() => deleteAttendance(att.id, emp.id, date)}
+                                         className="ml-2 text-rose-500 hover:text-rose-700"
+                                       >
+                                         <X className="w-3.5 h-3.5" />
+                                       </button>
+                                     </div>
+                                   </div>
+
+                                   <div className="flex gap-2 mb-2">
+                                     <button onClick={() => handleAttendanceChange(emp.id, date, 'status', 'present', att.id)} className={`flex-1 py-1.5 text-[9px] font-bold rounded-lg ${isPresent_detail ? 'bg-emerald-600 text-white' : 'bg-white dark:bg-slate-800 text-slate-600 border border-slate-200 dark:border-slate-700'}`}>Present</button>
+                                     <button onClick={() => handleAttendanceChange(emp.id, date, 'status', 'pakyaw', att.id)} className={`flex-1 py-1.5 text-[9px] font-bold rounded-lg ${isPakyaw_detail ? 'bg-amber-500 text-white' : 'bg-white dark:bg-slate-800 text-slate-600 border border-slate-200 dark:border-slate-700'}`}>Pakyaw</button>
+                                     <button onClick={() => handleAttendanceChange(emp.id, date, 'status', 'hd', att.id)} className={`flex-1 py-1.5 text-[9px] font-bold rounded-lg ${isHD_detail ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-slate-800 text-slate-600 border border-slate-200 dark:border-slate-700'}`}>HD</button>
+                                     <button onClick={() => handleAttendanceChange(emp.id, date, 'status', 'ut', att.id)} className={`flex-1 py-1.5 text-[9px] font-bold rounded-lg ${isUT_detail ? 'bg-sky-500 text-white' : 'bg-white dark:bg-slate-800 text-slate-600 border border-slate-200 dark:border-slate-700'}`}>UT</button>
+                                     <button onClick={() => handleAttendanceChange(emp.id, date, 'status', 'absent', att.id)} className={`flex-1 py-1.5 text-[9px] font-bold rounded-lg ${isAbs_detail ? 'bg-rose-600 text-white' : 'bg-white dark:bg-slate-800 text-slate-600 border border-slate-200 dark:border-slate-700'}`}>Absent</button>
+                                   </div>
+
+                                   {(isPresent_detail || isUT_detail || isHD_detail) && (
+                                     <div className="grid grid-cols-2 gap-2">
+                                       <Input type="time" value={att?.timeIn || '07:00'} onChange={e => handleAttendanceChange(emp.id, date, 'timeIn', e.target.value, att.id)} className="h-8 text-[10px] font-mono rounded-lg bg-white dark:bg-slate-800 border-0 [color-scheme:dark]" />
+                                       <Input type="time" value={att?.timeOut || '16:00'} onChange={e => handleAttendanceChange(emp.id, date, 'timeOut', e.target.value, att.id)} className="h-8 text-[10px] font-mono rounded-lg bg-white dark:bg-slate-800 border-0 [color-scheme:dark]" />
+                                     </div>
+                                   )}
+                                   {isPakyaw_detail && (
+                                     <select 
+                                       value={att?.pakyawJobId || ''} 
+                                       onChange={(e) => handleAttendanceChange(emp.id, date, 'pakyawJobId', e.target.value, att.id)} 
+                                       className="w-full h-8 px-2 rounded-lg border-0 bg-white dark:bg-slate-800 text-[10px] font-semibold"
+                                     >
+                                      <option value="">-- Select Job --</option>
+                                      {pakyawJobs
+                                        .filter(job => job.status === 'pending' || job.id === att.pakyawJobId)
+                                        .map(job => <option key={job.id} value={job.id}>{job.description}</option>)
+                                      }
+                                    </select>
+                                   )}
+                                 </div>
+                               );
+                            })}
+                            
+                            <button 
+                              onClick={() => handleAttendanceChange(emp.id, date, 'status', 'present')}
+                              className="w-full py-2 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl text-[10px] font-bold text-slate-400 hover:text-blue-500 hover:border-blue-200 transition-all flex items-center justify-center gap-2"
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                              Add Record
+                            </button>
                           </div>
-                          
-                          {(att?.status === 'present' || att?.status === 'ut' || att?.status === 'hd') && (
-                            <div className="grid grid-cols-2 gap-2">
-                              <Input type="time" value={att?.timeIn || '07:00'} onChange={e => handleAttendanceChange(emp.id, date, 'timeIn', e.target.value)} className="h-9 text-xs font-mono rounded-lg bg-white dark:bg-slate-800 border-0 text-white [color-scheme:dark]" />
-                              <Input type="time" value={att?.timeOut || '16:00'} onChange={e => handleAttendanceChange(emp.id, date, 'timeOut', e.target.value)} className="h-9 text-xs font-mono rounded-lg bg-white dark:bg-slate-800 border-0 text-white [color-scheme:dark]" />
-                            </div>
-                          )}
                         </div>
                       );
                     })}

@@ -700,6 +700,7 @@ export default function Payroll() {
         if (existingSnap.empty) {
           await addDoc(collection(db, 'payrolls'), {
             ...finalPayload,
+            status: 'pending',
             createdAt: new Date().toISOString()
           });
         } else {
