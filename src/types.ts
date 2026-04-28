@@ -59,6 +59,7 @@ export interface PakyawJob {
   id: string;
   description: string;
   startDate: string;
+  completedAt?: string;
   status: 'pending' | 'completed';
   totalPrice: number;
   employeeIds: string[];

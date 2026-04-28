@@ -450,8 +450,8 @@ export default function Attendance() {
             head: [['Name', 'Status', 'Time', 'Reg', 'OT', 'Amount (₱)']],
             body: bulkData,
             theme: 'grid',
-            headStyles: { fillColor: [59, 130, 246] },
-            styles: { fontSize: 8 },
+            headStyles: { fillColor: [59, 130, 246], textColor: [255, 255, 255] },
+            styles: { fontSize: 8, textColor: [0, 0, 0], fillColor: [255, 255, 255] },
           });
       } else {
          // Range Bulk Review
@@ -519,8 +519,8 @@ export default function Attendance() {
             head: [['Date', 'Name', 'Status', 'Time', 'Reg', 'OT', 'Amount (₱)']],
             body: bulkData,
             theme: 'grid',
-            headStyles: { fillColor: [59, 130, 246] },
-            styles: { fontSize: 8 },
+            headStyles: { fillColor: [59, 130, 246], textColor: [255, 255, 255] },
+            styles: { fontSize: 8, textColor: [0, 0, 0], fillColor: [255, 255, 255] },
             didDrawPage: function (data) {
                yPos = data.cursor ? data.cursor.y : 0;
             }
