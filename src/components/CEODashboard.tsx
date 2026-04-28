@@ -321,14 +321,15 @@ export default function CEODashboard() {
         useCORS: true,
         logging: false,
         backgroundColor: "#ffffff",
-        width: payslipRef.current.offsetWidth,
+        width: payslipRef.current.scrollWidth + 10,
         onclone: (clonedDoc) => {
           const payslip = clonedDoc.querySelector('.payslip-mockup');
           if (payslip) {
-            (payslip as HTMLElement).style.width = `${payslipRef.current!.offsetWidth}px`;
+            (payslip as HTMLElement).style.width = 'auto';
+            (payslip as HTMLElement).style.maxWidth = 'none';
             (payslip as HTMLElement).style.color = '#000000';
             (payslip as HTMLElement).style.backgroundColor = '#ffffff';
-            (payslip as HTMLElement).style.padding = '20px';
+            (payslip as HTMLElement).style.padding = '12px';
             
             const allElements = payslip.querySelectorAll('*');
             allElements.forEach(el => {

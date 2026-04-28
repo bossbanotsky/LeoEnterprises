@@ -359,7 +359,7 @@ export default function EmployeeDashboard() {
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
-        width: payslipRef.current.offsetWidth,
+        width: payslipRef.current.scrollWidth + 10,
         onclone: (clonedDoc) => {
           const allElements = clonedDoc.querySelectorAll('*');
           allElements.forEach(el => {
@@ -379,8 +379,8 @@ export default function EmployeeDashboard() {
 
           const payslip = clonedDoc.querySelector('.payslip-mockup');
           if (payslip) {
-            (payslip as HTMLElement).style.width = `${payslipRef.current!.offsetWidth}px`;
-            (payslip as HTMLElement).style.padding = '20px';
+            (payslip as HTMLElement).style.width = 'auto';
+            (payslip as HTMLElement).style.maxWidth = 'none';
           }
         }
       });
