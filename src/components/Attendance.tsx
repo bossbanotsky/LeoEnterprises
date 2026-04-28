@@ -581,7 +581,7 @@ export default function Attendance() {
               const hasRecords = atts.length > 0;
               
               return (
-                <div key={emp.id} className="bg-slate-900/40 p-4 rounded-3xl border border-white/5 backdrop-blur-md">
+                <div key={emp.id} className="bg-slate-900/40 p-4 rounded-3xl border border-white/5 backdrop-blur-md cursor-pointer hover:bg-slate-800 transition-colors" onClick={() => setExpandedEmp(expandedEmp === emp.id ? null : emp.id)}>
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-blue-500/20 text-blue-400 rounded-full flex items-center justify-center font-bold text-sm shrink-0 overflow-hidden border border-blue-500/20">
@@ -623,7 +623,7 @@ export default function Attendance() {
                     </div>
                   </div>
                   
-                  {atts.map((att, idx) => {
+                  {expandedEmp === emp.id && atts.map((att, idx) => {
                     const isHD = att.status === 'hd' || (att.timeIn === '07:00' && att.timeOut === '12:00');
                     const isUT = (att.status === 'ut' || (att.status === 'present' && (att.regularHours || 0) < 8 && (att.regularHours || 0) > 0)) && !isHD;
                     const isPresent = att.status === 'present' && !isUT && !isHD;
@@ -739,22 +739,24 @@ export default function Attendance() {
                     );
                   })}
                   
-                  <div className="flex gap-2">
-                    <button 
-                      onClick={() => handleAttendanceChange(emp.id, singleDate, 'status', 'present')}
-                      className="flex-1 py-3 bg-white/5 hover:bg-white/10 rounded-2xl border border-white/10 text-[10px] font-black text-white/60 uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2"
-                    >
-                      <Plus className="w-3.5 h-3.5 text-blue-400" />
-                      Add Record
-                    </button>
-                    <button 
-                      onClick={() => handleAttendanceChange(emp.id, singleDate, 'status', 'pakyaw')}
-                      className="flex-1 py-3 bg-amber-500/10 hover:bg-amber-500/20 rounded-2xl border border-amber-500/20 text-[10px] font-black text-amber-500 uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2"
-                    >
-                      <Plus className="w-3.5 h-3.5 text-amber-400" />
-                      Add Pakyaw
-                    </button>
-                  </div>
+                  {expandedEmp === emp.id && (
+                    <div className="flex gap-2">
+                        <button 
+                          onClick={() => handleAttendanceChange(emp.id, singleDate, 'status', 'present')}
+                          className="flex-1 py-3 bg-white/5 hover:bg-white/10 rounded-2xl border border-white/10 text-[10px] font-black text-white/60 uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2"
+                        >
+                          <Plus className="w-3.5 h-3.5 text-blue-400" />
+                          Add Record
+                        </button>
+                        <button 
+                          onClick={() => handleAttendanceChange(emp.id, singleDate, 'status', 'pakyaw')}
+                          className="flex-1 py-3 bg-amber-500/10 hover:bg-amber-500/20 rounded-2xl border border-amber-500/20 text-[10px] font-black text-amber-500 uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2"
+                        >
+                          <Plus className="w-3.5 h-3.5 text-amber-400" />
+                          Add Pakyaw
+                        </button>
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -1026,6 +1028,8 @@ export default function Attendance() {
           </div>
         </DialogContent>
       </Dialog>
+      
+
   </div>
 );
 }
