@@ -1053,11 +1053,11 @@ export default function Payroll() {
       </div>
 
       <Dialog open={!!selectedPayslip} onOpenChange={(open) => !open && setSelectedPayslip(null)}>
-        <DialogContent className="sm:max-w-[720px] p-0 overflow-hidden bg-white rounded-3xl w-[95vw] max-w-2xl mx-auto border-none shadow-2xl">
-          <div className="p-3 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 backdrop-blur-sm sticky top-0 z-10 font-sans">
-            <DialogTitle className="flex items-center gap-2 text-slate-900 font-black uppercase italic tracking-tight text-base">
-              <FileText className="w-4 h-4 text-blue-600" />
-              Payslip Details
+        <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden bg-white rounded-2xl w-[95vw] max-w-lg mx-auto border-none shadow-2xl">
+          <div className="p-2 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 backdrop-blur-sm sticky top-0 z-10 font-sans">
+            <DialogTitle className="flex items-center gap-2 text-slate-900 font-black uppercase italic tracking-tight text-sm">
+              <FileText className="w-3.5 h-3.5 text-blue-600" />
+              Payslip
             </DialogTitle>
             <div className="flex items-center gap-2">
               <Button 
@@ -1096,20 +1096,20 @@ export default function Payroll() {
           {selectedPayslip && (
             <div 
               ref={payslipRef}
-              className="p-5 max-h-[80vh] overflow-y-auto payslip-mockup bg-white font-sans text-[11px]" 
+              className="p-3 max-h-[85vh] overflow-y-auto payslip-mockup bg-white font-sans text-[10px]" 
               style={{ backgroundColor: '#ffffff' }}
             >
-              <div className="flex justify-between border-b-2 border-slate-900 pb-4 mb-4">
+              <div className="flex justify-between border-b border-slate-900 pb-2 mb-2">
                 <div>
-                  <div className="inline-flex items-center gap-1.5 px-1.5 py-0.5 bg-blue-600 text-white text-[8px] font-black uppercase tracking-[0.2em] rounded mb-2">
-                    Corporate Slip
+                  <div className="inline-flex items-center gap-1 px-1 py-0.5 bg-blue-600 text-white text-[7px] font-black uppercase tracking-[0.1em] rounded mb-1">
+                    Official
                   </div>
-                  <h2 className="text-2xl font-black text-slate-900 leading-none italic uppercase">PAYSLIP</h2>
-                  <div className="text-[10px] font-bold text-slate-400 mt-1.5 uppercase tracking-widest">
-                    Pay Period: <span className="text-slate-900">{format(parseISO(selectedPayslip.startDate), 'MMM dd')} - {format(parseISO(selectedPayslip.endDate), 'MMM dd, yyyy')}</span>
+                  <h2 className="text-xl font-black text-slate-900 leading-none italic uppercase">PAYSLIP</h2>
+                  <div className="text-[9px] font-bold text-slate-400 mt-1 uppercase tracking-tight">
+                    Pay Period: <span className="text-slate-900">{format(parseISO(selectedPayslip.startDate), 'MM/dd')} - {format(parseISO(selectedPayslip.endDate), 'MM/dd/yy')}</span>
                   </div>
-                  <div className="flex items-center gap-3 mt-4">
-                    <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center font-bold text-xl overflow-hidden shrink-0 border border-slate-200 shadow-sm">
+                  <div className="flex items-center gap-2 mt-2">
+                    <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center font-bold text-lg overflow-hidden shrink-0 border border-slate-200">
                       {selectedPayslip.employee.photoURL ? (
                         <img src={selectedPayslip.employee.photoURL} alt={selectedPayslip.employee.fullName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                       ) : (
@@ -1117,10 +1117,9 @@ export default function Payroll() {
                       )}
                     </div>
                     <div>
-                      <div className="text-xl font-black text-slate-900 uppercase tracking-tight leading-none italic">{selectedPayslip.employee.fullName}</div>
-                      <div className="text-[9px] font-bold text-blue-600 mt-1 uppercase tracking-widest flex items-center gap-2">
-                        {selectedPayslip.employee.customId && <span>ID: {selectedPayslip.employee.customId}</span>}
-                        {selectedPayslip.employee.customId && <span className="w-1 h-1 bg-slate-300 rounded-full"></span>}
+                      <div className="text-lg font-black text-slate-900 uppercase tracking-tight leading-none italic">{selectedPayslip.employee.fullName}</div>
+                      <div className="text-[8px] font-bold text-blue-600 mt-0.5 uppercase tracking-wider flex items-center gap-1">
+                        {selectedPayslip.employee.customId && <span>#{selectedPayslip.employee.customId}</span>}
                         <span>{selectedPayslip.employee.position || 'Staff'}</span>
                       </div>
                     </div>
@@ -1128,183 +1127,129 @@ export default function Payroll() {
                 </div>
                 <div className="text-right flex flex-col justify-between items-end">
                   <div className="text-right">
-                    <div className="text-[9px] font-black text-slate-400 mb-0.5 uppercase tracking-[0.2em]">Net Payout</div>
-                    <div className={`text-3xl font-black italic tracking-tighter leading-none ${selectedPayslip.totalPay < 0 ? 'text-red-600' : 'text-blue-600'}`}>
-                      ₱ {selectedPayslip.totalPay.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    <div className="text-[8px] font-black text-slate-400 mb-0.5 uppercase tracking-widest">Net Pay</div>
+                    <div className={`text-2xl font-black italic tracking-tighter leading-none ${selectedPayslip.totalPay < 0 ? 'text-red-600' : 'text-blue-600'}`}>
+                      ₱{selectedPayslip.totalPay.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                     </div>
                   </div>
                   <div className="text-right mt-auto">
-                    <div className="text-[10px] font-black text-slate-900 uppercase italic leading-none">{companyInfo.name}</div>
-                    {companyInfo.address && <div className="text-[8px] text-slate-400 mt-0.5 font-medium max-w-[120px] leading-tight ml-auto">{companyInfo.address}</div>}
+                    <div className="text-[9px] font-black text-slate-900 uppercase italic leading-none">{companyInfo.name}</div>
+                    {companyInfo.address && <div className="text-[7px] text-slate-400 mt-0.5 font-medium max-w-[100px] leading-tight ml-auto truncate">{companyInfo.address}</div>}
                   </div>
                 </div>
               </div>
               
-              <div className="grid grid-cols-3 gap-2 mb-4 p-2 bg-slate-50 border border-slate-100 rounded-xl">
+              <div className="grid grid-cols-3 gap-1 mb-2 p-1.5 bg-slate-50 border border-slate-100 rounded-lg">
                 <div className="flex flex-col">
-                  <span className="text-[7px] font-black text-slate-400 mb-0.5 uppercase tracking-widest">Daily Rate</span>
-                  <span className="text-[10px] font-black text-slate-900 font-mono">₱ {(selectedPayslip.employee.dailySalary || 0).toFixed(2)}</span>
+                  <span className="text-[6px] font-black text-slate-400 uppercase">Daily</span>
+                  <span className="text-[9px] font-black text-slate-900">₱{(selectedPayslip.employee.dailySalary || 0).toFixed(2)}</span>
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-[7px] font-black text-slate-400 mb-0.5 uppercase tracking-widest">Hourly Rate</span>
-                  <span className="text-[10px] font-black text-slate-900 font-mono">₱ {((selectedPayslip.employee.dailySalary || 0) / 8).toFixed(2)}</span>
+                  <span className="text-[6px] font-black text-slate-400 uppercase">Hourly</span>
+                  <span className="text-[9px] font-black text-slate-900">₱{((selectedPayslip.employee.dailySalary || 0) / 8).toFixed(2)}</span>
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-[7px] font-black text-slate-400 mb-0.5 uppercase tracking-widest">OT Hourly</span>
-                  <span className="text-[10px] font-black text-emerald-600 font-mono">₱ {((selectedPayslip.employee.dailySalary || 0) / 8).toFixed(2)}</span>
+                  <span className="text-[6px] font-black text-slate-400 uppercase">OT Hr</span>
+                  <span className="text-[9px] font-black text-emerald-600">₱{((selectedPayslip.employee.dailySalary || 0) / 8).toFixed(2)}</span>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 font-sans">
-                <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3 font-sans">
+                <div className="space-y-2">
                   <div>
-                    <h3 className="text-[10px] font-black text-slate-900 border-b-2 border-slate-100 pb-1.5 mb-3 uppercase tracking-[0.2em] flex items-center justify-between">
-                      Earnings <span>Amount</span>
+                    <h3 className="text-[9px] font-black text-slate-900 border-b border-slate-100 pb-1 mb-1.5 uppercase flex justify-between">
+                      Earnings <span>₱</span>
                     </h3>
-                    <div className="space-y-2 text-[12px]">
-                      <div className="space-y-1 border-b border-slate-50 pb-2 mb-2">
-                        <div className="flex justify-between items-center mb-0.5">
-                          <span className="text-slate-500 font-bold text-[9px] uppercase tracking-wide">Regular Pay</span>
-                          <span className="font-black text-slate-900">₱ {selectedPayslip.regularPay.toFixed(2)}</span>
+                    <div className="space-y-1.5 text-[10px]">
+                      <div className="space-y-0.5 border-b border-slate-50 pb-1 mb-1">
+                        <div className="flex justify-between items-center">
+                          <span className="text-slate-500 font-bold text-[8px] uppercase">Regular</span>
+                          <span className="font-black text-slate-900">₱{selectedPayslip.regularPay.toFixed(2)}</span>
                         </div>
                         
                         {selectedPayslip.totalPresent > 0 && (
-                          <div className="flex justify-between items-center text-[10px]">
-                            <span className="text-slate-600 flex items-center gap-1.5">
-                              <div className="w-1 h-1 bg-emerald-400 rounded-full" />
-                              {selectedPayslip.totalPresent} Full Days
-                            </span>
-                            <span className="text-slate-400 font-mono">
-                              ₱ {(selectedPayslip.totalPresent * (selectedPayslip.employee.dailySalary || 0)).toFixed(2)}
-                            </span>
+                          <div className="flex justify-between items-center text-[8px]">
+                            <span className="text-slate-400">• {selectedPayslip.totalPresent} Days</span>
                           </div>
                         )}
 
                         {selectedPayslip.totalHalfDays > 0 && (
-                          <div className="flex justify-between items-center text-[10px]">
-                            <span className="text-slate-600 flex items-center gap-1.5">
-                              <div className="w-1 h-1 bg-indigo-400 rounded-full" />
-                              {selectedPayslip.totalHalfDays} Half Days
-                            </span>
-                            <span className="text-slate-400 font-mono">
-                              ₱ {((selectedPayslip.totalHalfDays * 5 / 8) * (selectedPayslip.employee.dailySalary || 0)).toFixed(2)}
-                            </span>
-                          </div>
-                        )}
-
-                        {selectedPayslip.totalUndertimeHours > 0 && (
-                          <div className="flex justify-between items-center text-[10px]">
-                            <span className="text-slate-600 flex items-center gap-1.5">
-                              <div className="w-1 h-1 bg-amber-400 rounded-full" />
-                              {selectedPayslip.totalUndertimeHours.toFixed(1)} UT Hrs
-                            </span>
-                            <span className="text-slate-400 font-mono">
-                              ₱ {((selectedPayslip.totalUndertimeHours / 8) * (selectedPayslip.employee.dailySalary || 0)).toFixed(2)}
-                            </span>
+                          <div className="flex justify-between items-center text-[8px]">
+                            <span className="text-slate-400">• {selectedPayslip.totalHalfDays} Half</span>
                           </div>
                         )}
                       </div>
 
                       {selectedPayslip.totalOtHours > 0 && (
                         <div className="flex justify-between items-center">
-                          <div className="flex flex-col">
-                            <span className="text-green-600 font-bold text-[9px] uppercase tracking-wide">Overtime</span>
-                            <span className="text-slate-900 font-medium">
-                              {selectedPayslip.totalOtHours.toFixed(1)} Hrs Active
-                            </span>
-                          </div>
-                          <span className="font-black text-green-600">₱ {selectedPayslip.otPay.toFixed(2)}</span>
+                          <span className="text-green-600 font-bold text-[8px] uppercase">OT ({selectedPayslip.totalOtHours}h)</span>
+                          <span className="font-black text-green-600">{selectedPayslip.otPay.toFixed(2)}</span>
                         </div>
                       )}
 
                       {selectedPayslip.totalPakyawPay > 0 && (
                         <div className="flex justify-between items-center">
-                          <div className="flex flex-col">
-                            <span className="text-indigo-600 font-bold text-[9px] uppercase tracking-wide">Pakyaw Jobs</span>
-                            <span className="text-slate-900 font-medium font-mono text-[10px]">Completed Projects</span>
-                          </div>
-                          <span className="font-black text-indigo-600">₱ {selectedPayslip.totalPakyawPay.toFixed(2)}</span>
+                          <span className="text-indigo-600 font-bold text-[8px] uppercase">Pakyaw</span>
+                          <span className="font-black text-indigo-600">{selectedPayslip.totalPakyawPay.toFixed(2)}</span>
                         </div>
                       )}
                       
-                      <div className="flex justify-between items-center border-t border-slate-100 pt-2 mt-2">
-                        <span className="text-slate-900 font-black uppercase italic text-[11px] tracking-wider">Gross Total</span>
-                        <span className="text-slate-900 font-black text-base font-mono tracking-tighter italic">₱ {selectedPayslip.totalGrossPay.toFixed(2)}</span>
+                      <div className="flex justify-between items-center border-t border-slate-100 pt-1">
+                        <span className="text-slate-900 font-black uppercase text-[9px]">Gross</span>
+                        <span className="text-slate-900 font-black text-[11px] font-mono italic">{selectedPayslip.totalGrossPay.toFixed(2)}</span>
                       </div>
                     </div>
                   </div>
                 </div>
                 
-                <div className="space-y-4">
+                <div className="space-y-2">
                   <div>
-                    <h3 className="text-[10px] font-black text-red-600 border-b-2 border-slate-100 pb-1.5 mb-3 uppercase tracking-[0.2em] flex items-center justify-between">
-                      Deductions <span>Amount</span>
+                    <h3 className="text-[9px] font-black text-red-600 border-b border-slate-100 pb-1 mb-1.5 uppercase flex justify-between">
+                      Deductions <span>₱</span>
                     </h3>
-                    <div className="space-y-3 text-[12px]">
+                    <div className="space-y-1.5 text-[10px]">
                       {selectedPayslip.cashAdvanceDeduction > 0 ? (
                         <>
                           <div className="flex justify-between items-center">
-                            <div className="flex flex-col">
-                              <span className="text-red-600 font-bold text-[9px] uppercase tracking-wide">Cash Advance</span>
-                              <span className="text-slate-900 font-medium">Loans & Principal</span>
-                            </div>
-                            <span className="font-black text-red-600">- ₱ {selectedPayslip.cashAdvanceDeduction.toFixed(2)}</span>
+                            <span className="text-red-600 font-bold text-[8px] uppercase">Cash Adv.</span>
+                            <span className="font-black text-red-600">-{selectedPayslip.cashAdvanceDeduction.toFixed(2)}</span>
                           </div>
-                          {selectedPayslip.cashAdvanceDetails && (
-                            <div className="bg-red-50/50 p-2 rounded-xl border border-red-100/50">
-                              <ul className="text-[9px] text-red-700/70 space-y-1 font-bold">
-                                {selectedPayslip.cashAdvanceDetails.map((detail: string, i: number) => (
-                                  <li key={i} className="flex gap-1.5">
-                                    <span className="text-red-400 shrink-0">•</span>
-                                    <span>{detail}</span>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
                         </>
                       ) : (
-                        <div className="flex items-center justify-center p-4 bg-slate-50 border border-dashed border-slate-200 rounded-xl">
-                          <span className="text-[9px] text-slate-400 font-black uppercase tracking-widest text-center">No Active<br/>Deductions</span>
+                        <div className="p-2 border border-dashed border-slate-100 rounded-md text-center">
+                          <span className="text-[7px] text-slate-300 uppercase font-black">None</span>
                         </div>
                       )}
-                      <div className="flex justify-between items-center border-t border-slate-100 pt-2 mt-2">
-                         <span className="text-red-600 font-black uppercase italic text-[11px] tracking-wider">Total Ded.</span>
-                         <span className="text-red-600 font-black text-base font-mono tracking-tighter italic">- ₱ {selectedPayslip.cashAdvanceDeduction.toFixed(2)}</span>
+                      <div className="flex justify-between items-center border-t border-slate-100 pt-1 mt-auto">
+                         <span className="text-red-600 font-black uppercase text-[9px]">Total Ded</span>
+                         <span className="text-red-600 font-black text-[11px] font-mono italic">-{selectedPayslip.cashAdvanceDeduction.toFixed(2)}</span>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
               
-              {/* Daily Attendance Logs */}
+              {/* Compact Attendance Logs */}
               {selectedPayslip.dailyAttendanceLog && (
-                <div className="mt-4 pt-3 border-t-2 border-slate-100 font-sans">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Attendance Log</h3>
-                  </div>
-                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-1.5">
+                <div className="mt-3 pt-2 border-t border-slate-100 font-sans">
+                  <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-1">
                     {selectedPayslip.dailyAttendanceLog.map((log: any, i: number) => (
-                      <div key={i} className={`p-1.5 rounded-lg border flex flex-col items-center justify-center text-center ${
-                        log.status === 'present' ? 'bg-emerald-50/50 border-emerald-100' :
-                        log.status === 'absent' ? 'bg-rose-50/50 border-rose-100' :
-                        log.status === 'halfday' ? 'bg-indigo-50/50 border-indigo-100' :
-                        log.status === 'undertime' ? 'bg-amber-50/50 border-amber-100' :
-                        log.status === 'pakyaw' ? 'bg-violet-50/50 border-violet-100' :
-                        'bg-slate-50/50 border-slate-100'
+                      <div key={i} className={`py-1 rounded border flex flex-col items-center justify-center text-center ${
+                        log.status === 'present' ? 'bg-emerald-50/30 border-emerald-100/50' :
+                        log.status === 'absent' ? 'bg-rose-50/30 border-rose-100/50' :
+                        log.status === 'halfday' ? 'bg-indigo-50/30 border-indigo-100/50' :
+                        log.status === 'undertime' ? 'bg-amber-50/30 border-amber-100/50' :
+                        'bg-slate-50/30 border-slate-100/50'
                       }`}>
-                        <div className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">
-                          {format(parseISO(log.date), 'MMM dd')}
+                        <div className="text-[7px] font-bold text-slate-400 uppercase tracking-tighter">
+                          {format(parseISO(log.date), 'MM/dd')}
                         </div>
-                        <div className={`text-[9px] font-black uppercase italic ${
+                        <div className={`text-[7px] font-black uppercase ${
                           log.status === 'present' ? 'text-emerald-600' :
                           log.status === 'absent' ? 'text-rose-600' :
-                          log.status === 'halfday' ? 'text-indigo-600' :
-                          log.status === 'undertime' ? 'text-amber-600' :
-                          log.status === 'pakyaw' ? 'text-violet-600' :
                           'text-slate-400'
                         }`}>
-                          {log.status === 'halfday' ? 'Half' : log.status === 'undertime' ? 'UT' : log.status}
+                          {log.status.charAt(0).toUpperCase()}
                         </div>
                       </div>
                     ))}
@@ -1312,28 +1257,13 @@ export default function Payroll() {
                 </div>
               )}
 
-              
-              <div className="mt-4 pt-3 border-t-2 border-slate-100 font-sans">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {selectedPayslip.pakyawDetails && selectedPayslip.pakyawDetails.length > 0 && (
-                    <div className="text-[10px] text-slate-500 bg-indigo-50/30 p-2.5 rounded-xl border border-indigo-100/50 font-sans">
-                      <span className="font-black text-indigo-700 uppercase tracking-widest block mb-1">Projects</span>
-                      <ul className="space-y-1 list-none">
-                        {selectedPayslip.pakyawDetails.map((detail: string, i: number) => (
-                          <li key={i} className="flex gap-1.5 items-start font-sans">
-                            <span className="text-indigo-400 shrink-0 mt-0.5">•</span>
-                            <span className="font-medium text-slate-600 text-[9px] leading-tight">{detail}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  <div className="flex flex-col justify-end font-sans">
-                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between">
-                      <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Signed</div>
-                      <div className="w-24 h-[0.5px] bg-slate-300"></div>
-                    </div>
-                  </div>
+              <div className="mt-3 pt-2 border-t border-slate-100 flex justify-between items-end">
+                <div className="text-[8px] text-slate-400">
+                  ID: {selectedPayslip.id.substring(0, 8)}
+                </div>
+                <div className="flex flex-col items-end">
+                  <div className="w-20 h-px bg-slate-300 mb-1"></div>
+                  <div className="text-[7px] font-black text-slate-400 uppercase">Received By</div>
                 </div>
               </div>
             </div>
