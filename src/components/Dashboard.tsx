@@ -103,6 +103,7 @@ export default function Dashboard() {
   const [selectedEmployeeProj, setSelectedEmployeeProj] = useState<any | null>(
     null,
   );
+  const [statusFilter, setStatusFilter] = useState<string>("all");
 
   useEffect(() => {
     const handleStorage = () => {
@@ -576,12 +577,37 @@ export default function Dashboard() {
           </div>
 
           <div className="bento-card flex-col bg-slate-900/40 p-6 border border-white/10 shadow-xl">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-bold uppercase tracking-widest text-cyan-400">
-                Personnel Projection Details
-              </h3>
-              <div className="text-[10px] text-white/40 font-black tracking-[0.2em] uppercase italic">
-                CLICK NAME FOR DAILY LOGS
+            <div className="flex flex-col gap-4 mb-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-bold uppercase tracking-widest text-cyan-400">
+                  Personnel Projection Details
+                </h3>
+                <div className="text-[10px] text-white/40 font-black tracking-[0.2em] uppercase italic">
+                  CLICK NAME FOR DAILY LOGS
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { id: "all", label: "All", color: "bg-white/5 border-white/10" },
+                  { id: "present", label: "Present", color: "text-emerald-400 border-emerald-500/20 bg-emerald-500/5" },
+                  { id: "absent", label: "Absent", color: "text-rose-400 border-rose-500/20 bg-rose-500/5" },
+                  { id: "hd", label: "Half-Day", color: "text-indigo-400 border-indigo-500/20 bg-indigo-500/5" },
+                  { id: "ut", label: "UT", color: "text-sky-400 border-sky-500/20 bg-sky-500/5" },
+                  { id: "pakyaw", label: "Pakyaw", color: "text-amber-400 border-amber-500/20 bg-amber-500/5" },
+                ].map((f) => (
+                  <button
+                    key={f.id}
+                    onClick={() => setStatusFilter(f.id)}
+                    className={`px-3 py-1.5 rounded-xl border text-[9px] font-black uppercase tracking-widest transition-all ${
+                      statusFilter === f.id
+                        ? "bg-blue-500 text-white border-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.3)]"
+                        : `${f.color} hover:bg-white/10`
+                    }`}
+                  >
+                    {f.label}
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -589,7 +615,17 @@ export default function Dashboard() {
               {loading ? (
                 <Skeleton count={6} className="h-20 w-full bg-slate-800" />
               ) : (
-                projection.employeeProjections.map((emp) => (
+                projection.employeeProjections
+                  .filter((emp) => {
+                    if (statusFilter === "all") return true;
+                    if (statusFilter === "present") return emp.presentDays > 0;
+                    if (statusFilter === "absent") return emp.absentDays > 0;
+                    if (statusFilter === "hd") return emp.hdDays > 0;
+                    if (statusFilter === "ut") return emp.utDays > 0;
+                    if (statusFilter === "pakyaw") return emp.pakyawDays > 0;
+                    return true;
+                  })
+                  .map((emp) => (
                   <Interactive
                     key={emp.id}
                     className="p-3 bg-white/5 hover:bg-white/10 rounded-xl flex items-center justify-between border border-white/5 hover:border-blue-500/50 transition-all duration-300"

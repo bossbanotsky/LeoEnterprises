@@ -536,7 +536,12 @@ export default function Payroll() {
       snapshot.forEach(doc => allAtts.push({ id: doc.id, ...doc.data() } as Attendance));
 
       const allCa = cashAdvances.filter(ca => ca.date >= startDate && ca.date <= endDate);
-      const allPj = pakyawJobs.filter(pj => pj.startDate >= startDate && pj.startDate <= endDate);
+      const allPj = pakyawJobs.filter(pj => {
+        const startedInRange = pj.startDate >= startDate && pj.startDate <= endDate;
+        const completedAtDate = pj.completedAt ? pj.completedAt.split('T')[0] : null;
+        const completedInRange = completedAtDate && completedAtDate >= startDate && completedAtDate <= endDate;
+        return startedInRange || completedInRange;
+      });
 
       const dateRange = eachDayOfInterval({
         start: parseISO(startDate),

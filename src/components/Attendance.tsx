@@ -104,7 +104,7 @@ export default function Attendance() {
     } catch { return []; }
   }, [activeTab, startDate, endDate, singleDate]);
 
-  const calculateDailyPay = useCallback((emp: Employee, key: string) => {
+  const calculateDailyPay = useCallback((emp: Employee, key: string, ignorePakyaw: boolean = false) => {
     const atts = attendanceData[key] || [];
     if (atts.length === 0) return 0;
     
@@ -115,6 +115,7 @@ export default function Attendance() {
     atts.forEach(att => {
       if (att.status === 'absent') return;
       if (att.status === 'pakyaw') {
+        if (ignorePakyaw) return;
         const jobId = att.pakyawJobId;
         if (jobId) {
           const job = pakyawJobs.find(j => j.id === jobId);
@@ -135,8 +136,43 @@ export default function Attendance() {
   }, [attendanceData, pakyawJobs]);
 
   const calculatePeriodTotal = useCallback((emp: Employee) => {
-    return dates.reduce((sum, date) => sum + calculateDailyPay(emp, `${emp.id}_${date}`), 0);
-  }, [dates, calculateDailyPay]);
+    let total = 0;
+    const countedJobIds = new Set<string>();
+
+    dates.forEach(date => {
+      const key = `${emp.id}_${date}`;
+      const atts = attendanceData[key] || [];
+      const hourlyRate = emp.dailySalary / 8;
+
+      atts.forEach(att => {
+        if (att.status === 'absent') return;
+        if (att.status === 'pakyaw') {
+          const jobId = att.pakyawJobId;
+          if (jobId) {
+            if (!countedJobIds.has(jobId)) {
+              const job = pakyawJobs.find(j => j.id === jobId);
+              if (job) {
+                total += (job.totalPrice / (job.employeeIds.length || 1));
+                countedJobIds.add(jobId);
+              }
+            }
+          } else {
+            // Legacy/Unlinked fallback - only count once per unique date/job match
+            const jobs = pakyawJobs.filter(j => j.startDate === date && j.employeeIds.includes(emp.id));
+            jobs.forEach(j => {
+              if (!countedJobIds.has(j.id)) {
+                total += (j.totalPrice / (j.employeeIds.length || 1));
+                countedJobIds.add(j.id);
+              }
+            });
+          }
+        } else {
+          total += ((att.regularHours || 0) + (att.otHours || 0)) * hourlyRate;
+        }
+      });
+    });
+    return total;
+  }, [dates, attendanceData, pakyawJobs]);
 
   const calculateGrandTotal = useCallback(() => {
     return employees.reduce((sum, emp) => sum + calculatePeriodTotal(emp), 0);
@@ -333,23 +369,36 @@ export default function Attendance() {
         }
       }
 
+      const countedJobIdsInReport = new Set<string>();
       const tableData = dates.map(date => {
         const atts = attendanceData[`${emp.id}_${date}`] || [];
         let statusDisplay = atts.length === 0 ? 'Absent' : atts.map(a => a.status.charAt(0).toUpperCase() + a.status.slice(1)).join(', ');
         let timeInOut = atts.map(a => (a.timeIn && a.timeOut) ? `${a.timeIn}-${a.timeOut}` : '').filter(Boolean).join('\n') || '-- / --';
         let reg = atts.reduce((s, a) => s + (a.regularHours || 0), 0).toFixed(1);
         let ot = atts.reduce((s, a) => s + (a.otHours || 0), 0).toFixed(1);
-        let detail = `₱${calculateDailyPay(emp, `${emp.id}_${date}`).toLocaleString(undefined, {minimumFractionDigits: 2})}`;
-
-        const pakyawDeets = atts.filter(a => a.status === 'pakyaw')
+        
+        // Calculate daily pay without automatic pakyaw multiplication
+        let dailyRegPay = calculateDailyPay(emp, `${emp.id}_${date}`, true);
+        let dailyPakyawPay = 0;
+        
+        const pakyawNotes = atts.filter(a => a.status === 'pakyaw')
           .map(a => {
             const job = pakyawJobs.find(j => j.id === a.pakyawJobId);
-            return job ? job.description : '';
+            if (job) {
+              if (!countedJobIdsInReport.has(job.id)) {
+                const share = (job.totalPrice / (job.employeeIds.length || 1));
+                dailyPakyawPay += share;
+                countedJobIdsInReport.add(job.id);
+                return `${job.description} (₱${share.toLocaleString()})`;
+              }
+              return `${job.description} (cont.)`;
+            }
+            return '';
           }).filter(Boolean).join(', ');
-          
-        if (pakyawDeets) {
-          detail += ` [${pakyawDeets}]`;
-        }
+
+        const totalRowPay = dailyRegPay + dailyPakyawPay;
+        let detail = `₱${totalRowPay.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+        if (pakyawNotes) detail += ` [${pakyawNotes}]`;
 
         return [
           format(parseISO(date), 'MMM dd (EEE)'),
@@ -419,32 +468,42 @@ export default function Attendance() {
          
          employeesToExport.forEach(emp => {
             // Add a row to group by employee? To make the report clearer. Let's add a shaded row for the Employee name before their dates.
-            bulkData.push([{ content: `Employee: ${emp.fullName}`, colSpan: 6, styles: { fillColor: [240, 240, 240], fontStyle: 'bold' } }, '']);
+            bulkData.push([{ content: `Employee: ${emp.fullName}`, colSpan: 7, styles: { fillColor: [240, 240, 240], fontStyle: 'bold' } }]);
             
             let periodTotal = 0;
+            const countedJobsInBulk = new Set<string>();
 
             dates.forEach(d => {
                 const atts = attendanceData[`${emp.id}_${d}`] || [];
                 
-                const dailyPay = calculateDailyPay(emp, `${emp.id}_${d}`);
-                periodTotal += dailyPay;
+                let dailyRegPay = calculateDailyPay(emp, `${emp.id}_${d}`, true);
+                let dailyPakyawPay = 0;
+                
+                const pakyawNotes = atts.filter(a => a.status === 'pakyaw')
+                  .map(a => {
+                    const job = pakyawJobs.find(j => j.id === a.pakyawJobId);
+                    if (job) {
+                      if (!countedJobsInBulk.has(job.id)) {
+                        const share = (job.totalPrice / (job.employeeIds.length || 1));
+                        dailyPakyawPay += share;
+                        countedJobsInBulk.add(job.id);
+                        return `${job.description} (₱${share.toLocaleString()})`;
+                      }
+                      return `${job.description} (cont.)`;
+                    }
+                    return '';
+                  }).filter(Boolean).join(', ');
+
+                const totalRowPay = dailyRegPay + dailyPakyawPay;
+                periodTotal += totalRowPay;
                 
                 let statusDisplay = atts.length === 0 ? 'Absent' : atts.map(a => a.status.charAt(0).toUpperCase() + a.status.slice(1)).join(', ');
                 let timeInOut = atts.map(a => (a.timeIn && a.timeOut) ? `${a.timeIn}-${a.timeOut}` : '').filter(Boolean).join('\n') || '-- / --';
                 let reg = atts.reduce((s, a) => s + (a.regularHours || 0), 0).toFixed(1);
                 let ot = atts.reduce((s, a) => s + (a.otHours || 0), 0).toFixed(1);
-                let detail = `₱${dailyPay.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+                let detail = `₱${totalRowPay.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+                if (pakyawNotes) detail += ` [${pakyawNotes}]`;
 
-                const pakyawDeets = atts.filter(a => a.status === 'pakyaw')
-                  .map(a => {
-                    const job = pakyawJobs.find(j => j.id === a.pakyawJobId);
-                    return job ? job.description : '';
-                  }).filter(Boolean).join(', ');
-                  
-                if (pakyawDeets) {
-                  detail += ` [${pakyawDeets}]`;
-                }
-                
                 bulkData.push([
                   format(parseISO(d), 'MMM dd'),
                   '', // Empty Name column since we used a group header
@@ -585,7 +644,7 @@ export default function Attendance() {
           <div className="grid grid-cols-1 gap-3">
             {employees.map(emp => {
               const atts = attendanceData[`${emp.id}_${singleDate}`] || [];
-              const hasRecords = atts.length > 0;
+              const hasPakyaw = atts.some(a => a.status === 'pakyaw');
               
               return (
                 <div key={emp.id} className="bg-slate-900/40 p-4 rounded-3xl border border-white/5 backdrop-blur-md transition-colors hover:bg-slate-800/60">
@@ -629,8 +688,12 @@ export default function Attendance() {
                     </div>
                     <div className="flex items-center gap-4">
                       <div className="text-right">
-                        <div className="text-sm font-black text-cyan-400">₱{calculateDailyPay(emp, `${emp.id}_${singleDate}`).toLocaleString()}</div>
-                        <div className="text-[8px] text-slate-500 uppercase font-black tracking-widest leading-none">EARNED TODAY</div>
+                        <div className="text-sm font-black text-cyan-400">
+                          {hasPakyaw ? 'PAKYAW' : `₱${calculateDailyPay(emp, `${emp.id}_${singleDate}`).toLocaleString()}`}
+                        </div>
+                        <div className="text-[8px] text-slate-500 uppercase font-black tracking-widest leading-none">
+                          {hasPakyaw ? 'JOB CONTRACT' : 'EARNED TODAY'}
+                        </div>
                       </div>
                       {expandedEmp === emp.id ? <ChevronUp className="w-4 h-4 text-white/20" /> : <ChevronDown className="w-4 h-4 text-white/20" />}
                     </div>

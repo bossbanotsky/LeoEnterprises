@@ -185,7 +185,10 @@ export default function Pakyaw() {
                   <button 
                     onClick={() => {
                       if (!user) return;
-                      updateDoc(doc(db, 'pakyawJobs', job.id), { status: 'completed' });
+                      updateDoc(doc(db, 'pakyawJobs', job.id), { 
+                        status: 'completed',
+                        completedAt: new Date().toISOString()
+                      });
                     }}
                     className="text-xs text-green-600 hover:text-green-800 flex items-center gap-1 font-bold"
                   >
