@@ -490,7 +490,7 @@ export default function Payroll() {
       snapshot.forEach(docSnap => {
         const data = docSnap.data();
         const emp = employees.find(e => e.id === data.employeeId);
-        if (emp) {
+        if (emp && (emp.status === 'active' || !emp.status)) {
           fetched.push({ id: docSnap.id, employee: emp, ...data });
         }
       });
@@ -509,8 +509,8 @@ export default function Payroll() {
     setIsLoading(true);
     try {
       const targetEmployees = (selectedEmployeeId === 'all' 
-        ? employees.filter(e => (!e.position || !e.position.toLowerCase().includes("ceo")) && e.role !== "ceo") 
-        : employees.filter(e => e.id === selectedEmployeeId));
+        ? employees.filter(e => (e.status === 'active' || !e.status) && (!e.position || !e.position.toLowerCase().includes("ceo")) && (e.role || '').toLowerCase() !== "ceo") 
+        : employees.filter(e => e.id === selectedEmployeeId && (e.status === 'active' || !e.status)));
 
       const q = query(
         collection(db, 'attendance'),

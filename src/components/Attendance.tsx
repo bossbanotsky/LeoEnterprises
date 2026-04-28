@@ -28,8 +28,8 @@ export default function Attendance() {
 
   const employees = useMemo(() => {
     return allEmps
-      .filter(e => (e.status === 'active' || !e.status) && e.role !== 'ceo' && e.role !== 'admin')
-      .filter(e => e.fullName.toLowerCase().includes(searchTerm.toLowerCase()))
+      .filter(e => (e.status === 'active' || !e.status) && (e.role || '').toLowerCase() !== 'ceo' && (e.role || '').toLowerCase() !== 'admin')
+      .filter(e => (e.fullName || '').toLowerCase().includes(searchTerm.toLowerCase()))
       .sort((a, b) => a.fullName.localeCompare(b.fullName));
   }, [allEmps, searchTerm]);
   

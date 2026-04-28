@@ -157,10 +157,23 @@ export default function Employees() {
     }
   };
 
-  const filteredEmployees = employees.filter(emp => 
-    emp.fullName.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    (emp.position && emp.position.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  const activeEmployees = useMemo(() => {
+    return employees.filter(e => e.status === 'active' || !e.status);
+  }, [employees]);
+
+  const archivedEmployees = useMemo(() => {
+    return employees.filter(e => e.status === 'inactive');
+  }, [employees]);
+
+  const [activeTab, setActiveTab] = useState<'active' | 'archived'>('active');
+
+  const filteredEmployees = useMemo(() => {
+    const list = activeTab === 'active' ? activeEmployees : archivedEmployees;
+    return list.filter(emp => 
+        (emp.fullName || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
+        (emp.position && emp.position.toLowerCase().includes(searchQuery.toLowerCase()))
+    );
+  }, [activeTab, activeEmployees, archivedEmployees, searchQuery]);
 
   // Grouping logic
   const groupedEmployees: Record<string, Employee[]> = {};
@@ -176,6 +189,16 @@ export default function Employees() {
     <div className="h-full flex flex-col relative">
       <div className="mb-4">
         <h1 className="text-2xl md:text-3xl font-black text-white mb-4 uppercase italic tracking-tight">Employees</h1>
+        <div className="flex bg-slate-950 p-1 rounded-xl border border-white/10 mb-4">
+            <button 
+                className={`flex-1 px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${activeTab === 'active' ? 'bg-white/10 text-white shadow-xl' : 'text-slate-500 hover:text-white'}`}
+                onClick={() => setActiveTab('active')}
+            >Active</button>
+            <button 
+                className={`flex-1 px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${activeTab === 'archived' ? 'bg-white/10 text-white shadow-xl' : 'text-slate-500 hover:text-white'}`}
+                onClick={() => setActiveTab('archived')}
+            >Archived</button>
+        </div>
         <div className="relative group">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 transition-colors group-focus-within:text-blue-500" />
           <Input 
@@ -348,7 +371,7 @@ export default function Employees() {
               </select>
             </div>
             <div className="space-y-2">
-              <Label>Hourly Rate (₱ {form.dailySalary ? (parseFloat(form.dailySalary) / 8).toFixed(2) : '0.00'})</Label>
+              <Label>Daily Salary (₱)</Label>
               <Input required type="number" step="0.01" value={form.dailySalary} onChange={e => setForm({...form, dailySalary: e.target.value})} className="rounded-xl" />
             </div>
             <div className="space-y-2">
