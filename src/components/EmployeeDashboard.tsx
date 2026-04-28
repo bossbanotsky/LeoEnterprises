@@ -274,17 +274,13 @@ export default function EmployeeDashboard() {
     
     setIsExporting(true);
     try {
-      const originalMaxHeight = payslipRef.current.style.maxHeight;
-      const originalOverflow = payslipRef.current.style.overflowY;
-      payslipRef.current.style.maxHeight = 'none';
-      payslipRef.current.style.overflowY = 'visible';
       
       const canvas = await html2canvas(payslipRef.current, {
         scale: 3,
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
-        width: payslipRef.current.offsetWidth,
+        width: payslipRef.current.scrollWidth + 10,
         onclone: (clonedDoc) => {
           const allElements = clonedDoc.querySelectorAll('*');
           allElements.forEach(el => {
@@ -304,14 +300,15 @@ export default function EmployeeDashboard() {
 
           const payslip = clonedDoc.querySelector('.payslip-mockup');
           if (payslip) {
-            (payslip as HTMLElement).style.width = `${payslipRef.current!.offsetWidth}px`;
-            (payslip as HTMLElement).style.padding = '20px';
+            (payslip as HTMLElement).style.width = 'auto';
+            (payslip as HTMLElement).style.maxWidth = 'none';
+            (payslip as HTMLElement).style.maxHeight = 'none';
+            (payslip as HTMLElement).style.overflow = 'visible';
+            (payslip as HTMLElement).style.height = 'auto';
+            (payslip as HTMLElement).style.padding = '12px';
           }
         }
       });
-      
-      payslipRef.current.style.maxHeight = originalMaxHeight;
-      payslipRef.current.style.overflowY = originalOverflow;
       
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF({
@@ -349,10 +346,6 @@ export default function EmployeeDashboard() {
     
     setIsExporting(true);
     try {
-      const originalMaxHeight = payslipRef.current.style.maxHeight;
-      const originalOverflow = payslipRef.current.style.overflowY;
-      payslipRef.current.style.maxHeight = 'none';
-      payslipRef.current.style.overflowY = 'visible';
       
       const canvas = await html2canvas(payslipRef.current, {
         scale: 3,
@@ -381,12 +374,13 @@ export default function EmployeeDashboard() {
           if (payslip) {
             (payslip as HTMLElement).style.width = 'auto';
             (payslip as HTMLElement).style.maxWidth = 'none';
+            (payslip as HTMLElement).style.maxHeight = 'none';
+            (payslip as HTMLElement).style.overflow = 'visible';
+            (payslip as HTMLElement).style.height = 'auto';
           }
         }
       });
       
-      payslipRef.current.style.maxHeight = originalMaxHeight;
-      payslipRef.current.style.overflowY = originalOverflow;
       
       const imgData = canvas.toDataURL('image/png', 1.0);
       
@@ -753,17 +747,13 @@ export default function EmployeeDashboard() {
                     await new Promise(resolve => setTimeout(resolve, 500));
                     
                     if (payslipRef.current) {
-                      const originalMaxHeight = payslipRef.current.style.maxHeight;
-                      const originalOverflow = payslipRef.current.style.overflowY;
-                      payslipRef.current.style.maxHeight = 'none';
-                      payslipRef.current.style.overflowY = 'visible';
                       
                       const canvas = await html2canvas(payslipRef.current, {
                         scale: 2,
                         useCORS: true,
                         logging: false,
                         backgroundColor: '#ffffff',
-                        width: payslipRef.current.offsetWidth,
+                        width: payslipRef.current.scrollWidth + 10,
                         onclone: (clonedDoc) => {
                           const allElements = clonedDoc.querySelectorAll('*');
                           allElements.forEach(el => {
@@ -783,14 +773,16 @@ export default function EmployeeDashboard() {
 
                           const payslip = clonedDoc.querySelector('.payslip-mockup');
                           if (payslip) {
-                            (payslip as HTMLElement).style.width = `${payslipRef.current!.offsetWidth}px`;
-                            (payslip as HTMLElement).style.padding = '20px';
+                            (payslip as HTMLElement).style.width = 'auto';
+                            (payslip as HTMLElement).style.maxWidth = 'none';
+                            (payslip as HTMLElement).style.maxHeight = 'none';
+                            (payslip as HTMLElement).style.overflow = 'visible';
+                            (payslip as HTMLElement).style.height = 'auto';
+                            (payslip as HTMLElement).style.padding = '12px';
                           }
                         }
                       });
                       
-                      payslipRef.current.style.maxHeight = originalMaxHeight;
-                      payslipRef.current.style.overflowY = originalOverflow;
                       
                       const imgData = canvas.toDataURL('image/png');
                       const imgRatio = canvas.height / canvas.width;

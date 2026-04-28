@@ -193,24 +193,24 @@ export default function Payroll() {
     
     setIsExporting(true);
     try {
-      const originalMaxHeight = payslipRef.current.style.maxHeight;
-      const originalOverflow = payslipRef.current.style.overflowY;
-      payslipRef.current.style.maxHeight = 'none';
-      payslipRef.current.style.overflowY = 'visible';
       
       const canvas = await html2canvas(payslipRef.current, {
         scale: 3,
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
-        width: payslipRef.current.offsetWidth,
+        width: payslipRef.current.scrollWidth + 10,
         onclone: (clonedDoc) => {
           const payslip = clonedDoc.querySelector('.payslip-mockup');
           if (payslip) {
-            (payslip as HTMLElement).style.width = `${payslipRef.current!.offsetWidth}px`;
+            (payslip as HTMLElement).style.width = 'auto';
+            (payslip as HTMLElement).style.maxWidth = 'none';
+            (payslip as HTMLElement).style.maxHeight = 'none';
+            (payslip as HTMLElement).style.overflow = 'visible';
+            (payslip as HTMLElement).style.height = 'auto';
             (payslip as HTMLElement).style.color = '#000000';
             (payslip as HTMLElement).style.backgroundColor = '#ffffff';
-            (payslip as HTMLElement).style.padding = '20px';
+            (payslip as HTMLElement).style.padding = '12px';
             
             const allElements = payslip.querySelectorAll('*');
             allElements.forEach(el => {
@@ -236,8 +236,6 @@ export default function Payroll() {
         }
       });
       
-      payslipRef.current.style.maxHeight = originalMaxHeight;
-      payslipRef.current.style.overflowY = originalOverflow;
       
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF({
@@ -276,10 +274,6 @@ export default function Payroll() {
     setIsExporting(true);
     try {
       // Temporarily remove max-height and overflow to capture full content
-      const originalMaxHeight = payslipRef.current.style.maxHeight;
-      const originalOverflow = payslipRef.current.style.overflowY;
-      payslipRef.current.style.maxHeight = 'none';
-      payslipRef.current.style.overflowY = 'visible';
       
       const canvas = await html2canvas(payslipRef.current, {
         scale: 3, // High quality
@@ -308,13 +302,12 @@ export default function Payroll() {
           if (payslip) {
             (payslip as HTMLElement).style.width = 'auto';
             (payslip as HTMLElement).style.maxWidth = 'none';
+            (payslip as HTMLElement).style.maxHeight = 'none';
+            (payslip as HTMLElement).style.overflow = 'visible';
+            (payslip as HTMLElement).style.height = 'auto';
           }
         }
       });
-      
-      // Restore original style
-      payslipRef.current.style.maxHeight = originalMaxHeight;
-      payslipRef.current.style.overflowY = originalOverflow;
       
       const imgData = canvas.toDataURL('image/png', 1.0);
       
@@ -369,10 +362,6 @@ export default function Payroll() {
         await new Promise(resolve => setTimeout(resolve, 500));
         
         if (payslipRef.current) {
-          const originalMaxHeight = payslipRef.current.style.maxHeight;
-          const originalOverflow = payslipRef.current.style.overflowY;
-          payslipRef.current.style.maxHeight = 'none';
-          payslipRef.current.style.overflowY = 'visible';
           
           const canvas = await html2canvas(payslipRef.current, {
             scale: 2,
@@ -398,14 +387,15 @@ export default function Payroll() {
               
               const payslip = clonedDoc.querySelector('.payslip-mockup');
               if (payslip) {
-                (payslip as HTMLElement).style.width = '210mm'; // Standard A4 width reference
+                (payslip as HTMLElement).style.width = 'auto'; // Standard A4 width reference
+                (payslip as HTMLElement).style.maxWidth = 'none';
+                (payslip as HTMLElement).style.maxHeight = 'none';
+                (payslip as HTMLElement).style.overflow = 'visible';
+                (payslip as HTMLElement).style.height = 'auto';
                 (payslip as HTMLElement).style.padding = '20px';
               }
             }
           });
-          
-          payslipRef.current.style.maxHeight = originalMaxHeight;
-          payslipRef.current.style.overflowY = originalOverflow;
           
           const imgData = canvas.toDataURL('image/png');
           const imgRatio = canvas.height / canvas.width;
