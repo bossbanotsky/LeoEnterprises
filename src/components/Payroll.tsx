@@ -490,7 +490,8 @@ export default function Payroll() {
       snapshot.forEach(docSnap => {
         const data = docSnap.data();
         const emp = employees.find(e => e.id === data.employeeId);
-        if (emp && (emp.status === 'active' || !emp.status)) {
+        // If employee is not active, only show if in archive mode
+        if (emp && ((emp.status === 'active' || !emp.status) || viewMode === 'archives')) {
           fetched.push({ id: docSnap.id, employee: emp, ...data });
         }
       });
@@ -502,7 +503,7 @@ export default function Payroll() {
     });
 
     return () => unsubscribe();
-  }, [user, employees, selectedBulkId, selectedEmployeeId, startDate, endDate]);
+  }, [user, employees, selectedBulkId, selectedEmployeeId, startDate, endDate, viewMode]);
 
   const handlePreviewPayroll = async () => {
     if (!startDate || !endDate || employees.length === 0) return;
