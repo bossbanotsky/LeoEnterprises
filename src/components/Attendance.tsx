@@ -119,13 +119,9 @@ export default function Attendance() {
         const jobId = att.pakyawJobId;
         if (jobId) {
           const job = pakyawJobs.find(j => j.id === jobId);
-          if (job) {
+          if (job && job.status === 'completed') {
              total += (job.totalPrice / (job.employeeIds.length || 1));
           }
-        } else {
-          // Fallback legacy calculation or if no specific job linked
-          const jobs = pakyawJobs.filter(j => j.startDate === date && j.employeeIds.includes(emp.id));
-          total += jobs.reduce((sum, j) => sum + (j.totalPrice / (j.employeeIds.length || 1)), 0) / Math.max(1, atts.filter(a => a.status === 'pakyaw').length);
         }
       } else {
         total += ((att.regularHours || 0) + (att.otHours || 0)) * hourlyRate;
@@ -151,20 +147,11 @@ export default function Attendance() {
           if (jobId) {
             if (!countedJobIds.has(jobId)) {
               const job = pakyawJobs.find(j => j.id === jobId);
-              if (job) {
+              if (job && job.status === 'completed') {
                 total += (job.totalPrice / (job.employeeIds.length || 1));
                 countedJobIds.add(jobId);
               }
             }
-          } else {
-            // Legacy/Unlinked fallback - only count once per unique date/job match
-            const jobs = pakyawJobs.filter(j => j.startDate === date && j.employeeIds.includes(emp.id));
-            jobs.forEach(j => {
-              if (!countedJobIds.has(j.id)) {
-                total += (j.totalPrice / (j.employeeIds.length || 1));
-                countedJobIds.add(j.id);
-              }
-            });
           }
         } else {
           total += ((att.regularHours || 0) + (att.otHours || 0)) * hourlyRate;
@@ -385,13 +372,17 @@ export default function Attendance() {
           .map(a => {
             const job = pakyawJobs.find(j => j.id === a.pakyawJobId);
             if (job) {
-              if (!countedJobIdsInReport.has(job.id)) {
-                const share = (job.totalPrice / (job.employeeIds.length || 1));
-                dailyPakyawPay += share;
-                countedJobIdsInReport.add(job.id);
-                return `${job.description} (₱${share.toLocaleString()})`;
+              if (job.status === 'completed') {
+                if (!countedJobIdsInReport.has(job.id)) {
+                  const share = (job.totalPrice / (job.employeeIds.length || 1));
+                  dailyPakyawPay += share;
+                  countedJobIdsInReport.add(job.id);
+                  return `${job.description} (₱${share.toLocaleString()})`;
+                }
+                return `${job.description} (cont.)`;
+              } else {
+                return `${job.description} (In Progress)`;
               }
-              return `${job.description} (cont.)`;
             }
             return '';
           }).filter(Boolean).join(', ');
@@ -483,13 +474,17 @@ export default function Attendance() {
                   .map(a => {
                     const job = pakyawJobs.find(j => j.id === a.pakyawJobId);
                     if (job) {
-                      if (!countedJobsInBulk.has(job.id)) {
-                        const share = (job.totalPrice / (job.employeeIds.length || 1));
-                        dailyPakyawPay += share;
-                        countedJobsInBulk.add(job.id);
-                        return `${job.description} (₱${share.toLocaleString()})`;
+                      if (job.status === 'completed') {
+                        if (!countedJobsInBulk.has(job.id)) {
+                          const share = (job.totalPrice / (job.employeeIds.length || 1));
+                          dailyPakyawPay += share;
+                          countedJobsInBulk.add(job.id);
+                          return `${job.description} (₱${share.toLocaleString()})`;
+                        }
+                        return `${job.description} (cont.)`;
+                      } else {
+                        return `${job.description} (In Progress)`;
                       }
-                      return `${job.description} (cont.)`;
                     }
                     return '';
                   }).filter(Boolean).join(', ');
@@ -689,10 +684,15 @@ export default function Attendance() {
                     <div className="flex items-center gap-4">
                       <div className="text-right">
                         <div className="text-sm font-black text-cyan-400">
-                          {hasPakyaw ? 'PAKYAW' : `₱${calculateDailyPay(emp, `${emp.id}_${singleDate}`).toLocaleString()}`}
+                          {hasPakyaw 
+                            ? (atts.some(a => {
+                                const job = pakyawJobs.find(j => j.id === a.pakyawJobId);
+                                return job && job.status === 'completed';
+                              }) ? `₱${calculateDailyPay(emp, `${emp.id}_${singleDate}`).toLocaleString()}` : 'IN PROGRESS')
+                            : `₱${calculateDailyPay(emp, `${emp.id}_${singleDate}`).toLocaleString()}`}
                         </div>
                         <div className="text-[8px] text-slate-500 uppercase font-black tracking-widest leading-none">
-                          {hasPakyaw ? 'JOB CONTRACT' : 'EARNED TODAY'}
+                          {hasPakyaw ? 'PAKYAW CONTRACT' : 'EARNED TODAY'}
                         </div>
                       </div>
                       {expandedEmp === emp.id ? <ChevronUp className="w-4 h-4 text-white/20" /> : <ChevronDown className="w-4 h-4 text-white/20" />}
