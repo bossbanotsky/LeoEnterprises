@@ -234,23 +234,30 @@ export default function Attendance() {
       let end = outH + outM / 60;
       if (end < start) end += 24; // Handle overnight if any
       
+      const shiftStart = 7.0;
+      const shiftEnd = 16.0;
       const breakStart = 12.0;
       const breakEnd = 13.0;
-      const otCutoff = 16.0;
 
-      // 1. Calculate Regular Hours (Time before 16:00, excluding 12:00-13:00)
-      const regRangeEnd = Math.min(end, otCutoff);
-      let regDuration = Math.max(0, regRangeEnd - start);
+      // 1. Early OT (Before 7am)
+      const earlyOt = Math.max(0, Math.min(end, shiftStart) - start);
+      
+      // 2. Late OT (After 4pm)
+      const lateOt = Math.max(0, end - Math.max(start, shiftEnd));
+
+      // 3. Regular Range calculation
+      const regRangeStart = Math.max(start, shiftStart);
+      const regRangeEnd = Math.min(end, shiftEnd);
+      
+      let regDuration = Math.max(0, regRangeEnd - regRangeStart);
       
       // Subtract intersection with break window
-      const overlapStart = Math.max(start, breakStart);
+      const overlapStart = Math.max(regRangeStart, breakStart);
       const overlapEnd = Math.min(regRangeEnd, breakEnd);
       const breakOverlap = Math.max(0, overlapEnd - overlapStart);
       regDuration -= breakOverlap;
       
-      // 2. Calculate OT Hours (Time after 16:00)
-      const otRangeStart = Math.max(start, otCutoff);
-      const otDuration = Math.max(0, end - otRangeStart);
+      const otDuration = earlyOt + lateOt;
 
       updated.regularHours = parseFloat(regDuration.toFixed(2));
       updated.otHours = parseFloat(otDuration.toFixed(2));
@@ -581,8 +588,11 @@ export default function Attendance() {
               const hasRecords = atts.length > 0;
               
               return (
-                <div key={emp.id} className="bg-slate-900/40 p-4 rounded-3xl border border-white/5 backdrop-blur-md cursor-pointer hover:bg-slate-800 transition-colors" onClick={() => setExpandedEmp(expandedEmp === emp.id ? null : emp.id)}>
-                  <div className="flex items-center justify-between mb-4">
+                <div key={emp.id} className="bg-slate-900/40 p-4 rounded-3xl border border-white/5 backdrop-blur-md transition-colors hover:bg-slate-800/60">
+                  <div 
+                    className="flex items-center justify-between mb-4 cursor-pointer" 
+                    onClick={() => setExpandedEmp(expandedEmp === emp.id ? null : emp.id)}
+                  >
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-blue-500/20 text-blue-400 rounded-full flex items-center justify-center font-bold text-sm shrink-0 overflow-hidden border border-blue-500/20">
                         {emp.photoURL ? (
@@ -617,9 +627,12 @@ export default function Attendance() {
                         </div>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className="text-sm font-black text-cyan-400">₱{calculateDailyPay(emp, `${emp.id}_${singleDate}`).toLocaleString()}</div>
-                      <div className="text-[8px] text-slate-500 uppercase font-black tracking-widest leading-none">EARNED TODAY</div>
+                    <div className="flex items-center gap-4">
+                      <div className="text-right">
+                        <div className="text-sm font-black text-cyan-400">₱{calculateDailyPay(emp, `${emp.id}_${singleDate}`).toLocaleString()}</div>
+                        <div className="text-[8px] text-slate-500 uppercase font-black tracking-widest leading-none">EARNED TODAY</div>
+                      </div>
+                      {expandedEmp === emp.id ? <ChevronUp className="w-4 h-4 text-white/20" /> : <ChevronDown className="w-4 h-4 text-white/20" />}
                     </div>
                   </div>
                   
@@ -630,26 +643,45 @@ export default function Attendance() {
                     const isPakyaw = att.status === 'pakyaw';
 
                     return (
-                      <div key={`${att.id || 'new'}_${idx}`} className="mb-4 pt-4 border-t border-white/5 bg-white/5 p-3 rounded-2xl relative group/card">
-                        <button 
-                          onClick={() => deleteAttendance(att.id, emp.id, singleDate)}
-                          className="absolute -top-2 -right-2 w-6 h-6 bg-rose-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover/card:opacity-100 transition-opacity shadow-lg"
+                        <div 
+                          key={`${att.id || 'new'}_${idx}`} 
+                          className="mb-4 pt-4 border-t border-white/5 bg-white/5 p-3 rounded-2xl relative group/card"
+                          onClick={(e) => e.stopPropagation()}
                         >
-                          <X className="w-3 h-3" />
-                        </button>
-                        
-                        {(isPresent || isUT || isHD) && (
-                          <div className="space-y-3 mb-4">
-                            <div className="grid grid-cols-2 gap-3">
-                              <div className="space-y-1">
-                                <Label className="text-[9px] font-black text-white/50 uppercase tracking-widest leading-none">Time In</Label>
-                                <Input type="time" value={att?.timeIn || '07:00'} onChange={e => handleAttendanceChange(emp.id, singleDate, 'timeIn', e.target.value, att.id)} className="h-8 rounded-lg bg-white/5 border border-white/10 font-mono text-xs p-2 text-white [color-scheme:dark]" />
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteAttendance(att.id, emp.id, singleDate);
+                            }}
+                            className="absolute -top-2 -right-2 w-6 h-6 bg-rose-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover/card:opacity-100 transition-opacity shadow-lg z-10"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                          
+                          {(isPresent || isUT || isHD) && (
+                            <div className="space-y-3 mb-4">
+                              <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-1">
+                                  <Label className="text-[9px] font-black text-white/50 uppercase tracking-widest leading-none">Time In</Label>
+                                  <Input 
+                                    type="time" 
+                                    value={att?.timeIn || '07:00'} 
+                                    onChange={e => handleAttendanceChange(emp.id, singleDate, 'timeIn', e.target.value, att.id)} 
+                                    className="h-8 rounded-lg bg-white/5 border border-white/10 font-mono text-xs p-2 text-white [color-scheme:dark]" 
+                                    onClick={(e) => e.stopPropagation()}
+                                  />
+                                </div>
+                                <div className="space-y-1">
+                                  <Label className="text-[9px] font-black text-white/50 uppercase tracking-widest leading-none">Time Out</Label>
+                                  <Input 
+                                    type="time" 
+                                    value={att?.timeOut || '16:00'} 
+                                    onChange={e => handleAttendanceChange(emp.id, singleDate, 'timeOut', e.target.value, att.id)} 
+                                    className="h-8 rounded-lg bg-white/5 border border-white/10 font-mono text-xs p-2 text-white [color-scheme:dark]" 
+                                    onClick={(e) => e.stopPropagation()}
+                                  />
+                                </div>
                               </div>
-                              <div className="space-y-1">
-                                <Label className="text-[9px] font-black text-white/50 uppercase tracking-widest leading-none">Time Out</Label>
-                                <Input type="time" value={att?.timeOut || '16:00'} onChange={e => handleAttendanceChange(emp.id, singleDate, 'timeOut', e.target.value, att.id)} className="h-8 rounded-lg bg-white/5 border border-white/10 font-mono text-xs p-2 text-white [color-scheme:dark]" />
-                              </div>
-                            </div>
 
                             <div className="flex items-center gap-2 p-2 bg-slate-950/40 rounded-xl border border-white/5">
                               <div className="flex-1 text-center border-r border-white/10 last:border-0">
@@ -740,16 +772,22 @@ export default function Attendance() {
                   })}
                   
                   {expandedEmp === emp.id && (
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 mt-2" onClick={(e) => e.stopPropagation()}>
                         <button 
-                          onClick={() => handleAttendanceChange(emp.id, singleDate, 'status', 'present')}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAttendanceChange(emp.id, singleDate, 'status', 'present');
+                          }}
                           className="flex-1 py-3 bg-white/5 hover:bg-white/10 rounded-2xl border border-white/10 text-[10px] font-black text-white/60 uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2"
                         >
                           <Plus className="w-3.5 h-3.5 text-blue-400" />
                           Add Record
                         </button>
                         <button 
-                          onClick={() => handleAttendanceChange(emp.id, singleDate, 'status', 'pakyaw')}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAttendanceChange(emp.id, singleDate, 'status', 'pakyaw');
+                          }}
                           className="flex-1 py-3 bg-amber-500/10 hover:bg-amber-500/20 rounded-2xl border border-amber-500/20 text-[10px] font-black text-amber-500 uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2"
                         >
                           <Plus className="w-3.5 h-3.5 text-amber-400" />

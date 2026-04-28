@@ -193,63 +193,71 @@ export default function Payroll() {
     
     setIsExporting(true);
     try {
-      const originalStyle = payslipRef.current.style.maxHeight;
+      const originalMaxHeight = payslipRef.current.style.maxHeight;
+      const originalOverflow = payslipRef.current.style.overflowY;
       payslipRef.current.style.maxHeight = 'none';
+      payslipRef.current.style.overflowY = 'visible';
       
       const canvas = await html2canvas(payslipRef.current, {
-        scale: 2,
+        scale: 3,
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
-        windowWidth: payslipRef.current.scrollWidth,
-        windowHeight: payslipRef.current.scrollHeight,
+        width: payslipRef.current.offsetWidth,
         onclone: (clonedDoc) => {
-          clonedDoc.querySelectorAll('style').forEach(tag => tag.remove());
           const payslip = clonedDoc.querySelector('.payslip-mockup');
           if (payslip) {
-            (payslip as HTMLElement).style.color = '#0f172a';
+            (payslip as HTMLElement).style.width = `${payslipRef.current!.offsetWidth}px`;
+            (payslip as HTMLElement).style.color = '#000000';
             (payslip as HTMLElement).style.backgroundColor = '#ffffff';
+            (payslip as HTMLElement).style.padding = '20px';
             
             const allElements = payslip.querySelectorAll('*');
             allElements.forEach(el => {
-              const style = window.getComputedStyle(el);
-              const isUnsupported = (val: string) => val.includes('oklch') || val.includes('oklab');
+              const htmlEl = el as HTMLElement;
+              const style = window.getComputedStyle(htmlEl);
               
-              if (isUnsupported(style.color)) (el as HTMLElement).style.setProperty('color', '#0f172a', 'important');
-              if (isUnsupported(style.backgroundColor) && !style.backgroundColor.includes('rgba(0, 0, 0, 0)')) {
-                (el as HTMLElement).style.setProperty('background-color', '#ffffff', 'important');
+              const fixColor = (prop: string, defaultVal: string) => {
+                const val = htmlEl.style.getPropertyValue(prop) || style.getPropertyValue(prop);
+                if (val.includes('oklch') || val.includes('oklab')) {
+                  htmlEl.style.setProperty(prop, defaultVal, 'important');
+                }
+              };
+
+              fixColor('color', '#000000');
+              if (style.backgroundColor !== 'transparent' && style.backgroundColor !== 'rgba(0, 0, 0, 0)') {
+                if (!style.backgroundColor.includes('rgba')) {
+                   fixColor('background-color', '#f8fafc');
+                }
               }
-              if (isUnsupported(style.borderColor)) (el as HTMLElement).style.setProperty('border-color', '#e2e8f0', 'important');
+              fixColor('border-color', '#e2e8f0');
             });
           }
         }
       });
       
-      payslipRef.current.style.maxHeight = originalStyle;
+      payslipRef.current.style.maxHeight = originalMaxHeight;
+      payslipRef.current.style.overflowY = originalOverflow;
       
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF({
-        orientation: 'landscape',
+        orientation: 'portrait',
         unit: 'mm',
         format: 'a4'
       });
       
-      const pdfWidth = pdf.internal.pageSize.getWidth() / 2;
+      const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       
-      const imgRatio = canvas.height / canvas.width;
-      const pdfRatio = pdfHeight / pdfWidth;
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      const ratio = Math.min((pdfWidth - 20) / imgWidth, (pdfHeight - 20) / imgHeight);
       
-      let finalWidth = pdfWidth;
-      let finalHeight = pdfWidth * imgRatio;
-      
-      if (imgRatio > pdfRatio) {
-        finalHeight = pdfHeight;
-        finalWidth = pdfHeight / imgRatio;
-      }
+      const finalWidth = imgWidth * ratio;
+      const finalHeight = imgHeight * ratio;
       
       const marginX = (pdfWidth - finalWidth) / 2;
-      const marginY = (pdfHeight - finalHeight) / 2;
+      const marginY = 10;
       
       pdf.addImage(imgData, 'PNG', marginX, marginY, finalWidth, finalHeight);
       pdf.autoPrint();
@@ -267,69 +275,81 @@ export default function Payroll() {
     
     setIsExporting(true);
     try {
-      // Temporarily remove max-height to capture full content
-      const originalStyle = payslipRef.current.style.maxHeight;
+      // Temporarily remove max-height and overflow to capture full content
+      const originalMaxHeight = payslipRef.current.style.maxHeight;
+      const originalOverflow = payslipRef.current.style.overflowY;
       payslipRef.current.style.maxHeight = 'none';
+      payslipRef.current.style.overflowY = 'visible';
       
       const canvas = await html2canvas(payslipRef.current, {
-        scale: 3,
+        scale: 3, // High quality
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
-        // Set width explicitly to prevent layout changes during cloning
         width: payslipRef.current.offsetWidth,
         onclone: (clonedDoc) => {
-          clonedDoc.querySelectorAll('style').forEach(tag => tag.remove());
+          // DO NOT remove style tags, as they contain our Tailwind styles
           const payslip = clonedDoc.querySelector('.payslip-mockup');
           if (payslip) {
             (payslip as HTMLElement).style.width = `${payslipRef.current!.offsetWidth}px`;
-            (payslip as HTMLElement).style.color = '#0f172a';
+            (payslip as HTMLElement).style.color = '#000000';
             (payslip as HTMLElement).style.backgroundColor = '#ffffff';
+            (payslip as HTMLElement).style.padding = '20px'; // Add some padding for the PDF
             
+            // Force light theme colors for printing
             const allElements = payslip.querySelectorAll('*');
             allElements.forEach(el => {
-              const style = window.getComputedStyle(el);
-              const isUnsupported = (val: string) => val.includes('oklch') || val.includes('oklab');
+              const htmlEl = el as HTMLElement;
+              const style = window.getComputedStyle(htmlEl);
               
-              if (isUnsupported(style.color)) (el as HTMLElement).style.setProperty('color', '#0f172a', 'important');
-              if (isUnsupported(style.backgroundColor) && !style.backgroundColor.includes('rgba(0, 0, 0, 0)')) {
-                (el as HTMLElement).style.setProperty('background-color', '#ffffff', 'important');
+              // Helper to fix colors that uses OKLCH or other modern formats that canvas/PDF might struggle with
+              const fixColor = (prop: string, defaultVal: string) => {
+                const val = htmlEl.style.getPropertyValue(prop) || style.getPropertyValue(prop);
+                if (val.includes('oklch') || val.includes('oklab')) {
+                  htmlEl.style.setProperty(prop, defaultVal, 'important');
+                }
+              };
+
+              fixColor('color', '#000000');
+              if (style.backgroundColor !== 'transparent' && style.backgroundColor !== 'rgba(0, 0, 0, 0)') {
+                // If it has a background, keep it light
+                if (style.backgroundColor.includes('rgba')) {
+                   // Keep transparencies but avoid dark backgrounds
+                } else {
+                   fixColor('background-color', '#f8fafc');
+                }
               }
-              if (isUnsupported(style.borderColor)) (el as HTMLElement).style.setProperty('border-color', '#e2e8f0', 'important');
+              fixColor('border-color', '#e2e8f0');
             });
           }
         }
       });
       
       // Restore original style
-      payslipRef.current.style.maxHeight = originalStyle;
+      payslipRef.current.style.maxHeight = originalMaxHeight;
+      payslipRef.current.style.overflowY = originalOverflow;
       
-      const imgData = canvas.toDataURL('image/jpeg', 1.0);
+      const imgData = canvas.toDataURL('image/png', 1.0);
       
-      // A4 Landscape, splitting horizontally for two payslips per page
+      // Create PDF - A4 size
       const pdf = new jsPDF({
-        orientation: 'landscape',
+        orientation: 'portrait',
         unit: 'mm',
         format: 'a4'
       });
       
-      const pdfWidth = pdf.internal.pageSize.getWidth() / 2;
+      const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       
-      const imgRatio = canvas.height / canvas.width;
-      const pdfRatio = pdfHeight / pdfWidth;
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      const ratio = Math.min((pdfWidth - 20) / imgWidth, (pdfHeight - 20) / imgHeight);
       
-      let finalWidth = pdfWidth;
-      let finalHeight = pdfWidth * imgRatio;
+      const finalWidth = imgWidth * ratio;
+      const finalHeight = imgHeight * ratio;
       
-      if (imgRatio > pdfRatio) {
-        finalHeight = pdfHeight;
-        finalWidth = pdfHeight / imgRatio;
-      }
-      
-      // Center the image vertically
       const marginX = (pdfWidth - finalWidth) / 2;
-      const marginY = (pdfHeight - finalHeight) / 2;
+      const marginY = 10; // Start near top
       
       pdf.addImage(imgData, 'PNG', marginX, marginY, finalWidth, finalHeight);
       pdf.save(`payslip_${selectedPayslip.employee.fullName.replace(/\s+/g, '_')}_${startDate}.pdf`);
@@ -346,9 +366,9 @@ export default function Payroll() {
     setIsExporting(true);
     try {
       const pdf = new jsPDF({
-        orientation: 'landscape',
+        orientation: 'portrait',
         unit: 'mm',
-        format: 'a5'
+        format: 'a4'
       });
       
       const pdfWidth = pdf.internal.pageSize.getWidth();
@@ -356,69 +376,62 @@ export default function Payroll() {
       
       for (let i = 0; i < displayedPayrolls.length; i++) {
         const payslip = displayedPayrolls[i];
-        
-        // We set the selected payslip so the hidden DOM node renders it
         setSelectedPayslip(payslip);
         
-        // Wait for React to render the dialog DOM
-        await new Promise(resolve => setTimeout(resolve, 300));
+        // Wait for React to render
+        await new Promise(resolve => setTimeout(resolve, 500));
         
         if (payslipRef.current) {
-          const originalStyle = payslipRef.current.style.maxHeight;
+          const originalMaxHeight = payslipRef.current.style.maxHeight;
+          const originalOverflow = payslipRef.current.style.overflowY;
           payslipRef.current.style.maxHeight = 'none';
+          payslipRef.current.style.overflowY = 'visible';
           
           const canvas = await html2canvas(payslipRef.current, {
             scale: 2,
             useCORS: true,
             logging: false,
             backgroundColor: '#ffffff',
-            windowWidth: payslipRef.current.scrollWidth,
-            windowHeight: payslipRef.current.scrollHeight,
             onclone: (clonedDoc) => {
-              clonedDoc.querySelectorAll('style').forEach(tag => tag.remove());
               const domPayslip = clonedDoc.querySelector('.payslip-mockup');
               if (domPayslip) {
-                (domPayslip as HTMLElement).style.color = '#0f172a';
+                (domPayslip as HTMLElement).style.color = '#000000';
                 (domPayslip as HTMLElement).style.backgroundColor = '#ffffff';
+                (domPayslip as HTMLElement).style.padding = '20px';
+                
                 const allElements = domPayslip.querySelectorAll('*');
                 allElements.forEach(el => {
-                  const style = window.getComputedStyle(el);
+                  const htmlEl = el as HTMLElement;
+                  const style = window.getComputedStyle(htmlEl);
                   const isUnsupported = (val: string) => val.includes('oklch') || val.includes('oklab');
-                  if (isUnsupported(style.color)) (el as HTMLElement).style.setProperty('color', '#0f172a', 'important');
-                  if (isUnsupported(style.backgroundColor) && !style.backgroundColor.includes('rgba(0, 0, 0, 0)')) {
-                    (el as HTMLElement).style.setProperty('background-color', '#ffffff', 'important');
+                  
+                  if (isUnsupported(style.color)) htmlEl.style.setProperty('color', '#000000', 'important');
+                  if (isUnsupported(style.backgroundColor) && style.backgroundColor !== 'transparent' && !style.backgroundColor.includes('rgba(0, 0, 0, 0)')) {
+                    htmlEl.style.setProperty('background-color', '#ffffff', 'important');
                   }
-                  if (isUnsupported(style.borderColor)) (el as HTMLElement).style.setProperty('border-color', '#e2e8f0', 'important');
+                  if (isUnsupported(style.borderColor)) htmlEl.style.setProperty('border-color', '#e2e8f0', 'important');
                 });
               }
             }
           });
           
-          payslipRef.current.style.maxHeight = originalStyle;
+          payslipRef.current.style.maxHeight = originalMaxHeight;
+          payslipRef.current.style.overflowY = originalOverflow;
           
           const imgData = canvas.toDataURL('image/png');
           const imgRatio = canvas.height / canvas.width;
-          const pdfRatio = pdfHeight / pdfWidth;
           
-          let finalWidth = pdfWidth;
-          let finalHeight = pdfWidth * imgRatio;
+          const finalWidth = pdfWidth - 20;
+          const finalHeight = finalWidth * imgRatio;
           
-          if (imgRatio > pdfRatio) {
-            finalHeight = pdfHeight;
-            finalWidth = pdfHeight / imgRatio;
-          }
+          const marginX = 10;
+          const marginY = 10;
           
-          const marginX = (pdfWidth - finalWidth) / 2;
-          const marginY = (pdfHeight - finalHeight) / 2;
-          
-          if (i > 0) {
-            pdf.addPage();
-          }
-          pdf.addImage(imgData, 'PNG', marginX, marginY, finalWidth, finalHeight);
+          if (i > 0) pdf.addPage();
+          pdf.addImage(imgData, 'PNG', marginX, marginY, finalWidth, Math.min(finalHeight, pdfHeight - 20));
         }
       }
       
-      // Close dialog when done and save
       setSelectedPayslip(null);
       pdf.save(`Bulk_Payroll_${format(parseISO(startDate), 'MMM_dd')}_${format(parseISO(endDate), 'MMM_dd_yyyy')}.pdf`);
     } catch (error) {
@@ -933,12 +946,12 @@ export default function Payroll() {
                       <Button 
                         size="sm" 
                         variant="secondary" 
-                        className="h-12 sm:h-10 gap-2 bg-white/10 hover:bg-white/20 text-white border border-white/10 font-black uppercase tracking-widest text-[10px] backdrop-blur-md flex-1 sm:flex-none shadow-lg" 
-                        onClick={handleBulkExport}
+                        className="h-12 sm:h-10 gap-3 bg-white/10 hover:bg-white/20 text-white border border-white/10 font-bold uppercase tracking-widest text-[10px] backdrop-blur-md px-6 shadow-xl" 
+                        onClick={handleBulkExportPDF}
                         disabled={isExporting}
                       >
-                        {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4 rotate-180" />}
-                        <span className="truncate">Bulk PDF</span>
+                        {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                        <span className="truncate">{isExporting ? 'Exporting...' : 'Bulk PDF Export'}</span>
                       </Button>
                       <Button 
                         size="sm" 
@@ -967,16 +980,6 @@ export default function Payroll() {
                           <span className="truncate">Mark as Paid</span>
                         </Button>
                       )}
-                      <Button 
-                        size="sm" 
-                        variant="secondary" 
-                        className="h-12 sm:h-10 gap-2 bg-white/10 hover:bg-white/20 text-white border border-white/10 font-black uppercase tracking-widest text-[10px] backdrop-blur-md flex-1 sm:flex-none shadow-lg" 
-                        onClick={handleBulkExportPDF}
-                        disabled={isExporting}
-                      >
-                        {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                        <span className="truncate">{isExporting ? 'Exporting...' : 'Bulk PDF'}</span>
-                      </Button>
                     </div>
                   </div>
                   </div>

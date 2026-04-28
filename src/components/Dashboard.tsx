@@ -176,7 +176,9 @@ export default function Dashboard() {
             else if (isHD) hdIds.push(data.employeeId);
             else if (data.status === "pakyaw") pakyawIds.push(data.employeeId);
             else if (data.status === "absent") absentIds.push(data.employeeId);
-            if (data.otHours && data.otHours > 0) ot += data.otHours;
+            
+            const { otHrs } = calculateAttendanceHours(data as Attendance);
+            if (otHrs > 0) ot += otHrs;
           }
         });
 
