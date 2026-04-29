@@ -192,7 +192,7 @@ export default function CEODashboard() {
         (att) => {
           if (att.status === "pakyaw" && att.pakyawJobId) {
             const job = pakyawJobs.find((j) => j.id === att.pakyawJobId);
-            return { ...att, jobName: job?.description };
+            return { ...att, jobName: job ? (job.containerNumber ? `[${job.containerNumber}] ` + job.description : job.description) : undefined };
           }
           return att;
         },

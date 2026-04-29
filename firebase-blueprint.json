@@ -101,6 +101,7 @@
       "description": "Piece-rate contract for a job split among employees",
       "type": "object",
       "properties": {
+        "containerNumber": { "type": "string" },
         "description": { "type": "string" },
         "startDate": { "type": "string", "format": "date" },
         "totalPrice": { "type": "number" },

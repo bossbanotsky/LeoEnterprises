@@ -73,7 +73,9 @@ export default function Attendance() {
 
     const unsubscribe = onSnapshot(attQ, (snapshot) => {
       const atts: Record<string, AttendanceType[]> = {};
-      snapshot.forEach(docSnap => { 
+      const uniqueDocs = Array.from(new Map(snapshot.docs.map(doc => [doc.id, doc])).values());
+      
+      uniqueDocs.forEach(docSnap => { 
         const data = docSnap.data() as AttendanceType; 
         const key = `${data.employeeId}_${data.date}`;
         if (!atts[key]) atts[key] = [];
@@ -778,8 +780,8 @@ export default function Attendance() {
                                >
                                 <option value="">-- Select Job --</option>
                                 {pakyawJobs
-                                  .filter(job => job.status === 'pending' || job.id === att.pakyawJobId)
-                                  .map(job => <option key={job.id} value={job.id}>{job.description} (₱{job.totalPrice.toLocaleString()})</option>)
+                                  .filter(job => job.employeeIds.includes(emp.id) && (job.status === 'pending' || job.id === att.pakyawJobId))
+                                  .map(job => <option key={job.id} value={job.id}>{job.containerNumber ? `[${job.containerNumber}] ` : ''}{job.description} (₱{job.totalPrice.toLocaleString()})</option>)
                                 }
                               </select>
                             </div>
@@ -1005,7 +1007,9 @@ export default function Attendance() {
                                        )}
                                        {isPakyaw_detail && (
                                          <span className="text-amber-600">
-                                           {pakyawJobs.find(j => j.id === att.pakyawJobId)?.description || 'Job Assigned'}
+                                          {pakyawJobs.find(j => j.id === att.pakyawJobId) ? 
+                                              (pakyawJobs.find(j => j.id === att.pakyawJobId)?.containerNumber ? `[${pakyawJobs.find(j => j.id === att.pakyawJobId)?.containerNumber}] ` : '') + (pakyawJobs.find(j => j.id === att.pakyawJobId)?.description || 'Job Assigned')
+                                            : 'Job Assigned'}
                                          </span>
                                        )}
                                        <button 
@@ -1039,8 +1043,8 @@ export default function Attendance() {
                                      >
                                       <option value="">-- Select Job --</option>
                                       {pakyawJobs
-                                        .filter(job => job.status === 'pending' || job.id === att.pakyawJobId)
-                                        .map(job => <option key={job.id} value={job.id}>{job.description}</option>)
+                                        .filter(job => job.employeeIds.includes(emp.id) && (job.status === 'pending' || job.id === att.pakyawJobId))
+                                        .map(job => <option key={job.id} value={job.id}>{job.containerNumber ? `[${job.containerNumber}] ` : ''}{job.description}</option>)
                                       }
                                     </select>
                                    )}

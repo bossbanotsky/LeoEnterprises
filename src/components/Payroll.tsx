@@ -430,8 +430,9 @@ export default function Payroll() {
     );
 
     const unsubscribe = onSnapshot(bulkQ, (snapshot) => {
+      const uniqueDocs = Array.from(new Map(snapshot.docs.map(doc => [doc.id, doc])).values());
       const allBulk: any[] = [];
-      snapshot.forEach(docSnap => {
+      uniqueDocs.forEach(docSnap => {
         allBulk.push({ id: docSnap.id, ...docSnap.data() });
       });
 
@@ -557,11 +558,12 @@ export default function Payroll() {
         
         empPjw.forEach(pj => {
           const splitAmount = pj.totalPrice / Math.max(1, pj.employeeIds.length);
+          const jobName = pj.containerNumber ? `[${pj.containerNumber}] ${pj.description}` : pj.description;
           if (pj.status === 'completed') {
             totalPakyawPay += splitAmount;
-            pakyawDetails.push(`${pj.description}: ₱${splitAmount.toFixed(2)}`);
+            pakyawDetails.push(`${jobName}: ₱${splitAmount.toFixed(2)}`);
           } else {
-            pakyawDetails.push(`${pj.description}: PENDING (Not Finished)`);
+            pakyawDetails.push(`${jobName}: PENDING (Not Finished)`);
           }
         });
 

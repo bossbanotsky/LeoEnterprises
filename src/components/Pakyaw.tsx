@@ -4,12 +4,12 @@ import { db, handleFirestoreError, OperationType } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
 import { Employee, PakyawJob } from '../types';
-import { Search, Plus, Hammer, Trash2, Edit2, CheckSquare, Square } from 'lucide-react';
+import { Search, Plus, Hammer, Trash2, Edit2, CheckSquare, Square, ChevronRight, ChevronDown } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, startOfWeek, endOfWeek } from 'date-fns';
 
 export default function Pakyaw() {
   const { user } = useAuth();
@@ -21,7 +21,38 @@ export default function Pakyaw() {
   
   const [viewMode, setViewMode] = useState<'active' | 'archives'>('active');
   
+  const [payrollStartDate, setPayrollStartDate] = useState(() => localStorage.getItem('payrollStartDate') || format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd'));
+  const [payrollEndDate, setPayrollEndDate] = useState(() => localStorage.getItem('payrollEndDate') || format(endOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd'));
+  const [expandedEmployees, setExpandedEmployees] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    localStorage.setItem('payrollStartDate', payrollStartDate);
+    localStorage.setItem('payrollEndDate', payrollEndDate);
+    window.dispatchEvent(new Event('payrollDateChange'));
+  }, [payrollStartDate, payrollEndDate]);
+
+  useEffect(() => {
+    const handleStorage = () => {
+      const savedStart = localStorage.getItem("payrollStartDate");
+      const savedEnd = localStorage.getItem("payrollEndDate");
+      if (savedStart && savedStart !== payrollStartDate) setPayrollStartDate(savedStart);
+      if (savedEnd && savedEnd !== payrollEndDate) setPayrollEndDate(savedEnd);
+    };
+    window.addEventListener("payrollDateChange", handleStorage);
+    return () => {
+      window.removeEventListener("payrollDateChange", handleStorage);
+    };
+  }, [payrollStartDate, payrollEndDate]);
+
+  const toggleEmployee = (empId: string) => {
+    const newSet = new Set(expandedEmployees);
+    if (newSet.has(empId)) newSet.delete(empId);
+    else newSet.add(empId);
+    setExpandedEmployees(newSet);
+  };
+  
   const [form, setForm] = useState({ 
+    containerNumber: '',
     description: '', 
     startDate: format(new Date(), 'yyyy-MM-dd'),
     status: 'pending' as 'pending' | 'completed',
@@ -34,8 +65,25 @@ export default function Pakyaw() {
     if (!user || !form.description || !form.totalPrice || form.employeeIds.length === 0) return;
     try {
       let pjwId = editingId;
+      
+      if (!editingId) {
+        // Prevent duplicate jobs
+        const isDuplicate = jobs.some(j => 
+          j.status === 'pending' &&
+          (j.containerNumber || '').toLowerCase().trim() === (form.containerNumber || '').toLowerCase().trim() &&
+          j.description.toLowerCase().trim() === form.description.toLowerCase().trim() &&
+          j.employeeIds.some(id => form.employeeIds.includes(id))
+        );
+        
+        if (isDuplicate) {
+          alert("Duplicate Job Detected: One or more selected workers are already assigned to a pending job with this EXACT Container Number and Description. Please review to avoid duplicates.");
+          return;
+        }
+      }
+
       if (editingId) {
         await updateDoc(doc(db, 'pakyawJobs', editingId), {
+          containerNumber: form.containerNumber,
           description: form.description,
           startDate: form.startDate,
           status: form.status,
@@ -45,6 +93,7 @@ export default function Pakyaw() {
         setEditingId(null);
       } else {
         const jobRef = await addDoc(collection(db, 'pakyawJobs'), {
+          containerNumber: form.containerNumber,
           description: form.description,
           startDate: form.startDate,
           status: form.status,
@@ -72,7 +121,7 @@ export default function Pakyaw() {
         }
       }
       setIsAddOpen(false);
-      setForm({ description: '', startDate: format(new Date(), 'yyyy-MM-dd'), status: 'pending', totalPrice: '', employeeIds: [] });
+      setForm({ containerNumber: '', description: '', startDate: format(new Date(), 'yyyy-MM-dd'), status: 'pending', totalPrice: '', employeeIds: [] });
     } catch (error) {
       handleFirestoreError(error, editingId ? OperationType.UPDATE : OperationType.CREATE, 'pakyawJobs');
     }
@@ -81,6 +130,7 @@ export default function Pakyaw() {
   const openEdit = (job: PakyawJob) => {
     setEditingId(job.id);
     setForm({
+      containerNumber: job.containerNumber || '',
       description: job.description,
       startDate: job.startDate,
       status: job.status,
@@ -108,16 +158,49 @@ export default function Pakyaw() {
   };
 
   const filteredJobs = jobs.filter(job => {
-    const matchesSearch = job.description.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = job.description.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          (job.containerNumber && job.containerNumber.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchesTab = viewMode === 'active' ? job.status === 'pending' : job.status === 'completed';
-    return matchesSearch && matchesTab;
+    const matchesDate = job.startDate >= payrollStartDate && job.startDate <= payrollEndDate;
+    return matchesSearch && matchesTab && matchesDate;
   });
+
+  const jobsByEmployee = new Map<string, PakyawJob[]>();
+  filteredJobs.forEach(job => {
+    // Use a Set to ensure we only count the job once per unique employee ID
+    const uniqueEmpIds = new Set(job.employeeIds);
+    uniqueEmpIds.forEach(empId => {
+      const empsJobs = jobsByEmployee.get(empId) || [];
+      empsJobs.push(job);
+      jobsByEmployee.set(empId, empsJobs);
+    });
+  });
+
+  const groupedEmployees = Array.from(jobsByEmployee.entries()).map(([empId, empJobs]) => ({
+    employee: employees.find(e => e.id === empId),
+    jobs: Array.from(new Set(empJobs.map(j => j.id))).map(id => empJobs.find(j => j.id === id)!),
+  })).filter(g => g.employee).sort((a, b) => (a.employee?.fullName || '').localeCompare(b.employee?.fullName || ''));
 
   return (
     <div className="h-full flex flex-col relative w-full pt-2">
       <div className="mb-4 shrink-0">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Pakyaw Contracts</h1>
+          <div className="flex gap-2 items-center text-sm font-semibold">
+            <Input
+              type="date"
+              value={payrollStartDate}
+              onChange={(e) => setPayrollStartDate(e.target.value)}
+              className="h-9 w-[130px] rounded-lg bg-white dark:bg-slate-800"
+            />
+             <span className="text-slate-400">to</span>
+            <Input
+              type="date"
+              value={payrollEndDate}
+              onChange={(e) => setPayrollEndDate(e.target.value)}
+              className="h-9 w-[130px] rounded-lg bg-white dark:bg-slate-800"
+            />
+          </div>
           <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl shrink-0">
             <Button 
               variant={viewMode === 'active' ? 'secondary' : 'ghost'} 
@@ -143,80 +226,109 @@ export default function Pakyaw() {
       </div>
 
       <div className="flex-1 overflow-y-auto space-y-3 pb-20 w-full pr-1">
-        {filteredJobs.map(job => {
-          const splitAmount = job.totalPrice / (job.employeeIds.length || 1);
-          return (
-            <div key={job.id} className="bento-card bg-white dark:bg-slate-800 p-4 flex flex-col gap-3 group relative overflow-hidden">
-              {job.status === 'completed' && (
-                <div className="absolute top-0 right-0 py-1 px-3 bg-green-500 text-white text-[9px] font-bold uppercase tracking-widest rounded-bl-xl shadow-sm">
-                  Completed
+        {groupedEmployees.map(({ employee, jobs }) => (
+          <div key={employee.id} className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
+            <button 
+              onClick={() => toggleEmployee(employee.id)}
+              className="w-full flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-lg">
+                  {employee.fullName.charAt(0)}
                 </div>
-              )}
-              <div className="flex flex-row items-center gap-4">
-                <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-full flex items-center justify-center font-bold shrink-0">
-                  <Hammer className="w-6 h-6" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-bold text-slate-900 dark:text-white truncate">{job.description}</h3>
-                  <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    {format(parseISO(job.startDate), 'MMM dd, yyyy')} • {job.employeeIds.length} worker{job.employeeIds.length !== 1 ? 's' : ''}
-                  </div>
-                </div>
-                <div className="shrink-0 text-right">
-                  <div className="font-black text-lg text-slate-900 dark:text-white">
-                    ₱{job.totalPrice.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
-                  </div>
-                  <div className="text-[10px] uppercase font-bold tracking-wider text-indigo-600 mt-0.5">
-                    ₱{splitAmount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} each
-                  </div>
+                <div className="text-left flex flex-col">
+                  <span className="font-bold text-slate-900 dark:text-white text-base">{employee.fullName}</span>
+                  <span className="text-xs text-indigo-600 dark:text-indigo-400 font-bold pt-0.5">
+                    {jobs.length} {viewMode === 'active' ? 'active' : 'archived'} contract{jobs.length !== 1 ? 's' : ''}
+                  </span>
                 </div>
               </div>
-              
-              <div className="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-3 text-xs text-slate-600 dark:text-slate-400 border border-slate-100 dark:border-slate-800/50">
-                <span className="font-semibold text-slate-900 dark:text-slate-300">Workers: </span>
-                {job.employeeIds.map(id => {
-                  const e = employees.find(emp => emp.id === id);
-                  return e ? e.fullName : 'Unknown';
-                }).join(', ')}
+              <div className="text-slate-400">
+                {expandedEmployees.has(employee.id) ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
               </div>
+            </button>
+            
+            {expandedEmployees.has(employee.id) && (
+              <div className="p-3 bg-white dark:bg-slate-900 grid grid-cols-1 gap-3">
+                {jobs.map(job => {
+                  const splitAmount = job.totalPrice / Math.max(1, job.employeeIds.length);
+                  return (
+                    <div key={job.id} className="border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 rounded-xl p-4 flex flex-col gap-3 relative overflow-hidden group">
+                      {job.status === 'completed' && (
+                        <div className="absolute top-0 right-0 py-1 px-3 bg-green-500 text-white text-[9px] font-bold uppercase tracking-widest rounded-bl-xl shadow-sm">
+                          Completed
+                        </div>
+                      )}
+                      <div className="flex flex-row items-start gap-4">
+                        <div className="w-10 h-10 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 rounded-full flex items-center justify-center shrink-0 mt-0.5">
+                          <Hammer className="w-5 h-5" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-bold text-slate-900 dark:text-white text-sm leading-tight break-words pr-2">
+                            {job.containerNumber ? <span className="text-indigo-600 dark:text-indigo-400 mr-1.5">[{job.containerNumber}]</span> : null}
+                            {job.description}
+                          </h3>
+                          <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-2">
+                            <span>{format(parseISO(job.startDate), 'MMM dd, yyyy')}</span>
+                            <span>•</span>
+                            <span>{job.employeeIds.length} worker{job.employeeIds.length !== 1 ? 's' : ''}</span>
+                          </div>
+                          <div className="mt-2.5 flex items-center gap-4">
+                             <div>
+                               <div className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-0.5">Total Pay</div>
+                               <div className="font-bold text-slate-900 dark:text-white text-sm">₱{job.totalPrice.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                             </div>
+                             <div>
+                               <div className="text-[10px] text-indigo-500 dark:text-indigo-400 uppercase font-bold tracking-wider mb-0.5">Their Share</div>
+                               <div className="font-bold text-indigo-700 dark:text-indigo-400 text-sm">₱{splitAmount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                             </div>
+                          </div>
+                        </div>
+                      </div>
 
-              <div className="flex justify-end gap-3 mt-1">
-                {job.status === 'pending' && (
-                  <button 
-                    onClick={() => {
-                      if (!user) return;
-                      updateDoc(doc(db, 'pakyawJobs', job.id), { 
-                        status: 'completed',
-                        completedAt: new Date().toISOString()
-                      });
-                    }}
-                    className="text-xs text-green-600 hover:text-green-800 flex items-center gap-1 font-bold"
-                  >
-                    <CheckSquare className="w-3 h-3" /> Mark Finished
-                  </button>
-                )}
-                <button 
-                  onClick={() => openEdit(job)}
-                  className="text-xs text-blue-500 hover:text-blue-700 flex items-center gap-1 font-medium"
-                >
-                  <Edit2 className="w-3 h-3" /> Edit
-                </button>
-                <button 
-                  onClick={() => handleDelete(job.id)}
-                  className="text-xs text-red-500 hover:text-red-700 flex items-center gap-1 font-medium"
-                >
-                  <Trash2 className="w-3 h-3" /> {job.status === 'pending' ? 'Cancel Job' : 'Delete'}
-                </button>
+                      <div className="flex justify-end gap-3 mt-1 pt-3 border-t border-slate-200/60 dark:border-slate-700/60 w-full items-center">
+                        {job.status === 'pending' && (
+                          <button 
+                            onClick={() => {
+                              if (!user) return;
+                              updateDoc(doc(db, 'pakyawJobs', job.id), { 
+                                status: 'completed',
+                                completedAt: new Date().toISOString()
+                              });
+                            }}
+                            className="text-xs text-green-600 dark:text-green-500 hover:text-green-800 flex items-center gap-1 font-bold"
+                          >
+                            <CheckSquare className="w-3.5 h-3.5" /> Mark Finished
+                          </button>
+                        )}
+                        <button 
+                          onClick={() => openEdit(job)}
+                          className="text-xs text-blue-500 dark:text-blue-400 hover:text-blue-700 flex items-center gap-1 font-medium ml-auto"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" /> Edit
+                        </button>
+                        <button 
+                          onClick={() => handleDelete(job.id)}
+                          className="text-xs text-red-500 dark:text-red-400 hover:text-red-700 flex items-center gap-1 font-medium"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" /> {job.status === 'pending' ? 'Cancel' : 'Delete'}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            </div>
-          );
-        })}
-        {filteredJobs.length === 0 && (
-          <div className="text-center py-10 text-slate-500 dark:text-slate-400">
-            {viewMode === 'active' 
-              ? 'No pending piece-rate / pakyaw jobs found.' 
-              : 'No completed/archived jobs found.'
-            }
+            )}
+          </div>
+        ))}
+        
+        {groupedEmployees.length === 0 && (
+          <div className="text-center py-10 text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/20 rounded-2xl border border-slate-200 border-dashed dark:border-slate-800">
+            <Hammer className="w-8 h-8 mx-auto mb-3 text-slate-300 dark:text-slate-600" />
+            <p className="font-medium text-slate-600 dark:text-slate-300">{viewMode === 'active' 
+              ? 'No pending Pakyaw jobs for this date range.' 
+              : 'No archived Pakyaw jobs for this date range.'}</p>
+            <p className="text-xs mt-1">Try adjusting the dates or search query.</p>
           </div>
         )}
       </div>
@@ -225,14 +337,14 @@ export default function Pakyaw() {
         setIsAddOpen(open);
         if (!open) {
           setEditingId(null);
-          setForm({ description: '', startDate: format(new Date(), 'yyyy-MM-dd'), status: 'pending', totalPrice: '', employeeIds: [] });
+          setForm({ containerNumber: '', description: '', startDate: format(new Date(), 'yyyy-MM-dd'), status: 'pending', totalPrice: '', employeeIds: [] });
         }
       }}>
         <DialogTrigger render={<button className="absolute bottom-6 right-2 w-14 h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-lg shadow-indigo-600/30 flex items-center justify-center transition-transform active:scale-95 z-10" />}>
           <Plus className="w-6 h-6" />
         </DialogTrigger>
-        <DialogContent className="sm:max-w-[460px] rounded-3xl p-0 overflow-hidden bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
-          <div className="p-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
+        <DialogContent className="sm:max-w-[460px] max-h-[85vh] flex flex-col rounded-3xl p-0 overflow-hidden bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
+          <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 shrink-0">
             <DialogTitle className="text-xl font-bold flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center">
                 <Hammer className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
@@ -240,16 +352,28 @@ export default function Pakyaw() {
               {editingId ? 'Edit Pakyaw Job' : 'New Pakyaw Job'}
             </DialogTitle>
           </div>
-          <form onSubmit={handleSaveJob} className="p-6 space-y-5">
-            <div className="space-y-2">
-              <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Container / Job Description</Label>
-              <Input 
-                required 
-                value={form.description || ''} 
-                onChange={e => setForm({...form, description: e.target.value})} 
-                placeholder="e.g. Repair 20ft Container #402"
-                className="rounded-xl h-12 bg-slate-50 dark:bg-slate-800 border-none focus:ring-indigo-500" 
-              />
+          <form onSubmit={handleSaveJob} className="flex flex-col flex-1 overflow-hidden">
+            <div className="p-4 space-y-4 overflow-y-auto flex-1">
+              <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Container Number</Label>
+                <Input 
+                  value={form.containerNumber || ''} 
+                  onChange={e => setForm({...form, containerNumber: e.target.value})} 
+                  placeholder="e.g. #402"
+                  className="rounded-xl h-12 bg-slate-50 dark:bg-slate-800 border-none focus:ring-indigo-500" 
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Job Description</Label>
+                <Input 
+                  required 
+                  value={form.description || ''} 
+                  onChange={e => setForm({...form, description: e.target.value})} 
+                  placeholder="e.g. Grinding"
+                  className="rounded-xl h-12 bg-slate-50 dark:bg-slate-800 border-none focus:ring-indigo-500" 
+                />
+              </div>
             </div>
             
               <div className="grid grid-cols-2 gap-4">
@@ -310,7 +434,7 @@ export default function Pakyaw() {
                   Total will divide by {Math.max(1, form.employeeIds.length)}
                 </span>
               </Label>
-              <div className="max-h-48 overflow-y-auto space-y-1.5 p-1">
+              <div className="space-y-1.5 p-1 mb-2">
                 {employees
                   .filter(e => e.status === 'active' || !e.status)
                   .map(emp => {
@@ -335,7 +459,9 @@ export default function Pakyaw() {
               </div>
             </div>
 
-            <div className="pt-2">
+            </div>
+            
+            <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
               <Button type="submit" disabled={form.employeeIds.length === 0} className="w-full rounded-xl h-12 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-base shadow-md shadow-indigo-600/20">
                 {editingId ? 'Update Contract' : 'Save & Divide Payment'}
               </Button>

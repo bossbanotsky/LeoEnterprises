@@ -57,6 +57,7 @@ export interface CashAdvance {
 
 export interface PakyawJob {
   id: string;
+  containerNumber?: string;
   description: string;
   startDate: string;
   completedAt?: string;

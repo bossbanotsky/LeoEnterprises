@@ -71,32 +71,37 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const emps: Employee[] = [];
       empsSnap.forEach(doc => emps.push({ id: doc.id, ...doc.data() } as Employee));
-      const sortedEmps = emps.sort((a, b) => a.fullName.localeCompare(b.fullName));
+      const uniqueEmps = Array.from(new Map(emps.map(e => [e.id, e])).values());
+      const sortedEmps = uniqueEmps.sort((a, b) => a.fullName.localeCompare(b.fullName));
       
       const usersList: any[] = [];
       usersSnap.forEach(doc => usersList.push({ id: doc.id, ...doc.data() }));
+      const uniqueUsers = Array.from(new Map(usersList.map(u => [u.id, u])).values());
 
       const jobsList: PakyawJob[] = [];
       jobsSnap.forEach(doc => jobsList.push({ id: doc.id, ...doc.data() } as PakyawJob));
+      const uniqueJobs = Array.from(new Map(jobsList.map(j => [j.id, j])).values());
 
       const annList: Announcement[] = [];
       annSnap.forEach(doc => annList.push({ id: doc.id, ...doc.data() } as Announcement));
+      const uniqueAnn = Array.from(new Map(annList.map(a => [a.id, a])).values());
 
       const caList: CashAdvance[] = [];
       caSnap.forEach(doc => caList.push({ id: doc.id, ...doc.data() } as CashAdvance));
+      const uniqueCA = Array.from(new Map(caList.map(c => [c.id, c])).values());
 
       setEmployees(sortedEmps);
-      setUsers(usersList);
-      setPakyawJobs(jobsList);
-      setAnnouncements(annList);
-      setCashAdvances(caList);
+      setUsers(uniqueUsers);
+      setPakyawJobs(uniqueJobs);
+      setAnnouncements(uniqueAnn);
+      setCashAdvances(uniqueCA);
 
       // Save to cache
       localStorage.setItem('cache_employees', JSON.stringify(sortedEmps));
-      localStorage.setItem('cache_users', JSON.stringify(usersList));
-      localStorage.setItem('cache_pakyawJobs', JSON.stringify(jobsList));
-      localStorage.setItem('cache_announcements', JSON.stringify(annList));
-      localStorage.setItem('cache_cashAdvances', JSON.stringify(caList));
+      localStorage.setItem('cache_users', JSON.stringify(uniqueUsers));
+      localStorage.setItem('cache_pakyawJobs', JSON.stringify(uniqueJobs));
+      localStorage.setItem('cache_announcements', JSON.stringify(uniqueAnn));
+      localStorage.setItem('cache_cashAdvances', JSON.stringify(uniqueCA));
       
       setLoading(false);
       setQuotaLimited(false);

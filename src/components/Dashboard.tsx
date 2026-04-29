@@ -164,6 +164,13 @@ export default function Dashboard() {
         let ot = 0;
         const loggedIds = new Set<string>();
 
+        // Set to handle distinct counts per employee in categories
+        const presentSet = new Set<string>();
+        const utSet = new Set<string>();
+        const hdSet = new Set<string>();
+        const pakyawSet = new Set<string>();
+        const absentSet = new Set<string>();
+
         attDaySnapshot.forEach((doc) => {
           const data = doc.data();
           if (activeEmpIds.has(data.employeeId)) {
@@ -172,11 +179,11 @@ export default function Dashboard() {
             const isUT = (data.status === "ut" || (data.status === "present" && data.regularHours !== undefined && data.regularHours < 8 && data.regularHours > 0)) && !isHD;
             const isPresent = data.status === "present" && !isUT && !isHD;
 
-            if (isPresent) presentIds.push(data.employeeId);
-            else if (isUT) utIds.push(data.employeeId);
-            else if (isHD) hdIds.push(data.employeeId);
-            else if (data.status === "pakyaw") pakyawIds.push(data.employeeId);
-            else if (data.status === "absent") absentIds.push(data.employeeId);
+            if (isPresent) presentSet.add(data.employeeId);
+            else if (isUT) utSet.add(data.employeeId);
+            else if (isHD) hdSet.add(data.employeeId);
+            else if (data.status === "pakyaw") pakyawSet.add(data.employeeId);
+            else if (data.status === "absent") absentSet.add(data.employeeId);
             
             const { otHrs } = calculateAttendanceHours(data as Attendance);
             if (otHrs > 0) ot += otHrs;
@@ -184,18 +191,22 @@ export default function Dashboard() {
         });
 
         Array.from(activeEmpIds).forEach(id => {
-          if (!loggedIds.has(id)) absentIds.push(id);
+          if (!loggedIds.has(id)) absentSet.add(id);
         });
 
         setStats((prev) => ({
           ...prev,
-          present: presentIds.length,
-          ut: utIds.length,
-          hd: hdIds.length,
-          pakyaw: pakyawIds.length,
+          present: presentSet.size,
+          ut: utSet.size,
+          hd: hdSet.size,
+          pakyaw: pakyawSet.size,
           ot,
-          absent: absentIds.length,
-          presentIds, utIds, hdIds, pakyawIds, absentIds,
+          absent: absentSet.size,
+          presentIds: Array.from(presentSet), 
+          utIds: Array.from(utSet), 
+          hdIds: Array.from(hdSet), 
+          pakyawIds: Array.from(pakyawSet), 
+          absentIds: Array.from(absentSet),
         }));
 
         // 3. Attendance for Projection Range
@@ -965,8 +976,8 @@ export default function Dashboard() {
               const emp = employees.find((e) => e.id === id);
               if (!emp) return null;
               
-              const att = attendances.find((a) => a.employeeId === id && a.date === selectedDate);
-              const job = att && att.status === 'pakyaw' ? pakyawJobs.find((j) => j.id === att.pakyawJobId) : null;
+              const empAtts = attendances.filter((a) => a.employeeId === id && a.date === selectedDate);
+              const pakyawAtts = empAtts.filter(a => a.status === 'pakyaw');
               
               return (
                 <div key={emp.id} className="p-3 bg-slate-50 dark:bg-slate-900 rounded-xl flex items-center gap-3 border border-slate-100 dark:border-slate-800">
@@ -990,29 +1001,35 @@ export default function Dashboard() {
                         {emp.position || "Staff"}
                       </div>
                     </div>
-                    {att && (
+                    {empAtts.length > 0 && (
                       <div className="text-right shrink-0 flex flex-col items-end gap-1">
-                        {(att.timeIn || att.timeOut) && (
+                        {empAtts[0] && (empAtts[0].timeIn || empAtts[0].timeOut) && (
                           <div className="text-[10px] font-bold text-slate-600 dark:text-slate-300">
-                            {format(parseISO(`${selectedDate}T${att.timeIn || '00:00'}`), "h:mm a")} - {att.timeOut ? format(parseISO(`${selectedDate}T${att.timeOut}`), "h:mm a") : 'No out'}
+                            {format(parseISO(`${selectedDate}T${empAtts[0].timeIn || '00:00'}`), "h:mm a")} - {empAtts[0].timeOut ? format(parseISO(`${selectedDate}T${empAtts[0].timeOut}`), "h:mm a") : 'No out'}
                           </div>
                         )}
-                        <div className="flex flex-wrap justify-end gap-1">
-                          {att.status === 'pakyaw' && job && (
-                            <span className="text-[9px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded">
-                              {job.description}
-                            </span>
-                          )}
-                          {!!att.otHours && att.otHours > 0 && (
-                            <span className="text-[9px] font-bold text-blue-600 bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 rounded">
-                              +{att.otHours}h OT
-                            </span>
-                          )}
-                          {!!att.regularHours && att.regularHours > 0 && att.regularHours < 8 && selectedStatus.category !== 'Half-Day' && (
-                            <span className="text-[9px] font-bold text-orange-600 bg-orange-50 dark:bg-orange-900/30 px-1.5 py-0.5 rounded">
-                              {att.regularHours}h
-                            </span>
-                          )}
+                        <div className="flex flex-col items-end gap-1">
+                          {pakyawAtts.map(a => {
+                            const job = pakyawJobs.find(j => j.id === a.pakyawJobId);
+                            if (!job) return null;
+                            return (
+                                <span key={a.id} className="text-[9px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded whitespace-nowrap">
+                                  {job.containerNumber ? `[${job.containerNumber}] ` : ''}{job.description}
+                                </span>
+                            );
+                          })}
+                          <div className="flex flex-wrap justify-end gap-1">
+                            {empAtts.some(a => a.otHours && a.otHours > 0) && (
+                              <span className="text-[9px] font-bold text-blue-600 bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 rounded">
+                                +{empAtts.reduce((acc, a) => acc + (a.otHours || 0), 0)}h OT
+                              </span>
+                            )}
+                            {empAtts.some(a => a.regularHours && a.regularHours > 0 && a.regularHours < 8) && selectedStatus.category !== 'Half-Day' && (
+                              <span className="text-[9px] font-bold text-orange-600 bg-orange-50 dark:bg-orange-900/30 px-1.5 py-0.5 rounded">
+                                {empAtts.find(a => a.regularHours && a.regularHours < 8)?.regularHours}h
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     )}
