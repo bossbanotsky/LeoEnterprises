@@ -1179,10 +1179,21 @@ export default function Payroll() {
                         </div>
                       )}
 
-                      {selectedPayslip.totalPakyawPay > 0 && (
-                        <div className="flex justify-between items-center">
-                          <span className="text-indigo-600 font-bold text-[8px] uppercase">Pakyaw</span>
-                          <span className="font-black text-indigo-600">{selectedPayslip.totalPakyawPay.toFixed(2)}</span>
+                      {(selectedPayslip.totalPakyawPay > 0 || (selectedPayslip.pakyawDetails && selectedPayslip.pakyawDetails.length > 0)) && (
+                        <div className="space-y-1 mt-1">
+                          <div className="flex justify-between items-center">
+                            <span className="text-indigo-600 font-bold text-[8px] uppercase">Pakyaw</span>
+                            <span className="font-black text-indigo-600">₱{selectedPayslip.totalPakyawPay.toFixed(2)}</span>
+                          </div>
+                          {selectedPayslip.pakyawDetails && selectedPayslip.pakyawDetails.length > 0 && (
+                            <div className="pl-2 border-l border-indigo-100 space-y-0.5">
+                              {selectedPayslip.pakyawDetails.map((detail: string, dIdx: number) => (
+                                <div key={dIdx} className="text-[7px] text-indigo-400 font-medium leading-none">
+                                  • {detail}
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       )}
                       
@@ -1301,6 +1312,11 @@ export default function Payroll() {
                         {emp?.fullName}
                         <div className="text-[10px] text-slate-400 font-normal">
                           {p.totalPresent}d present, {p.totalHalfDays || 0}d half, {p.totalAbsent}d absent
+                          {p.pakyawDetails && p.pakyawDetails.length > 0 && (
+                            <div className="mt-1 text-indigo-400/80 font-medium">
+                                Pakyaw: {p.pakyawDetails.join(', ')}
+                            </div>
+                          )}
                         </div>
                       </td>
                       <td className="px-6 py-4 text-center font-medium text-slate-700 dark:text-slate-300">

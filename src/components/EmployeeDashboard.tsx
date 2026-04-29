@@ -959,10 +959,21 @@ export default function EmployeeDashboard() {
                         </div>
                       )}
 
-                      {selectedPayslip.totalPakyawPay > 0 && (
-                        <div className="flex justify-between items-center">
-                          <span className="text-indigo-600 font-bold text-[8px] uppercase">Pakyaw</span>
-                          <span className="font-black text-indigo-600">{selectedPayslip.totalPakyawPay.toFixed(2)}</span>
+                      {(selectedPayslip.totalPakyawPay > 0 || (selectedPayslip.pakyawDetails && selectedPayslip.pakyawDetails.length > 0)) && (
+                        <div className="space-y-1 mt-1">
+                          <div className="flex justify-between items-center">
+                            <span className="text-indigo-600 font-bold text-[8px] uppercase">Pakyaw</span>
+                            <span className="font-black text-indigo-600">₱{selectedPayslip.totalPakyawPay.toFixed(2)}</span>
+                          </div>
+                          {selectedPayslip.pakyawDetails && selectedPayslip.pakyawDetails.length > 0 && (
+                            <div className="pl-2 border-l border-indigo-100 space-y-0.5">
+                              {selectedPayslip.pakyawDetails.map((detail: string, dIdx: number) => (
+                                <div key={dIdx} className="text-[7px] text-indigo-400 font-medium leading-none">
+                                  • {detail}
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       )}
                       
