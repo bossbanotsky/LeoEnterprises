@@ -27,6 +27,7 @@ export default function Billing() {
   });
 
   const [newContainer, setNewContainer] = useState({ code: '', note: '', price: '' });
+  const [editingContainerIndex, setEditingContainerIndex] = useState<number | null>(null);
 
   const totalSum = form.containers.reduce((acc, curr) => acc + (curr.price || 0), 0);
 
@@ -88,6 +89,7 @@ export default function Billing() {
     });
     setEditingId(null);
     setNewContainer({ code: '', note: '', price: '' });
+    setEditingContainerIndex(null);
   };
 
   const openEdit = (invoice: Invoice) => {
@@ -114,21 +116,46 @@ export default function Billing() {
   const addContainerItem = () => {
     if (!newContainer.code) return;
     const priceAuto = parseFloat(newContainer.price) || 0;
+    
+    const updatedContainers = [...form.containers];
+    const newItem = { 
+      code: newContainer.code, 
+      note: newContainer.note, 
+      price: priceAuto 
+    };
+
+    if (editingContainerIndex !== null) {
+      updatedContainers[editingContainerIndex] = newItem;
+    } else {
+      updatedContainers.push(newItem);
+    }
+
     setForm({
       ...form,
-      containers: [...form.containers, { 
-        code: newContainer.code, 
-        note: newContainer.note, 
-        price: priceAuto 
-      }]
+      containers: updatedContainers
     });
     setNewContainer({ code: '', note: '', price: '' });
+    setEditingContainerIndex(null);
+  };
+
+  const editContainerItem = (index: number) => {
+    const item = form.containers[index];
+    setNewContainer({
+      code: item.code,
+      note: item.note || '',
+      price: item.price.toString()
+    });
+    setEditingContainerIndex(index);
   };
 
   const removeContainerItem = (index: number) => {
     const updated = [...form.containers];
     updated.splice(index, 1);
     setForm({ ...form, containers: updated });
+    if (editingContainerIndex === index) {
+      setEditingContainerIndex(null);
+      setNewContainer({ code: '', note: '', price: '' });
+    }
   };
 
   const filteredInvoices = invoices.filter(inv => 
@@ -211,13 +238,22 @@ export default function Billing() {
                           </div>
                           {item.note && <div className="text-[10px] text-slate-500 truncate">{item.note}</div>}
                         </div>
-                        <button 
-                          type="button" 
-                          onClick={() => removeContainerItem(idx)}
-                          className="text-red-400 hover:text-red-600 shrink-0"
-                        >
-                          <Trash className="w-4 h-4" />
-                        </button>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button 
+                            type="button" 
+                            onClick={() => editContainerItem(idx)}
+                            className="text-slate-400 hover:text-indigo-600 p-1"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button 
+                            type="button" 
+                            onClick={() => removeContainerItem(idx)}
+                            className="text-slate-400 hover:text-red-600 p-1"
+                          >
+                            <Trash className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
                     ))}
                     {form.containers.length === 0 && (
@@ -251,10 +287,35 @@ export default function Billing() {
                       type="button" 
                       onClick={addContainerItem}
                       variant="outline" 
-                      className="w-full text-xs h-8 flex items-center gap-2 border-dashed border-indigo-200 text-indigo-600"
+                      className={`w-full text-xs h-8 flex items-center gap-2 border-dashed ${
+                        editingContainerIndex !== null 
+                          ? 'border-indigo-500 bg-indigo-50 text-indigo-700' 
+                          : 'border-indigo-200 text-indigo-600'
+                      }`}
                     >
-                      <PlusCircle className="w-4 h-4" /> Add Container
+                      {editingContainerIndex !== null ? (
+                        <>
+                          <Save className="w-4 h-4" /> Update Item
+                        </>
+                      ) : (
+                        <>
+                          <PlusCircle className="w-4 h-4" /> Add Container
+                        </>
+                      )}
                     </Button>
+                    {editingContainerIndex !== null && (
+                      <Button 
+                        type="button" 
+                        onClick={() => {
+                          setEditingContainerIndex(null);
+                          setNewContainer({ code: '', note: '', price: '' });
+                        }}
+                        variant="ghost" 
+                        className="w-full text-xs h-8"
+                      >
+                        Cancel Edit
+                      </Button>
+                    )}
                   </div>
 
                   <div className="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center">
