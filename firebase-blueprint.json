@@ -210,6 +210,34 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["title", "category", "createdAt"]
+    },
+    "Invoice": {
+      "title": "Invoice",
+      "description": "Billing invoice for tracking container codes and notes",
+      "type": "object",
+      "properties": {
+        "invoiceNumber": { "type": "string" },
+        "customerName": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "status": { "type": "string", "enum": ["pending", "paid", "cancelled"] },
+        "containers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "code": { "type": "string" },
+              "note": { "type": "string" },
+              "price": { "type": "number" }
+            },
+            "required": ["code", "price"]
+          }
+        },
+        "totalSum": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "uid": { "type": "string" }
+      },
+      "required": ["invoiceNumber", "date", "status", "createdAt", "uid"]
     }
   },
   "firestore": {
@@ -268,6 +296,10 @@
     "/albums/{docId}": {
       "schema": { "$ref": "#/entities/Album" },
       "description": "Albums for galleries"
+    },
+    "/invoices/{invoiceId}": {
+      "schema": { "$ref": "#/entities/Invoice" },
+      "description": "Billing invoices and container tracking"
     }
   }
 }

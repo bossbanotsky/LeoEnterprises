@@ -145,3 +145,22 @@ export interface UserProfile {
   photoURL?: string;
   createdAt: string;
 }
+
+export interface InvoiceItem {
+  code: string;
+  note?: string;
+  price: number;
+}
+
+export interface Invoice {
+  id: string;
+  invoiceNumber: string;
+  customerName?: string;
+  date: string;
+  status: 'pending' | 'paid' | 'cancelled';
+  containers: InvoiceItem[];
+  totalSum: number;
+  createdAt: string;
+  updatedAt: string;
+  uid: string;
+}

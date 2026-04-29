@@ -39,6 +39,15 @@ service cloud.firestore {
              (data.status == 'present' || data.status == 'absent' || data.status == 'hd' || data.status == 'ut' || data.status == 'pakyaw');
     }
 
+    function isValidInvoice(data) {
+      return data.invoiceNumber is string &&
+             data.invoiceNumber.size() > 0 &&
+             data.date is string &&
+             data.date.matches('^\\d{4}-\\d{2}-\\d{2}$') &&
+             data.status is string &&
+             (data.status == 'pending' || data.status == 'paid' || data.status == 'cancelled');
+    }
+
     // --- Collection Routes ---
 
     // Allow all authenticated users to read everything to resolve startup crashes.
@@ -135,6 +144,13 @@ service cloud.firestore {
     match /settings/{docId} {
       allow read: if isSignedIn();
       allow write: if isMasterAdmin();
+    }
+
+    match /invoices/{invoiceId} {
+      allow read: if isSignedIn();
+      allow create: if isMasterAdmin() && isValidInvoice(incoming());
+      allow update: if isMasterAdmin() && isValidInvoice(incoming());
+      allow delete: if isMasterAdmin();
     }
   }
 }

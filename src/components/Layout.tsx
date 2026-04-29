@@ -1,6 +1,6 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { LayoutGrid, UsersRound, Receipt, Clock, Settings2, WalletCards, Pickaxe, LogOut, Megaphone, MessageSquare, GalleryHorizontal } from 'lucide-react';
+import { LayoutGrid, UsersRound, Receipt, Clock, Settings2, WalletCards, Pickaxe, LogOut, Megaphone, MessageSquare, GalleryHorizontal, FileText } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useCompanyInfo } from '../hooks/useCompanyInfo';
 import { Button } from './ui/button';
@@ -18,6 +18,7 @@ export default function Layout() {
     { path: '/admin-dashboard/pakyaw', label: 'Pakyaw', icon: Pickaxe },
     { path: '/admin-dashboard/cash-advance', label: 'Advance', icon: WalletCards },
     { path: '/admin-dashboard/payroll', label: 'Payroll', icon: Receipt },
+    { path: '/admin-dashboard/billing', label: 'Billing', icon: FileText },
     { path: '/admin-dashboard/gallery', label: 'Gallery', icon: GalleryHorizontal },
     { path: '/admin-dashboard/settings', label: 'Gear', icon: Settings2 },
   ];
@@ -141,6 +142,7 @@ export default function Layout() {
               case 'pakyaw': return 'from-violet-400 to-purple-600';
               case 'advance': return 'from-cyan-400 to-blue-600';
               case 'payroll': return 'from-lime-400 to-green-600';
+              case 'billing': return 'from-blue-400 to-indigo-600';
               case 'gallery': return 'from-pink-400 to-rose-600';
               case 'gear': return 'from-slate-400 to-slate-600';
               default: return 'from-blue-500 to-indigo-700';
@@ -157,6 +159,7 @@ export default function Layout() {
               case 'pakyaw': return 'text-violet-400';
               case 'advance': return 'text-cyan-400';
               case 'payroll': return 'text-lime-400';
+              case 'billing': return 'text-blue-400';
               case 'gallery': return 'text-pink-400';
               case 'gear': return 'text-slate-400';
               default: return 'text-blue-400';
