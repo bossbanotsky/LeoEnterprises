@@ -68,6 +68,14 @@ export interface PakyawJob {
   uid: string;
 }
 
+export interface PayrollPakyawDetail {
+  jobId: string;
+  description: string;
+  amount: number;
+  status: 'pending' | 'completed';
+  isPaid: boolean;
+}
+
 export interface Payroll {
   id: string;
   employeeId: string;
@@ -85,13 +93,15 @@ export interface Payroll {
   regularPay: number;
   otPay: number;
   totalPakyawPay: number;
-  pakyawDetails: string[];
+  pakyawDetails: string[]; // Keeping for legacy, but we'll use pakyawItems
+  pakyawItems?: PayrollPakyawDetail[]; 
   totalGrossPay: number;
   cashAdvanceDeduction: number;
   cashAdvanceDetails?: string[];
   totalPay: number;
   bulkId: string | null;
   status?: 'paid';
+  isAttendancePaid?: boolean;
   dailyAttendanceLog?: { date: string, status: string, regHrs: number, otHrs: number, isWorkDay: boolean }[];
   uid: string;
   generatedAt: string;

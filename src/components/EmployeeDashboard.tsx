@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useCompanyInfo } from '../hooks/useCompanyInfo';
 import { Employee, Attendance, Payroll, CashAdvance, Announcement } from '../types';
 import { format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, isPast, isSunday } from 'date-fns';
-import { Calendar, FileText, Wallet, Clock, User, Briefcase, CreditCard, ChevronRight, UserPen, Loader2, Upload, Megaphone, Bell, Lock, X, Printer } from 'lucide-react';
+import { Calendar, FileText, Wallet, Clock, User, Briefcase, CreditCard, ChevronRight, UserPen, Loader2, Upload, Megaphone, Bell, Lock, X, Printer, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -34,6 +34,34 @@ export default function EmployeeDashboard() {
   const [loadingPayrolls, setLoadingPayrolls] = useState(true);
   const [selectedPayslip, setSelectedPayslip] = useState<any>(null);
   const [isExporting, setIsExporting] = useState(false);
+  // Keep selected payslip in sync with live data
+  useEffect(() => {
+    if (selectedPayslip) {
+      const live = payrolls.find(p => p.id === selectedPayslip.id);
+      if (live) {
+        setSelectedPayslip(live);
+      }
+    }
+  }, [payrolls]);
+
+  const calculatePaidAmount = (p: any) => {
+    if (!p) return 0;
+    if (p.status === 'paid') return p.totalPay || 0;
+    
+    let paidAmount = 0;
+    if (p.isAttendancePaid) {
+      paidAmount += (p.regularPay || 0) + (p.otPay || 0);
+    }
+    
+    p.pakyawItems?.forEach((item: any) => {
+      if (item.isPaid) {
+        paidAmount += (item.amount || 0);
+      }
+    });
+
+    return Math.min(paidAmount, (p.totalPay || 0) > 0 ? p.totalPay : paidAmount);
+  };
+
   const payslipRef = useRef<HTMLDivElement>(null);
 
   // If Admin lands here, redirect to admin dashboard
@@ -928,10 +956,24 @@ export default function EmployeeDashboard() {
                 </div>
                 <div className="text-right flex flex-col justify-between items-end">
                   <div className="text-right">
-                    <div className="text-[8px] font-black text-slate-400 mb-0.5 uppercase tracking-widest">Net Pay</div>
-                    <div className={`text-2xl font-black italic tracking-tighter leading-none ${selectedPayslip.totalPay < 0 ? 'text-red-600' : 'text-blue-600'}`}>
-                      ₱{selectedPayslip.totalPay.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    <div className="text-[8px] font-black text-slate-400 mb-0.5 uppercase tracking-widest flex items-center justify-end gap-1">
+                      {calculatePaidAmount(selectedPayslip) >= selectedPayslip.totalPay ? (
+                        <>
+                          <CheckCircle className="w-2.5 h-2.5 text-emerald-500 fill-emerald-500/20" />
+                          <span className="text-emerald-500">Fully Paid</span>
+                        </>
+                      ) : (
+                        <span>Balance Due</span>
+                      )}
                     </div>
+                    <div className={`text-2xl font-black italic tracking-tighter leading-none ${(selectedPayslip.totalPay - calculatePaidAmount(selectedPayslip)) <= 0 ? 'text-emerald-500' : (selectedPayslip.totalPay < 0 ? 'text-red-600' : 'text-blue-600')}`}>
+                      ₱{(selectedPayslip.totalPay - calculatePaidAmount(selectedPayslip)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </div>
+                    {calculatePaidAmount(selectedPayslip) > 0 && calculatePaidAmount(selectedPayslip) < selectedPayslip.totalPay && (
+                      <div className="text-[8px] font-black text-slate-400 mt-1 uppercase tracking-tight">
+                        Payroll Total: ₱{selectedPayslip.totalPay.toLocaleString()}
+                      </div>
+                    )}
                   </div>
                   <div className="text-right mt-auto">
                     <div className="text-[9px] font-black text-slate-900 uppercase italic leading-none">{companyInfo.name}</div>
@@ -947,32 +989,71 @@ export default function EmployeeDashboard() {
                       Earnings <span>₱</span>
                     </h3>
                     <div className="space-y-1.5 text-[10px]">
-                      <div className="flex justify-between items-center">
-                        <span className="text-slate-500 font-bold text-[8px] uppercase">Regular</span>
-                        <span className="font-black text-slate-900">₱{selectedPayslip.regularPay.toFixed(2)}</span>
-                      </div>
-                      
-                      {selectedPayslip.totalOtHours > 0 && (
+                      <div className="space-y-0.5 border-b border-slate-50 pb-1 mb-1">
                         <div className="flex justify-between items-center">
-                          <span className="text-green-600 font-bold text-[8px] uppercase">OT ({selectedPayslip.totalOtHours}h)</span>
-                          <span className="font-black text-green-600">{selectedPayslip.otPay.toFixed(2)}</span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-slate-500 font-bold text-[8px] uppercase">Regular</span>
+                            {selectedPayslip.isAttendancePaid && (
+                              <div className="flex items-center gap-0.5 px-1 bg-emerald-500 text-white rounded-[2px] text-[6px] font-black uppercase tracking-tighter">
+                                <CheckCircle className="w-2 h-2" />
+                                PAID
+                              </div>
+                            )}
+                          </div>
+                          <span className="font-black text-slate-900">₱{selectedPayslip.regularPay.toFixed(2)}</span>
                         </div>
-                      )}
-
-                      {(selectedPayslip.totalPakyawPay > 0 || (selectedPayslip.pakyawDetails && selectedPayslip.pakyawDetails.length > 0)) && (
-                        <div className="space-y-1 mt-1">
+                        
+                        {selectedPayslip.totalOtHours > 0 && (
                           <div className="flex justify-between items-center">
-                            <span className="text-indigo-600 font-bold text-[8px] uppercase">Pakyaw</span>
+                            <span className="text-green-600 font-bold text-[8px] uppercase">OT ({selectedPayslip.totalOtHours}h)</span>
+                            <span className="font-black text-green-600">{selectedPayslip.otPay.toFixed(2)}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {(selectedPayslip.totalPakyawPay > 0 || (selectedPayslip.pakyawItems && selectedPayslip.pakyawItems.length > 0) || (selectedPayslip.pakyawDetails && selectedPayslip.pakyawDetails.length > 0)) && (
+                        <div className="space-y-2 mt-2 pt-2 border-t border-slate-50">
+                          <div className="flex justify-between items-center">
+                            <h3 className="text-indigo-600 font-black text-[8px] uppercase tracking-wider">Pakyaw Jobs Breakdown</h3>
                             <span className="font-black text-indigo-600">₱{selectedPayslip.totalPakyawPay.toFixed(2)}</span>
                           </div>
-                          {selectedPayslip.pakyawDetails && selectedPayslip.pakyawDetails.length > 0 && (
-                            <div className="pl-2 border-l border-indigo-100 space-y-0.5">
-                              {selectedPayslip.pakyawDetails.map((detail: string, dIdx: number) => (
-                                <div key={dIdx} className="text-[7px] text-indigo-400 font-medium leading-none">
-                                  • {detail}
+
+                          {selectedPayslip.pakyawItems && selectedPayslip.pakyawItems.length > 0 ? (
+                            <div className="space-y-1.5">
+                              {selectedPayslip.pakyawItems.map((item: any, dIdx: number) => (
+                                <div key={dIdx} className={`flex justify-between items-center p-2 rounded-xl border transition-all ${item.isPaid ? 'bg-indigo-50 border-indigo-200' : 'bg-white border-slate-100 shadow-sm'}`}>
+                                  <div className="flex items-center gap-2.5 min-w-0">
+                                    <div className={`h-6 w-6 rounded-lg flex items-center justify-center transition-all shrink-0 shadow-sm ${item.isPaid ? 'bg-indigo-600 text-white shadow-indigo-200' : 'bg-slate-50 text-slate-300 border border-slate-200'}`}>
+                                      <CheckCircle className={`w-3.5 h-3.5 ${item.isPaid ? 'fill-indigo-600 text-white' : ''}`} />
+                                    </div>
+                                    <div className="flex flex-col min-w-0">
+                                      <span className={`text-[8px] font-black leading-none truncate uppercase ${item.status === 'completed' ? 'text-indigo-950' : 'text-slate-400'}`}>
+                                        {item.description}
+                                      </span>
+                                      <span className={`text-[6px] font-black uppercase tracking-tighter mt-0.5 ${item.isPaid ? 'text-indigo-600' : 'text-slate-400'}`}>
+                                        {item.isPaid ? 'Payment Received' : 'Payment Pending'}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className="text-right">
+                                    <span className={`text-[9px] font-black ${item.status === 'completed' ? 'text-indigo-600' : 'text-slate-400'}`}>
+                                      ₱{item.amount.toLocaleString(undefined, { minimumFractionDigits: 0 })}
+                                    </span>
+                                  </div>
                                 </div>
                               ))}
                             </div>
+                          ) : (
+                            selectedPayslip.pakyawDetails && selectedPayslip.pakyawDetails.length > 0 && (
+                              <div className="pl-2 border-l-2 border-indigo-100 space-y-1">
+                                {selectedPayslip.pakyawDetails.map((detail: string, dIdx: number) => (
+                                  <div key={dIdx} className="text-[7px] text-indigo-400 font-bold leading-tight flex items-start gap-1.5">
+                                    <span className="text-indigo-200 mt-0.5">●</span>
+                                    {detail}
+                                  </div>
+                                ))}
+                              </div>
+                            )
                           )}
                         </div>
                       )}
@@ -991,21 +1072,38 @@ export default function EmployeeDashboard() {
                       Deductions <span>₱</span>
                     </h3>
                     <div className="space-y-1.5 text-[10px]">
-                      {selectedPayslip.cashAdvanceDeduction > 0 ? (
-                        <>
-                          <div className="flex justify-between items-center">
-                            <span className="text-red-600 font-bold text-[8px] uppercase">Cash Adv.</span>
-                            <span className="font-black text-red-600">-{selectedPayslip.cashAdvanceDeduction.toFixed(2)}</span>
-                          </div>
-                        </>
-                      ) : (
+                      {selectedPayslip.cashAdvanceDeduction > 0 && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-red-600 font-bold text-[8px] uppercase">Cash Adv.</span>
+                          <span className="font-black text-red-600">-{selectedPayslip.cashAdvanceDeduction.toFixed(2)}</span>
+                        </div>
+                      )}
+
+                      {selectedPayslip.isAttendancePaid && (
+                        <div className="flex justify-between items-center bg-emerald-50/50 p-1.5 rounded border border-emerald-100/50">
+                          <span className="text-emerald-600 font-bold text-[7px] uppercase tracking-tighter">Paid Attendance</span>
+                          <span className="font-black text-emerald-600">-{ (selectedPayslip.regularPay + (selectedPayslip.otPay || 0)).toFixed(2) }</span>
+                        </div>
+                      )}
+
+                      {selectedPayslip.pakyawItems?.filter((i: any) => i.isPaid).map((item: any, idx: number) => (
+                        <div key={idx} className="flex justify-between items-center bg-indigo-50/50 p-1.5 rounded border border-indigo-100/50">
+                          <span className="text-indigo-600 font-bold text-[7px] uppercase tracking-tighter truncate max-w-[100px]">Paid: {item.description}</span>
+                          <span className="font-black text-indigo-600">-{item.amount.toFixed(0)}</span>
+                        </div>
+                      ))}
+
+                      {selectedPayslip.cashAdvanceDeduction === 0 && !selectedPayslip.isAttendancePaid && (!selectedPayslip.pakyawItems || !selectedPayslip.pakyawItems.some((i: any) => i.isPaid)) && (
                         <div className="p-2 border border-dashed border-slate-100 rounded-md text-center">
                           <span className="text-[7px] text-slate-300 uppercase font-black">None</span>
                         </div>
                       )}
-                      <div className="flex justify-between items-center border-t border-slate-100 pt-1 mt-auto">
+
+                      <div className="flex justify-between items-center border-t border-slate-100 pt-1 mt-1">
                          <span className="text-red-600 font-black uppercase text-[9px]">Total Ded</span>
-                         <span className="text-red-600 font-black text-[11px] font-mono italic">-{selectedPayslip.cashAdvanceDeduction.toFixed(2)}</span>
+                         <span className="text-red-600 font-black text-[11px] font-mono italic">
+                           -{(selectedPayslip.cashAdvanceDeduction + calculatePaidAmount(selectedPayslip)).toFixed(2)}
+                         </span>
                       </div>
                     </div>
                   </div>
@@ -1032,7 +1130,7 @@ export default function EmployeeDashboard() {
                           log.status === 'absent' ? 'text-rose-600' :
                           'text-slate-400'
                         }`}>
-                          {log.status.charAt(0).toUpperCase()}
+                          {log.status === 'pakyaw' ? 'PK' : log.status.charAt(0).toUpperCase()}
                         </div>
                       </div>
                     ))}
