@@ -86,6 +86,24 @@ export default function CEODashboard() {
   const [isExporting, setIsExporting] = useState(false);
   const payslipRef = useRef<HTMLDivElement>(null);
 
+  const sanitizeStyles = (payslipEl: HTMLElement) => {
+    const allElements = [payslipEl, ...Array.from(payslipEl.querySelectorAll('*'))];
+    allElements.forEach(el => {
+      const htmlEl = el as HTMLElement;
+      const style = window.getComputedStyle(htmlEl);
+      for (let i = 0; i < style.length; i++) {
+        const prop = style[i];
+        const val = style.getPropertyValue(prop);
+        if (val && (val.includes('oklch') || val.includes('oklab'))) {
+          htmlEl.style.setProperty(prop, 'unset', 'important');
+        }
+      }
+      htmlEl.style.transition = 'none';
+      htmlEl.style.animation = 'none';
+      htmlEl.style.transform = 'none';
+    });
+  };
+
   const handleDeletePayroll = async (id: string) => {
     if (!user) return;
     try {
@@ -311,40 +329,28 @@ export default function CEODashboard() {
     if (!selectedPayslip || !payslipRef.current) return;
     setIsExporting(true);
     try {
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       const canvas = await html2canvas(payslipRef.current, {
-        scale: 3,
+        scale: 2,
         useCORS: true,
         logging: false,
         backgroundColor: "#ffffff",
-        width: payslipRef.current.scrollWidth + 10,
+        width: payslipRef.current.scrollWidth,
         onclone: (clonedDoc) => {
           const payslip = clonedDoc.querySelector('.payslip-mockup');
           if (payslip) {
-            (payslip as HTMLElement).style.width = 'auto';
-            (payslip as HTMLElement).style.maxWidth = 'none';
-            (payslip as HTMLElement).style.color = '#000000';
-            (payslip as HTMLElement).style.backgroundColor = '#ffffff';
-            (payslip as HTMLElement).style.padding = '12px';
+            const htmlPayslip = payslip as HTMLElement;
+            htmlPayslip.style.width = '800px';
+            htmlPayslip.style.maxWidth = 'none';
+            htmlPayslip.style.maxHeight = 'none';
+            htmlPayslip.style.overflow = 'visible';
+            htmlPayslip.style.height = 'auto';
+            htmlPayslip.style.color = '#000000';
+            htmlPayslip.style.backgroundColor = '#ffffff';
+            htmlPayslip.style.padding = '40px';
             
-            const allElements = payslip.querySelectorAll('*');
-            allElements.forEach(el => {
-              const htmlEl = el as HTMLElement;
-              const style = window.getComputedStyle(htmlEl);
-              const fixColor = (prop: string, defaultVal: string) => {
-                const val = htmlEl.style.getPropertyValue(prop) || style.getPropertyValue(prop);
-                if (val.includes('oklch') || val.includes('oklab')) {
-                  htmlEl.style.setProperty(prop, defaultVal, 'important');
-                }
-              };
-
-              fixColor('color', '#000000');
-              if (style.backgroundColor !== 'transparent' && style.backgroundColor !== 'rgba(0, 0, 0, 0)') {
-                if (!style.backgroundColor.includes('rgba')) {
-                   fixColor('background-color', '#f8fafc');
-                }
-              }
-              fixColor('border-color', '#e2e8f0');
-            });
+            sanitizeStyles(htmlPayslip);
           }
         }
       });
@@ -359,17 +365,11 @@ export default function CEODashboard() {
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       
-      const imgWidth = canvas.width;
-      const imgHeight = canvas.height;
-      const ratio = Math.min((pdfWidth - 20) / imgWidth, (pdfHeight - 20) / imgHeight);
+      const imgRatio = canvas.height / canvas.width;
+      const finalWidth = pdfWidth - 20;
+      const finalHeight = finalWidth * imgRatio;
       
-      const finalWidth = imgWidth * ratio;
-      const finalHeight = imgHeight * ratio;
-      
-      const marginX = (pdfWidth - finalWidth) / 2;
-      const marginY = 10;
-
-      pdf.addImage(imgData, "PNG", marginX, marginY, finalWidth, finalHeight);
+      pdf.addImage(imgData, "PNG", 10, 10, finalWidth, Math.min(finalHeight, pdfHeight - 20));
       pdf.save(
         `payslip_${selectedPayslip.employee?.fullName.replace(/\s+/g, "_")}_${selectedPayslip.startDate}.pdf`,
       );
@@ -384,48 +384,31 @@ export default function CEODashboard() {
     if (!selectedPayslip || !payslipRef.current) return;
     setIsExporting(true);
     try {
-      
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       const canvas = await html2canvas(payslipRef.current, {
-        scale: 3,
+        scale: 2,
         useCORS: true,
         logging: false,
         backgroundColor: "#ffffff",
-        width: payslipRef.current.offsetWidth,
+        width: payslipRef.current.scrollWidth,
         onclone: (clonedDoc) => {
           const payslip = clonedDoc.querySelector('.payslip-mockup');
           if (payslip) {
-            (payslip as HTMLElement).style.width = 'auto';
-            (payslip as HTMLElement).style.maxWidth = 'none';
-            (payslip as HTMLElement).style.maxHeight = 'none';
-            (payslip as HTMLElement).style.overflow = 'visible';
-            (payslip as HTMLElement).style.height = 'auto';
-            (payslip as HTMLElement).style.color = '#000000';
-            (payslip as HTMLElement).style.backgroundColor = '#ffffff';
-            (payslip as HTMLElement).style.padding = '12px';
+            const htmlPayslip = payslip as HTMLElement;
+            htmlPayslip.style.width = '800px';
+            htmlPayslip.style.maxWidth = 'none';
+            htmlPayslip.style.maxHeight = 'none';
+            htmlPayslip.style.overflow = 'visible';
+            htmlPayslip.style.height = 'auto';
+            htmlPayslip.style.color = '#000000';
+            htmlPayslip.style.backgroundColor = '#ffffff';
+            htmlPayslip.style.padding = '40px';
             
-            const allElements = payslip.querySelectorAll('*');
-            allElements.forEach(el => {
-              const htmlEl = el as HTMLElement;
-              const style = window.getComputedStyle(htmlEl);
-              const fixColor = (prop: string, defaultVal: string) => {
-                const val = htmlEl.style.getPropertyValue(prop) || style.getPropertyValue(prop);
-                if (val.includes('oklch') || val.includes('oklab')) {
-                  htmlEl.style.setProperty(prop, defaultVal, 'important');
-                }
-              };
-
-              fixColor('color', '#000000');
-              if (style.backgroundColor !== 'transparent' && style.backgroundColor !== 'rgba(0, 0, 0, 0)') {
-                if (!style.backgroundColor.includes('rgba')) {
-                   fixColor('background-color', '#f8fafc');
-                }
-              }
-              fixColor('border-color', '#e2e8f0');
-            });
+            sanitizeStyles(htmlPayslip);
           }
         }
       });
-      
       
       const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF({
@@ -437,17 +420,11 @@ export default function CEODashboard() {
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       
-      const imgWidth = canvas.width;
-      const imgHeight = canvas.height;
-      const ratio = Math.min((pdfWidth - 20) / imgWidth, (pdfHeight - 20) / imgHeight);
+      const imgRatio = canvas.height / canvas.width;
+      const finalWidth = pdfWidth - 20;
+      const finalHeight = finalWidth * imgRatio;
       
-      const finalWidth = imgWidth * ratio;
-      const finalHeight = imgHeight * ratio;
-      
-      const marginX = (pdfWidth - finalWidth) / 2;
-      const marginY = 10;
-      
-      pdf.addImage(imgData, "PNG", marginX, marginY, finalWidth, finalHeight);
+      pdf.addImage(imgData, "PNG", 10, 10, finalWidth, Math.min(finalHeight, pdfHeight - 20));
       pdf.autoPrint();
       window.open(pdf.output('bloburl'), '_blank');
     } catch (error) {
@@ -501,10 +478,9 @@ export default function CEODashboard() {
         };
 
         setSelectedPayslip(mockPayslip as any);
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, i === 0 ? 300 : 800));
 
         if (payslipRef.current) {
-          
           const canvas = await html2canvas(payslipRef.current, {
             scale: 2,
             useCORS: true,
@@ -512,30 +488,42 @@ export default function CEODashboard() {
             backgroundColor: '#ffffff',
             width: payslipRef.current.scrollWidth + 10,
             onclone: (clonedDoc) => {
-              const allElements = clonedDoc.querySelectorAll('*');
-              allElements.forEach(el => {
-                const htmlEl = el as HTMLElement;
-                const style = window.getComputedStyle(htmlEl);
-                const isUnsupported = (val: string) => val.includes('oklch') || val.includes('oklab');
-                
-                if (isUnsupported(style.color)) htmlEl.style.setProperty('color', '#000000', 'important');
-                if (isUnsupported(style.backgroundColor) && style.backgroundColor !== 'transparent' && !style.backgroundColor.includes('rgba(0, 0, 0, 0)')) {
-                  htmlEl.style.setProperty('background-color', '#ffffff', 'important');
-                }
-                if (isUnsupported(style.borderColor)) htmlEl.style.setProperty('border-color', '#dddddd', 'important');
-                if (isUnsupported(style.boxShadow)) htmlEl.style.setProperty('box-shadow', 'none', 'important');
-                if (isUnsupported(style.fill)) htmlEl.style.setProperty('fill', '#000000', 'important');
-                if (isUnsupported(style.stroke)) htmlEl.style.setProperty('stroke', '#000000', 'important');
-              });
+              const payslipEl = clonedDoc.querySelector('.payslip-mockup');
+              if (payslipEl) {
+                const htmlPayslip = payslipEl as HTMLElement;
+                htmlPayslip.style.width = '800px';
+                htmlPayslip.style.maxWidth = 'none';
+                htmlPayslip.style.maxHeight = 'none';
+                htmlPayslip.style.overflow = 'visible';
+                htmlPayslip.style.height = 'auto';
+                htmlPayslip.style.padding = '40px';
 
-              const payslip = clonedDoc.querySelector('.payslip-mockup');
-              if (payslip) {
-                (payslip as HTMLElement).style.width = 'auto';
-                (payslip as HTMLElement).style.maxWidth = 'none';
-                (payslip as HTMLElement).style.maxHeight = 'none';
-                (payslip as HTMLElement).style.overflow = 'visible';
-                (payslip as HTMLElement).style.height = 'auto';
-                (payslip as HTMLElement).style.padding = '12px';
+                const allElements = [htmlPayslip, ...Array.from(htmlPayslip.querySelectorAll('*'))];
+                allElements.forEach(el => {
+                  const htmlEl = el as HTMLElement;
+                  const style = window.getComputedStyle(htmlEl);
+                  const colorProps = [
+                    'color', 'background-color', 'border-color', 
+                    'border-top-color', 'border-bottom-color', 'border-left-color', 'border-right-color',
+                    'fill', 'stroke', 'box-shadow', 'outline-color', 'text-decoration-color'
+                  ];
+
+                  colorProps.forEach(prop => {
+                    const val = style.getPropertyValue(prop);
+                    if (val && (val.includes('oklch') || val.includes('oklab') || val.includes('var('))) {
+                      let fallback = '#000000';
+                      if (prop.includes('background')) fallback = '#ffffff';
+                      if (prop.includes('border')) fallback = '#e2e8f0';
+                      if (prop === 'box-shadow') fallback = 'none';
+                      if (prop === 'fill' || prop === 'stroke') fallback = val.includes('indigo') ? '#4f46e5' : (val.includes('emerald') ? '#10b981' : '#000000');
+                      
+                      htmlEl.style.setProperty(prop, fallback, 'important');
+                    }
+                  });
+                  htmlEl.style.transition = 'none';
+                  htmlEl.style.animation = 'none';
+                  htmlEl.style.transform = 'none';
+                });
               }
             }
           });
@@ -581,10 +569,9 @@ export default function CEODashboard() {
         const emp = employees.find(e => e.id === pr.employeeId);
         
         setSelectedPayslip({ ...pr, employee: emp });
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, i === 0 ? 300 : 800));
 
         if (payslipRef.current) {
-          
           const canvas = await html2canvas(payslipRef.current, {
             scale: 2,
             useCORS: true,
@@ -592,30 +579,42 @@ export default function CEODashboard() {
             backgroundColor: '#ffffff',
             width: payslipRef.current.scrollWidth + 10,
             onclone: (clonedDoc) => {
-              const allElements = clonedDoc.querySelectorAll('*');
-              allElements.forEach(el => {
-                const htmlEl = el as HTMLElement;
-                const style = window.getComputedStyle(htmlEl);
-                const isUnsupported = (val: string) => val.includes('oklch') || val.includes('oklab');
-                
-                if (isUnsupported(style.color)) htmlEl.style.setProperty('color', '#000000', 'important');
-                if (isUnsupported(style.backgroundColor) && style.backgroundColor !== 'transparent' && !style.backgroundColor.includes('rgba(0, 0, 0, 0)')) {
-                  htmlEl.style.setProperty('background-color', '#ffffff', 'important');
-                }
-                if (isUnsupported(style.borderColor)) htmlEl.style.setProperty('border-color', '#dddddd', 'important');
-                if (isUnsupported(style.boxShadow)) htmlEl.style.setProperty('box-shadow', 'none', 'important');
-                if (isUnsupported(style.fill)) htmlEl.style.setProperty('fill', '#000000', 'important');
-                if (isUnsupported(style.stroke)) htmlEl.style.setProperty('stroke', '#000000', 'important');
-              });
+              const payslipEl = clonedDoc.querySelector('.payslip-mockup');
+              if (payslipEl) {
+                const htmlPayslip = payslipEl as HTMLElement;
+                htmlPayslip.style.width = '800px';
+                htmlPayslip.style.maxWidth = 'none';
+                htmlPayslip.style.maxHeight = 'none';
+                htmlPayslip.style.overflow = 'visible';
+                htmlPayslip.style.height = 'auto';
+                htmlPayslip.style.padding = '40px';
 
-              const payslip = clonedDoc.querySelector('.payslip-mockup');
-              if (payslip) {
-                (payslip as HTMLElement).style.width = 'auto';
-                (payslip as HTMLElement).style.maxWidth = 'none';
-                (payslip as HTMLElement).style.maxHeight = 'none';
-                (payslip as HTMLElement).style.overflow = 'visible';
-                (payslip as HTMLElement).style.height = 'auto';
-                (payslip as HTMLElement).style.padding = '12px';
+                const allElements = [htmlPayslip, ...Array.from(htmlPayslip.querySelectorAll('*'))];
+                allElements.forEach(el => {
+                  const htmlEl = el as HTMLElement;
+                  const style = window.getComputedStyle(htmlEl);
+                  const colorProps = [
+                    'color', 'background-color', 'border-color', 
+                    'border-top-color', 'border-bottom-color', 'border-left-color', 'border-right-color',
+                    'fill', 'stroke', 'box-shadow', 'outline-color', 'text-decoration-color'
+                  ];
+
+                  colorProps.forEach(prop => {
+                    const val = style.getPropertyValue(prop);
+                    if (val && (val.includes('oklch') || val.includes('oklab') || val.includes('var('))) {
+                      let fallback = '#000000';
+                      if (prop.includes('background')) fallback = '#ffffff';
+                      if (prop.includes('border')) fallback = '#e2e8f0';
+                      if (prop === 'box-shadow') fallback = 'none';
+                      if (prop === 'fill' || prop === 'stroke') fallback = val.includes('indigo') ? '#4f46e5' : (val.includes('emerald') ? '#10b981' : '#000000');
+                      
+                      htmlEl.style.setProperty(prop, fallback, 'important');
+                    }
+                  });
+                  htmlEl.style.transition = 'none';
+                  htmlEl.style.animation = 'none';
+                  htmlEl.style.transform = 'none';
+                });
               }
             }
           });
