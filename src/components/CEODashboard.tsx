@@ -577,17 +577,13 @@ export default function CEODashboard() {
             useCORS: true,
             logging: false,
             backgroundColor: '#ffffff',
-            width: payslipRef.current.scrollWidth,
-            height: payslipRef.current.scrollHeight,
             onclone: (clonedDoc) => {
               const payslipEl = clonedDoc.querySelector('.payslip-mockup');
               if (payslipEl) {
                 const htmlPayslip = payslipEl as HTMLElement;
-                htmlPayslip.style.width = '800px';
                 htmlPayslip.style.maxWidth = 'none';
                 htmlPayslip.style.maxHeight = 'none';
                 htmlPayslip.style.overflow = 'visible';
-                htmlPayslip.style.height = 'auto';
                 htmlPayslip.style.padding = '40px';
 
                 sanitizeStyles(htmlPayslip);
@@ -898,7 +894,7 @@ export default function CEODashboard() {
           {selectedPayslip && selectedPayslip.employee && (
             <div
               ref={payslipRef}
-              className="p-3 max-h-[85vh] overflow-y-auto payslip-mockup bg-white font-sans text-[10px]" 
+              className="p-3 max-h-[90vh] overflow-y-auto payslip-mockup bg-white font-sans text-[10px]" 
               style={{ backgroundColor: "#ffffff" }}
             >
               <div className="flex justify-between border-b border-slate-900 pb-2 mb-2">

@@ -70,6 +70,9 @@ export default function Payroll() {
       htmlEl.style.transition = 'none';
       htmlEl.style.animation = 'none';
       htmlEl.style.transform = 'none';
+      htmlEl.style.overflow = 'visible';
+      htmlEl.style.height = 'auto';
+      htmlEl.style.maxHeight = 'none';
     });
   };
 
@@ -156,8 +159,6 @@ export default function Payroll() {
             useCORS: true,
             logging: false,
             backgroundColor: '#ffffff',
-            width: payslipRef.current.scrollWidth,
-            height: payslipRef.current.scrollHeight,
             onclone: (clonedDoc) => {
               const payslipEl = clonedDoc.querySelector('.payslip-mockup');
               if (payslipEl) {
@@ -166,7 +167,7 @@ export default function Payroll() {
                 htmlPayslip.style.maxWidth = 'none';
                 htmlPayslip.style.maxHeight = 'none';
                 htmlPayslip.style.overflow = 'visible';
-                htmlPayslip.style.height = 'auto'; // Try to force auto height
+                htmlPayslip.style.height = htmlPayslip.scrollHeight + 'px';
                 htmlPayslip.style.padding = '40px';
 
                 sanitizeStyles(htmlPayslip);
@@ -217,17 +218,15 @@ export default function Payroll() {
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
-        width: payslipRef.current.scrollWidth,
-        height: payslipRef.current.scrollHeight,
         onclone: (clonedDoc) => {
           const payslip = clonedDoc.querySelector('.payslip-mockup');
           if (payslip) {
             const htmlPayslip = payslip as HTMLElement;
-            htmlPayslip.style.width = '800px'; // Fixed width for consistent rendering
+            htmlPayslip.style.width = '800px';
             htmlPayslip.style.maxWidth = 'none';
             htmlPayslip.style.maxHeight = 'none';
             htmlPayslip.style.overflow = 'visible';
-            htmlPayslip.style.height = 'auto';
+            htmlPayslip.style.height = htmlPayslip.scrollHeight + 'px';
             htmlPayslip.style.color = '#000000';
             htmlPayslip.style.backgroundColor = '#ffffff';
             htmlPayslip.style.padding = '40px';
@@ -274,8 +273,6 @@ export default function Payroll() {
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
-        width: payslipRef.current.scrollWidth,
-        height: payslipRef.current.scrollHeight,
         onclone: (clonedDoc) => {
           const payslip = clonedDoc.querySelector('.payslip-mockup');
           if (payslip) {
@@ -284,7 +281,7 @@ export default function Payroll() {
             htmlPayslip.style.maxWidth = 'none';
             htmlPayslip.style.maxHeight = 'none';
             htmlPayslip.style.overflow = 'visible';
-            htmlPayslip.style.height = 'auto';
+            htmlPayslip.style.height = htmlPayslip.scrollHeight + 'px';
             htmlPayslip.style.padding = '40px';
 
             sanitizeStyles(htmlPayslip);
@@ -340,10 +337,8 @@ export default function Payroll() {
           const canvas = await html2canvas(payslipRef.current, {
             scale: 2,
             useCORS: true,
-            logging: false,
+            logging: true,
             backgroundColor: '#ffffff',
-            width: payslipRef.current.scrollWidth,
-            height: payslipRef.current.scrollHeight,
             onclone: (clonedDoc) => {
               const payslipEl = clonedDoc.querySelector('.payslip-mockup');
               if (payslipEl) {
@@ -352,13 +347,18 @@ export default function Payroll() {
                 htmlPayslip.style.maxWidth = 'none';
                 htmlPayslip.style.maxHeight = 'none';
                 htmlPayslip.style.overflow = 'visible';
-                htmlPayslip.style.height = 'auto'; // Try to force auto height
+                htmlPayslip.style.height = htmlPayslip.scrollHeight + 'px';
                 htmlPayslip.style.padding = '40px';
 
                 sanitizeStyles(htmlPayslip);
               }
             }
           });
+          
+          if (canvas.width === 0 || canvas.height === 0) {
+            console.error("Canvas is empty for payslip index", i);
+            continue;
+          }
           
           const imgData = canvas.toDataURL('image/png');
           const imgRatio = canvas.height / canvas.width;
@@ -1170,7 +1170,7 @@ export default function Payroll() {
           {selectedPayslip && (
             <div 
               ref={payslipRef}
-              className="p-3 max-h-[85vh] overflow-y-auto payslip-mockup bg-white font-sans text-[10px]" 
+              className="p-3 max-h-[90vh] overflow-y-auto payslip-mockup bg-white font-sans text-[10px]" 
               style={{ backgroundColor: '#ffffff' }}
             >
               <div className="flex justify-between border-b border-slate-900 pb-2 mb-2">

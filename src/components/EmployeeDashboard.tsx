@@ -79,6 +79,9 @@ export default function EmployeeDashboard() {
       htmlEl.style.transition = 'none';
       htmlEl.style.animation = 'none';
       htmlEl.style.transform = 'none';
+      htmlEl.style.overflow = 'visible';
+      htmlEl.style.height = 'auto';
+      htmlEl.style.maxHeight = 'none';
     });
   };
 
@@ -337,7 +340,7 @@ export default function EmployeeDashboard() {
             htmlPayslip.style.maxWidth = 'none';
             htmlPayslip.style.maxHeight = 'none';
             htmlPayslip.style.overflow = 'visible';
-            htmlPayslip.style.height = 'auto'; // Try to force auto height
+            htmlPayslip.style.height = htmlPayslip.scrollHeight + 'px';
             htmlPayslip.style.backgroundColor = '#ffffff';
             htmlPayslip.style.padding = '40px';
             
@@ -383,8 +386,6 @@ export default function EmployeeDashboard() {
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
-        width: payslipRef.current.scrollWidth,
-        height: payslipRef.current.scrollHeight,
         onclone: (clonedDoc) => {
           const payslip = clonedDoc.querySelector('.payslip-mockup');
           if (payslip) {
@@ -393,7 +394,7 @@ export default function EmployeeDashboard() {
             htmlPayslip.style.maxWidth = 'none';
             htmlPayslip.style.maxHeight = 'none';
             htmlPayslip.style.overflow = 'visible';
-            htmlPayslip.style.height = 'auto'; // Try to force auto height
+            htmlPayslip.style.height = htmlPayslip.scrollHeight + 'px';
             htmlPayslip.style.padding = '40px';
 
             sanitizeStyles(htmlPayslip);
@@ -775,7 +776,7 @@ export default function EmployeeDashboard() {
                             htmlPayslip.style.maxWidth = 'none';
                             htmlPayslip.style.maxHeight = 'none';
                             htmlPayslip.style.overflow = 'visible';
-                            htmlPayslip.style.height = 'auto'; // Try to force auto height
+                            htmlPayslip.style.height = htmlPayslip.scrollHeight + 'px';
                             htmlPayslip.style.padding = '40px';
 
                             sanitizeStyles(htmlPayslip);
@@ -897,7 +898,7 @@ export default function EmployeeDashboard() {
           {selectedPayslip && (
             <div 
               ref={payslipRef}
-              className="p-3 max-h-[85vh] overflow-y-auto payslip-mockup bg-white font-sans text-[10px]" 
+              className="p-3 max-h-[90vh] overflow-y-auto payslip-mockup bg-white font-sans text-[10px]" 
               style={{ backgroundColor: '#ffffff' }}
             >
               <div className="flex justify-between border-b border-slate-900 pb-2 mb-2">
