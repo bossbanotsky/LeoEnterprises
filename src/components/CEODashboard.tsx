@@ -577,7 +577,8 @@ export default function CEODashboard() {
             useCORS: true,
             logging: false,
             backgroundColor: '#ffffff',
-            width: payslipRef.current.scrollWidth + 10,
+            width: payslipRef.current.scrollWidth,
+            height: payslipRef.current.scrollHeight,
             onclone: (clonedDoc) => {
               const payslipEl = clonedDoc.querySelector('.payslip-mockup');
               if (payslipEl) {
@@ -589,32 +590,7 @@ export default function CEODashboard() {
                 htmlPayslip.style.height = 'auto';
                 htmlPayslip.style.padding = '40px';
 
-                const allElements = [htmlPayslip, ...Array.from(htmlPayslip.querySelectorAll('*'))];
-                allElements.forEach(el => {
-                  const htmlEl = el as HTMLElement;
-                  const style = window.getComputedStyle(htmlEl);
-                  const colorProps = [
-                    'color', 'background-color', 'border-color', 
-                    'border-top-color', 'border-bottom-color', 'border-left-color', 'border-right-color',
-                    'fill', 'stroke', 'box-shadow', 'outline-color', 'text-decoration-color'
-                  ];
-
-                  colorProps.forEach(prop => {
-                    const val = style.getPropertyValue(prop);
-                    if (val && (val.includes('oklch') || val.includes('oklab') || val.includes('var('))) {
-                      let fallback = '#000000';
-                      if (prop.includes('background')) fallback = '#ffffff';
-                      if (prop.includes('border')) fallback = '#e2e8f0';
-                      if (prop === 'box-shadow') fallback = 'none';
-                      if (prop === 'fill' || prop === 'stroke') fallback = val.includes('indigo') ? '#4f46e5' : (val.includes('emerald') ? '#10b981' : '#000000');
-                      
-                      htmlEl.style.setProperty(prop, fallback, 'important');
-                    }
-                  });
-                  htmlEl.style.transition = 'none';
-                  htmlEl.style.animation = 'none';
-                  htmlEl.style.transform = 'none';
-                });
+                sanitizeStyles(htmlPayslip);
               }
             }
           });

@@ -156,6 +156,8 @@ export default function Payroll() {
             useCORS: true,
             logging: false,
             backgroundColor: '#ffffff',
+            width: payslipRef.current.scrollWidth,
+            height: payslipRef.current.scrollHeight,
             onclone: (clonedDoc) => {
               const payslipEl = clonedDoc.querySelector('.payslip-mockup');
               if (payslipEl) {
@@ -164,7 +166,7 @@ export default function Payroll() {
                 htmlPayslip.style.maxWidth = 'none';
                 htmlPayslip.style.maxHeight = 'none';
                 htmlPayslip.style.overflow = 'visible';
-                htmlPayslip.style.height = 'auto';
+                htmlPayslip.style.height = 'auto'; // Try to force auto height
                 htmlPayslip.style.padding = '40px';
 
                 sanitizeStyles(htmlPayslip);
@@ -272,6 +274,8 @@ export default function Payroll() {
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
+        width: payslipRef.current.scrollWidth,
+        height: payslipRef.current.scrollHeight,
         onclone: (clonedDoc) => {
           const payslip = clonedDoc.querySelector('.payslip-mockup');
           if (payslip) {
@@ -338,6 +342,8 @@ export default function Payroll() {
             useCORS: true,
             logging: false,
             backgroundColor: '#ffffff',
+            width: payslipRef.current.scrollWidth,
+            height: payslipRef.current.scrollHeight,
             onclone: (clonedDoc) => {
               const payslipEl = clonedDoc.querySelector('.payslip-mockup');
               if (payslipEl) {
@@ -346,7 +352,7 @@ export default function Payroll() {
                 htmlPayslip.style.maxWidth = 'none';
                 htmlPayslip.style.maxHeight = 'none';
                 htmlPayslip.style.overflow = 'visible';
-                htmlPayslip.style.height = 'auto';
+                htmlPayslip.style.height = 'auto'; // Try to force auto height
                 htmlPayslip.style.padding = '40px';
 
                 sanitizeStyles(htmlPayslip);
