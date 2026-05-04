@@ -17,6 +17,7 @@ export default function ContainerRepairList() {
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   // Form State
   const [type, setType] = useState<'local' | 'foreign'>('local');
@@ -84,6 +85,91 @@ export default function ContainerRepairList() {
     setStatus(c.status || 'active');
     setNote(c.note || "");
     setIsAddOpen(true);
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.length === filteredContainers.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(filteredContainers.map(c => c.id));
+    }
+  };
+
+  const handleBulkStatusChange = async (newStatus: 'active' | 'repairing' | 'repaired') => {
+    try {
+      for (const id of selectedIds) {
+        const docRef = doc(db, "containerRepairs", id);
+        const containerDoc = await getDoc(docRef);
+        const data = containerDoc.data() as ContainerRepair;
+        if (!data) continue;
+
+        await updateDoc(docRef, {
+            status: newStatus,
+            updatedAt: new Date().toISOString(),
+            history: arrayUnion({
+              status: newStatus,
+              timestamp: new Date().toISOString(),
+              note: `Bulk update to ${newStatus}`,
+              updatedBy: user?.uid,
+            })
+        });
+
+        if (newStatus === 'repaired') {
+            const containerCode = (data.type === 'foreign' ? `${data.localCode} - ${data.foreignCode}` : `${data.localCode} - ${data.localCode}`).trim();
+            const q = query(
+              collection(db, 'pakyawJobs'), 
+              where('containerNumber', '==', containerCode),
+              where('status', '==', 'pending')
+            );
+            const snapshot = await getDocs(q);
+            for (const jobDoc of snapshot.docs) {
+              await updateDoc(jobDoc.ref, { 
+                status: 'completed',
+                completedAt: new Date().toISOString()
+              });
+            }
+        }
+      }
+      showToast(`Selected containers updated to ${newStatus}`, "success");
+      setSelectedIds([]);
+    } catch (error) {
+       console.error(error);
+       showToast("Failed to update selected containers", "error");
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    try {
+      await Promise.all(selectedIds.map(async (id) => {
+          const docRef = doc(db, "containerRepairs", id);
+          const containerDoc = await getDoc(docRef);
+          const data = containerDoc.data() as ContainerRepair;
+
+          if (data) {
+            const containerCode = (data.type === 'foreign' ? `${data.localCode} - ${data.foreignCode}` : `${data.localCode} - ${data.localCode}`).trim();
+            const q = query(collection(db, 'pakyawJobs'), where('containerNumber', '==', containerCode));
+            const snapshot = await getDocs(q);
+            for (const jobDoc of snapshot.docs) {
+                const attQuery = query(collection(db, 'attendance'), where('pakyawJobId', '==', jobDoc.id));
+                const attSnapshot = await getDocs(attQuery);
+                for (const attDoc of attSnapshot.docs) {
+                  await deleteDoc(attDoc.ref);
+                }
+                await deleteDoc(jobDoc.ref);
+            }
+          }
+          await deleteDoc(docRef);
+      }));
+      showToast("Selected containers and associated items deleted successfully", "success");
+      setSelectedIds([]);
+    } catch (error) {
+       console.error(error);
+       showToast("Failed to delete selected containers", "error");
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -220,6 +306,16 @@ export default function ContainerRepairList() {
         </Button>
       </div>
 
+      {selectedIds.length > 0 && (
+        <div className="flex items-center gap-4 bg-slate-800/50 p-4 rounded-xl border border-white/10">
+            <span className="text-sm text-slate-300">{selectedIds.length} container(s) selected</span>
+            <Button onClick={() => handleBulkStatusChange('active')} className="bg-slate-700 hover:bg-slate-600">Mark Active</Button>
+            <Button onClick={() => handleBulkStatusChange('repairing')} className="bg-amber-600 hover:bg-amber-700">Mark Repairing</Button>
+            <Button onClick={() => handleBulkStatusChange('repaired')} className="bg-emerald-600 hover:bg-emerald-700">Mark Repaired</Button>
+            <Button onClick={handleBulkDelete} variant="destructive">Delete Selected</Button>
+        </div>
+      )}
+
       <div className="flex space-x-2 border-b border-white/10 pb-2">
         <button
           onClick={() => setActiveTab('active')}
@@ -257,6 +353,7 @@ export default function ContainerRepairList() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-950/50 text-slate-400 border-b border-white/5 uppercase tracking-wider text-[10px] font-black">
+                  <th className="p-4 w-10"><input type="checkbox" checked={selectedIds.length === filteredContainers.length && filteredContainers.length > 0} onChange={toggleSelectAll} /></th>
                   <th className="p-4">Type</th>
                   <th className="p-4">Foreign Code</th>
                   <th className="p-4">Local Code</th>
@@ -267,14 +364,15 @@ export default function ContainerRepairList() {
               <tbody className="divide-y divide-white/5 text-sm text-slate-300">
                 {filteredContainers.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="p-8 text-center text-slate-500">
+                    <td colSpan={6} className="p-8 text-center text-slate-500">
                       No containers found.
                     </td>
                   </tr>
                 ) : (
                   filteredContainers.map((c) => (
-                    <tr key={c.id} onClick={() => handleOpenEdit(c)} className="hover:bg-slate-800/30 transition-colors cursor-pointer group">
-                      <td className="p-4 font-bold">
+                    <tr key={c.id} className="hover:bg-slate-800/30 transition-colors group">
+                      <td className="p-4"><input type="checkbox" checked={selectedIds.includes(c.id)} onChange={() => toggleSelect(c.id)} /></td>
+                      <td className="p-4 font-bold" onClick={() => handleOpenEdit(c)}>
                         <span className={`px-2 py-1 rounded text-xs uppercase tracking-widest ${
                           c.type === 'foreign' ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20' : 
                           'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'
@@ -282,10 +380,10 @@ export default function ContainerRepairList() {
                           {c.type}
                         </span>
                       </td>
-                      <td className="p-4 group-hover:text-white transition-colors whitespace-nowrap">{c.type === 'foreign' ? c.foreignCode || "-" : c.localCode || "-"}</td>
-                      <td className="p-4 group-hover:text-white transition-colors whitespace-nowrap">{c.localCode || "-"}</td>
-                      <td className="p-4 max-w-[200px] truncate group-hover:text-white transition-colors" title={c.note || ""}>{c.note || "-"}</td>
-                      <td className="p-4 text-slate-400 text-xs whitespace-nowrap">{new Date(c.createdAt).toLocaleDateString()}</td>
+                      <td className="p-4 group-hover:text-white transition-colors whitespace-nowrap" onClick={() => handleOpenEdit(c)}>{c.type === 'foreign' ? c.foreignCode || "-" : c.localCode || "-"}</td>
+                      <td className="p-4 group-hover:text-white transition-colors whitespace-nowrap" onClick={() => handleOpenEdit(c)}>{c.localCode || "-"}</td>
+                      <td className="p-4 max-w-[200px] truncate group-hover:text-white transition-colors" onClick={() => handleOpenEdit(c)} title={c.note || ""}>{c.note || "-"}</td>
+                      <td className="p-4 text-slate-400 text-xs whitespace-nowrap" onClick={() => handleOpenEdit(c)}>{new Date(c.createdAt).toLocaleDateString()}</td>
                     </tr>
                   ))
                 )}
