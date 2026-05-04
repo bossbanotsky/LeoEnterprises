@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, setDoc, doc, deleteDoc } from "firebase/firestore";
+import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, setDoc, doc, deleteDoc, arrayUnion } from "firebase/firestore";
 import { db } from "../firebase";
 import { useAuth } from "../contexts/AuthContext";
 import { ContainerRepair } from "../types";
@@ -85,6 +85,13 @@ export default function ContainerRepairList() {
 
     setIsAdding(true);
     try {
+      const historyEntry = {
+        status,
+        timestamp: new Date().toISOString(),
+        note: note || null,
+        updatedBy: user.uid,
+      };
+
       if (editingId) {
         await setDoc(doc(db, "containerRepairs", editingId), {
           type,
@@ -93,6 +100,7 @@ export default function ContainerRepairList() {
           status,
           note: note || null,
           updatedAt: new Date().toISOString(),
+          history: arrayUnion(historyEntry),
         }, { merge: true });
         showToast("Container Repair updated successfully", "success");
       } else {
@@ -104,6 +112,7 @@ export default function ContainerRepairList() {
           note: note || null,
           createdAt: new Date().toISOString(),
           createdBy: user.uid,
+          history: [historyEntry],
         });
         showToast("Container Repair added successfully", "success");
       }

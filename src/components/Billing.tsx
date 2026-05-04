@@ -3,7 +3,7 @@ import { collection, onSnapshot, addDoc, updateDoc, query, orderBy, deleteDoc, d
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { Invoice, InvoiceItem } from '../types';
-import { Search, Plus, FileText, Trash2, Edit2, Package, Save, X, PlusCircle, Trash } from 'lucide-react';
+import { Search, Plus, FileText, Trash2, Edit2, Package, Save, X, PlusCircle, Trash, History } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from './ui/dialog';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -30,6 +30,7 @@ export default function Billing() {
 
   const [newContainer, setNewContainer] = useState({ code: '', note: '', price: '' });
   const [editingContainerIndex, setEditingContainerIndex] = useState<number | null>(null);
+  const [viewHistoryCode, setViewHistoryCode] = useState<string | null>(null);
 
   const totalSum = form.containers.reduce((acc, curr) => acc + (curr.price || 0), 0);
 
@@ -53,7 +54,11 @@ export default function Billing() {
       snapshot.forEach(docSnap => {
         const data = docSnap.data();
         if (data.status === 'repaired') {
-           list.push({ id: docSnap.id, ...data });
+           const codeDisplay = data.type === 'foreign' ? `${data.localCode} - ${data.foreignCode}` : `${data.localCode} - ${data.localCode}`;
+           const isBilled = invoices.some(inv => inv.status !== 'cancelled' && inv.containers.some(ic => ic.code === codeDisplay));
+           if (!isBilled) {
+              list.push({ id: docSnap.id, ...data });
+           }
         }
       });
       setRepairedContainers(list);
@@ -65,7 +70,7 @@ export default function Billing() {
       unsubscribeInvoices();
       unsubscribeContainers();
     };
-  }, [user]);
+  }, [user, invoices]);
 
   const handleSaveInvoice = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -134,14 +139,22 @@ export default function Billing() {
   };
 
   const addContainerItem = () => {
-    if (!newContainer.code) return;
+    if (!newContainer.code || !newContainer.price) return;
     const priceAuto = parseFloat(newContainer.price) || 0;
     
     const updatedContainers = [...form.containers];
-    const newItem = { 
+    
+    // Try to infer type from repairedContainers if it matches
+    const matchedRepaired = repairedContainers.find(c => {
+      const codeDisplay = c.type === 'foreign' ? `${c.localCode} - ${c.foreignCode}` : `${c.localCode} - ${c.localCode}`;
+      return codeDisplay === newContainer.code;
+    });
+
+    const newItem: InvoiceItem = { 
       code: newContainer.code, 
       note: newContainer.note, 
-      price: priceAuto 
+      price: priceAuto,
+      type: matchedRepaired ? matchedRepaired.type as 'local' | 'foreign' : undefined
     };
 
     if (editingContainerIndex !== null) {
@@ -197,16 +210,17 @@ export default function Billing() {
                // Automatically add unbilled repaired containers for a new invoice
                const billedCodes = invoices.flatMap(inv => (inv.containers || []).map(c => c.code));
                const unbilled = repairedContainers.filter(c => {
-                 const code = c.type === 'foreign' ? c.foreignCode : c.localCode;
+                 const code = c.type === 'foreign' ? `${c.localCode} - ${c.foreignCode}` : `${c.localCode} - ${c.localCode}`;
                  return code && !billedCodes.includes(code);
                });
                if (unbilled.length > 0) {
                  setForm(prev => ({
                    ...prev,
                    containers: unbilled.map(c => ({
-                     code: c.type === 'foreign' ? c.foreignCode : c.localCode,
+                     code: c.type === 'foreign' ? `${c.localCode} - ${c.foreignCode}` : `${c.localCode} - ${c.localCode}`,
                      note: c.note || '',
-                     price: 0
+                     price: 17000,
+                     type: c.type
                    }))
                  }));
                }
@@ -277,13 +291,15 @@ export default function Billing() {
                           const existingCodes = form.containers.map(c => c.code);
                           const toAdd = repairedContainers
                             .filter(c => {
-                              const codeDisplay = c.type === 'foreign' ? c.foreignCode : c.localCode;
-                              return codeDisplay && !existingCodes.includes(codeDisplay);
+                              const codeDisplay = c.type === 'foreign' ? `${c.localCode} - ${c.foreignCode}` : `${c.localCode} - ${c.localCode}`;
+                              const isBilled = invoices.some(inv => inv.status !== 'cancelled' && inv.containers.some(ic => ic.code === codeDisplay));
+                              return codeDisplay && !existingCodes.includes(codeDisplay) && !isBilled;
                             })
                             .map(c => ({
-                              code: c.type === 'foreign' ? c.foreignCode : c.localCode,
+                              code: c.type === 'foreign' ? `${c.localCode} - ${c.foreignCode}` : `${c.localCode} - ${c.localCode}`,
                               note: c.note || '',
-                              price: 0
+                              price: 17000,
+                              type: c.type
                             }));
                           
                           if (toAdd.length > 0) {
@@ -304,7 +320,23 @@ export default function Billing() {
                       <div key={idx} className="flex items-center gap-2 bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg border border-slate-100 dark:border-slate-800">
                         <div className="flex-1 min-w-0">
                           <div className="flex justify-between">
-                            <div className="text-xs font-bold text-slate-900 dark:text-white truncate">{item.code}</div>
+                            <div className="flex items-center gap-2 min-w-0">
+                              <button
+                                type="button"
+                                onClick={() => setViewHistoryCode(item.code)}
+                                className="text-xs font-bold text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline flex items-center gap-1 text-left min-w-0 flex-1"
+                              >
+                                <History className="w-3 h-3 shrink-0" />
+                                <span className="">{item.code}</span>
+                              </button>
+                               {item.type && (
+                                 <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider shrink-0 ${
+                                   item.type === 'foreign' ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'
+                                 }`}>
+                                   {item.type === 'foreign' ? 'F' : 'L'}
+                                 </span>
+                               )}
+                            </div>
                             <div className="text-xs font-black text-indigo-600 truncate">₱{item.price?.toLocaleString()}</div>
                           </div>
                           {item.note && <div className="text-[10px] text-slate-500 truncate">{item.note}</div>}
@@ -339,7 +371,7 @@ export default function Billing() {
                         onChange={e => {
                           const code = e.target.value;
                           if (!code) return;
-                          const selected = repairedContainers.find(c => (c.type === 'foreign' ? c.foreignCode : c.localCode) === code);
+                          const selected = repairedContainers.find(c => (c.type === 'foreign' ? `${c.localCode} - ${c.foreignCode}` : `${c.localCode} - ${c.localCode}`) === code);
                           if (selected) {
                             setForm(prev => {
                               if (prev.containers.find(c => c.code === code)) return prev;
@@ -348,7 +380,8 @@ export default function Billing() {
                                 containers: [...prev.containers, {
                                   code: code,
                                   note: selected.note || '',
-                                  price: 0
+                                  price: 17000,
+                                  type: selected.type
                                 }]
                               };
                             });
@@ -359,11 +392,12 @@ export default function Billing() {
                         <option value="">Select Repaired Container...</option>
                         {repairedContainers
                           .filter(c => {
-                            const codeDisplay = c.type === 'foreign' ? c.foreignCode : c.localCode;
-                            return codeDisplay && !form.containers.some(fc => fc.code === codeDisplay);
+                            const codeDisplay = c.type === 'foreign' ? `${c.localCode} - ${c.foreignCode}` : `${c.localCode} - ${c.localCode}`;
+                            const isBilled = invoices.some(inv => inv.status !== 'cancelled' && inv.containers.some(ic => ic.code === codeDisplay));
+                            return codeDisplay && !form.containers.some(fc => fc.code === codeDisplay) && !isBilled;
                           })
                           .map(c => {
-                            const codeDisplay = c.type === 'foreign' ? c.foreignCode : c.localCode;
+                            const codeDisplay = c.type === 'foreign' ? `${c.localCode} - ${c.foreignCode}` : `${c.localCode} - ${c.localCode}`;
                             return (
                               <option key={c.id} value={codeDisplay || ''}>
                                 {codeDisplay} ({c.type}) {c.note ? `- ${c.note}` : ''}
@@ -379,13 +413,15 @@ export default function Billing() {
                         onChange={e => setNewContainer({...newContainer, code: e.target.value.toUpperCase()})}
                         className="text-xs h-8"
                       />
-                      <Input 
-                        type="number"
-                        placeholder="Price (₱)"
+                      <select
                         value={newContainer.price}
                         onChange={e => setNewContainer({...newContainer, price: e.target.value})}
-                        className="text-xs h-8"
-                      />
+                        className="w-full text-xs h-8 px-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      >
+                        <option value="">Select Price</option>
+                        <option value="15000">₱15,000 - No Top Board</option>
+                        <option value="17000">₱17,000 - Fully Repaired</option>
+                      </select>
                     </div>
                     <Input 
                       placeholder="Note (optional)"
@@ -509,7 +545,22 @@ export default function Billing() {
                         <div className="flex items-center justify-between gap-2 mb-1">
                            <div className="flex items-center gap-1.5 min-w-0">
                              <Package className="w-3 h-3 text-indigo-500 shrink-0" />
-                             <span className="text-xs font-bold text-slate-900 dark:text-white truncate">{c.code}</span>
+                             <button
+                               onClick={(e) => {
+                                 e.stopPropagation();
+                                 setViewHistoryCode(c.code);
+                               }}
+                               className="text-xs font-bold text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline flex items-center gap-1 text-left min-w-0 flex-1"
+                             >
+                               <span className="">{c.code}</span>
+                             </button>
+                             {c.type && (
+                               <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider shrink-0 ${
+                                 c.type === 'foreign' ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'
+                               }`}>
+                                 {c.type === 'foreign' ? 'F' : 'L'}
+                               </span>
+                             )}
                            </div>
                            <span className="text-[10px] font-black text-indigo-600 shrink-0">₱{c.price?.toLocaleString()}</span>
                         </div>
@@ -556,6 +607,72 @@ export default function Billing() {
             </Button>
             <Button variant="destructive" onClick={() => deleteConfirmId && handleDelete(deleteConfirmId)} className="bg-red-600 hover:bg-red-700 text-white">
               Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* History Dialog */}
+      <Dialog open={!!viewHistoryCode} onOpenChange={(open) => !open && setViewHistoryCode(null)}>
+        <DialogContent className="sm:max-w-[400px] bg-slate-900 border-slate-800 text-slate-100 max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-white flex items-center gap-2">
+              <History className="w-5 h-5 text-indigo-400" />
+              Status History
+            </DialogTitle>
+            <DialogDescription className="text-slate-400 flex flex-col pt-1">
+              <span className="font-mono text-indigo-300 text-xs bg-indigo-500/10 px-2 py-1 rounded inline-flex self-start">
+                Code: {viewHistoryCode}
+              </span>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="pt-4 space-y-4 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-slate-700 before:to-transparent">
+            {(() => {
+              const activeContainer = repairedContainers.find(c => {
+                const codeDisplay = c.type === 'foreign' ? `${c.localCode} - ${c.foreignCode}` : `${c.localCode} - ${c.localCode}`;
+                return codeDisplay === viewHistoryCode;
+              });
+
+              if (!activeContainer || !activeContainer.history || activeContainer.history.length === 0) {
+                return (
+                  <div className="text-center py-6 text-slate-500 text-sm">
+                    No history found for this container.
+                  </div>
+                );
+              }
+
+              return [...activeContainer.history].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).map((h: any, i: number) => (
+                <div key={i} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
+                  {/* Timeline icon */}
+                  <div className="flex items-center justify-center w-4 h-4 rounded-full border-4 border-slate-900 bg-slate-400 group-[.is-active]:bg-indigo-500 text-slate-500 group-[.is-active]:text-indigo-50 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10 translate-x-[2px] md:translate-x-0"></div>
+                  
+                  {/* Card */}
+                  <div className="w-[calc(100%-2.5rem)] md:w-[calc(50%-1.5rem)] p-3 rounded-xl bg-slate-800 border border-slate-700/50 shadow-md transform transition-all group-hover:scale-[1.02]">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className={`text-xs font-bold uppercase tracking-wider ${
+                        h.status === 'active' ? 'text-blue-400' :
+                        h.status === 'repairing' ? 'text-amber-400' :
+                        'text-emerald-400'
+                      }`}>
+                        {h.status}
+                      </span>
+                      <time className="text-[10px] font-medium text-slate-500">
+                        {new Date(h.timestamp).toLocaleDateString()} {new Date(h.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                      </time>
+                    </div>
+                    {h.note && (
+                      <p className="text-xs text-slate-300 mt-2 bg-slate-900/50 p-2 rounded-lg italic">
+                        {h.note}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ));
+            })()}
+          </div>
+          <DialogFooter className="pt-4 sm:justify-end border-t border-slate-800 mt-6">
+            <Button variant="outline" onClick={() => setViewHistoryCode(null)} className="w-full sm:w-auto bg-transparent border-slate-700 text-slate-300 hover:bg-slate-800">
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -76,6 +76,13 @@ export interface PayrollPakyawDetail {
   isPaid: boolean;
 }
 
+export interface ContainerRepairHistory {
+  status: string;
+  timestamp: string;
+  note?: string | null;
+  updatedBy: string;
+}
+
 export interface ContainerRepair {
   id: string;
   type: 'local' | 'foreign';
@@ -86,6 +93,7 @@ export interface ContainerRepair {
   createdAt: string;
   createdBy: string;
   updatedAt?: string;
+  history?: ContainerRepairHistory[];
 }
 
 export interface Payroll {
@@ -172,6 +180,7 @@ export interface InvoiceItem {
   code: string;
   note?: string;
   price: number;
+  type?: 'local' | 'foreign';
 }
 
 export interface Invoice {
