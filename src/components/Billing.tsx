@@ -52,14 +52,7 @@ export default function Billing() {
     const unsubscribeContainers = onSnapshot(qContainers, (snapshot) => {
       const list: any[] = [];
       snapshot.forEach(docSnap => {
-        const data = docSnap.data();
-        if (data.status === 'repaired') {
-           const codeDisplay = data.type === 'foreign' ? `${data.localCode} - ${data.foreignCode}` : `${data.localCode} - ${data.localCode}`;
-           const isBilled = invoices.some(inv => inv.status !== 'cancelled' && inv.containers.some(ic => ic.code === codeDisplay));
-           if (!isBilled) {
-              list.push({ id: docSnap.id, ...data });
-           }
-        }
+        list.push({ id: docSnap.id, ...docSnap.data() });
       });
       setRepairedContainers(list);
     }, (error) => {
@@ -211,7 +204,7 @@ export default function Billing() {
                const billedCodes = invoices.flatMap(inv => (inv.containers || []).map(c => c.code));
                const unbilled = repairedContainers.filter(c => {
                  const code = c.type === 'foreign' ? `${c.localCode} - ${c.foreignCode}` : `${c.localCode} - ${c.localCode}`;
-                 return code && !billedCodes.includes(code);
+                 return c.status === 'repaired' && code && !billedCodes.includes(code);
                });
                if (unbilled.length > 0) {
                  setForm(prev => ({
@@ -293,7 +286,7 @@ export default function Billing() {
                             .filter(c => {
                               const codeDisplay = c.type === 'foreign' ? `${c.localCode} - ${c.foreignCode}` : `${c.localCode} - ${c.localCode}`;
                               const isBilled = invoices.some(inv => inv.status !== 'cancelled' && inv.containers.some(ic => ic.code === codeDisplay));
-                              return codeDisplay && !existingCodes.includes(codeDisplay) && !isBilled;
+                              return c.status === 'repaired' && codeDisplay && !existingCodes.includes(codeDisplay) && !isBilled;
                             })
                             .map(c => ({
                               code: c.type === 'foreign' ? `${c.localCode} - ${c.foreignCode}` : `${c.localCode} - ${c.localCode}`,
@@ -373,17 +366,10 @@ export default function Billing() {
                           if (!code) return;
                           const selected = repairedContainers.find(c => (c.type === 'foreign' ? `${c.localCode} - ${c.foreignCode}` : `${c.localCode} - ${c.localCode}`) === code);
                           if (selected) {
-                            setForm(prev => {
-                              if (prev.containers.find(c => c.code === code)) return prev;
-                              return {
-                                ...prev,
-                                containers: [...prev.containers, {
-                                  code: code,
-                                  note: selected.note || '',
-                                  price: 17000,
-                                  type: selected.type
-                                }]
-                              };
+                            setNewContainer({
+                              code: code,
+                              note: selected.note || '',
+                              price: selected.type === 'foreign' ? '17000' : '17000'
                             });
                           }
                         }}
@@ -394,7 +380,7 @@ export default function Billing() {
                           .filter(c => {
                             const codeDisplay = c.type === 'foreign' ? `${c.localCode} - ${c.foreignCode}` : `${c.localCode} - ${c.localCode}`;
                             const isBilled = invoices.some(inv => inv.status !== 'cancelled' && inv.containers.some(ic => ic.code === codeDisplay));
-                            return codeDisplay && !form.containers.some(fc => fc.code === codeDisplay) && !isBilled;
+                            return c.status === 'repaired' && codeDisplay && !form.containers.some(fc => fc.code === codeDisplay) && !isBilled;
                           })
                           .map(c => {
                             const codeDisplay = c.type === 'foreign' ? `${c.localCode} - ${c.foreignCode}` : `${c.localCode} - ${c.localCode}`;
@@ -628,10 +614,24 @@ export default function Billing() {
           </DialogHeader>
           <div className="pt-4 space-y-4 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-slate-700 before:to-transparent">
             {(() => {
-              const activeContainer = repairedContainers.find(c => {
+              let activeContainer = repairedContainers.find(c => {
                 const codeDisplay = c.type === 'foreign' ? `${c.localCode} - ${c.foreignCode}` : `${c.localCode} - ${c.localCode}`;
                 return codeDisplay === viewHistoryCode;
               });
+
+              if (!activeContainer) {
+                // Try searching in invoices
+                for (const inv of invoices) {
+                   const found = inv.containers.find(c => c.code === viewHistoryCode);
+                   if (found) {
+                     activeContainer = { 
+                       ...found,
+                       history: [] // Since we don't have direct history here, maybe just show invoice history?
+                     };
+                     break;
+                   }
+                }
+              }
 
               if (!activeContainer || !activeContainer.history || activeContainer.history.length === 0) {
                 return (
@@ -641,7 +641,23 @@ export default function Billing() {
                 );
               }
 
-              return [...activeContainer.history].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).map((h: any, i: number) => (
+              // Include invoice details in history if container isbilled
+              const historyWithInvoices = [...activeContainer.history];
+              
+              // Find if this container is on any invoice to add that to history as well
+              const codeDisplay = activeContainer.type === 'foreign' ? `${activeContainer.localCode} - ${activeContainer.foreignCode}` : `${activeContainer.localCode} - ${activeContainer.localCode}`;
+              const billedInvoices = invoices.filter(inv => inv.status !== 'cancelled' && inv.containers.some(ic => ic.code === codeDisplay));
+              
+              billedInvoices.forEach(inv => {
+                 historyWithInvoices.push({
+                   status: 'Invoiced',
+                   timestamp: inv.createdAt,
+                   note: `Invoiced as #${inv.invoiceNumber} for ${inv.customerName || 'Customer'}`,
+                   updatedBy: 'system'
+                 });
+              });
+
+              return historyWithInvoices.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).map((h: any, i: number) => (
                 <div key={i} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
                   {/* Timeline icon */}
                   <div className="flex items-center justify-center w-4 h-4 rounded-full border-4 border-slate-900 bg-slate-400 group-[.is-active]:bg-indigo-500 text-slate-500 group-[.is-active]:text-indigo-50 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10 translate-x-[2px] md:translate-x-0"></div>
@@ -652,6 +668,7 @@ export default function Billing() {
                       <span className={`text-xs font-bold uppercase tracking-wider ${
                         h.status === 'active' ? 'text-blue-400' :
                         h.status === 'repairing' ? 'text-amber-400' :
+                        h.status === 'Invoiced' ? 'text-purple-400' :
                         'text-emerald-400'
                       }`}>
                         {h.status}

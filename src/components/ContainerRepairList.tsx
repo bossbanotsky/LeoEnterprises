@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, setDoc, doc, deleteDoc, arrayUnion } from "firebase/firestore";
 import { db } from "../firebase";
 import { useAuth } from "../contexts/AuthContext";
-import { ContainerRepair } from "../types";
+import { ContainerRepair, Invoice } from "../types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { Loader2, Plus, Wrench, Edit, Trash2 } from "lucide-react";
@@ -12,6 +12,7 @@ export default function ContainerRepairList() {
   const { user } = useAuth();
   const { showToast } = useToast();
   const [containers, setContainers] = useState<ContainerRepair[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
@@ -30,15 +31,40 @@ export default function ContainerRepairList() {
 
   useEffect(() => {
     if (!user) return;
-    const q = query(collection(db, "containerRepairs"), orderBy("createdAt", "desc"));
-    const unsub = onSnapshot(q, (snapshot) => {
+    const qContainers = query(collection(db, "containerRepairs"), orderBy("createdAt", "desc"));
+    const unsubContainers = onSnapshot(qContainers, (snapshot) => {
       const res: ContainerRepair[] = [];
       snapshot.forEach(d => res.push({ id: d.id, ...d.data() } as ContainerRepair));
       setContainers(res);
       setLoading(false);
     });
-    return () => unsub();
+
+    const qInvoices = query(collection(db, "invoices"), orderBy("createdAt", "desc"));
+    const unsubInvoices = onSnapshot(qInvoices, (snapshot) => {
+      const res: Invoice[] = [];
+      snapshot.forEach(d => res.push({ id: d.id, ...d.data() } as Invoice));
+      setInvoices(res);
+    });
+
+    return () => {
+        unsubContainers();
+        unsubInvoices();
+    };
   }, [user]);
+
+  const filteredContainers = useMemo(() => {
+    return containers.filter(c => {
+        if ((c.status || 'active') !== activeTab) return false;
+        
+        // If it's in the repaired tab, check if it's already billed
+        if (c.status === 'repaired') {
+            const codeDisplay = c.type === 'foreign' ? `${c.localCode} - ${c.foreignCode}` : `${c.localCode} - ${c.localCode}`;
+            const isBilled = invoices.some(inv => inv.status !== 'cancelled' && inv.containers.some(ic => ic.code === codeDisplay));
+            return !isBilled;
+        }
+        return true;
+    });
+  }, [containers, activeTab, invoices]);
 
   const handleOpenAdd = () => {
     setEditingId(null);
@@ -127,8 +153,6 @@ export default function ContainerRepairList() {
       setIsAdding(false);
     }
   };
-
-  const filteredContainers = containers.filter(c => (c.status || 'active') === activeTab);
 
   return (
     <div className="space-y-6">
