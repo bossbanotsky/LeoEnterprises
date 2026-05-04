@@ -45,12 +45,42 @@ export interface Attendance {
   userId: string;
 }
 
+export interface CashAdvanceDeduction {
+  payrollId: string;
+  amount: number;
+  date: string;
+}
+
+export interface Account {
+  id: string;
+  name: string;
+  balance: number;
+  type: 'cash' | 'bank' | 'wallet';
+  isDefault?: boolean;
+  createdAt: string;
+}
+
+export interface Transaction {
+  id: string;
+  accountId: string;
+  type: 'income' | 'expense' | 'transfer';
+  amount: number;
+  category: string;
+  description: string;
+  referenceId?: string;
+  date: string;
+  createdAt: string;
+  uid: string;
+}
+
 export interface CashAdvance {
   id: string;
   employeeId: string;
   date: string;
   amount: number;
+  remainingBalance: number;
   notes?: string;
+  deductions?: CashAdvanceDeduction[];
   createdAt: string;
   uid: string;
 }
@@ -119,6 +149,7 @@ export interface Payroll {
   cashAdvanceDeduction: number;
   cashAdvanceDetails?: string[];
   totalPay: number;
+  cashAdvanceIds?: string[];
   bulkId: string | null;
   status?: 'paid';
   isAttendancePaid?: boolean;

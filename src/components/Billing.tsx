@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { collection, onSnapshot, addDoc, updateDoc, query, orderBy, deleteDoc, doc } from 'firebase/firestore';
+import { recordTransaction } from '../services/financeService';
+import { collection, onSnapshot, addDoc, updateDoc, query, orderBy, deleteDoc, doc, getDoc, getDocs, where } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { Invoice, InvoiceItem } from '../types';
@@ -63,7 +64,7 @@ export default function Billing() {
       unsubscribeInvoices();
       unsubscribeContainers();
     };
-  }, [user, invoices]);
+  }, [user]); // Removed invoices from dependency array to avoid unnecessary re-subscriptions
 
   const handleSaveInvoice = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,14 +81,64 @@ export default function Billing() {
         updatedAt: new Date().toISOString(),
         uid: user.uid
       };
+      
+      let wasPaid = false;
+      let oldTotalSum = 0;
+      const invoiceRef = editingId ? doc(db, 'invoices', editingId) : null;
 
-      if (editingId) {
-        await updateDoc(doc(db, 'invoices', editingId), invoiceData);
+      if (editingId && invoiceRef) {
+        const oldDoc = await getDoc(invoiceRef);
+        const oldData = oldDoc.data();
+        wasPaid = oldData?.status === 'paid';
+        oldTotalSum = oldData?.totalSum || 0;
+      }
+
+      let referenceId = editingId;
+      if (editingId && invoiceRef) {
+        await updateDoc(invoiceRef, invoiceData);
       } else {
-        await addDoc(collection(db, 'invoices'), {
+        const docRef = await addDoc(collection(db, 'invoices'), {
           ...invoiceData,
           createdAt: new Date().toISOString()
         });
+        referenceId = docRef.id;
+      }
+
+      if (form.status === 'paid' && !wasPaid) {
+        // Find a cash account
+        console.log('Recording income transaction for invoice:', form.invoiceNumber, totalSum);
+        const cashAccQ = query(collection(db, 'accounts'), where('type', '==', 'cash'));
+        const accSnap = await getDocs(cashAccQ);
+        const accountId = accSnap.empty ? null : accSnap.docs[0].id;
+        
+        await recordTransaction(
+            accountId,
+            'income',
+            totalSum,
+            'Billing',
+            `Payment for Invoice #${form.invoiceNumber}`,
+            referenceId || 'inv-paid',
+            user.uid
+        );
+        console.log('Transaction recorded successfully');
+      } else if (wasPaid && form.status !== 'paid') {
+        // REVERSAL LOGIC: Invoice was previously paid, now it's not.
+        // Record a negative transaction (expense) to correct the balance.
+        console.log('Recording reversal for invoice:', form.invoiceNumber, oldTotalSum);
+        const cashAccQ = query(collection(db, 'accounts'), where('type', '==', 'cash'));
+        const accSnap = await getDocs(cashAccQ);
+        const accountId = accSnap.empty ? null : accSnap.docs[0].id;
+
+        await recordTransaction(
+            accountId,
+            'expense', // Correct balance by recording as expense (or adjustment)
+            oldTotalSum,
+            'Billing',
+            `Reversal of Payment for Invoice #${form.invoiceNumber} (Status changed to ${form.status})`,
+            referenceId ? `${referenceId}-reversal` : 'inv-reversal',
+            user.uid
+        );
+        console.log('Reversal transaction recorded');
       }
 
       setIsAddOpen(false);
@@ -124,7 +175,28 @@ export default function Billing() {
 
   const handleDelete = async (id: string) => {
     try {
-      await deleteDoc(doc(db, 'invoices', id));
+      const invoiceRef = doc(db, 'invoices', id);
+      const invoiceSnap = await getDoc(invoiceRef);
+      if (invoiceSnap.exists()) {
+        const data = invoiceSnap.data();
+        if (data.status === 'paid') {
+          // Find a cash account
+          const cashAccQ = query(collection(db, 'accounts'), where('type', '==', 'cash'));
+          const accSnap = await getDocs(cashAccQ);
+          const accountId = accSnap.empty ? null : accSnap.docs[0].id;
+
+          await recordTransaction(
+            accountId,
+            'expense',
+            data.totalSum || 0,
+            'Billing',
+            `Reversal: Invoice #${data.invoiceNumber} deleted`,
+            `${id}-reversal`,
+            user?.uid
+          );
+        }
+      }
+      await deleteDoc(invoiceRef);
       setDeleteConfirmId(null);
     } catch (error) {
       handleFirestoreError(error, OperationType.DELETE, 'invoices');

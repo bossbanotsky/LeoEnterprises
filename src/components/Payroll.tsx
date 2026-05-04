@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { collection, onSnapshot, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
+import { recordTransaction } from '../services/financeService';
+import { collection, onSnapshot, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc, getDocs as getDocsFirebase, collection as col } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
@@ -29,6 +30,7 @@ export default function Payroll() {
   const [bulkPayrolls, setBulkPayrolls] = useState<any[]>([]);
   const [selectedBulkId, setSelectedBulkId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<{ id: string; type: 'payroll' | 'bulk'; name?: string } | null>(null);
 
   useEffect(() => {
     localStorage.setItem('payrollStartDate', startDate);
@@ -78,49 +80,67 @@ export default function Payroll() {
 
   const handleMarkAsPaid = async (bulkId: string) => {
     try {
+      // Find a cash account
+      const accSnap = await getDocsFirebase(query(collection(db, 'accounts'), where('type', '==', 'cash')));
+      const accountId = accSnap.empty ? 'cash-account-id' : accSnap.docs[0].id;
+
       await updateDoc(doc(db, 'bulkPayrolls', bulkId), {
         status: 'paid',
         paidAt: new Date().toISOString()
       });
       
-      // Send emails to employees who have them
       const payrollsQ = query(collection(db, 'payrolls'), where('bulkId', '==', bulkId));
       const payrollsSnap = await getDocs(payrollsQ);
       
       await Promise.all(payrollsSnap.docs.map(async (payrollDoc) => {
         try {
-          // Also stamp the individual payroll doc as paid so employees can safely query it without reading bulkPayrolls
-          await updateDoc(doc(db, 'payrolls', payrollDoc.id), {
-            status: 'paid'
-          });
+          const pData = payrollDoc.data();
+          if (pData.status === 'paid') return; // Skip if already paid
+
+          await updateDoc(doc(db, 'payrolls', payrollDoc.id), { status: 'paid' });
+
+          // Handle Cash Advance Balance Updates
+          if (pData.cashAdvanceDeduction > 0 && pData.cashAdvanceIds) {
+            let deductionPool = pData.totalGrossPay; // Available to pay off debt
+            for (const caId of pData.cashAdvanceIds) {
+              if (deductionPool <= 0) break;
+              
+              const caRef = doc(db, 'cashAdvances', caId);
+              const caSnap = await import('firebase/firestore').then(f => f.getDoc(caRef));
+              if (caSnap.exists()) {
+                const caData = caSnap.data();
+                const amountToDeduct = Math.min(deductionPool, caData.remainingBalance);
+                deductionPool -= amountToDeduct;
+                
+                await updateDoc(caRef, {
+                  remainingBalance: caData.remainingBalance - amountToDeduct,
+                  deductions: [
+                    ...(caData.deductions || []),
+                    {
+                      payrollId: payrollDoc.id,
+                      amount: amountToDeduct,
+                      date: new Date().toISOString()
+                    }
+                  ]
+                });
+              }
+            }
+          }
+
+          if (pData.totalPay > 0) {
+            await recordTransaction(
+                accountId,
+                'expense',
+                pData.totalPay,
+                'Payroll',
+                `Payroll payment for ${employees.find(e => e.id === pData.employeeId)?.fullName || 'Employee'}`,
+                payrollDoc.id,
+                user?.uid
+            );
+          }
         } catch (updateError) {
           console.error("Failed to update individual payroll status:", updateError);
         }
-
-        const pData = payrollDoc.data();
-        const emp = employees.find(e => e.id === pData.employeeId);
-        /*
-        if (emp?.email && emp.email.trim() !== '') {
-          console.log(`Sending payslip email to ${emp.fullName} at ${emp.email}`);
-          try {
-            await fetch('/api/send-payslip', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                email: emp.email,
-                employeeName: emp.fullName,
-                period: `${format(parseISO(startDate), 'MMM dd')} - ${format(parseISO(endDate), 'MMM dd, yyyy')}`,
-                totalPay: pData.totalPay,
-                deduction: pData.cashAdvanceDeduction,
-                grossPay: pData.totalGrossPay,
-                companyName: companyInfo.name
-              })
-            });
-          } catch (e) {
-            console.error('Failed to send email:', e);
-          }
-        }
-        */
       }));
 
       setSelectedBulkId(null);
@@ -502,7 +522,10 @@ export default function Payroll() {
 
       for (const emp of targetEmployees) {
         const empAtts = allAtts.filter(a => a.employeeId === emp.id);
-        const empCa = allCa.filter(ca => ca.employeeId === emp.id);
+        const empCa = cashAdvances
+          .filter(ca => ca.employeeId === emp.id && ca.remainingBalance > 0)
+          .sort((a, b) => a.date.localeCompare(b.date)); // Oldest first
+        
         const empPjw = allPj.filter(pj => pj.employeeIds.includes(emp.id));
         
         let totalPresent = 0;
@@ -516,14 +539,21 @@ export default function Payroll() {
         let totalOtHours = 0;
         let cashAdvanceDeduction = 0;
         let cashAdvanceDetails: string[] = [];
+        let appliedCashAdvanceIds: string[] = [];
         let totalPakyawPay = 0;
         let pakyawDetails: string[] = [];
         let pakyawItems: PayrollPakyawDetail[] = [];
         let dailyAttendanceLog: { date: string, status: string, regHrs: number, otHrs: number, isWorkDay: boolean }[] = [];
 
+        // Calculate Gross first to know how much we can deduct if we want to cap at 0
+        // But the user wants to see "negative", so we deduct ALL outstanding found?
+        // Actually, usually we only deduct from advances that are "due".
+        // For simplicity, let's deduct all outstanding advances found.
+        
         empCa.forEach(ca => {
-          cashAdvanceDeduction += ca.amount;
-          cashAdvanceDetails.push(`${format(parseISO(ca.date), 'MMM dd')}: ₱${ca.amount.toFixed(2)}${ca.notes ? ' (' + ca.notes + ')' : ''}`);
+          cashAdvanceDeduction += ca.remainingBalance;
+          appliedCashAdvanceIds.push(ca.id);
+          cashAdvanceDetails.push(`CA ${format(parseISO(ca.date), 'MMM dd')}: ₱${ca.remainingBalance.toFixed(2)}`);
         });
         
         empPjw.forEach(pj => {
@@ -630,6 +660,7 @@ export default function Payroll() {
           totalGrossPay,
           cashAdvanceDeduction,
           cashAdvanceDetails,
+          cashAdvanceIds: appliedCashAdvanceIds,
           totalPay,
           uid: user!.uid,
           generatedAt: new Date().toISOString()
@@ -703,6 +734,7 @@ export default function Payroll() {
       await deleteDoc(doc(db, 'payrolls', id));
       setPayrollData(prev => prev.filter(p => p.id !== id));
       setSelectedPayslip(null);
+      setItemToDelete(null);
     } catch (error) {
       handleFirestoreError(error, OperationType.DELETE, 'payrolls');
     }
@@ -720,7 +752,60 @@ export default function Payroll() {
     if (!user || !bulkId) return;
     try {
       setIsLoading(true);
-      await deleteDoc(doc(db, 'bulkPayrolls', bulkId));
+      setItemToDelete(null);
+      
+      const bulkRef = doc(db, 'bulkPayrolls', bulkId);
+      const bulkSnap = await import('firebase/firestore').then(f => f.getDoc(bulkRef));
+      if (!bulkSnap.exists()) return;
+      const isPaid = bulkSnap.data().status === 'paid';
+
+      // Record reversal if it was already paid
+      if (isPaid) {
+        // Find a cash account
+        const accSnap = await getDocsFirebase(query(collection(db, 'accounts'), where('type', '==', 'cash')));
+        const accountId = accSnap.empty ? null : accSnap.docs[0].id;
+
+        const payrollsQ = query(collection(db, 'payrolls'), where('bulkId', '==', bulkId));
+        const payrollsSnap = await getDocs(payrollsQ);
+        
+        for (const pDoc of payrollsSnap.docs) {
+          const pData = pDoc.data();
+          if (pData.status === 'paid') {
+            // Reverse Cash Advance
+            if (pData.cashAdvanceDeduction > 0 && pData.cashAdvanceIds) {
+              for (const caId of pData.cashAdvanceIds) {
+                const caRef = doc(db, 'cashAdvances', caId);
+                const caSnap = await import('firebase/firestore').then(f => f.getDoc(caRef));
+                if (caSnap.exists()) {
+                  const caData = caSnap.data();
+                  const targetDeduction = (caData.deductions || []).find((d: any) => d.payrollId === pDoc.id);
+                  if (targetDeduction) {
+                    await updateDoc(caRef, {
+                      remainingBalance: caData.remainingBalance + targetDeduction.amount,
+                      deductions: (caData.deductions || []).filter((d: any) => d.payrollId !== pDoc.id)
+                    });
+                  }
+                }
+              }
+            }
+
+            // Reverse Transaction
+            if (pData.totalPay > 0) {
+              await recordTransaction(
+                accountId,
+                'income',
+                pData.totalPay,
+                'Payroll',
+                `Reversal: Bulk Payroll #${bulkId} deleted`,
+                `${pDoc.id}-reversal`,
+                user.uid
+              );
+            }
+          }
+        }
+      }
+
+      await deleteDoc(bulkRef);
       
       // Delete all associated payrolls
       const q = query(collection(db, 'payrolls'), where('bulkId', '==', bulkId));
@@ -739,14 +824,122 @@ export default function Payroll() {
 
   const handleMarkIndividualAsPaid = async (payrollId: string, currentStatus: string) => {
     try {
-      await updateDoc(doc(db, 'payrolls', payrollId), {
-        status: currentStatus === 'paid' ? 'pending' : 'paid',
-        isAttendancePaid: currentStatus !== 'paid',
-        pakyawItems: (payrollData.find(p => p.id === payrollId)?.pakyawItems || []).map((item: any) => ({
+      if (currentStatus === 'paid') {
+        // Find a cash account
+        const accSnap = await getDocsFirebase(query(collection(db, 'accounts'), where('type', '==', 'cash')));
+        const accountId = accSnap.empty ? null : accSnap.docs[0].id;
+
+        const payrollRef = doc(db, 'payrolls', payrollId);
+        const payrollSnap = await import('firebase/firestore').then(f => f.getDoc(payrollRef));
+        if (!payrollSnap.exists()) return;
+        const pData = payrollSnap.data();
+
+        // Toggle back to pending
+        await updateDoc(payrollRef, {
+           status: 'pending',
+           isAttendancePaid: false,
+           pakyawItems: (pData.pakyawItems || []).map((item: any) => ({
+             ...item,
+             isPaid: false
+           }))
+        });
+
+        // REVERSE Cash Advance Balance Updates
+        if (pData.cashAdvanceDeduction > 0 && pData.cashAdvanceIds) {
+          for (const caId of pData.cashAdvanceIds) {
+            const caRef = doc(db, 'cashAdvances', caId);
+            const caSnap = await import('firebase/firestore').then(f => f.getDoc(caRef));
+            if (caSnap.exists()) {
+              const caData = caSnap.data();
+              // Find the deduction specifically for this payroll
+              const deductionsList = caData.deductions || [];
+              const targetDeduction = deductionsList.find((d: any) => d.payrollId === payrollId);
+              
+              if (targetDeduction) {
+                const amountToRestore = targetDeduction.amount;
+                await updateDoc(caRef, {
+                  remainingBalance: caData.remainingBalance + amountToRestore,
+                  deductions: deductionsList.filter((d: any) => d.payrollId !== payrollId)
+                });
+              }
+            }
+          }
+        }
+
+        // REVERSE Transaction
+        if (pData.totalPay > 0) {
+          await recordTransaction(
+            accountId,
+            'income', // Record as income to reverse previous expense
+            pData.totalPay,
+            'Payroll',
+            `Reversal of Payroll payment for ${employees.find(e => e.id === pData.employeeId)?.fullName || 'Employee'} (Status changed to pending)`,
+            `${payrollId}-reversal`,
+            user?.uid
+          );
+        }
+        return;
+      }
+
+      // Mark as Paid
+      // Find a cash account
+      const accSnap = await getDocsFirebase(query(collection(db, 'accounts'), where('type', '==', 'cash')));
+      const accountId = accSnap.empty ? null : accSnap.docs[0].id;
+
+      const payrollRef = doc(db, 'payrolls', payrollId);
+      const payrollSnap = await import('firebase/firestore').then(f => f.getDoc(payrollRef));
+      if (!payrollSnap.exists()) return;
+      
+      const pData = payrollSnap.data();
+
+      await updateDoc(payrollRef, {
+        status: 'paid',
+        isAttendancePaid: true,
+        pakyawItems: (pData.pakyawItems || []).map((item: any) => ({
           ...item,
-          isPaid: currentStatus !== 'paid'
+          isPaid: true
         }))
       });
+
+      // Handle Cash Advance Balance Updates
+      if (pData.cashAdvanceDeduction > 0 && pData.cashAdvanceIds) {
+        let deductionPool = pData.totalGrossPay;
+        for (const caId of pData.cashAdvanceIds) {
+          if (deductionPool <= 0) break;
+          
+          const caRef = doc(db, 'cashAdvances', caId);
+          const caSnap = await import('firebase/firestore').then(f => f.getDoc(caRef));
+          if (caSnap.exists()) {
+            const caData = caSnap.data();
+            const amountToDeduct = Math.min(deductionPool, caData.remainingBalance);
+            deductionPool -= amountToDeduct;
+            
+            await updateDoc(caRef, {
+              remainingBalance: caData.remainingBalance - amountToDeduct,
+              deductions: [
+                ...(caData.deductions || []),
+                {
+                  payrollId: payrollId,
+                  amount: amountToDeduct,
+                  date: new Date().toISOString()
+                }
+              ]
+            });
+          }
+        }
+      }
+
+      if (pData.totalPay > 0) {
+        await recordTransaction(
+          accountId,
+          'expense',
+          pData.totalPay,
+          'Payroll',
+          `Payroll payment for ${employees.find(e => e.id === pData.employeeId)?.fullName || 'Employee'}`,
+          payrollId,
+          user?.uid
+        );
+      }
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, 'payrolls');
     }
@@ -996,9 +1189,7 @@ export default function Payroll() {
                         variant="secondary" 
                         className="h-12 sm:h-10 gap-2 bg-red-500 hover:bg-red-600 text-white border-0 shadow-lg font-black uppercase tracking-widest text-[10px] flex-1 sm:flex-none" 
                         onClick={() => {
-                          if (window.confirm('Are you sure you want to delete this entire payroll batch? All associated payslips will be permanently removed.')) {
-                            handleDeleteBulk(selectedBulkId);
-                          }
+                          setItemToDelete({ id: selectedBulkId, type: 'bulk', name: 'entire payroll batch' });
                         }}
                         disabled={isExporting}
                       >
@@ -1076,9 +1267,7 @@ export default function Payroll() {
                       className="h-8 w-8 p-0 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg"
                       onClick={(e) => {
                         e.stopPropagation();
-                        if (window.confirm(`Delete payroll for ${data.employee.fullName}?`)) {
-                          handleDeletePayroll(data.id);
-                        }
+                        setItemToDelete({ id: data.id, type: 'payroll', name: data.employee.fullName });
                       }}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -1527,6 +1716,38 @@ export default function Payroll() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Custom Confirmation Modal for Deletions */}
+      {itemToDelete && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]">
+          <div className="bg-slate-900 border border-white/10 p-8 rounded-3xl w-full max-w-sm shadow-2xl text-center">
+            <div className="w-16 h-16 bg-rose-500/10 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Trash2 className="w-8 h-8" />
+            </div>
+            <h2 className="text-xl font-bold text-white mb-2 tracking-tight">Confirm Deletion</h2>
+            <p className="text-slate-400 text-sm mb-8 leading-relaxed">
+              {itemToDelete.type === 'bulk' 
+                ? 'Are you sure you want to delete this entire payroll batch? All associated payslips will be permanently removed. This action cannot be undone.'
+                : `Are you sure you want to delete the payroll record for ${itemToDelete.name}? This action will permanently remove the record.`
+              }
+            </p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setItemToDelete(null)}
+                className="flex-1 py-3 px-4 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-2xl transition-all"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={() => itemToDelete.type === 'bulk' ? handleDeleteBulk(itemToDelete.id) : handleDeletePayroll(itemToDelete.id)}
+                className="flex-1 py-3 px-4 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-2xl transition-all shadow-lg shadow-rose-600/20"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

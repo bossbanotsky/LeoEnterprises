@@ -14,6 +14,7 @@ import Attendance from './components/Attendance';
 import CashAdvance from './components/CashAdvance';
 import Pakyaw from './components/Pakyaw';
 import Payroll from './components/Payroll';
+import Finance from './components/Finance';
 import ProjectManagement from './components/ProjectManagement';
 import GalleryManagement from './components/GalleryManagement';
 import Settings from './components/Settings';
@@ -96,6 +97,7 @@ export default function App() {
                       <Route path="cash-advance" element={<CashAdvance />} />
                       <Route path="pakyaw" element={<Pakyaw />} />
                       <Route path="payroll" element={<Payroll />} />
+                      <Route path="finance" element={<Finance />} />
                       <Route path="project-management" element={<ProjectManagement />} />
                       <Route path="gallery" element={<GalleryManagement />} />
                       <Route path="announcements" element={<Announcements />} />

@@ -150,6 +150,14 @@ service cloud.firestore {
       allow write: if isMasterAdmin();
     }
 
+    match /accounts/{accountId} {
+      allow read, write: if isSignedIn();
+    }
+
+    match /transactions/{transactionId} {
+      allow read, write: if isSignedIn();
+    }
+
     match /invoices/{invoiceId} {
       allow read: if isSignedIn();
       allow create: if isMasterAdmin() && isValidInvoice(incoming());

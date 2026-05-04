@@ -30,6 +30,7 @@ export default function VideoViewer({ category, isAdminView = false }: { categor
   const [editAlbumTitle, setEditAlbumTitle] = useState('');
   const [editAlbumDesc, setEditAlbumDesc] = useState('');
   const [isSavingAlbum, setIsSavingAlbum] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<{ id: string | string[]; type: 'video' | 'bulk' | 'album'; name?: string } | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -118,11 +119,12 @@ export default function VideoViewer({ category, isAdminView = false }: { categor
   };
 
   const handleBulkDelete = async () => {
-    if (!confirm(`Are you sure you want to delete ${selectedIds.length} videos?`)) return;
+    if (!itemToDelete || itemToDelete.type !== 'bulk' || !Array.isArray(itemToDelete.id)) return;
     try {
-      await Promise.all(selectedIds.map(id => deleteDoc(doc(db, 'videos', id))));
+      await Promise.all(itemToDelete.id.map(id => deleteDoc(doc(db, 'videos', id))));
       setSelectedIds([]);
       setIsSelectionMode(false);
+      setItemToDelete(null);
     } catch (err) {
       console.error("Error bulk deleting:", err);
       alert("Failed to delete some videos.");
@@ -157,11 +159,10 @@ export default function VideoViewer({ category, isAdminView = false }: { categor
     }
   };
 
-  const handleDelete = async (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!confirm('Are you sure you want to delete this video?')) return;
+  const handleDelete = async (id: string) => {
     try {
       await deleteDoc(doc(db, 'videos', id));
+      setItemToDelete(null);
     } catch (err) {
       console.error("Error deleting video:", err);
       alert("Failed to delete video.");
@@ -188,9 +189,9 @@ export default function VideoViewer({ category, isAdminView = false }: { categor
   };
 
   const handleDeleteAlbum = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this album? The videos inside will be moved to the uncategorized section.')) return;
     try {
       await deleteAlbum(id);
+      setItemToDelete(null);
     } catch (err: any) {
       alert("Failed to delete album: " + err.message);
     }
@@ -270,7 +271,7 @@ export default function VideoViewer({ category, isAdminView = false }: { categor
                       <Edit3 size={16} />
                     </button>
                     <button 
-                      onClick={() => handleDeleteAlbum(album.id)}
+                      onClick={() => setItemToDelete({ id: album.id, type: 'album', name: album.title })}
                       className="p-2.5 bg-slate-950/80 border border-white/10 text-red-400 hover:bg-red-600 hover:text-white rounded-xl shadow-xl transition-all"
                       title="Delete Album"
                     >
@@ -357,7 +358,10 @@ export default function VideoViewer({ category, isAdminView = false }: { categor
                             <FolderInput size={18} />
                           </button>
                           <button 
-                            onClick={(e) => handleDelete(vid.id, e)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setItemToDelete({ id: vid.id, type: 'video' });
+                            }}
                             className="p-3 bg-red-600/80 hover:bg-red-600 text-white rounded-xl shadow-2xl backdrop-blur-md transition-all border border-white/10"
                             title="Delete Video"
                           >
@@ -424,7 +428,10 @@ export default function VideoViewer({ category, isAdminView = false }: { categor
                         <FolderInput size={18} />
                       </button>
                       <button 
-                        onClick={(e) => handleDelete(vid.id, e)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setItemToDelete({ id: vid.id, type: 'video' });
+                        }}
                         className="p-3 bg-red-600/80 hover:bg-red-600 text-white rounded-xl shadow-2xl backdrop-blur-md transition-all border border-white/10"
                         title="Delete Video"
                       >
@@ -470,7 +477,7 @@ export default function VideoViewer({ category, isAdminView = false }: { categor
               </button>
               <button 
                 className="flex-1 md:flex-none px-3 md:px-4 py-2 md:py-2.5 bg-red-600 rounded-xl font-bold hover:bg-red-500 text-xs md:text-sm flex items-center justify-center gap-1.5 whitespace-nowrap" 
-                onClick={handleBulkDelete}
+                onClick={() => setItemToDelete({ id: selectedIds, type: 'bulk' })}
               >
                 <Trash2 size={16} className="shrink-0" /> 
                 <span className="hidden md:inline">Delete</span>
@@ -541,6 +548,44 @@ export default function VideoViewer({ category, isAdminView = false }: { categor
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Custom Confirmation Modal */}
+      {itemToDelete && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]">
+          <div className="bg-slate-900 border border-white/10 p-8 rounded-3xl w-full max-w-sm shadow-2xl text-center">
+            <div className="w-16 h-16 bg-rose-500/10 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Trash2 className="w-8 h-8" />
+            </div>
+            <h2 className="text-xl font-bold text-white mb-2 tracking-tight">Confirm Deletion</h2>
+            <p className="text-slate-400 text-sm mb-8 leading-relaxed">
+              {itemToDelete.type === 'bulk' && Array.isArray(itemToDelete.id)
+                ? `Are you sure you want to delete ${itemToDelete.id.length} selected videos?`
+                : itemToDelete.type === 'album'
+                ? `Are you sure you want to delete the album "${itemToDelete.name}"? The videos inside will be moved to the uncategorized section.`
+                : 'Are you sure you want to delete this video?'
+              }
+            </p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setItemToDelete(null)}
+                className="flex-1 py-3 px-4 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-2xl transition-all"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={() => {
+                  if (itemToDelete.type === 'bulk') handleBulkDelete();
+                  else if (itemToDelete.type === 'album') handleDeleteAlbum(itemToDelete.id as string);
+                  else handleDelete(itemToDelete.id as string);
+                }}
+                className="flex-1 py-3 px-4 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-2xl transition-all shadow-lg shadow-rose-600/20"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

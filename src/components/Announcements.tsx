@@ -18,6 +18,7 @@ export default function Announcements() {
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null);
   const [loading, setLoading] = useState(true);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const [form, setForm] = useState({
     title: '',
@@ -90,9 +91,9 @@ export default function Announcements() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('Are you sure you want to remove this announcement?')) return;
     try {
       await deleteDoc(doc(db, 'announcements', id));
+      setDeleteId(null);
     } catch (err) {
       handleFirestoreError(err, OperationType.DELETE, 'announcements');
     }
@@ -254,7 +255,7 @@ export default function Announcements() {
                             <Button 
                               variant="ghost" 
                               size="icon" 
-                              onClick={() => handleDelete(ann.id)}
+                              onClick={() => setDeleteId(ann.id)}
                               className="text-white/20 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all shrink-0"
                             >
                               <Trash2 className="w-5 h-5" />
@@ -291,7 +292,7 @@ export default function Announcements() {
                   }}>
                     <Eye className="w-5 h-5" />
                   </Button>
-                  <Button variant="ghost" size="icon" className="text-white/20 hover:text-red-400 hover:bg-red-400/10 rounded-xl" onClick={() => handleDelete(ann.id)}>
+                  <Button variant="ghost" size="icon" className="text-white/20 hover:text-red-400 hover:bg-red-400/10 rounded-xl" onClick={() => setDeleteId(ann.id)}>
                     <Trash2 className="w-5 h-5" />
                   </Button>
                 </div>
@@ -366,6 +367,35 @@ export default function Announcements() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Custom Confirmation Modal */}
+      {deleteId && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]">
+          <div className="bg-slate-900 border border-white/10 p-8 rounded-3xl w-full max-w-sm shadow-2xl text-center">
+            <div className="w-16 h-16 bg-rose-500/10 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Trash2 className="w-8 h-8" />
+            </div>
+            <h2 className="text-xl font-bold text-white mb-2 tracking-tight">Confirm Removal</h2>
+            <p className="text-slate-400 text-sm mb-8 leading-relaxed">
+              Are you sure you want to remove this announcement? This action will permanently delete it from the board.
+            </p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setDeleteId(null)}
+                className="flex-1 py-3 px-4 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-2xl transition-all"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={() => handleDelete(deleteId)}
+                className="flex-1 py-3 px-4 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-2xl transition-all shadow-lg shadow-rose-600/20"
+              >
+                Remove
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

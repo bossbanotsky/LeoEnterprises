@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { collection, onSnapshot, addDoc, updateDoc, query, orderBy, deleteDoc, doc, setDoc } from 'firebase/firestore';
+import { collection, onSnapshot, addDoc, updateDoc, query, orderBy, deleteDoc, doc, setDoc, getDocs, where } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
-import { Employee, PakyawJob, ContainerRepair } from '../types';
-import { Search, Plus, Hammer, Trash2, Edit2, CheckSquare, Square, ChevronRight, ChevronDown } from 'lucide-react';
+import { Employee, PakyawJob, ContainerRepair, Attendance } from '../types';
+import { Search, Plus, Hammer, Trash2, Edit2, CheckSquare, Square, ChevronRight, ChevronDown, ListChecks } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -15,6 +15,35 @@ export default function Pakyaw() {
   const { user } = useAuth();
   const { employees, pakyawJobs: jobs, loading: dataLoading } = useData();
   const [repairingContainers, setRepairingContainers] = useState<ContainerRepair[]>([]);
+  const [attendanceDetail, setAttendanceDetail] = useState<{emp: Employee, job: PakyawJob} | null>(null);
+  const [attendanceRecords, setAttendanceRecords] = useState<Attendance[]>([]);
+  const [loadingAttendance, setLoadingAttendance] = useState(false);
+
+  useEffect(() => {
+    if (attendanceDetail) {
+      const fetchAttendance = async () => {
+        setLoadingAttendance(true);
+        try {
+          const q = query(
+            collection(db, 'attendance'),
+            where('employeeId', '==', attendanceDetail.emp.id),
+            where('pakyawJobId', '==', attendanceDetail.job.id)
+          );
+          const snapshot = await getDocs(q);
+          const list: Attendance[] = [];
+          snapshot.forEach(docSnap => {
+            list.push({ id: docSnap.id, ...docSnap.data() } as Attendance);
+          });
+          setAttendanceRecords(list);
+        } catch (error) {
+          handleFirestoreError(error, OperationType.GET, 'attendance');
+        } finally {
+          setLoadingAttendance(false);
+        }
+      };
+      fetchAttendance();
+    }
+  }, [attendanceDetail]);
 
   useEffect(() => {
     const q = query(collection(db, 'containerRepairs'));
@@ -302,6 +331,21 @@ export default function Pakyaw() {
                         </div>
                       </div>
 
+                                            <div className="flex flex-wrap gap-2 mt-3">
+                        {job.employeeIds.map(empId => {
+                          const emp = employees.find(e => e.id === empId);
+                          return (
+                            <button 
+                              key={empId}
+                              className="text-xs bg-slate-100 dark:bg-slate-700 rounded-full px-2 py-1 flex items-center gap-1 hover:bg-slate-200 dark:hover:bg-slate-600 transition"
+                              onClick={() => setAttendanceDetail({emp: emp!, job: job})}
+                            >
+                              <ListChecks className="w-3 h-3" />
+                              {emp?.fullName}
+                            </button>
+                          );
+                        })}
+                      </div>
                       <div className="flex justify-end gap-3 mt-1 pt-3 border-t border-slate-200/60 dark:border-slate-700/60 w-full items-center">
                         {job.status === 'pending' && (
                           <button 
@@ -490,6 +534,27 @@ export default function Pakyaw() {
           </form>
         </DialogContent>
       </Dialog>
-    </div>
-  );
-}
+        <Dialog open={!!attendanceDetail} onOpenChange={() => setAttendanceDetail(null)}>
+          <DialogContent className="sm:max-w-md rounded-3xl">
+            <DialogHeader>
+              <DialogTitle>Attendance Details - {attendanceDetail?.emp.fullName}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3">
+              {loadingAttendance ? (
+                <p>Loading attendance...</p>
+              ) : attendanceRecords.length === 0 ? (
+                <p className="text-slate-500">No attendance records found for this job.</p>
+              ) : (
+                attendanceRecords.map(att => (
+                   <div key={att.id} className="p-3 bg-slate-50 rounded-lg text-sm border">
+                     <p>Date: {att.date}</p>
+                     <p>Status: {att.status}</p>
+                   </div>
+                ))
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+    );
+  }

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { collection, onSnapshot, addDoc, updateDoc, query, orderBy, deleteDoc, doc } from 'firebase/firestore';
+import { recordTransaction } from '../services/financeService';
+import { collection, onSnapshot, addDoc, updateDoc, query, orderBy, deleteDoc, doc, getDocs, where } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
@@ -32,14 +33,30 @@ export default function CashAdvance() {
         });
         setEditingId(null);
       } else {
-        await addDoc(collection(db, 'cashAdvances'), {
+        const caRef = await addDoc(collection(db, 'cashAdvances'), {
           employeeId: form.employeeId,
           date: form.date,
           amount: parseFloat(form.amount),
+          remainingBalance: parseFloat(form.amount),
+          deductions: [],
           notes: form.notes || '',
           createdAt: new Date().toISOString(),
           uid: user.uid
         });
+        
+        // Find a cash account
+        const accSnap = await getDocs(query(collection(db, 'accounts'), where('type', '==', 'cash')));
+        const accountId = accSnap.empty ? 'cash-account-id' : accSnap.docs[0].id;
+
+        await recordTransaction(
+            accountId,
+            'expense',
+            parseFloat(form.amount),
+            'Cash Advance',
+            `Cash Advance for ${employees.find(e => e.id === form.employeeId)?.fullName || 'Employee'}`,
+            caRef.id,
+            user.uid
+        );
       }
       setIsAddOpen(false);
       setForm({ employeeId: '', date: format(new Date(), 'yyyy-MM-dd'), amount: '', notes: '' });
@@ -105,8 +122,16 @@ export default function CashAdvance() {
               </div>
               <div className="shrink-0 text-right">
                 <div className="font-bold text-slate-900 dark:text-white">
-                  ₱{ca.amount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                  ₱{ca.remainingBalance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                 </div>
+                <div className="text-xs text-slate-500">
+                    of ₱{ca.amount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                </div>
+                {ca.deductions && ca.deductions.length > 0 && (
+                    <div className="text-[10px] text-blue-500 mt-1">
+                        {ca.deductions.length} deduction(s)
+                    </div>
+                )}
                 <div className="flex justify-end gap-2 mt-2">
                   <button 
                     onClick={() => openEdit(ca)}
