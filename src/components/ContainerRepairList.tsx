@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, setDoc, doc, deleteDoc, arrayUnion } from "firebase/firestore";
+import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, setDoc, doc, deleteDoc, arrayUnion, where, getDocs, updateDoc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { useAuth } from "../contexts/AuthContext";
 import { ContainerRepair, Invoice } from "../types";
@@ -88,8 +88,29 @@ export default function ContainerRepairList() {
 
   const handleDelete = async (id: string) => {
     try {
-      await deleteDoc(doc(db, "containerRepairs", id));
-      showToast("Container Repair deleted successfully", "success");
+      // Fetch container to get code
+      const docRef = doc(db, "containerRepairs", id);
+      const containerDoc = await getDoc(docRef);
+      const data = containerDoc.data() as ContainerRepair;
+
+      if (data) {
+        const containerCode = (data.type === 'foreign' ? `${data.localCode} - ${data.foreignCode}` : `${data.localCode} - ${data.localCode}`).trim();
+        const q = query(collection(db, 'pakyawJobs'), where('containerNumber', '==', containerCode));
+        const snapshot = await getDocs(q);
+        for (const jobDoc of snapshot.docs) {
+          // If we delete the container repair, should we delete the Pakyaw job?
+          // User says "should be minus", delete the job seems equivalent to "minus".
+          const attQuery = query(collection(db, 'attendance'), where('pakyawJobId', '==', jobDoc.id));
+          const attSnapshot = await getDocs(attQuery);
+          for (const attDoc of attSnapshot.docs) {
+            await deleteDoc(attDoc.ref);
+          }
+          await deleteDoc(jobDoc.ref);
+        }
+      }
+
+      await deleteDoc(docRef);
+      showToast("Container Repair and associated jobs/attendance deleted successfully", "success");
       setDeleteConfirmId(null);
     } catch (error) {
       console.error(error);
@@ -128,6 +149,34 @@ export default function ContainerRepairList() {
           updatedAt: new Date().toISOString(),
           history: arrayUnion(historyEntry),
         }, { merge: true });
+        
+        // If status changed to repaired, complete associated Pakyaw jobs
+        if (status === 'repaired') {
+          const containerCode = (type === 'foreign' ? `${localCode} - ${foreignCode}` : `${localCode} - ${localCode}`).trim();
+          console.log('Completing Pakyaw jobs for container:', containerCode);
+          const q = query(
+            collection(db, 'pakyawJobs'), 
+            where('containerNumber', '==', containerCode),
+            where('status', '==', 'pending')
+          );
+          const snapshot = await getDocs(q);
+          console.log('Found Pakyaw jobs to complete. Count:', snapshot.size);
+          for (const jobDoc of snapshot.docs) {
+            console.log('Completing job:', jobDoc.id, 'Data:', jobDoc.data());
+            await updateDoc(jobDoc.ref, { 
+              status: 'completed',
+              completedAt: new Date().toISOString()
+            });
+            
+            // Also update attendance records to completed for this job
+            const attQuery = query(collection(db, 'attendance'), where('pakyawJobId', '==', jobDoc.id));
+            const attSnapshot = await getDocs(attQuery);
+            console.log('Found attendance records to update:', attSnapshot.size);
+            // No need to update status to 'completed' as this isn't a valid attendance status.
+            // The job completion is tracked by 'status' in PakyawJob, which is used for calculation.
+          }
+        }
+        
         showToast("Container Repair updated successfully", "success");
       } else {
         await addDoc(collection(db, "containerRepairs"), {

@@ -3,7 +3,7 @@ import { collection, onSnapshot, addDoc, updateDoc, query, orderBy, deleteDoc, d
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
-import { Employee, PakyawJob } from '../types';
+import { Employee, PakyawJob, ContainerRepair } from '../types';
 import { Search, Plus, Hammer, Trash2, Edit2, CheckSquare, Square, ChevronRight, ChevronDown } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 import { Button } from './ui/button';
@@ -14,6 +14,22 @@ import { format, parseISO, startOfWeek, endOfWeek } from 'date-fns';
 export default function Pakyaw() {
   const { user } = useAuth();
   const { employees, pakyawJobs: jobs, loading: dataLoading } = useData();
+  const [repairingContainers, setRepairingContainers] = useState<ContainerRepair[]>([]);
+
+  useEffect(() => {
+    const q = query(collection(db, 'containerRepairs'));
+    const unsub = onSnapshot(q, (snapshot) => {
+      const list: ContainerRepair[] = [];
+      snapshot.forEach(docSnap => {
+        const data = docSnap.data() as ContainerRepair;
+        if (data.status === 'repairing') {
+          list.push({ id: docSnap.id, ...data });
+        }
+      });
+      setRepairingContainers(list);
+    });
+    return () => unsub();
+  }, []);
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -357,12 +373,17 @@ export default function Pakyaw() {
               <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Container Number</Label>
-                <Input 
+                <select 
                   value={form.containerNumber || ''} 
                   onChange={e => setForm({...form, containerNumber: e.target.value})} 
-                  placeholder="e.g. #402"
-                  className="rounded-xl h-12 bg-slate-50 dark:bg-slate-800 border-none focus:ring-indigo-500" 
-                />
+                  className="flex h-12 w-full rounded-xl border-none bg-slate-50 dark:bg-slate-800 px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value="">Select a container</option>
+                  {repairingContainers.map(c => {
+                     const code = c.type === 'foreign' ? `${c.localCode} - ${c.foreignCode}` : `${c.localCode} - ${c.localCode}`;
+                     return (<option key={c.id} value={code}>{code}</option>)
+                  })}
+                </select>
               </div>
               <div className="space-y-2">
                 <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Job Description</Label>
