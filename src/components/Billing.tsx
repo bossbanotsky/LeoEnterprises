@@ -4,7 +4,7 @@ import { db, handleFirestoreError, OperationType } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { Invoice, InvoiceItem } from '../types';
 import { Search, Plus, FileText, Trash2, Edit2, Package, Save, X, PlusCircle, Trash } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from './ui/dialog';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -13,10 +13,12 @@ import { format, parseISO } from 'date-fns';
 export default function Billing() {
   const { user } = useAuth();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [repairedContainers, setRepairedContainers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const [form, setForm] = useState({
     invoiceNumber: '',
@@ -33,8 +35,8 @@ export default function Billing() {
 
   useEffect(() => {
     if (!user) return;
-    const q = query(collection(db, 'invoices'), orderBy('createdAt', 'desc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const qInvoices = query(collection(db, 'invoices'), orderBy('createdAt', 'desc'));
+    const unsubscribeInvoices = onSnapshot(qInvoices, (snapshot) => {
       const list: Invoice[] = [];
       snapshot.forEach(docSnap => {
         list.push({ id: docSnap.id, ...docSnap.data() } as Invoice);
@@ -44,7 +46,25 @@ export default function Billing() {
     }, (error) => {
       handleFirestoreError(error, OperationType.GET, 'invoices');
     });
-    return () => unsubscribe();
+
+    const qContainers = query(collection(db, 'containerRepairs'), orderBy('createdAt', 'desc'));
+    const unsubscribeContainers = onSnapshot(qContainers, (snapshot) => {
+      const list: any[] = [];
+      snapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        if (data.status === 'repaired') {
+           list.push({ id: docSnap.id, ...data });
+        }
+      });
+      setRepairedContainers(list);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, 'containerRepairs');
+    });
+
+    return () => {
+      unsubscribeInvoices();
+      unsubscribeContainers();
+    };
   }, [user]);
 
   const handleSaveInvoice = async (e: React.FormEvent) => {
@@ -105,9 +125,9 @@ export default function Billing() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this invoice?')) return;
     try {
       await deleteDoc(doc(db, 'invoices', id));
+      setDeleteConfirmId(null);
     } catch (error) {
       handleFirestoreError(error, OperationType.DELETE, 'invoices');
     }
@@ -167,13 +187,32 @@ export default function Billing() {
   return (
     <div className="h-full flex flex-col relative w-full pt-2">
       <div className="px-4 mb-4 flex-shrink-0">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Billing & Invoices</h1>
           <Dialog open={isAddOpen} onOpenChange={(open) => {
             setIsAddOpen(open);
-            if (!open) resetForm();
+            if (!open) {
+              resetForm();
+            } else if (!editingId) {
+               // Automatically add unbilled repaired containers for a new invoice
+               const billedCodes = invoices.flatMap(inv => (inv.containers || []).map(c => c.code));
+               const unbilled = repairedContainers.filter(c => {
+                 const code = c.type === 'foreign' ? c.foreignCode : c.localCode;
+                 return code && !billedCodes.includes(code);
+               });
+               if (unbilled.length > 0) {
+                 setForm(prev => ({
+                   ...prev,
+                   containers: unbilled.map(c => ({
+                     code: c.type === 'foreign' ? c.foreignCode : c.localCode,
+                     note: c.note || '',
+                     price: 0
+                   }))
+                 }));
+               }
+            }
           }}>
-            <DialogTrigger render={<Button className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl flex items-center gap-2" />}>
+            <DialogTrigger render={<Button className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl flex items-center justify-center gap-2" />}>
               <Plus className="w-5 h-5" /> Create Invoice
             </DialogTrigger>
             <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
@@ -227,7 +266,39 @@ export default function Billing() {
                 </div>
 
                 <div className="border-t border-slate-100 pt-4 mt-2">
-                  <Label className="text-sm font-bold text-slate-700 mb-2 block">Container Codes</Label>
+                  <div className="flex items-center justify-between mt-2 mb-2">
+                    <Label className="text-sm font-bold text-slate-700">Container Codes</Label>
+                    {repairedContainers.length > 0 && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const existingCodes = form.containers.map(c => c.code);
+                          const toAdd = repairedContainers
+                            .filter(c => {
+                              const codeDisplay = c.type === 'foreign' ? c.foreignCode : c.localCode;
+                              return codeDisplay && !existingCodes.includes(codeDisplay);
+                            })
+                            .map(c => ({
+                              code: c.type === 'foreign' ? c.foreignCode : c.localCode,
+                              note: c.note || '',
+                              price: 0
+                            }));
+                          
+                          if (toAdd.length > 0) {
+                            setForm({
+                              ...form,
+                              containers: [...form.containers, ...toAdd]
+                            });
+                          }
+                        }}
+                        className="text-xs h-7 text-indigo-600 border-indigo-200 hover:bg-indigo-50"
+                      >
+                        Auto-add Repaired
+                      </Button>
+                    )}
+                  </div>
                   <div className="space-y-2 mb-3">
                     {form.containers.map((item, idx) => (
                       <div key={idx} className="flex items-center gap-2 bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg border border-slate-100 dark:border-slate-800">
@@ -262,11 +333,50 @@ export default function Billing() {
                   </div>
 
                   <div className="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl space-y-3">
+                    {repairedContainers.length > 0 && (
+                      <select
+                        value=""
+                        onChange={e => {
+                          const code = e.target.value;
+                          if (!code) return;
+                          const selected = repairedContainers.find(c => (c.type === 'foreign' ? c.foreignCode : c.localCode) === code);
+                          if (selected) {
+                            setForm(prev => {
+                              if (prev.containers.find(c => c.code === code)) return prev;
+                              return {
+                                ...prev,
+                                containers: [...prev.containers, {
+                                  code: code,
+                                  note: selected.note || '',
+                                  price: 0
+                                }]
+                              };
+                            });
+                          }
+                        }}
+                        className="w-full text-xs h-8 px-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      >
+                        <option value="">Select Repaired Container...</option>
+                        {repairedContainers
+                          .filter(c => {
+                            const codeDisplay = c.type === 'foreign' ? c.foreignCode : c.localCode;
+                            return codeDisplay && !form.containers.some(fc => fc.code === codeDisplay);
+                          })
+                          .map(c => {
+                            const codeDisplay = c.type === 'foreign' ? c.foreignCode : c.localCode;
+                            return (
+                              <option key={c.id} value={codeDisplay || ''}>
+                                {codeDisplay} ({c.type}) {c.note ? `- ${c.note}` : ''}
+                              </option>
+                            );
+                          })}
+                      </select>
+                    )}
                     <div className="grid grid-cols-2 gap-2">
                       <Input 
                         placeholder="Code (e.g. C-123)"
                         value={newContainer.code}
-                        onChange={e => setNewContainer({...newContainer, code: e.target.value})}
+                        onChange={e => setNewContainer({...newContainer, code: e.target.value.toUpperCase()})}
                         className="text-xs h-8"
                       />
                       <Input 
@@ -374,7 +484,7 @@ export default function Billing() {
                   <Button variant="ghost" size="icon" onClick={() => openEdit(invoice)} className="h-7 w-7 text-slate-400 hover:text-blue-500">
                     <Edit2 className="w-4 h-4" />
                   </Button>
-                  <Button variant="ghost" size="icon" onClick={() => handleDelete(invoice.id)} className="h-7 w-7 text-slate-400 hover:text-red-500">
+                  <Button variant="ghost" size="icon" onClick={() => setDeleteConfirmId(invoice.id)} className="h-7 w-7 text-slate-400 hover:text-red-500">
                     <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
@@ -431,6 +541,25 @@ export default function Billing() {
           </div>
         )}
       </div>
+
+      <Dialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
+        <DialogContent className="max-w-sm bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 text-slate-900 dark:text-slate-100">
+          <DialogHeader>
+            <DialogTitle>Confirm Deletion</DialogTitle>
+            <DialogDescription className="text-slate-500 dark:text-slate-400">
+              Are you sure you want to delete this invoice? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="pt-4 flex gap-2 sm:justify-end">
+            <Button variant="outline" onClick={() => setDeleteConfirmId(null)} className="bg-transparent border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800">
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={() => deleteConfirmId && handleDelete(deleteConfirmId)} className="bg-red-600 hover:bg-red-700 text-white">
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

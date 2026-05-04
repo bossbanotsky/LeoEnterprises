@@ -76,6 +76,18 @@ export interface PayrollPakyawDetail {
   isPaid: boolean;
 }
 
+export interface ContainerRepair {
+  id: string;
+  type: 'local' | 'foreign';
+  localCode: string | null;
+  foreignCode: string | null;
+  status: 'active' | 'repairing' | 'repaired';
+  note: string | null;
+  createdAt: string;
+  createdBy: string;
+  updatedAt?: string;
+}
+
 export interface Payroll {
   id: string;
   employeeId: string;

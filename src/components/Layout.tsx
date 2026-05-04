@@ -1,6 +1,6 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { LayoutGrid, UsersRound, Receipt, Clock, Settings2, WalletCards, Pickaxe, LogOut, Megaphone, MessageSquare, GalleryHorizontal, FileText } from 'lucide-react';
+import { LayoutGrid, UsersRound, Receipt, Clock, Settings2, WalletCards, Pickaxe, LogOut, Megaphone, MessageSquare, GalleryHorizontal, FileText, Briefcase } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useCompanyInfo } from '../hooks/useCompanyInfo';
 import { Button } from './ui/button';
@@ -18,7 +18,7 @@ export default function Layout() {
     { path: '/admin-dashboard/pakyaw', label: 'Pakyaw', icon: Pickaxe },
     { path: '/admin-dashboard/cash-advance', label: 'Advance', icon: WalletCards },
     { path: '/admin-dashboard/payroll', label: 'Payroll', icon: Receipt },
-    { path: '/admin-dashboard/billing', label: 'Billing', icon: FileText },
+    { path: '/admin-dashboard/project-management', label: 'Projects', icon: Briefcase },
     { path: '/admin-dashboard/gallery', label: 'Gallery', icon: GalleryHorizontal },
     { path: '/admin-dashboard/settings', label: 'Gear', icon: Settings2 },
   ];
