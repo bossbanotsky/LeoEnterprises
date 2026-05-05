@@ -219,7 +219,7 @@ export interface Invoice {
   invoiceNumber: string;
   customerName?: string;
   date: string;
-  status: 'pending' | 'paid' | 'cancelled';
+  status: 'pending' | 'billing' | 'paid' | 'cancelled';
   containers: InvoiceItem[];
   totalSum: number;
   createdAt: string;

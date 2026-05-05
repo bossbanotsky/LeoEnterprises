@@ -7,7 +7,7 @@ export async function recordTransaction(
   amount: number,
   category: string,
   description: string,
-  referenceId?: string,
+  referenceId?: string | null,
   uid?: string
 ) {
   try {
@@ -46,7 +46,7 @@ export async function recordTransaction(
       amount,
       category,
       description,
-      referenceId,
+      referenceId: referenceId || null,
       date: new Date().toISOString(),
       createdAt: serverTimestamp(),
       uid: uid || 'system'

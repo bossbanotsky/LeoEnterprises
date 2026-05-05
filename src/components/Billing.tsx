@@ -4,12 +4,13 @@ import { collection, onSnapshot, addDoc, updateDoc, query, orderBy, deleteDoc, d
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { Invoice, InvoiceItem } from '../types';
-import { Search, Plus, FileText, Trash2, Edit2, Package, Save, X, PlusCircle, Trash, History } from 'lucide-react';
+import { Search, Plus, FileText, Trash2, Edit2, Package, Save, X, PlusCircle, Trash, History, ChevronDown, ChevronUp } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from './ui/dialog';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { format, parseISO } from 'date-fns';
+import { motion, AnimatePresence } from 'motion/react';
 
 export default function Billing() {
   const { user } = useAuth();
@@ -25,13 +26,24 @@ export default function Billing() {
     invoiceNumber: '',
     customerName: '',
     date: format(new Date(), 'yyyy-MM-dd'),
-    status: 'pending' as 'pending' | 'paid' | 'cancelled',
+    status: 'pending' as 'pending' | 'billing' | 'paid' | 'cancelled',
     containers: [] as InvoiceItem[]
   });
 
   const [newContainer, setNewContainer] = useState({ code: '', note: '', price: '' });
   const [editingContainerIndex, setEditingContainerIndex] = useState<number | null>(null);
   const [viewHistoryCode, setViewHistoryCode] = useState<string | null>(null);
+  const [expandedInvoices, setExpandedInvoices] = useState<Set<string>>(new Set());
+
+  const toggleInvoice = (id: string) => {
+    const newExpanded = new Set(expandedInvoices);
+    if (newExpanded.has(id)) {
+      newExpanded.delete(id);
+    } else {
+      newExpanded.add(id);
+    }
+    setExpandedInvoices(newExpanded);
+  };
 
   const totalSum = form.containers.reduce((acc, curr) => acc + (curr.price || 0), 0);
 
@@ -69,6 +81,17 @@ export default function Billing() {
   const handleSaveInvoice = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !form.invoiceNumber) return;
+
+    // Duplicate Invoice Number Check
+    const isDuplicateInvoice = invoices.some(inv => 
+      inv.invoiceNumber.trim().toUpperCase() === form.invoiceNumber.trim().toUpperCase() && 
+      inv.id !== editingId
+    );
+
+    if (isDuplicateInvoice) {
+      alert(`Invoice number "${form.invoiceNumber}" already exists. Please use a unique number.`);
+      return;
+    }
 
     try {
       const invoiceData = {
@@ -207,19 +230,54 @@ export default function Billing() {
     if (!newContainer.code || !newContainer.price) return;
     const priceAuto = parseFloat(newContainer.price) || 0;
     
+    // Normalization and Type Detection logic
+    let rawCode = newContainer.code.trim().toUpperCase();
+    let displayCode = rawCode;
+    let detectedType: 'local' | 'foreign' = 'foreign';
+
+    const isLocalFormat = (c: string) => c.startsWith('KAR-');
+
+    if (rawCode.includes(' - ')) {
+      const parts = rawCode.split(' - ').map(p => p.trim()).filter(Boolean);
+      if (parts.length >= 2) {
+        const localParts = parts.filter(isLocalFormat);
+        const foreignParts = parts.filter(p => !isLocalFormat(p));
+
+        if (parts.every(isLocalFormat)) {
+          // Format: KAR-XXXXX - KAR-XXXXX
+          detectedType = 'local';
+          displayCode = parts.join(' - ');
+        } else if (localParts.length > 0) {
+          // Format: Local - Foreign (even if typed Foreign - Local)
+          detectedType = 'foreign';
+          displayCode = `${localParts[0]} - ${foreignParts[0] || parts[1]}`;
+        } else {
+          // Both are foreign
+          detectedType = 'foreign';
+        }
+      }
+    } else {
+      // Single code detection
+      detectedType = isLocalFormat(rawCode) ? 'local' : 'foreign';
+    }
+
     const updatedContainers = [...form.containers];
     
-    // Try to infer type from repairedContainers if it matches
-    const matchedRepaired = repairedContainers.find(c => {
-      const codeDisplay = c.type === 'foreign' ? `${c.localCode} - ${c.foreignCode}` : `${c.localCode} - ${c.localCode}`;
-      return codeDisplay === newContainer.code;
-    });
+    // Duplicate Container Check within the same invoice
+    const isDuplicateContainer = updatedContainers.some((c, idx) => 
+      c.code === displayCode && idx !== editingContainerIndex
+    );
 
+    if (isDuplicateContainer) {
+      alert(`Container code "${displayCode}" is already added to this invoice.`);
+      return;
+    }
+    
     const newItem: InvoiceItem = { 
-      code: newContainer.code, 
+      code: displayCode, 
       note: newContainer.note, 
       price: priceAuto,
-      type: matchedRepaired ? matchedRepaired.type as 'local' | 'foreign' : undefined
+      type: detectedType
     };
 
     if (editingContainerIndex !== null) {
@@ -273,7 +331,9 @@ export default function Billing() {
               resetForm();
             } else if (!editingId) {
                // Automatically add unbilled repaired containers for a new invoice
-               const billedCodes = invoices.flatMap(inv => (inv.containers || []).map(c => c.code));
+               const billedCodes = invoices
+                 .filter(inv => inv.status === 'pending' || inv.status === 'billing' || inv.status === 'paid')
+                 .flatMap(inv => (inv.containers || []).map(c => c.code));
                const unbilled = repairedContainers.filter(c => {
                  const code = c.type === 'foreign' ? `${c.localCode} - ${c.foreignCode}` : `${c.localCode} - ${c.localCode}`;
                  return c.status === 'repaired' && code && !billedCodes.includes(code);
@@ -339,6 +399,7 @@ export default function Billing() {
                     className="w-full h-10 px-3 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   >
                     <option value="pending">Pending</option>
+                    <option value="billing">Billing</option>
                     <option value="paid">Paid</option>
                     <option value="cancelled">Cancelled</option>
                   </select>
@@ -357,7 +418,7 @@ export default function Billing() {
                           const toAdd = repairedContainers
                             .filter(c => {
                               const codeDisplay = c.type === 'foreign' ? `${c.localCode} - ${c.foreignCode}` : `${c.localCode} - ${c.localCode}`;
-                              const isBilled = invoices.some(inv => inv.status !== 'cancelled' && inv.containers.some(ic => ic.code === codeDisplay));
+                              const isBilled = invoices.some(inv => (inv.status === 'pending' || inv.status === 'billing' || inv.status === 'paid') && inv.containers.some(ic => ic.code === codeDisplay));
                               return c.status === 'repaired' && codeDisplay && !existingCodes.includes(codeDisplay) && !isBilled;
                             })
                             .map(c => ({
@@ -381,7 +442,9 @@ export default function Billing() {
                     )}
                   </div>
                   <div className="space-y-2 mb-3">
-                    {form.containers.map((item, idx) => (
+                    {[...form.containers]
+                      .sort((a, b) => (b.price || 0) - (a.price || 0))
+                      .map((item, idx) => (
                       <div key={idx} className="flex items-center gap-2 bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg border border-slate-100 dark:border-slate-800">
                         <div className="flex-1 min-w-0">
                           <div className="flex justify-between">
@@ -392,7 +455,7 @@ export default function Billing() {
                                 className="text-xs font-bold text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline flex items-center gap-1 text-left min-w-0 flex-1"
                               >
                                 <History className="w-3 h-3 shrink-0" />
-                                <span className="">{item.code}</span>
+                                <span className="whitespace-nowrap">{idx + 1}. {item.code}</span>
                               </button>
                                {item.type && (
                                  <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider shrink-0 ${
@@ -404,7 +467,15 @@ export default function Billing() {
                             </div>
                             <div className="text-xs font-black text-indigo-600 truncate">₱{item.price?.toLocaleString()}</div>
                           </div>
-                          {item.note && <div className="text-[10px] text-slate-500 truncate">{item.note}</div>}
+                          <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+                            {item.price === 17000 && (
+                              <span className="text-[8px] bg-emerald-500/10 text-emerald-500 font-bold uppercase px-1 rounded">Fully Repaired</span>
+                            )}
+                            {item.price === 15000 && (
+                              <span className="text-[8px] bg-amber-500/10 text-amber-500 font-bold uppercase px-1 rounded">No Top Board</span>
+                            )}
+                            {item.note && <div className="text-[10px] text-slate-500 truncate">{item.note}</div>}
+                          </div>
                         </div>
                         <div className="flex items-center gap-1 shrink-0">
                           <button 
@@ -451,7 +522,7 @@ export default function Billing() {
                         {repairedContainers
                           .filter(c => {
                             const codeDisplay = c.type === 'foreign' ? `${c.localCode} - ${c.foreignCode}` : `${c.localCode} - ${c.localCode}`;
-                            const isBilled = invoices.some(inv => inv.status !== 'cancelled' && inv.containers.some(ic => ic.code === codeDisplay));
+                            const isBilled = invoices.some(inv => (inv.status === 'pending' || inv.status === 'billing' || inv.status === 'paid') && inv.containers.some(ic => ic.code === codeDisplay));
                             return c.status === 'repaired' && codeDisplay && !form.containers.some(fc => fc.code === codeDisplay) && !isBilled;
                           })
                           .map(c => {
@@ -551,90 +622,131 @@ export default function Billing() {
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 space-y-4 pb-20">
-        {filteredInvoices.map(invoice => (
-          <div key={invoice.id} className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-            <div className="p-4 border-b border-slate-100 dark:border-slate-800/50 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-900 flex items-center justify-center text-slate-500 border border-slate-200 dark:border-slate-700">
-                  <FileText className="w-5 h-5" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-bold text-slate-900 dark:text-white">#{invoice.invoiceNumber}</h3>
-                    <span className={`text-[10px] uppercase font-black px-1.5 py-0.5 rounded ${
-                      invoice.status === 'paid' ? 'bg-green-100 text-green-700' : 
-                      invoice.status === 'cancelled' ? 'bg-red-100 text-red-700' : 
-                      'bg-amber-100 text-amber-700'
-                    }`}>
-                      {invoice.status}
-                    </span>
+        {filteredInvoices.map(invoice => {
+          const isExpanded = expandedInvoices.has(invoice.id);
+          return (
+            <motion.div 
+              layout
+              key={invoice.id} 
+              className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm hover:shadow-md transition-shadow group"
+            >
+              <div 
+                onClick={() => toggleInvoice(invoice.id)}
+                className="p-4 border-b border-slate-100 dark:border-slate-800/50 flex flex-wrap items-center justify-between cursor-pointer select-none gap-4"
+              >
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-900 flex items-center justify-center text-slate-500 border border-slate-200 dark:border-slate-700 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-500/10 transition-colors shrink-0">
+                    <FileText className="w-5 h-5" />
                   </div>
-                  <div className="text-xs text-slate-500">{format(parseISO(invoice.date), 'MMMM dd, yyyy')}</div>
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="font-bold text-slate-900 dark:text-white whitespace-nowrap overflow-hidden text-ellipsis">#{invoice.invoiceNumber}</h3>
+                      <span className={`text-[10px] uppercase font-black px-1.5 py-0.5 rounded whitespace-nowrap shrink-0 ${
+                        invoice.status === 'paid' ? 'bg-green-100 text-green-700' : 
+                        invoice.status === 'billing' ? 'bg-indigo-100 text-indigo-700' :
+                        invoice.status === 'cancelled' ? 'bg-red-100 text-red-700' : 
+                        'bg-amber-100 text-amber-700'
+                      }`}>
+                        {invoice.status}
+                      </span>
+                    </div>
+                    <div className="text-xs text-slate-500 whitespace-nowrap">{format(parseISO(invoice.date), 'MMMM dd, yyyy')}</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 sm:gap-6 ml-auto shrink-0">
+                  <div className="text-right">
+                    <div className="text-base sm:text-lg font-black text-indigo-600 whitespace-nowrap">₱{invoice.totalSum?.toLocaleString() || '0'}</div>
+                    <div className="flex items-center justify-end gap-1 mt-1">
+                      <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); openEdit(invoice); }} className="h-8 w-8 text-slate-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10">
+                        <Edit2 className="w-4 h-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(invoice.id); }} className="h-8 w-8 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10">
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="text-slate-300 dark:text-slate-600 group-hover:text-indigo-500 transition-colors px-1">
+                    {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                  </div>
                 </div>
               </div>
-              <div className="text-right">
-                <div className="text-lg font-black text-indigo-600">₱{invoice.totalSum?.toLocaleString() || '0'}</div>
-                <div className="flex items-center justify-end gap-1 mt-1">
-                  <Button variant="ghost" size="icon" onClick={() => openEdit(invoice)} className="h-7 w-7 text-slate-400 hover:text-blue-500">
-                    <Edit2 className="w-4 h-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={() => setDeleteConfirmId(invoice.id)} className="h-7 w-7 text-slate-400 hover:text-red-500">
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-            
-            <div className="p-4 bg-slate-50/50 dark:bg-slate-900/20">
-               {invoice.customerName && (
-                 <div className="mb-3">
-                    <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Customer</span>
-                    <p className="text-sm font-medium text-slate-700 dark:text-slate-300">{invoice.customerName}</p>
-                 </div>
-               )}
-               
-               <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Containers ({invoice.containers?.length || 0})</span>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {invoice.containers?.map((c, i) => (
-                      <div key={i} className="flex flex-col p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-800">
-                        <div className="flex items-center justify-between gap-2 mb-1">
-                           <div className="flex items-center gap-1.5 min-w-0">
-                             <Package className="w-3 h-3 text-indigo-500 shrink-0" />
-                             <button
-                               onClick={(e) => {
-                                 e.stopPropagation();
-                                 setViewHistoryCode(c.code);
-                               }}
-                               className="text-xs font-bold text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline flex items-center gap-1 text-left min-w-0 flex-1"
-                             >
-                               <span className="">{c.code}</span>
-                             </button>
-                             {c.type && (
-                               <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider shrink-0 ${
-                                 c.type === 'foreign' ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'
-                               }`}>
-                                 {c.type === 'foreign' ? 'F' : 'L'}
-                               </span>
-                             )}
-                           </div>
-                           <span className="text-[10px] font-black text-indigo-600 shrink-0">₱{c.price?.toLocaleString()}</span>
+              
+              <AnimatePresence>
+                {isExpanded && (
+                  <motion.div 
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2, ease: "easeOut" }}
+                  >
+                    <div className="p-4 bg-slate-50/50 dark:bg-slate-900/20">
+                      {invoice.customerName && (
+                        <div className="mb-3">
+                            <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Customer</span>
+                            <p className="text-sm font-medium text-slate-700 dark:text-slate-300">{invoice.customerName}</p>
                         </div>
-                        {c.note && <p className="text-[10px] text-slate-500 dark:text-slate-400 italic line-clamp-1">{c.note}</p>}
+                      )}
+                      
+                      <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Containers ({invoice.containers?.length || 0})</span>
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {[...invoice.containers]
+                              .sort((a, b) => (b.price || 0) - (a.price || 0))
+                              .map((c, i) => (
+                              <div key={i} className="flex flex-col p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-800 hover:border-indigo-200 dark:hover:border-indigo-500/20 transition-colors">
+                                <div className="flex items-center justify-between gap-2 mb-1">
+                                  <div className="flex items-center gap-1.5 min-w-0">
+                                    <Package className="w-3 h-3 text-indigo-500 shrink-0" />
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setViewHistoryCode(c.code);
+                                      }}
+                                      className="text-xs font-bold text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline flex items-center gap-1 text-left min-w-0 flex-1"
+                                    >
+                                      <span className="whitespace-nowrap">{i + 1}. {c.code}</span>
+                                    </button>
+                                    {c.type && (
+                                      <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider shrink-0 ${
+                                        c.type === 'foreign' ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'
+                                      }`}>
+                                        {c.type === 'foreign' ? 'F' : 'L'}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <span className="text-[10px] font-black text-indigo-600 shrink-0">₱{c.price?.toLocaleString()}</span>
+                                </div>
+                                <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                                  {c.price === 17000 && (
+                                    <span className="text-[8px] bg-emerald-500/10 text-emerald-500 font-black uppercase px-1 py-0.5 rounded border border-emerald-500/20 shadow-sm">
+                                      Fully Repaired
+                                    </span>
+                                  )}
+                                  {c.price === 15000 && (
+                                    <span className="text-[8px] bg-amber-500/10 text-amber-500 font-black uppercase px-1 py-0.5 rounded border border-amber-500/20 shadow-sm">
+                                      No Top Board
+                                    </span>
+                                  )}
+                                  {c.note && <p className="text-[10px] text-slate-500 dark:text-slate-400 italic line-clamp-1">{c.note}</p>}
+                                </div>
+                              </div>
+                            ))}
+                            {(!invoice.containers || invoice.containers.length === 0) && (
+                              <div className="col-span-full py-4 text-center text-xs text-slate-400 border border-dashed border-slate-200 rounded-xl">
+                                No containers assigned to this invoice.
+                              </div>
+                            )}
+                          </div>
                       </div>
-                    ))}
-                    {(!invoice.containers || invoice.containers.length === 0) && (
-                      <div className="col-span-full py-4 text-center text-xs text-slate-400 border border-dashed border-slate-200 rounded-xl">
-                        No containers assigned to this invoice.
-                      </div>
-                    )}
-                  </div>
-               </div>
-            </div>
-          </div>
-        ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          );
+        })}
 
         {filteredInvoices.length === 0 && !loading && (
           <div className="text-center py-20 bg-slate-50 dark:bg-slate-800/20 rounded-3xl border border-slate-200 border-dashed dark:border-slate-800 flex flex-col items-center">
@@ -686,26 +798,32 @@ export default function Billing() {
           </DialogHeader>
           <div className="pt-4 space-y-4 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-slate-700 before:to-transparent">
             {(() => {
-              let activeContainer = repairedContainers.find(c => {
+              const activeContainer = repairedContainers.find(c => {
                 const codeDisplay = c.type === 'foreign' ? `${c.localCode} - ${c.foreignCode}` : `${c.localCode} - ${c.localCode}`;
                 return codeDisplay === viewHistoryCode;
               });
 
-              if (!activeContainer) {
-                // Try searching in invoices
-                for (const inv of invoices) {
-                   const found = inv.containers.find(c => c.code === viewHistoryCode);
-                   if (found) {
-                     activeContainer = { 
-                       ...found,
-                       history: [] // Since we don't have direct history here, maybe just show invoice history?
-                     };
-                     break;
-                   }
-                }
+              const billedInvoices = invoices.filter(inv => (inv.status === 'pending' || inv.status === 'billing' || inv.status === 'paid') && inv.containers.some(ic => ic.code === viewHistoryCode));
+              
+              // Build a combined history
+              const combinedHistory = [];
+
+              if (activeContainer && activeContainer.history) {
+                activeContainer.history.forEach((h: any) => combinedHistory.push({ ...h, type: 'repair' }));
               }
 
-              if (!activeContainer || !activeContainer.history || activeContainer.history.length === 0) {
+              billedInvoices.forEach(inv => {
+                const item = inv.containers.find(ic => ic.code === viewHistoryCode);
+                combinedHistory.push({
+                  status: 'Invoiced',
+                  timestamp: inv.createdAt || inv.date,
+                  note: `Invoiced as #${inv.invoiceNumber} for ${inv.customerName || 'Customer'}`,
+                  price: item?.price,
+                  type: 'billing'
+                });
+              });
+
+              if (combinedHistory.length === 0) {
                 return (
                   <div className="text-center py-6 text-slate-500 text-sm">
                     No history found for this container.
@@ -713,23 +831,7 @@ export default function Billing() {
                 );
               }
 
-              // Include invoice details in history if container isbilled
-              const historyWithInvoices = [...activeContainer.history];
-              
-              // Find if this container is on any invoice to add that to history as well
-              const codeDisplay = activeContainer.type === 'foreign' ? `${activeContainer.localCode} - ${activeContainer.foreignCode}` : `${activeContainer.localCode} - ${activeContainer.localCode}`;
-              const billedInvoices = invoices.filter(inv => inv.status !== 'cancelled' && inv.containers.some(ic => ic.code === codeDisplay));
-              
-              billedInvoices.forEach(inv => {
-                 historyWithInvoices.push({
-                   status: 'Invoiced',
-                   timestamp: inv.createdAt,
-                   note: `Invoiced as #${inv.invoiceNumber} for ${inv.customerName || 'Customer'}`,
-                   updatedBy: 'system'
-                 });
-              });
-
-              return historyWithInvoices.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).map((h: any, i: number) => (
+              return combinedHistory.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).map((h: any, i: number) => (
                 <div key={i} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
                   {/* Timeline icon */}
                   <div className="flex items-center justify-center w-4 h-4 rounded-full border-4 border-slate-900 bg-slate-400 group-[.is-active]:bg-indigo-500 text-slate-500 group-[.is-active]:text-indigo-50 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10 translate-x-[2px] md:translate-x-0"></div>
@@ -746,11 +848,24 @@ export default function Billing() {
                         {h.status}
                       </span>
                       <time className="text-[10px] font-medium text-slate-500">
-                        {new Date(h.timestamp).toLocaleDateString()} {new Date(h.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                        {new Date(h.timestamp).toLocaleDateString()}
                       </time>
                     </div>
+                    
+                    {h.status === 'Invoiced' && h.price && (
+                      <div className="flex flex-wrap gap-1 mt-1 mb-2">
+                        {h.price === 17000 && (
+                          <span className="text-[9px] bg-emerald-500 text-white font-black uppercase px-2 py-0.5 rounded">Fully Repaired</span>
+                        )}
+                        {h.price === 15000 && (
+                          <span className="text-[9px] bg-amber-500 text-white font-black uppercase px-2 py-0.5 rounded">No Top Board</span>
+                        )}
+                        <span className="text-[9px] bg-white/10 text-white font-black px-2 py-0.5 rounded">₱{h.price.toLocaleString()}</span>
+                      </div>
+                    )}
+
                     {h.note && (
-                      <p className="text-xs text-slate-300 mt-2 bg-slate-900/50 p-2 rounded-lg italic">
+                      <p className="text-xs text-slate-300 mt-1 bg-slate-900/50 p-2 rounded-lg italic">
                         {h.note}
                       </p>
                     )}

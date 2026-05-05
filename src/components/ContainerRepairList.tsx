@@ -60,7 +60,7 @@ export default function ContainerRepairList() {
         // If it's in the repaired tab, check if it's already billed
         if (c.status === 'repaired') {
             const codeDisplay = c.type === 'foreign' ? `${c.localCode} - ${c.foreignCode}` : `${c.localCode} - ${c.localCode}`;
-            const isBilled = invoices.some(inv => inv.status !== 'cancelled' && inv.containers.some(ic => ic.code === codeDisplay));
+            const isBilled = invoices.some(inv => (inv.status === 'pending' || inv.status === 'billing' || inv.status === 'paid') && inv.containers.some(ic => ic.code === codeDisplay));
             return !isBilled;
         }
         return true;
@@ -218,6 +218,21 @@ export default function ContainerRepairList() {
 
     setIsAdding(true);
     try {
+      // Check for duplicates
+      const currentContainerCode = (type === 'foreign' ? `${localCode} - ${foreignCode}` : `${localCode} - ${localCode}`).trim().toUpperCase();
+      
+      const isDuplicate = containers.some(c => {
+        if (c.id === editingId) return false;
+        const code = (c.type === 'foreign' ? `${c.localCode} - ${c.foreignCode}` : `${c.localCode} - ${c.localCode}`).trim().toUpperCase();
+        return code === currentContainerCode;
+      });
+
+      if (isDuplicate) {
+        showToast(`Container "${currentContainerCode}" already exists in the repair list.`, "error");
+        setIsAdding(false);
+        return;
+      }
+
       const historyEntry = {
         status,
         timestamp: new Date().toISOString(),
@@ -357,6 +372,7 @@ export default function ContainerRepairList() {
                   <th className="p-4">Type</th>
                   <th className="p-4">Foreign Code</th>
                   <th className="p-4">Local Code</th>
+                  <th className="p-4">Invoice Status</th>
                   <th className="p-4">Note</th>
                   <th className="p-4">Created Date</th>
                 </tr>
@@ -382,6 +398,32 @@ export default function ContainerRepairList() {
                       </td>
                       <td className="p-4 group-hover:text-white transition-colors whitespace-nowrap" onClick={() => handleOpenEdit(c)}>{c.type === 'foreign' ? c.foreignCode || "-" : c.localCode || "-"}</td>
                       <td className="p-4 group-hover:text-white transition-colors whitespace-nowrap" onClick={() => handleOpenEdit(c)}>{c.localCode || "-"}</td>
+                      <td className="p-4 whitespace-nowrap" onClick={() => handleOpenEdit(c)}>
+                        {(() => {
+                          const containerCode = (c.type === 'foreign' ? `${c.localCode} - ${c.foreignCode}` : `${c.localCode} - ${c.localCode}`).trim();
+                          const linkedInvoice = invoices.find(inv => 
+                            inv.status !== 'cancelled' && 
+                            inv.containers.some(ic => ic.code === containerCode)
+                          );
+                          
+                          if (!linkedInvoice) return <span className="text-slate-600">-</span>;
+                          
+                          return (
+                            <div className="flex flex-col gap-1">
+                               <span className="text-[10px] font-bold text-white bg-indigo-500/20 px-1.5 py-0.5 rounded border border-indigo-500/30">
+                                 #{linkedInvoice.invoiceNumber}
+                               </span>
+                               <span className={`text-[8px] font-black uppercase px-1 py-0.5 rounded text-center ${
+                                  linkedInvoice.status === 'paid' ? 'bg-green-500/10 text-green-500' :
+                                  linkedInvoice.status === 'billing' ? 'bg-indigo-500/10 text-indigo-400' :
+                                  'bg-amber-500/10 text-amber-500'
+                               }`}>
+                                 {linkedInvoice.status}
+                               </span>
+                            </div>
+                          );
+                        })()}
+                      </td>
                       <td className="p-4 max-w-[200px] truncate group-hover:text-white transition-colors" onClick={() => handleOpenEdit(c)} title={c.note || ""}>{c.note || "-"}</td>
                       <td className="p-4 text-slate-400 text-xs whitespace-nowrap" onClick={() => handleOpenEdit(c)}>{new Date(c.createdAt).toLocaleDateString()}</td>
                     </tr>

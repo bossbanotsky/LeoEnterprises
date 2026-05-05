@@ -80,9 +80,13 @@ export default function Payroll() {
 
   const handleMarkAsPaid = async (bulkId: string) => {
     try {
-      // Find a cash account
-      const accSnap = await getDocsFirebase(query(collection(db, 'accounts'), where('type', '==', 'cash')));
-      const accountId = accSnap.empty ? 'cash-account-id' : accSnap.docs[0].id;
+      // Find accounts for splitting/routing
+      const allAccSnap = await getDocsFirebase(collection(db, 'accounts'));
+      const allAccounts = allAccSnap.docs.map(d => ({ id: d.id, ...d.data() } as any));
+      
+      const junkshopAcc = allAccounts.find(a => a.name.toLowerCase().replace(/\s+/g, '').includes('junkshop'));
+      const containerAcc = allAccounts.find(a => a.name.toLowerCase().replace(/\s+/g, '').includes('container'));
+      const defaultAcc = allAccounts.find(a => a.isDefault) || allAccounts.find(a => a.type === 'cash') || allAccounts[0];
 
       await updateDoc(doc(db, 'bulkPayrolls', bulkId), {
         status: 'paid',
@@ -96,6 +100,10 @@ export default function Payroll() {
         try {
           const pData = payrollDoc.data();
           if (pData.status === 'paid') return; // Skip if already paid
+
+          const employee = employees.find(e => e.id === pData.employeeId);
+          const position = (employee?.position || '').toLowerCase();
+          const role = (employee?.role || '').toLowerCase();
 
           await updateDoc(doc(db, 'payrolls', payrollDoc.id), { status: 'paid' });
 
@@ -128,15 +136,62 @@ export default function Payroll() {
           }
 
           if (pData.totalPay > 0) {
-            await recordTransaction(
-                accountId,
+            // Logic for Account Selection:
+            // 1. Labor -> Junkshop
+            // 2. Skilled -> Container
+            // 3. Admin/CEO -> Split 50/50
+            
+            const isLabor = position.includes('labor');
+            const isSkilled = position.includes('skilled');
+            const isAdmin = position.includes('admin') || role === 'admin' || role === 'ceo';
+
+            if (isAdmin && junkshopAcc && containerAcc) {
+              const halfPay = pData.totalPay / 2;
+              // Split between Junkshop and Container
+              await recordTransaction(
+                junkshopAcc.id,
+                'expense',
+                halfPay,
+                'Payroll',
+                `Payroll (50% Admin) for ${employee?.fullName || 'Employee'}`,
+                `${payrollDoc.id}-admin-1`,
+                user?.uid
+              );
+              await recordTransaction(
+                containerAcc.id,
+                'expense',
+                halfPay,
+                'Payroll',
+                `Payroll (50% Admin) for ${employee?.fullName || 'Employee'}`,
+                `${payrollDoc.id}-admin-2`,
+                user?.uid
+              );
+            } else {
+              let targetAccountId = defaultAcc?.id;
+              let descriptionSuffix = "";
+
+              if (isLabor && junkshopAcc) {
+                targetAccountId = junkshopAcc.id;
+                descriptionSuffix = " (Junkshop)";
+              } else if (isSkilled && containerAcc) {
+                targetAccountId = containerAcc.id;
+                descriptionSuffix = " (Container)";
+              } else if (isAdmin) {
+                // If one of the accounts is missing, use whatever we have or default
+                if (junkshopAcc) targetAccountId = junkshopAcc.id;
+                else if (containerAcc) targetAccountId = containerAcc.id;
+              }
+
+              await recordTransaction(
+                targetAccountId,
                 'expense',
                 pData.totalPay,
                 'Payroll',
-                `Payroll payment for ${employees.find(e => e.id === pData.employeeId)?.fullName || 'Employee'}`,
+                `Payroll payment${descriptionSuffix} for ${employee?.fullName || 'Employee'}`,
                 payrollDoc.id,
                 user?.uid
-            );
+              );
+            }
           }
         } catch (updateError) {
           console.error("Failed to update individual payroll status:", updateError);
@@ -761,9 +816,13 @@ export default function Payroll() {
 
       // Record reversal if it was already paid
       if (isPaid) {
-        // Find a cash account
-        const accSnap = await getDocsFirebase(query(collection(db, 'accounts'), where('type', '==', 'cash')));
-        const accountId = accSnap.empty ? null : accSnap.docs[0].id;
+        // Find accounts for reversal
+        const allAccSnap = await getDocsFirebase(collection(db, 'accounts'));
+        const allAccounts = allAccSnap.docs.map(d => ({ id: d.id, ...d.data() } as any));
+        
+        const junkshopAcc = allAccounts.find(a => a.name.toLowerCase().replace(/\s+/g, '').includes('junkshop'));
+        const containerAcc = allAccounts.find(a => a.name.toLowerCase().replace(/\s+/g, '').includes('container'));
+        const defaultAcc = allAccounts.find(a => a.isDefault) || allAccounts.find(a => a.type === 'cash') || allAccounts[0];
 
         const payrollsQ = query(collection(db, 'payrolls'), where('bulkId', '==', bulkId));
         const payrollsSnap = await getDocs(payrollsQ);
@@ -771,6 +830,10 @@ export default function Payroll() {
         for (const pDoc of payrollsSnap.docs) {
           const pData = pDoc.data();
           if (pData.status === 'paid') {
+            const employee = employees.find(e => e.id === pData.employeeId);
+            const position = (employee?.position || '').toLowerCase();
+            const role = (employee?.role || '').toLowerCase();
+
             // Reverse Cash Advance
             if (pData.cashAdvanceDeduction > 0 && pData.cashAdvanceIds) {
               for (const caId of pData.cashAdvanceIds) {
@@ -791,15 +854,49 @@ export default function Payroll() {
 
             // Reverse Transaction
             if (pData.totalPay > 0) {
-              await recordTransaction(
-                accountId,
-                'income',
-                pData.totalPay,
-                'Payroll',
-                `Reversal: Bulk Payroll #${bulkId} deleted`,
-                `${pDoc.id}-reversal`,
-                user.uid
-              );
+              const isLabor = position.includes('labor');
+              const isSkilled = position.includes('skilled');
+              const isAdmin = position.includes('admin') || role === 'admin' || role === 'ceo';
+
+              if (isAdmin && junkshopAcc && containerAcc) {
+                const halfPay = pData.totalPay / 2;
+                await recordTransaction(
+                  junkshopAcc.id,
+                  'income',
+                  halfPay,
+                  'Payroll',
+                  `Reversal: Payroll (50% Admin) for ${employee?.fullName || 'Employee'}`,
+                  `${pDoc.id}-reversal-1`,
+                  user?.uid
+                );
+                await recordTransaction(
+                  containerAcc.id,
+                  'income',
+                  halfPay,
+                  'Payroll',
+                  `Reversal: Payroll (50% Admin) for ${employee?.fullName || 'Employee'}`,
+                  `${pDoc.id}-reversal-2`,
+                  user?.uid
+                );
+              } else {
+                let targetAccountId = defaultAcc?.id;
+                if (isLabor && junkshopAcc) targetAccountId = junkshopAcc.id;
+                else if (isSkilled && containerAcc) targetAccountId = containerAcc.id;
+                else if (isAdmin) {
+                  if (junkshopAcc) targetAccountId = junkshopAcc.id;
+                  else if (containerAcc) targetAccountId = containerAcc.id;
+                }
+
+                await recordTransaction(
+                  targetAccountId,
+                  'income',
+                  pData.totalPay,
+                  'Payroll',
+                  `Reversal: Payroll payment for ${employee?.fullName || 'Employee'}`,
+                  `${pDoc.id}-reversal`,
+                  user?.uid
+                );
+              }
             }
           }
         }
@@ -824,15 +921,23 @@ export default function Payroll() {
 
   const handleMarkIndividualAsPaid = async (payrollId: string, currentStatus: string) => {
     try {
-      if (currentStatus === 'paid') {
-        // Find a cash account
-        const accSnap = await getDocsFirebase(query(collection(db, 'accounts'), where('type', '==', 'cash')));
-        const accountId = accSnap.empty ? null : accSnap.docs[0].id;
+      // Find accounts
+      const allAccSnap = await getDocsFirebase(collection(db, 'accounts'));
+      const allAccounts = allAccSnap.docs.map(d => ({ id: d.id, ...d.data() } as any));
+      
+      const junkshopAcc = allAccounts.find(a => a.name.toLowerCase().replace(/\s+/g, '').includes('junkshop'));
+      const containerAcc = allAccounts.find(a => a.name.toLowerCase().replace(/\s+/g, '').includes('container'));
+      const defaultAcc = allAccounts.find(a => a.isDefault) || allAccounts.find(a => a.type === 'cash') || allAccounts[0];
 
+      if (currentStatus === 'paid') {
         const payrollRef = doc(db, 'payrolls', payrollId);
         const payrollSnap = await import('firebase/firestore').then(f => f.getDoc(payrollRef));
         if (!payrollSnap.exists()) return;
         const pData = payrollSnap.data();
+
+        const employee = employees.find(e => e.id === pData.employeeId);
+        const position = (employee?.position || '').toLowerCase();
+        const role = (employee?.role || '').toLowerCase();
 
         // Toggle back to pending
         await updateDoc(payrollRef, {
@@ -868,29 +973,62 @@ export default function Payroll() {
 
         // REVERSE Transaction
         if (pData.totalPay > 0) {
-          await recordTransaction(
-            accountId,
-            'income', // Record as income to reverse previous expense
-            pData.totalPay,
-            'Payroll',
-            `Reversal of Payroll payment for ${employees.find(e => e.id === pData.employeeId)?.fullName || 'Employee'} (Status changed to pending)`,
-            `${payrollId}-reversal`,
-            user?.uid
-          );
+          const isLabor = position.includes('labor');
+          const isSkilled = position.includes('skilled');
+          const isAdmin = position.includes('admin') || role === 'admin' || role === 'ceo';
+
+          if (isAdmin && junkshopAcc && containerAcc) {
+            const halfPay = pData.totalPay / 2;
+            await recordTransaction(
+              junkshopAcc.id,
+              'income',
+              halfPay,
+              'Payroll',
+              `Reversal: Payroll (50% Admin) for ${employee?.fullName || 'Employee'}`,
+              `${payrollId}-reversal-1`,
+              user?.uid
+            );
+            await recordTransaction(
+              containerAcc.id,
+              'income',
+              halfPay,
+              'Payroll',
+              `Reversal: Payroll (50% Admin) for ${employee?.fullName || 'Employee'}`,
+              `${payrollId}-reversal-2`,
+              user?.uid
+            );
+          } else {
+            let targetAccountId = defaultAcc?.id;
+            if (isLabor && junkshopAcc) targetAccountId = junkshopAcc.id;
+            else if (isSkilled && containerAcc) targetAccountId = containerAcc.id;
+            else if (isAdmin) {
+              if (junkshopAcc) targetAccountId = junkshopAcc.id;
+              else if (containerAcc) targetAccountId = containerAcc.id;
+            }
+
+            await recordTransaction(
+              targetAccountId,
+              'income',
+              pData.totalPay,
+              'Payroll',
+              `Reversal of Payroll payment for ${employee?.fullName || 'Employee'} (Status changed to pending)`,
+              `${payrollId}-reversal`,
+              user?.uid
+            );
+          }
         }
         return;
       }
 
       // Mark as Paid
-      // Find a cash account
-      const accSnap = await getDocsFirebase(query(collection(db, 'accounts'), where('type', '==', 'cash')));
-      const accountId = accSnap.empty ? null : accSnap.docs[0].id;
-
       const payrollRef = doc(db, 'payrolls', payrollId);
       const payrollSnap = await import('firebase/firestore').then(f => f.getDoc(payrollRef));
       if (!payrollSnap.exists()) return;
       
       const pData = payrollSnap.data();
+      const employee = employees.find(e => e.id === pData.employeeId);
+      const position = (employee?.position || '').toLowerCase();
+      const role = (employee?.role || '').toLowerCase();
 
       await updateDoc(payrollRef, {
         status: 'paid',
@@ -930,15 +1068,55 @@ export default function Payroll() {
       }
 
       if (pData.totalPay > 0) {
-        await recordTransaction(
-          accountId,
-          'expense',
-          pData.totalPay,
-          'Payroll',
-          `Payroll payment for ${employees.find(e => e.id === pData.employeeId)?.fullName || 'Employee'}`,
-          payrollId,
-          user?.uid
-        );
+        const isLabor = position.includes('labor');
+        const isSkilled = position.includes('skilled');
+        const isAdmin = position.includes('admin') || role === 'admin' || role === 'ceo';
+
+        if (isAdmin && junkshopAcc && containerAcc) {
+          const halfPay = pData.totalPay / 2;
+          await recordTransaction(
+            junkshopAcc.id,
+            'expense',
+            halfPay,
+            'Payroll',
+            `Payroll (50% Admin) for ${employee?.fullName || 'Employee'}`,
+            `${payrollId}-admin-1`,
+            user?.uid
+          );
+          await recordTransaction(
+            containerAcc.id,
+            'expense',
+            halfPay,
+            'Payroll',
+            `Payroll (50% Admin) for ${employee?.fullName || 'Employee'}`,
+            `${payrollId}-admin-2`,
+            user?.uid
+          );
+        } else {
+          let targetAccountId = defaultAcc?.id;
+          let descriptionSuffix = "";
+
+          if (isLabor && junkshopAcc) {
+            targetAccountId = junkshopAcc.id;
+            descriptionSuffix = " (Junkshop)";
+          } else if (isSkilled && containerAcc) {
+            targetAccountId = containerAcc.id;
+            descriptionSuffix = " (Container)";
+          } else if (isAdmin) {
+            if (junkshopAcc) targetAccountId = junkshopAcc.id;
+            else if (containerAcc) targetAccountId = containerAcc.id;
+          }
+
+          await recordTransaction(
+            targetAccountId,
+            'expense',
+            pData.totalPay,
+            'Payroll',
+            `Payroll payment${descriptionSuffix} for ${employee?.fullName || 'Employee'}`,
+            payrollId,
+            user?.uid
+          );
+        }
       }
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, 'payrolls');
