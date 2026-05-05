@@ -732,7 +732,7 @@ export default function Billing() {
                     <FileText className="w-5 h-5" />
                   </div>
                   <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2 mb-1.5">
                       <h3 className="font-bold text-slate-900 dark:text-white whitespace-nowrap overflow-hidden text-ellipsis">#{invoice.invoiceNumber}</h3>
                       <span className={`text-[10px] uppercase font-black px-1.5 py-0.5 rounded whitespace-nowrap shrink-0 ${
                         invoice.status === 'paid' ? 'bg-green-100 text-green-700' : 
