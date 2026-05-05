@@ -1,26 +1,33 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { recordTransaction } from '../services/financeService';
 import { collection, onSnapshot, addDoc, updateDoc, query, orderBy, deleteDoc, doc, getDoc, getDocs, where } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
+import { useCompanyInfo } from '../hooks/useCompanyInfo';
 import { Invoice, InvoiceItem } from '../types';
-import { Search, Plus, FileText, Trash2, Edit2, Package, Save, X, PlusCircle, Trash, History, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, Plus, FileText, Trash2, Edit2, Package, Save, X, PlusCircle, Trash, History, ChevronDown, ChevronUp, Download, Printer, Loader2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from './ui/dialog';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { format, parseISO } from 'date-fns';
 import { motion, AnimatePresence } from 'motion/react';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 export default function Billing() {
   const { user } = useAuth();
+  const { companyInfo } = useCompanyInfo();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [repairedContainers, setRepairedContainers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const exportRef = useRef<HTMLDivElement>(null);
+  const [invoiceToExport, setInvoiceToExport] = useState<Invoice | null>(null);
 
   const [form, setForm] = useState({
     invoiceNumber: '',
@@ -46,6 +53,92 @@ export default function Billing() {
   };
 
   const totalSum = form.containers.reduce((acc, curr) => acc + (curr.price || 0), 0);
+
+  const sanitizeStyles = (el: HTMLElement) => {
+    const allElements = [el, ...Array.from(el.querySelectorAll('*'))];
+    allElements.forEach(item => {
+      const htmlEl = item as HTMLElement;
+      
+      // Force visibility and reset animations
+      htmlEl.style.opacity = '1';
+      htmlEl.style.visibility = 'visible';
+      htmlEl.style.transition = 'none';
+      htmlEl.style.animation = 'none';
+      htmlEl.style.transform = 'none';
+      htmlEl.style.boxShadow = 'none'; 
+
+      // Manually remap colors using hex for html2canvas compatibility
+      if (htmlEl.classList.contains('bg-slate-900')) htmlEl.style.backgroundColor = '#0f172a';
+      if (htmlEl.classList.contains('bg-indigo-600')) htmlEl.style.backgroundColor = '#000000';
+      if (htmlEl.classList.contains('text-indigo-600')) htmlEl.style.color = '#000000';
+      if (htmlEl.classList.contains('text-white')) htmlEl.style.color = '#ffffff';
+      if (htmlEl.classList.contains('text-slate-900')) htmlEl.style.color = '#0f172a';
+      if (htmlEl.classList.contains('text-slate-600')) htmlEl.style.color = '#475569';
+      if (htmlEl.classList.contains('text-slate-500')) htmlEl.style.color = '#64748b';
+      if (htmlEl.classList.contains('text-slate-400')) htmlEl.style.color = '#94a3b8';
+      if (htmlEl.classList.contains('border-slate-900')) htmlEl.style.borderColor = '#0f172a';
+      if (htmlEl.classList.contains('border-slate-100')) htmlEl.style.borderColor = '#f1f5f9';
+      if (htmlEl.classList.contains('border-slate-200')) htmlEl.style.borderColor = '#e2e8f0';
+      if (htmlEl.classList.contains('underline')) htmlEl.style.textDecoration = 'underline';
+    });
+  };
+
+  const handleExportPDF = async (invoice: Invoice) => {
+    setInvoiceToExport(invoice);
+    setIsExporting(true);
+    
+    // Wait for render
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    try {
+      if (!exportRef.current) return;
+      
+      const canvas = await html2canvas(exportRef.current, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        scrollX: 0,
+        scrollY: 0,
+        onclone: (clonedDoc) => {
+          // Force replace all oklch in the clone's internal styles to prevent parsing errors
+          const styleTags = clonedDoc.getElementsByTagName('style');
+          for (let i = 0; i < styleTags.length; i++) {
+            styleTags[i].innerHTML = styleTags[i].innerHTML.replace(/oklch\([^)]+\)/g, '#000000');
+          }
+
+          const el = clonedDoc.querySelector('.invoice-export-template') as HTMLElement;
+          if (el) {
+            el.style.position = 'relative';
+            el.style.left = '0';
+            el.style.top = '0';
+            el.style.opacity = '1';
+            el.style.visibility = 'visible';
+            el.style.display = 'block';
+            el.style.width = '800px';
+            el.style.padding = '40px';
+            el.style.backgroundColor = '#ffffff';
+            sanitizeStyles(el);
+          }
+        }
+      });
+      
+      const imgData = canvas.toDataURL('image/png');
+      const imgWidth = 210; // A4 width in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      // Use dynamic height to ensure everything is visible on one page
+      const pdf = new jsPDF('p', 'mm', [imgWidth, imgHeight]);
+      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+      pdf.save(`Invoice_${invoice.invoiceNumber}.pdf`);
+    } catch (error) {
+      console.error('Error exporting invoice:', error);
+    } finally {
+      setIsExporting(false);
+      setInvoiceToExport(null);
+    }
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -657,6 +750,16 @@ export default function Billing() {
                   <div className="text-right">
                     <div className="text-base sm:text-lg font-black text-indigo-600 whitespace-nowrap">₱{invoice.totalSum?.toLocaleString() || '0'}</div>
                     <div className="flex items-center justify-end gap-1 mt-1">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={(e) => { e.stopPropagation(); handleExportPDF(invoice); }} 
+                        disabled={isExporting}
+                        className="h-8 w-8 text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-500/10"
+                        title="Export PDF"
+                      >
+                        {isExporting && invoiceToExport?.id === invoice.id ? <Loader2 className="w-4 h-4 animate-spin text-emerald-500" /> : <Download className="w-4 h-4" />}
+                      </Button>
                       <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); openEdit(invoice); }} className="h-8 w-8 text-slate-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10">
                         <Edit2 className="w-4 h-4" />
                       </Button>
@@ -881,6 +984,108 @@ export default function Billing() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Hidden Export Template - kept off-screen but visible to rendering engines */}
+      <div className="fixed -left-[9999px] top-0 pointer-events-none z-[-100]">
+        <div ref={exportRef} className="invoice-export-template bg-white p-10 w-[800px] text-slate-900 font-sans">
+          {invoiceToExport && (
+            <div className="space-y-8">
+              {/* Header */}
+              <div className="flex justify-between items-start border-b-2 border-slate-900 pb-8">
+                <div>
+                  <h1 className="text-4xl font-black text-slate-900 uppercase tracking-tighter mb-2">{companyInfo.name}</h1>
+                  <p className="text-sm font-medium text-slate-600 uppercase tracking-widest">{companyInfo.address}</p>
+                  <p className="text-sm font-medium text-slate-600 uppercase tracking-widest">{companyInfo.contact}</p>
+                </div>
+                <div className="text-right">
+                  <h2 className="text-5xl font-black text-slate-300 uppercase tracking-tight mb-2">INVOICE</h2>
+                  <div className="text-2xl font-bold text-slate-900">
+                    NO: <span className="border-b-2 border-slate-900 font-black">#{invoiceToExport.invoiceNumber}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Info Rows */}
+              <div className="grid grid-cols-2 gap-12 py-4">
+                <div className="space-y-2">
+                  <span className="text-xs font-black text-slate-400 uppercase tracking-widest block">Bill To</span>
+                  <p className="text-2xl font-bold text-slate-900 border-b-2 border-slate-900 pb-2">
+                    {invoiceToExport.customerName || 'Walk-in Customer'}
+                  </p>
+                </div>
+                <div className="space-y-4">
+                  <div className="flex justify-between border-b border-slate-900 pb-1">
+                    <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Date</span>
+                    <span className="font-bold">{format(parseISO(invoiceToExport.date), 'MMMM dd, yyyy')}</span>
+                  </div>
+                  <div className="flex justify-between border-b border-slate-900 pb-1">
+                    <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Status</span>
+                    <span className="font-black uppercase text-slate-900">{invoiceToExport.status}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Containers Table */}
+              <div className="mt-8">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="border-y-2 border-slate-900 text-slate-900">
+                      <th className="p-3 text-left text-xs font-black uppercase tracking-widest w-12 text-center">#</th>
+                      <th className="p-3 text-left text-xs font-black uppercase tracking-widest">Container Code</th>
+                      <th className="p-3 text-left text-xs font-black uppercase tracking-widest w-24 text-center">Type</th>
+                      <th className="p-3 text-left text-xs font-black uppercase tracking-widest">Note</th>
+                      <th className="p-3 text-right text-xs font-black uppercase tracking-widest w-40">Price</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[...invoiceToExport.containers]
+                      .sort((a, b) => (b.price || 0) - (a.price || 0))
+                      .map((c, i) => (
+                      <tr key={i} className="border-b border-slate-200">
+                        <td className="p-4 text-sm font-bold text-slate-400 text-center">{i + 1}</td>
+                        <td className="p-4 text-sm font-bold text-slate-900">{c.code}</td>
+                        <td className="p-4 text-center">
+                          <span className="text-[10px] font-black uppercase tracking-widest border border-slate-900 px-2 py-0.5 rounded">
+                            {c.type === 'foreign' ? 'Foreign' : 'Local'}
+                          </span>
+                        </td>
+                        <td className="p-4 text-xs text-slate-500 italic">{c.note || '-'}</td>
+                        <td className="p-4 text-right text-sm font-black text-slate-900">
+                          ₱{c.price?.toLocaleString()}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Totals */}
+              <div className="mt-12 flex justify-end">
+                <div className="w-80 p-0 border-t-2 border-slate-900">
+                   <div className="flex justify-between items-center my-4">
+                     <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Subtotal</span>
+                     <span className="text-lg font-bold text-slate-900">₱{invoiceToExport.totalSum?.toLocaleString()}</span>
+                   </div>
+                   <div className="flex justify-between items-center py-4 border-y-2 border-slate-900">
+                     <span className="text-sm font-black text-slate-900 uppercase tracking-widest">Total Amount</span>
+                     <span className="text-3xl font-black text-slate-900 tracking-tighter">₱{invoiceToExport.totalSum?.toLocaleString()}</span>
+                   </div>
+                </div>
+              </div>
+
+              {/* Footer Note */}
+              <div className="mt-20 text-center">
+                <div className="text-xl font-black uppercase tracking-[0.2em] text-slate-900 border-b-2 border-slate-900 inline-block pb-1">
+                  Thank You for Your Business
+                </div>
+                <p className="mt-4 text-xs font-medium text-slate-400 uppercase tracking-widest">
+                  This is a computer generated invoice for {companyInfo.name}
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
