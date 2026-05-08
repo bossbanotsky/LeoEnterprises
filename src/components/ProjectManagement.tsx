@@ -5,7 +5,7 @@ import { Briefcase, FileText, Wrench } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function ProjectManagement() {
-  const [activeTab, setActiveTab] = useState<'billing' | 'container'>('container');
+  const [activeTab, setActiveTab] = useState<'billing' | 'container' | 'invoices'>('container');
 
   return (
     <div className="space-y-6">
@@ -21,22 +21,30 @@ export default function ProjectManagement() {
         </div>
       </div>
 
-      <div className="flex space-x-2 border-b border-white/10 pb-2">
+      <div className="flex space-x-1 sm:space-x-2 border-b border-white/10 pb-2 overflow-x-auto custom-scrollbar">
         <button
           onClick={() => setActiveTab('container')}
-          className={`px-4 py-2 text-sm font-bold uppercase tracking-widest rounded-t-lg transition-colors flex items-center gap-2 ${
+          className={`px-3 py-1.5 sm:px-4 sm:py-2 text-[10px] sm:text-sm font-bold uppercase tracking-widest rounded-t-lg transition-colors flex items-center gap-1 sm:gap-2 whitespace-nowrap min-w-max ${
             activeTab === 'container' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white hover:bg-white/5'
           }`}
         >
-          <Wrench className="w-4 h-4" /> Container Repair
+          <Wrench className="w-3 h-3 sm:w-4 sm:h-4" /> Container Repair
+        </button>
+        <button
+          onClick={() => setActiveTab('invoices')}
+          className={`px-3 py-1.5 sm:px-4 sm:py-2 text-[10px] sm:text-sm font-bold uppercase tracking-widest rounded-t-lg transition-colors flex items-center gap-1 sm:gap-2 whitespace-nowrap min-w-max ${
+            activeTab === 'invoices' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white hover:bg-white/5'
+          }`}
+        >
+          <FileText className="w-3 h-3 sm:w-4 sm:h-4" /> Invoices
         </button>
         <button
           onClick={() => setActiveTab('billing')}
-          className={`px-4 py-2 text-sm font-bold uppercase tracking-widest rounded-t-lg transition-colors flex items-center gap-2 ${
+          className={`px-3 py-1.5 sm:px-4 sm:py-2 text-[10px] sm:text-sm font-bold uppercase tracking-widest rounded-t-lg transition-colors flex items-center gap-1 sm:gap-2 whitespace-nowrap min-w-max ${
             activeTab === 'billing' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white hover:bg-white/5'
           }`}
         >
-          <FileText className="w-4 h-4" /> Billing
+          <Briefcase className="w-3 h-3 sm:w-4 sm:h-4" /> Billing
         </button>
       </div>
 
@@ -49,7 +57,8 @@ export default function ProjectManagement() {
           transition={{ duration: 0.2 }}
         >
           {activeTab === 'container' && <ContainerRepairList />}
-          {activeTab === 'billing' && <Billing />}
+          {activeTab === 'invoices' && <Billing mode="invoices" />}
+          {activeTab === 'billing' && <Billing mode="billing" />}
         </motion.div>
       </AnimatePresence>
     </div>

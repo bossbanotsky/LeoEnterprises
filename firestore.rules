@@ -45,7 +45,7 @@ service cloud.firestore {
              data.date is string &&
              data.date.matches('^\\d{4}-\\d{2}-\\d{2}$') &&
              data.status is string &&
-             (data.status == 'pending' || data.status == 'paid' || data.status == 'cancelled');
+             (data.status == 'pending' || data.status == 'billing' || data.status == 'paid' || data.status == 'cancelled');
     }
 
     // --- Collection Routes ---
@@ -155,6 +155,14 @@ service cloud.firestore {
     }
 
     match /transactions/{transactionId} {
+      allow read, write: if isSignedIn();
+    }
+
+    match /test/connection {
+      allow read: if true;
+    }
+
+    match /dailySupplies/{dailySupplyId} {
       allow read, write: if isSignedIn();
     }
 

@@ -5,8 +5,11 @@ import { useAuth } from "../contexts/AuthContext";
 import { ContainerRepair, Invoice } from "../types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "./ui/dialog";
 import { Button } from "./ui/button";
-import { Loader2, Plus, Wrench, Edit, Trash2 } from "lucide-react";
+import { Loader2, Plus, Wrench, Edit, Trash2, LayoutGrid, List } from "lucide-react";
 import { useToast } from "../contexts/ToastContext";
+
+const PLATFORMS = ['P1', 'P2', 'P3', 'P4', 'P5', 'P6'] as const;
+type RepairPlatform = typeof PLATFORMS[number];
 
 export default function ContainerRepairList() {
   const { user } = useAuth();
@@ -27,8 +30,14 @@ export default function ContainerRepairList() {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const [activeTab, setActiveTab] = useState<'active' | 'repairing' | 'repaired'>('active');
+  const [viewMode, setViewMode] = useState<'list' | 'platform'>('list');
   const [status, setStatus] = useState<'active' | 'repairing' | 'repaired'>('active');
+  const [platform, setPlatform] = useState<RepairPlatform | null>(null);
+  const [hasBV, setHasBV] = useState(false);
+  const [hasAV, setHasAV] = useState(false);
   const [note, setNote] = useState("");
+
+  const [repairedSortOrder, setRepairedSortOrder] = useState<'asc' | 'desc'>('asc');
 
   useEffect(() => {
     if (!user) return;
@@ -54,18 +63,35 @@ export default function ContainerRepairList() {
   }, [user]);
 
   const filteredContainers = useMemo(() => {
-    return containers.filter(c => {
+    let filtered = containers.filter(c => {
         if ((c.status || 'active') !== activeTab) return false;
         
         // If it's in the repaired tab, check if it's already billed
         if (c.status === 'repaired') {
             const codeDisplay = c.type === 'foreign' ? `${c.localCode} - ${c.foreignCode}` : `${c.localCode} - ${c.localCode}`;
-            const isBilled = invoices.some(inv => (inv.status === 'pending' || inv.status === 'billing' || inv.status === 'paid') && inv.containers.some(ic => ic.code === codeDisplay));
+            const isBilled = invoices.some(inv => (inv.status === 'pending' || inv.status === 'paid') && inv.containers.some(ic => ic.code === codeDisplay));
             return !isBilled;
         }
         return true;
     });
-  }, [containers, activeTab, invoices]);
+
+    if (activeTab === 'repairing') {
+      filtered = filtered.sort((a, b) => {
+        if (a.platform && !b.platform) return -1;
+        if (!a.platform && b.platform) return 1;
+        if (a.platform && b.platform) return a.platform.localeCompare(b.platform);
+        return 0;
+      });
+    } else if (activeTab === 'repaired') {
+      filtered = filtered.sort((a, b) => {
+        const timeA = new Date(a.updatedAt || a.createdAt).getTime();
+        const timeB = new Date(b.updatedAt || b.createdAt).getTime();
+        return repairedSortOrder === 'asc' ? timeA - timeB : timeB - timeA;
+      });
+    }
+
+    return filtered;
+  }, [containers, activeTab, invoices, repairedSortOrder]);
 
   const handleOpenAdd = () => {
     setEditingId(null);
@@ -73,6 +99,9 @@ export default function ContainerRepairList() {
     setLocalCode("");
     setForeignCode("");
     setStatus('active');
+    setPlatform(null);
+    setHasBV(false);
+    setHasAV(false);
     setNote("");
     setIsAddOpen(true);
   };
@@ -83,6 +112,9 @@ export default function ContainerRepairList() {
     setLocalCode(c.localCode || "");
     setForeignCode(c.foreignCode || "");
     setStatus(c.status || 'active');
+    setPlatform(c.platform || null);
+    setHasBV(c.hasBV || false);
+    setHasAV(c.hasAV || false);
     setNote(c.note || "");
     setIsAddOpen(true);
   };
@@ -235,6 +267,9 @@ export default function ContainerRepairList() {
 
       const historyEntry = {
         status,
+        platform: status === 'repairing' ? platform : null,
+        hasBV,
+        hasAV,
         timestamp: new Date().toISOString(),
         note: note || null,
         updatedBy: user.uid,
@@ -246,6 +281,9 @@ export default function ContainerRepairList() {
           localCode: localCode || null,
           foreignCode: type === 'foreign' ? foreignCode : localCode,
           status,
+          platform: status === 'repairing' ? platform : null,
+          hasBV,
+          hasAV,
           note: note || null,
           updatedAt: new Date().toISOString(),
           history: arrayUnion(historyEntry),
@@ -285,6 +323,9 @@ export default function ContainerRepairList() {
           localCode: localCode || null,
           foreignCode: type === 'foreign' ? foreignCode : localCode,
           status,
+          platform: status === 'repairing' ? platform : null,
+          hasBV,
+          hasAV,
           note: note || null,
           createdAt: new Date().toISOString(),
           createdBy: user.uid,
@@ -296,6 +337,9 @@ export default function ContainerRepairList() {
       setType('local');
       setLocalCode("");
       setForeignCode("");
+      setPlatform(null);
+      setHasBV(false);
+      setHasAV(false);
     } catch (error) {
       console.error(error);
       showToast("Failed to save container repair", "error");
@@ -331,10 +375,10 @@ export default function ContainerRepairList() {
         </div>
       )}
 
-      <div className="flex space-x-2 border-b border-white/10 pb-2">
+      <div className="flex border-b border-white/10 mt-6 relative overflow-x-auto pb-1 custom-scrollbar w-full">
         <button
           onClick={() => setActiveTab('active')}
-          className={`px-4 py-2 text-sm font-bold uppercase tracking-widest rounded-t-lg transition-colors flex items-center gap-2 ${
+          className={`px-3 py-2 text-[10px] sm:text-xs font-bold uppercase tracking-widest rounded-t-lg transition-colors flex items-center gap-2 whitespace-nowrap min-w-max ${
             activeTab === 'active' ? 'bg-indigo-500/20 text-indigo-400 border-b-2 border-indigo-400' : 'text-slate-400 hover:text-white hover:bg-white/5'
           }`}
         >
@@ -342,7 +386,7 @@ export default function ContainerRepairList() {
         </button>
         <button
           onClick={() => setActiveTab('repairing')}
-          className={`px-4 py-2 text-sm font-bold uppercase tracking-widest rounded-t-lg transition-colors flex items-center gap-2 ${
+          className={`px-3 py-2 text-[10px] sm:text-xs font-bold uppercase tracking-widest rounded-t-lg transition-colors flex items-center gap-2 whitespace-nowrap min-w-max ${
             activeTab === 'repairing' ? 'bg-amber-500/20 text-amber-500 border-b-2 border-amber-500' : 'text-slate-400 hover:text-white hover:bg-white/5'
           }`}
         >
@@ -350,16 +394,93 @@ export default function ContainerRepairList() {
         </button>
         <button
           onClick={() => setActiveTab('repaired')}
-          className={`px-4 py-2 text-sm font-bold uppercase tracking-widest rounded-t-lg transition-colors flex items-center gap-2 ${
+          className={`px-3 py-2 text-[10px] sm:text-xs font-bold uppercase tracking-widest rounded-t-lg transition-colors flex items-center gap-2 whitespace-nowrap min-w-max ${
             activeTab === 'repaired' ? 'bg-emerald-500/20 text-emerald-500 border-b-2 border-emerald-500' : 'text-slate-400 hover:text-white hover:bg-white/5'
           }`}
         >
           Repaired
         </button>
+        {activeTab === 'repairing' && (
+          <div className="ml-auto flex bg-slate-950/50 rounded-lg p-1 border border-white/5 self-center">
+            <button
+              onClick={() => setViewMode('list')}
+              className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-indigo-600 text-white shadow-lg shrink-0' : 'text-slate-500 hover:text-slate-300'}`}
+            >
+              <List className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setViewMode('platform')}
+              className={`p-1.5 rounded-md transition-all ${viewMode === 'platform' ? 'bg-indigo-600 text-white shadow-lg shrink-0' : 'text-slate-500 hover:text-slate-300'}`}
+            >
+              <LayoutGrid className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+        {activeTab === 'repaired' && (
+          <div className="ml-auto flex bg-slate-950/50 rounded-lg p-1 border border-white/5 self-center items-center gap-2 px-3">
+             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest hidden sm:inline">Sort:</span>
+             <select 
+               value={repairedSortOrder}
+               onChange={(e) => setRepairedSortOrder(e.target.value as 'asc' | 'desc')}
+               className="bg-transparent text-xs font-black text-emerald-400 focus:outline-none cursor-pointer tracking-widest appearance-none pr-1"
+             >
+               <option value="asc" className="bg-slate-900 text-emerald-400">Oldest to Newest</option>
+               <option value="desc" className="bg-slate-900 text-emerald-400">Newest to Oldest</option>
+             </select>
+          </div>
+        )}
       </div>
 
-      <div className="bg-slate-900/40 border border-white/5 rounded-2xl shadow-xl overflow-hidden">
-        {loading ? (
+      {activeTab === 'repairing' && viewMode === 'platform' ? (
+        <div className="grid grid-cols-2 gap-3 sm:gap-6">
+          {PLATFORMS.map(p => {
+            const containerOnPlatform = filteredContainers.find(c => c.platform === p);
+            return (
+              <div key={p} className={`bg-slate-900/40 p-4 sm:p-6 rounded-3xl border-2 transition-all min-h-[140px] flex flex-col justify-between ${containerOnPlatform ? 'border-amber-500/30 bg-amber-500/5' : 'border-dashed border-white/5'}`}>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className={`text-sm sm:text-xl font-black italic tracking-tighter ${containerOnPlatform ? 'text-amber-500' : 'text-slate-700'}`}>{p}</h3>
+                  {containerOnPlatform && (
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      onClick={() => handleOpenEdit(containerOnPlatform)}
+                      className="h-6 w-6 sm:h-8 sm:w-8 p-0 text-slate-400 hover:text-white hover:bg-white/5"
+                    >
+                      <Edit className="w-3 h-3 sm:w-4 sm:h-4" />
+                    </Button>
+                  )}
+                </div>
+                
+                {containerOnPlatform ? (
+                  <div className="space-y-1">
+                    <p className="text-xs sm:text-base font-black text-white leading-none truncate" title={containerOnPlatform.type === 'foreign' ? containerOnPlatform.foreignCode : containerOnPlatform.localCode}>
+                      {containerOnPlatform.type === 'foreign' ? containerOnPlatform.foreignCode : containerOnPlatform.localCode}
+                    </p>
+                    <p className="text-[8px] sm:text-[10px] text-slate-500 font-bold uppercase tracking-widest truncate">
+                      {containerOnPlatform.localCode && containerOnPlatform.type === 'foreign' && `Local: ${containerOnPlatform.localCode}`}
+                    </p>
+                    <div className="mt-2 flex items-center gap-1 sm:gap-1.5 flex-wrap">
+                       <span className="text-[7px] sm:text-[8px] font-black bg-slate-800 text-slate-300 px-1 sm:px-1.5 py-0.5 rounded border border-white/10 uppercase tracking-widest">
+                         {containerOnPlatform.type}
+                       </span>
+                       <span className="text-[7px] sm:text-[8px] font-black bg-amber-500/20 text-amber-500 px-1 sm:px-1.5 py-0.5 rounded border border-amber-500/30 uppercase tracking-widest">IN REPAIR</span>
+                       {containerOnPlatform.hasBV && <span className="text-[7px] sm:text-[8px] font-black bg-indigo-500/20 text-indigo-400 px-1 py-0.5 rounded border border-indigo-500/30">BV</span>}
+                       {containerOnPlatform.hasAV && <span className="text-[7px] sm:text-[8px] font-black bg-emerald-500/20 text-emerald-500 px-1 py-0.5 rounded border border-emerald-500/30">AV</span>}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex-1 flex flex-col items-center justify-center border border-dashed border-white/5 rounded-2xl bg-slate-950/30 mt-2">
+                    <p className="text-[8px] sm:text-[10px] font-black text-slate-600 uppercase tracking-widest">AVAILABLE</p>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="bg-slate-900/40 border border-white/5 rounded-2xl shadow-xl overflow-hidden">
+          {loading ? (
+
           <div className="flex justify-center items-center h-48">
             <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
           </div>
@@ -370,6 +491,8 @@ export default function ContainerRepairList() {
                 <tr className="bg-slate-950/50 text-slate-400 border-b border-white/5 uppercase tracking-wider text-[10px] font-black">
                   <th className="p-4 w-10"><input type="checkbox" checked={selectedIds.length === filteredContainers.length && filteredContainers.length > 0} onChange={toggleSelectAll} /></th>
                   <th className="p-4">Type</th>
+                  <th className="p-4">Platform</th>
+                  <th className="p-4">BV/AV</th>
                   <th className="p-4">Foreign Code</th>
                   <th className="p-4">Local Code</th>
                   <th className="p-4">Invoice Status</th>
@@ -395,6 +518,21 @@ export default function ContainerRepairList() {
                         }`}>
                           {c.type}
                         </span>
+                      </td>
+                      <td className="p-4" onClick={() => handleOpenEdit(c)}>
+                        {c.platform ? (
+                          <span className="text-[10px] font-black bg-indigo-500/10 text-indigo-400 px-2 py-1 rounded border border-indigo-500/20 uppercase tracking-widest">
+                            {c.platform}
+                          </span>
+                        ) : (
+                          <span className="text-slate-600 font-bold text-[10px] uppercase tracking-widest">-</span>
+                        )}
+                      </td>
+                      <td className="p-4" onClick={() => handleOpenEdit(c)}>
+                         <div className="flex gap-1">
+                            <div className={`w-5 h-5 rounded flex items-center justify-center text-[8px] font-bold border ${c.hasBV ? 'bg-indigo-500/20 border-indigo-500/40 text-indigo-400' : 'bg-slate-800 border-slate-700 text-slate-600'}`} title="Before Video">BV</div>
+                            <div className={`w-5 h-5 rounded flex items-center justify-center text-[8px] font-bold border ${c.hasAV ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400' : 'bg-slate-800 border-slate-700 text-slate-600'}`} title="After Video">AV</div>
+                         </div>
                       </td>
                       <td className="p-4 group-hover:text-white transition-colors whitespace-nowrap" onClick={() => handleOpenEdit(c)}>{c.type === 'foreign' ? c.foreignCode || "-" : c.localCode || "-"}</td>
                       <td className="p-4 group-hover:text-white transition-colors whitespace-nowrap" onClick={() => handleOpenEdit(c)}>{c.localCode || "-"}</td>
@@ -434,6 +572,7 @@ export default function ContainerRepairList() {
           </div>
         )}
       </div>
+      )}
 
       <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
         <DialogContent className="max-w-md bg-slate-900 border-slate-800 text-slate-100">
@@ -441,37 +580,37 @@ export default function ContainerRepairList() {
             <DialogTitle>{editingId ? "Edit" : "Add"} Container Repair</DialogTitle>
             <DialogDescription className="text-slate-400">{editingId ? "Edit an existing" : "Add a new"} local or foreign container</DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleCreate} className="space-y-4 pt-4">
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Container Type</label>
+          <form onSubmit={handleCreate} className="space-y-2.5 pt-1">
+            <div className="space-y-0.5">
+              <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Container Type</label>
               <div className="flex gap-4">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="radio" checked={type === 'local'} onChange={() => setType('local')} className="text-indigo-600 focus:ring-indigo-500 bg-slate-800 border-slate-700" />
-                  <span className="text-sm">Local</span>
+                <label className="flex items-center gap-1.5 cursor-pointer">
+                  <input type="radio" checked={type === 'local'} onChange={() => setType('local')} className="w-3 h-3 text-indigo-600 focus:ring-indigo-500 bg-slate-800 border-slate-700" />
+                  <span className="text-[10px] uppercase font-bold text-slate-400">Local</span>
                 </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="radio" checked={type === 'foreign'} onChange={() => setType('foreign')} className="text-indigo-600 focus:ring-indigo-500 bg-slate-800 border-slate-700" />
-                  <span className="text-sm">Foreign</span>
+                <label className="flex items-center gap-1.5 cursor-pointer">
+                  <input type="radio" checked={type === 'foreign'} onChange={() => setType('foreign')} className="w-3 h-3 text-indigo-600 focus:ring-indigo-500 bg-slate-800 border-slate-700" />
+                  <span className="text-[10px] uppercase font-bold text-slate-400">Foreign</span>
                 </label>
               </div>
             </div>
 
             {type === 'foreign' && (
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Foreign Code *</label>
+              <div className="space-y-0.5">
+                <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Foreign Code *</label>
                 <input
                   type="text"
                   required
                   value={foreignCode}
                   onChange={(e) => setForeignCode(e.target.value.toUpperCase())}
-                  className="w-full bg-slate-950 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                  className="w-full bg-slate-950 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
                   placeholder="Enter foreign code"
                 />
               </div>
             )}
 
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+            <div className="space-y-0.5">
+              <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">
                 Local Code {type === 'local' ? '*' : '(Optional)'}
               </label>
               <input
@@ -479,38 +618,109 @@ export default function ContainerRepairList() {
                 required={type === 'local'}
                 value={localCode}
                 onChange={(e) => setLocalCode(e.target.value.toUpperCase())}
-                className="w-full bg-slate-950 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                className="w-full bg-slate-950 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
                 placeholder="Enter local code"
               />
             </div>
 
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Status</label>
+            <div className="space-y-0.5">
+              <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Status</label>
               <div className="flex gap-4">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="radio" checked={status === 'active'} onChange={() => setStatus('active')} className="text-indigo-500 focus:ring-indigo-500 bg-slate-800 border-slate-700" />
-                  <span className="text-sm text-indigo-400 font-bold uppercase tracking-widest">Active</span>
+                <label className="flex items-center gap-1.5 cursor-pointer">
+                  <input type="radio" checked={status === 'active'} onChange={() => setStatus('active')} className="w-3 h-3 text-indigo-500 focus:ring-indigo-500 bg-slate-800 border-slate-700" />
+                  <span className="text-[9px] text-indigo-400 font-black uppercase tracking-widest">Active</span>
                 </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="radio" checked={status === 'repairing'} onChange={() => setStatus('repairing')} className="text-amber-500 focus:ring-amber-500 bg-slate-800 border-slate-700" />
-                  <span className="text-sm text-amber-500 font-bold uppercase tracking-widest">Repairing</span>
+                <label className="flex items-center gap-1.5 cursor-pointer">
+                  <input type="radio" checked={status === 'repairing'} onChange={() => setStatus('repairing')} className="w-3 h-3 text-amber-500 focus:ring-amber-500 bg-slate-800 border-slate-700" />
+                  <span className="text-[9px] text-amber-500 font-black uppercase tracking-widest">Repairing</span>
                 </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="radio" checked={status === 'repaired'} onChange={() => setStatus('repaired')} className="text-emerald-500 focus:ring-emerald-500 bg-slate-800 border-slate-700" />
-                  <span className="text-sm text-emerald-500 font-bold uppercase tracking-widest">Repaired</span>
+                <label className="flex items-center gap-1.5 cursor-pointer">
+                  <input type="radio" checked={status === 'repaired'} onChange={() => setStatus('repaired')} className="w-3 h-3 text-emerald-500 focus:ring-emerald-500 bg-slate-800 border-slate-700" />
+                  <span className="text-[9px] text-emerald-500 font-black uppercase tracking-widest">Repaired</span>
                 </label>
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Note (Optional)</label>
+            {status === 'repairing' && (
+              <div className="space-y-1.5">
+                <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Assign Platform</label>
+                <div className="grid grid-cols-4 gap-1">
+                  {PLATFORMS.map(p => (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => setPlatform(p)}
+                      className={`py-1 rounded-lg text-[10px] font-black transition-all border ${platform === p ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-slate-950 border-white/10 text-slate-500 hover:text-white'}`}
+                    >
+                      {p}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setPlatform(null)}
+                    className={`py-1 px-2 rounded-lg text-[10px] font-black transition-all border col-span-2 ${platform === null ? 'bg-slate-700 border-slate-600 text-white' : 'bg-slate-950 border-white/10 text-slate-500'}`}
+                  >
+                    None
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-0.5">
+              <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Video Tracking</label>
+              <div className="grid grid-cols-2 gap-4">
+                <label className="flex items-center gap-2 cursor-pointer p-2 rounded-lg bg-slate-950/50 border border-white/5 hover:bg-slate-950 transition-colors">
+                  <input type="checkbox" checked={hasBV} onChange={(e) => setHasBV(e.target.checked)} className="w-4 h-4 rounded border-slate-700 bg-slate-800 text-indigo-600 focus:ring-indigo-500" />
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Before Video (BV)</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer p-2 rounded-lg bg-slate-950/50 border border-white/5 hover:bg-slate-950 transition-colors">
+                  <input type="checkbox" checked={hasAV} onChange={(e) => setHasAV(e.target.checked)} className="w-4 h-4 rounded border-slate-700 bg-slate-800 text-emerald-600 focus:ring-emerald-500" />
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">After Video (AV)</span>
+                </label>
+              </div>
+            </div>
+
+            <div className="space-y-0.5">
+              <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Note (Optional)</label>
               <textarea
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
-                className="w-full bg-slate-950 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 min-h-[80px]"
-                placeholder="Enter any notes about this repair"
+                className="w-full bg-slate-950 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-indigo-500/50 min-h-[50px] resize-none"
+                placeholder="Enter notes..."
               />
             </div>
+
+            {editingId && containers.find(c => c.id === editingId)?.history && (
+              <div className="mt-4 space-y-2">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-white/5 block pb-1">Activity Log</label>
+                <div className="space-y-2 max-h-[120px] overflow-y-auto pr-2 custom-scrollbar">
+                  {containers.find(c => c.id === editingId)?.history?.slice().reverse().map((h, i) => (
+                    <div key={i} className="relative pl-3 border-l border-white/10 py-0.5">
+                      <div className="absolute -left-[4px] top-1.5 w-1.5 h-1.5 rounded-full bg-slate-700 border border-slate-900" />
+                      <div className="flex justify-between items-start gap-2">
+                        <div className="flex flex-col">
+                           <span className={`text-[8px] font-black uppercase tracking-tighter ${
+                             h.status === 'active' ? 'text-indigo-400' :
+                             h.status === 'repairing' ? 'text-amber-500' :
+                             'text-emerald-500'
+                           }`}>
+                             {h.status} {h.platform && <span className="text-white ml-1">@ {h.platform}</span>}
+                           </span>
+                           <div className="flex gap-1 mt-0.5">
+                              {h.hasBV && <span className="text-[7px] font-bold bg-indigo-500/10 text-indigo-400 px-1 rounded">BV</span>}
+                              {h.hasAV && <span className="text-[7px] font-bold bg-emerald-500/10 text-emerald-400 px-1 rounded">AV</span>}
+                           </div>
+                           {h.note && <p className="text-[9px] text-slate-400 italic">"{h.note}"</p>}
+                        </div>
+                        <span className="text-[7px] text-slate-500 whitespace-nowrap text-right">
+                          {new Date(h.timestamp).toLocaleDateString()} {new Date(h.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <DialogFooter className="pt-4 flex w-full sm:justify-between items-center sm:space-x-0">
               {editingId ? (

@@ -57,6 +57,7 @@ export interface Account {
   balance: number;
   type: 'cash' | 'bank' | 'wallet';
   isDefault?: boolean;
+  department?: 'container' | 'junkshop' | 'supplies' | 'other';
   createdAt: string;
 }
 
@@ -66,6 +67,7 @@ export interface Transaction {
   type: 'income' | 'expense' | 'transfer';
   amount: number;
   category: string;
+  department?: 'container' | 'junkshop' | 'supplies' | 'other';
   description: string;
   referenceId?: string;
   date: string;
@@ -108,6 +110,9 @@ export interface PayrollPakyawDetail {
 
 export interface ContainerRepairHistory {
   status: string;
+  platform?: 'P1' | 'P2' | 'P3' | 'P4' | 'P5' | 'P6' | null;
+  hasBV?: boolean;
+  hasAV?: boolean;
   timestamp: string;
   note?: string | null;
   updatedBy: string;
@@ -119,6 +124,9 @@ export interface ContainerRepair {
   localCode: string | null;
   foreignCode: string | null;
   status: 'active' | 'repairing' | 'repaired';
+  platform?: 'P1' | 'P2' | 'P3' | 'P4' | 'P5' | 'P6' | null;
+  hasBV?: boolean;
+  hasAV?: boolean;
   note: string | null;
   createdAt: string;
   createdBy: string;
@@ -212,6 +220,8 @@ export interface InvoiceItem {
   note?: string;
   price: number;
   type?: 'local' | 'foreign';
+  hasBV?: boolean;
+  hasAV?: boolean;
 }
 
 export interface Invoice {

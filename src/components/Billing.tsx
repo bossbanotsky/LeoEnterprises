@@ -5,19 +5,25 @@ import { db, handleFirestoreError, OperationType } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useCompanyInfo } from '../hooks/useCompanyInfo';
 import { Invoice, InvoiceItem } from '../types';
-import { Search, Plus, FileText, Trash2, Edit2, Package, Save, X, PlusCircle, Trash, History, ChevronDown, ChevronUp, Download, Printer, Loader2 } from 'lucide-react';
+import { Search, Plus, FileText, Trash2, Edit2, Package, Save, X, PlusCircle, Trash, History, ChevronDown, ChevronUp, Download, Printer, Loader2, CheckCircle2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from './ui/dialog';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
+import { useToast } from '../contexts/ToastContext';
 import { format, parseISO } from 'date-fns';
 import { motion, AnimatePresence } from 'motion/react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
-export default function Billing() {
+interface BillingProps {
+  mode?: 'invoices' | 'billing';
+}
+
+export default function Billing({ mode = 'invoices' }: BillingProps) {
   const { user } = useAuth();
   const { companyInfo } = useCompanyInfo();
+  const { showToast } = useToast();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [repairedContainers, setRepairedContainers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,6 +47,7 @@ export default function Billing() {
   const [editingContainerIndex, setEditingContainerIndex] = useState<number | null>(null);
   const [viewHistoryCode, setViewHistoryCode] = useState<string | null>(null);
   const [expandedInvoices, setExpandedInvoices] = useState<Set<string>>(new Set());
+  const [containerSearchQueries, setContainerSearchQueries] = useState<Record<string, string>>({});
 
   const toggleInvoice = (id: string) => {
     const newExpanded = new Set(expandedInvoices);
@@ -212,12 +219,14 @@ export default function Billing() {
       let referenceId = editingId;
       if (editingId && invoiceRef) {
         await updateDoc(invoiceRef, invoiceData);
+        showToast('Invoice updated successfully', 'success');
       } else {
         const docRef = await addDoc(collection(db, 'invoices'), {
           ...invoiceData,
           createdAt: new Date().toISOString()
         });
         referenceId = docRef.id;
+        showToast('Invoice created successfully', 'success');
       }
 
       if (form.status === 'paid' && !wasPaid) {
@@ -354,6 +363,24 @@ export default function Billing() {
       detectedType = isLocalFormat(rawCode) ? 'local' : 'foreign';
     }
 
+    // NEW: Validation for BV and AV marks starting from now
+    // We check if this container exists in the repair list and is NOT LE-001 (exception)
+    const existingRepair = repairedContainers.find(rc => {
+      const rcCode = rc.type === 'foreign' ? `${rc.localCode} - ${rc.foreignCode}` : `${rc.localCode} - ${rc.localCode}`;
+      return rcCode === displayCode;
+    });
+
+    // Only enforce for NEW containers or if the code was changed during edit
+    const itemBeingEdited = editingContainerIndex !== null ? form.containers[editingContainerIndex] : null;
+    const isNewOrChangedCode = !itemBeingEdited || itemBeingEdited.code !== displayCode;
+
+    if (isNewOrChangedCode && existingRepair && displayCode !== 'KAR-001 - LE-001') {
+      if (!existingRepair.hasBV || !existingRepair.hasAV) {
+        showToast(`Cannot add "${displayCode}". Both Before Video (BV) and After Video (AV) must be recorded first.`, "error");
+        return;
+      }
+    }
+
     const updatedContainers = [...form.containers];
     
     // Duplicate Container Check within the same invoice
@@ -370,7 +397,9 @@ export default function Billing() {
       code: displayCode, 
       note: newContainer.note, 
       price: priceAuto,
-      type: detectedType
+      type: detectedType,
+      hasBV: existingRepair?.hasBV,
+      hasAV: existingRepair?.hasAV
     };
 
     if (editingContainerIndex !== null) {
@@ -407,18 +436,61 @@ export default function Billing() {
     }
   };
 
-  const filteredInvoices = invoices.filter(inv => 
-    inv.invoiceNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (inv.customerName && inv.customerName.toLowerCase().includes(searchQuery.toLowerCase())) ||
-    inv.containers.some(c => c.code.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  const filteredInvoices = invoices.filter(inv => {
+    // Mode-based filtering
+    if (mode === 'invoices') {
+      if (inv.status !== 'pending' && inv.status !== 'billing' && inv.status !== 'cancelled') return false;
+    } else if (mode === 'billing') {
+      if (inv.status !== 'billing' && inv.status !== 'paid') return false;
+    }
+
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return true;
+    
+    const matchesNumber = inv.invoiceNumber.toLowerCase().includes(q);
+    const matchesCustomer = (inv.customerName || '').toLowerCase().includes(q);
+    const matchesStatus = (inv.status || '').toLowerCase().includes(q);
+    const matchesContainers = inv.containers?.some(c => 
+      c.code.toLowerCase().includes(q) || 
+      (c.note || '').toLowerCase().includes(q)
+    );
+
+    return matchesNumber || matchesCustomer || matchesStatus || matchesContainers;
+  });
+
+  // Effect to auto-expand invoices when searching for a container
+  useEffect(() => {
+    if (searchQuery.trim().length > 1) {
+      const q = searchQuery.toLowerCase().trim();
+      const newExpanded = new Set(expandedInvoices);
+      let changed = false;
+
+      filteredInvoices.forEach(inv => {
+        const hasMatchingContainer = inv.containers?.some(c => 
+          c.code.toLowerCase().includes(q) || 
+          (c.note || '').toLowerCase().includes(q)
+        );
+        if (hasMatchingContainer && !newExpanded.has(inv.id)) {
+          newExpanded.add(inv.id);
+          changed = true;
+        }
+      });
+
+      if (changed) {
+        setExpandedInvoices(newExpanded);
+      }
+    }
+  }, [searchQuery, invoices]);
 
   return (
     <div className="h-full flex flex-col relative w-full pt-2">
       <div className="px-4 mb-4 flex-shrink-0">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Billing & Invoices</h1>
-          <Dialog open={isAddOpen} onOpenChange={(open) => {
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+            {mode === 'invoices' ? 'Invoices Management' : 'Billing & Paid History'}
+          </h1>
+          {mode === 'invoices' && (
+            <Dialog open={isAddOpen} onOpenChange={(open) => {
             setIsAddOpen(open);
             if (!open) {
               resetForm();
@@ -447,60 +519,63 @@ export default function Billing() {
             <DialogTrigger render={<Button className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl flex items-center justify-center gap-2" />}>
               <Plus className="w-5 h-5" /> Create Invoice
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+            <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white">
               <DialogHeader>
-                <DialogTitle>{editingId ? 'Edit Invoice' : 'Create New Invoice'}</DialogTitle>
+                <DialogTitle className="text-slate-900 dark:text-white">{editingId ? 'Edit Invoice' : 'Create New Invoice'}</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSaveInvoice} className="space-y-4 pt-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Invoice #</Label>
+                    <Label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Invoice #</Label>
                     <Input 
                       required
                       placeholder="INV-001"
                       value={form.invoiceNumber}
                       onChange={e => setForm({...form, invoiceNumber: e.target.value})}
-                      className="rounded-xl border-slate-200"
+                      className="rounded-xl border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Date</Label>
+                    <Label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Date</Label>
                     <Input 
                       type="date"
                       value={form.date}
                       onChange={e => setForm({...form, date: e.target.value})}
-                      className="rounded-xl border-slate-200"
+                      className="rounded-xl border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white [color-scheme:light] dark:[color-scheme:dark]"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Customer / Name</Label>
+                  <Label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Customer / Name</Label>
                   <Input 
                     placeholder="Customer Name"
                     value={form.customerName}
                     onChange={e => setForm({...form, customerName: e.target.value})}
-                    className="rounded-xl border-slate-200"
+                    className="rounded-xl border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Status</Label>
+                  <Label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Status</Label>
                   <select 
                     value={form.status}
-                    onChange={e => setForm({...form, status: e.target.value as any})}
-                    className="w-full h-10 px-3 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    onChange={e => {
+                      const newStatus = e.target.value as any;
+                      setForm({...form, status: newStatus});
+                    }}
+                    className="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 [color-scheme:light] dark:[color-scheme:dark]"
                   >
-                    <option value="pending">Pending</option>
-                    <option value="billing">Billing</option>
-                    <option value="paid">Paid</option>
-                    <option value="cancelled">Cancelled</option>
+                    <option value="pending" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Pending</option>
+                    <option value="billing" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Billing</option>
+                    <option value="paid" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Paid</option>
+                    <option value="cancelled" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Cancelled</option>
                   </select>
                 </div>
 
                 <div className="border-t border-slate-100 pt-4 mt-2">
                   <div className="flex items-center justify-between mt-2 mb-2">
-                    <Label className="text-sm font-bold text-slate-700">Container Codes</Label>
+                    <Label className="text-sm font-bold text-slate-700 dark:text-slate-300">Container Codes</Label>
                     {repairedContainers.length > 0 && (
                       <Button
                         type="button"
@@ -511,7 +586,7 @@ export default function Billing() {
                           const toAdd = repairedContainers
                             .filter(c => {
                               const codeDisplay = c.type === 'foreign' ? `${c.localCode} - ${c.foreignCode}` : `${c.localCode} - ${c.localCode}`;
-                              const isBilled = invoices.some(inv => (inv.status === 'pending' || inv.status === 'billing' || inv.status === 'paid') && inv.containers.some(ic => ic.code === codeDisplay));
+                              const isBilled = invoices.some(inv => (inv.status === 'pending' || inv.status === 'paid') && inv.containers.some(ic => ic.code === codeDisplay));
                               return c.status === 'repaired' && codeDisplay && !existingCodes.includes(codeDisplay) && !isBilled;
                             })
                             .map(c => ({
@@ -560,15 +635,17 @@ export default function Billing() {
                             </div>
                             <div className="text-xs font-black text-indigo-600 truncate">₱{item.price?.toLocaleString()}</div>
                           </div>
-                          <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
-                            {item.price === 17000 && (
-                              <span className="text-[8px] bg-emerald-500/10 text-emerald-500 font-bold uppercase px-1 rounded">Fully Repaired</span>
-                            )}
-                            {item.price === 15000 && (
-                              <span className="text-[8px] bg-amber-500/10 text-amber-500 font-bold uppercase px-1 rounded">No Top Board</span>
-                            )}
-                            {item.note && <div className="text-[10px] text-slate-500 truncate">{item.note}</div>}
-                          </div>
+                            <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+                              {item.hasBV && <span className="text-[8px] bg-indigo-500/10 text-indigo-400 font-bold px-1 rounded uppercase">BV</span>}
+                              {item.hasAV && <span className="text-[8px] bg-emerald-500/10 text-emerald-500 font-bold px-1 rounded uppercase">AV</span>}
+                              {item.price === 17000 && (
+                                <span className="text-[8px] bg-emerald-500/10 text-emerald-500 font-bold uppercase px-1 rounded">Fully Repaired</span>
+                              )}
+                              {item.price === 15000 && (
+                                <span className="text-[8px] bg-amber-500/10 text-amber-500 font-bold uppercase px-1 rounded">No Top Board</span>
+                              )}
+                              {item.note && <div className="text-[10px] text-slate-500 truncate">{item.note}</div>}
+                            </div>
                         </div>
                         <div className="flex items-center gap-1 shrink-0">
                           <button 
@@ -609,20 +686,20 @@ export default function Billing() {
                             });
                           }
                         }}
-                        className="w-full text-xs h-8 px-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="w-full text-xs h-8 px-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 [color-scheme:light] dark:[color-scheme:dark]"
                       >
-                        <option value="">Select Repaired Container...</option>
+                        <option value="" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Select Repaired Container...</option>
                         {repairedContainers
                           .filter(c => {
                             const codeDisplay = c.type === 'foreign' ? `${c.localCode} - ${c.foreignCode}` : `${c.localCode} - ${c.localCode}`;
-                            const isBilled = invoices.some(inv => (inv.status === 'pending' || inv.status === 'billing' || inv.status === 'paid') && inv.containers.some(ic => ic.code === codeDisplay));
+                            const isBilled = invoices.some(inv => (inv.status === 'pending' || inv.status === 'paid') && inv.containers.some(ic => ic.code === codeDisplay));
                             return c.status === 'repaired' && codeDisplay && !form.containers.some(fc => fc.code === codeDisplay) && !isBilled;
                           })
                           .map(c => {
                             const codeDisplay = c.type === 'foreign' ? `${c.localCode} - ${c.foreignCode}` : `${c.localCode} - ${c.localCode}`;
                             return (
-                              <option key={c.id} value={codeDisplay || ''}>
-                                {codeDisplay} ({c.type}) {c.note ? `- ${c.note}` : ''}
+                              <option key={c.id} value={codeDisplay || ''} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">
+                                {codeDisplay} ({c.type}) {c.platform ? `[${c.platform}]` : ''} {c.hasBV ? 'BV ' : ''}{c.hasAV ? 'AV ' : ''}{c.note ? `- ${c.note}` : ''}
                               </option>
                             );
                           })}
@@ -633,12 +710,12 @@ export default function Billing() {
                         placeholder="Code (e.g. C-123)"
                         value={newContainer.code}
                         onChange={e => setNewContainer({...newContainer, code: e.target.value.toUpperCase()})}
-                        className="text-xs h-8"
+                        className="text-xs h-8 text-slate-900 dark:text-white"
                       />
                       <select
                         value={newContainer.price}
                         onChange={e => setNewContainer({...newContainer, price: e.target.value})}
-                        className="w-full text-xs h-8 px-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="w-full text-xs h-8 px-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 [color-scheme:light] dark:[color-scheme:dark]"
                       >
                         <option value="">Select Price</option>
                         <option value="15000">₱15,000 - No Top Board</option>
@@ -649,7 +726,7 @@ export default function Billing() {
                       placeholder="Note (optional)"
                       value={newContainer.note}
                       onChange={e => setNewContainer({...newContainer, note: e.target.value})}
-                      className="text-xs h-8"
+                      className="text-xs h-8 text-slate-900 dark:text-white"
                     />
                     <Button 
                       type="button" 
@@ -686,9 +763,9 @@ export default function Billing() {
                     )}
                   </div>
 
-                  <div className="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center">
-                    <span className="text-sm font-bold text-slate-700">Total Sum:</span>
-                    <span className="text-lg font-black text-indigo-600">₱{totalSum.toLocaleString()}</span>
+                  <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center">
+                    <span className="text-sm font-bold text-slate-700 dark:text-slate-300">Total Sum:</span>
+                    <span className="text-lg font-black text-indigo-600 dark:text-indigo-400">₱{totalSum.toLocaleString()}</span>
                   </div>
                 </div>
 
@@ -701,6 +778,7 @@ export default function Billing() {
               </form>
             </DialogContent>
           </Dialog>
+          )}
         </div>
 
         <div className="relative group">
@@ -783,6 +861,33 @@ export default function Billing() {
                     transition={{ duration: 0.2, ease: "easeOut" }}
                   >
                     <div className="p-4 bg-slate-50/50 dark:bg-slate-900/20">
+                      <div className="mb-4 relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-3.5 h-3.5" />
+                        <Input 
+                          placeholder="Search containers in this invoice..."
+                          value={containerSearchQueries[invoice.id] || ''}
+                          onChange={e => setContainerSearchQueries(prev => ({ ...prev, [invoice.id]: e.target.value }))}
+                          className="pl-9 h-8 bg-white dark:bg-slate-800 text-xs rounded-lg border-slate-200 dark:border-slate-800 focus:ring-1 focus:ring-indigo-500/30 transition-all"
+                        />
+                        {containerSearchQueries[invoice.id] && (
+                          <button 
+                            onClick={() => setContainerSearchQueries(prev => ({ ...prev, [invoice.id]: '' }))}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+
+                      {searchQuery.trim() && (
+                        <div className="mb-2 px-2 py-1 bg-indigo-50 dark:bg-indigo-500/10 rounded-lg border border-indigo-100 dark:border-indigo-500/20">
+                          <p className="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold flex items-center gap-1">
+                            <Search className="w-3 h-3" />
+                            Global search active: Showing results for "{searchQuery}"
+                          </p>
+                        </div>
+                      )}
+
                       {invoice.customerName && (
                         <div className="mb-3">
                             <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Customer</span>
@@ -796,6 +901,21 @@ export default function Billing() {
                           </div>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                             {[...invoice.containers]
+                              .filter(c => {
+                                const globalQ = searchQuery.toLowerCase().trim();
+                                const localQ = (containerSearchQueries[invoice.id] || '').toLowerCase().trim();
+                                
+                                // Both filters apply if present
+                                const matchesGlobal = !globalQ || 
+                                  c.code.toLowerCase().includes(globalQ) || 
+                                  (c.note || '').toLowerCase().includes(globalQ);
+                                
+                                const matchesLocal = !localQ || 
+                                  c.code.toLowerCase().includes(localQ) || 
+                                  (c.note || '').toLowerCase().includes(localQ);
+
+                                return matchesGlobal && matchesLocal;
+                              })
                               .sort((a, b) => (b.price || 0) - (a.price || 0))
                               .map((c, i) => (
                               <div key={i} className="flex flex-col p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-800 hover:border-indigo-200 dark:hover:border-indigo-500/20 transition-colors">
@@ -822,6 +942,8 @@ export default function Billing() {
                                   <span className="text-[10px] font-black text-indigo-600 shrink-0">₱{c.price?.toLocaleString()}</span>
                                 </div>
                                 <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                                  {c.hasBV && <span className="text-[8px] bg-indigo-500/10 text-indigo-400 font-black uppercase px-1 py-0.5 rounded border border-indigo-500/20">BV</span>}
+                                  {c.hasAV && <span className="text-[8px] bg-emerald-500/10 text-emerald-500 font-black uppercase px-1 py-0.5 rounded border border-emerald-500/20">AV</span>}
                                   {c.price === 17000 && (
                                     <span className="text-[8px] bg-emerald-500/10 text-emerald-500 font-black uppercase px-1 py-0.5 rounded border border-emerald-500/20 shadow-sm">
                                       Fully Repaired
@@ -948,24 +1070,28 @@ export default function Billing() {
                         h.status === 'Invoiced' ? 'text-purple-400' :
                         'text-emerald-400'
                       }`}>
-                        {h.status}
+                        {h.status} {h.platform && <span className="text-white ml-1">@ {h.platform}</span>}
                       </span>
                       <time className="text-[10px] font-medium text-slate-500">
                         {new Date(h.timestamp).toLocaleDateString()}
                       </time>
                     </div>
                     
-                    {h.status === 'Invoiced' && h.price && (
-                      <div className="flex flex-wrap gap-1 mt-1 mb-2">
-                        {h.price === 17000 && (
-                          <span className="text-[9px] bg-emerald-500 text-white font-black uppercase px-2 py-0.5 rounded">Fully Repaired</span>
-                        )}
-                        {h.price === 15000 && (
-                          <span className="text-[9px] bg-amber-500 text-white font-black uppercase px-2 py-0.5 rounded">No Top Board</span>
-                        )}
-                        <span className="text-[9px] bg-white/10 text-white font-black px-2 py-0.5 rounded">₱{h.price.toLocaleString()}</span>
-                      </div>
-                    )}
+                    <div className="flex flex-wrap gap-1 mt-1 mb-2">
+                       {h.hasBV && <span className="text-[9px] bg-indigo-500/20 text-indigo-300 font-black uppercase px-1.5 py-0.5 rounded border border-indigo-500/30">BV Recorded</span>}
+                       {h.hasAV && <span className="text-[9px] bg-emerald-500/20 text-emerald-300 font-black uppercase px-1.5 py-0.5 rounded border border-emerald-500/30">AV Recorded</span>}
+                       {h.status === 'Invoiced' && h.price && (
+                         <>
+                           {h.price === 17000 && (
+                             <span className="text-[9px] bg-emerald-500 text-white font-black uppercase px-2 py-0.5 rounded">Fully Repaired</span>
+                           )}
+                           {h.price === 15000 && (
+                             <span className="text-[9px] bg-amber-500 text-white font-black uppercase px-2 py-0.5 rounded">No Top Board</span>
+                           )}
+                           <span className="text-[9px] bg-white/10 text-white font-black px-2 py-0.5 rounded">₱{h.price.toLocaleString()}</span>
+                         </>
+                       )}
+                    </div>
 
                     {h.note && (
                       <p className="text-xs text-slate-300 mt-1 bg-slate-900/50 p-2 rounded-lg italic">
@@ -1032,9 +1158,10 @@ export default function Billing() {
                     <tr className="border-y-2 border-slate-900 text-slate-900">
                       <th className="p-3 text-left text-xs font-black uppercase tracking-widest w-12 text-center">#</th>
                       <th className="p-3 text-left text-xs font-black uppercase tracking-widest">Container Code</th>
-                      <th className="p-3 text-left text-xs font-black uppercase tracking-widest w-24 text-center">Type</th>
+                      <th className="p-3 text-left text-xs font-black uppercase tracking-widest w-16 text-center">Videos</th>
+                      <th className="p-3 text-left text-xs font-black uppercase tracking-widest w-20 text-center">Type</th>
                       <th className="p-3 text-left text-xs font-black uppercase tracking-widest">Note</th>
-                      <th className="p-3 text-right text-xs font-black uppercase tracking-widest w-40">Price</th>
+                      <th className="p-3 text-right text-xs font-black uppercase tracking-widest w-36">Price</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1044,6 +1171,12 @@ export default function Billing() {
                       <tr key={i} className="border-b border-slate-200">
                         <td className="p-4 text-sm font-bold text-slate-400 text-center">{i + 1}</td>
                         <td className="p-4 text-sm font-bold text-slate-900">{c.code}</td>
+                        <td className="p-4 text-center">
+                          <div className="flex gap-1 justify-center">
+                            {c.hasBV && <span className="text-[7px] border border-slate-300 px-1 font-bold">BV</span>}
+                            {c.hasAV && <span className="text-[7px] border border-slate-300 px-1 font-bold">AV</span>}
+                          </div>
+                        </td>
                         <td className="p-4 text-center">
                           <span className="text-[10px] font-black uppercase tracking-widest border border-slate-900 px-2 py-0.5 rounded">
                             {c.type === 'foreign' ? 'Foreign' : 'Local'}

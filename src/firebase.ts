@@ -21,7 +21,32 @@ export const auth = getAuth(app);
 export const storage = getStorage(app);
 export const googleProvider = new GoogleAuthProvider();
 
-// Removed testConnection to save quota
+// Connection test function
+export async function testConnection() {
+  try {
+    const { getDocFromServer, doc } = await import('firebase/firestore');
+    // Using 'test/connection' as per standard recommendations
+    await getDocFromServer(doc(db, 'test', 'connection'));
+    console.log("Firestore connection test: SUCCESS");
+    return true;
+  } catch (error: any) {
+    // If we get "insufficient permissions", it actually means we ARE connected to Firestore, 
+    // but just don't have access to that specific document yet.
+    if (error.code === 'permission-denied') {
+      console.log("Firestore connection test: CONNECTED (but unauthorized, which is normal before login)");
+      return true;
+    }
+    if (error.message && (error.message.includes('client is offline') || error.message.includes('unavailable'))) {
+      console.warn("Firestore connection test: OFFLINE or UNAVAILABLE. App will operate in offline mode.");
+    } else {
+      console.error("Firestore connection test: NETWORK ERROR", error);
+    }
+    return false;
+  }
+}
+
+// Run test on initialization
+testConnection();
 
 export const loginWithGoogle = async () => {
   try {

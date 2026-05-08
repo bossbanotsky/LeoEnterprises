@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { collection, addDoc, query, onSnapshot, orderBy, deleteDoc, doc, updateDoc, getDoc, increment } from 'firebase/firestore';
+import { collection, addDoc, query, onSnapshot, orderBy, deleteDoc, doc, updateDoc, getDoc, increment, where, limit, getDocs, getDocFromServer } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
 import { recordTransaction } from '../services/financeService';
 import { Wallet, Plus, ArrowUpRight, ArrowDownRight, Banknote, Building2, CreditCard, Edit2, Trash2, X, FileText, User, Receipt, Search, PlusCircle } from 'lucide-react';
 import { Account, Transaction, Invoice, Payroll, CashAdvance } from '../types';
+import DailySupplies from './DailySupplies';
 
 export default function Finance() {
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -18,17 +19,20 @@ export default function Finance() {
     type: 'cash' | 'bank' | 'wallet';
     balance: number;
     isDefault: boolean;
-  }>({ name: '', type: 'cash', balance: 0, isDefault: false });
+    department?: 'container' | 'junkshop' | 'other';
+  }>({ name: '', type: 'cash', balance: 0, isDefault: false, department: 'other' });
 
   const [manualTransaction, setManualTransaction] = useState({
-    accountId: '',
-    type: 'expense' as 'income' | 'expense',
+    accountIds: [] as string[],
+    type: 'income' as 'income' | 'expense',
     amount: 0,
-    category: 'Daily Operations',
+    category: 'Daily Operation',
+    department: 'container' as 'container' | 'junkshop' | 'other',
     description: '',
     date: new Date().toISOString().split('T')[0]
   });
 
+  const [activeTab, setActiveTab] = useState<'all' | 'container' | 'junkshop' | 'supplies'>('all');
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [detailData, setDetailData] = useState<any>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
@@ -40,7 +44,8 @@ export default function Finance() {
   useEffect(() => {
     if (!user) return;
     const unsub = onSnapshot(collection(db, 'accounts'), (snap) => {
-      setAccounts(snap.docs.map(d => ({ id: d.id, ...d.data() } as Account)));
+      const accs = snap.docs.map(d => ({ id: d.id, ...d.data() } as Account));
+      setAccounts(accs);
     });
     const unsubTrans = onSnapshot(query(collection(db, 'transactions'), orderBy('createdAt', 'desc')), (snap) => {
       setTransactions(snap.docs.map(d => ({ id: d.id, ...d.data() } as Transaction)));
@@ -67,7 +72,13 @@ export default function Finance() {
 
   const openEdit = (acc: Account) => {
     setEditingId(acc.id);
-    setNewAccount({ name: acc.name, type: acc.type, balance: acc.balance, isDefault: !!acc.isDefault });
+    setNewAccount({ 
+      name: acc.name, 
+      type: acc.type, 
+      balance: acc.balance, 
+      isDefault: !!acc.isDefault,
+      department: acc.department || 'other'
+    });
     setIsAddAccountOpen(true);
   };
 
@@ -110,10 +121,25 @@ export default function Finance() {
     try {
       await deleteDoc(doc(db, 'transactions', t.id));
       if (t.accountId) {
-        const accountRef = doc(db, 'accounts', t.accountId);
-        await updateDoc(accountRef, {
-          balance: increment(t.type === 'income' ? -t.amount : t.amount)
-        });
+        try {
+          const accountRef = doc(db, 'accounts', t.accountId);
+          // Try to get fresh doc state from server, but fallback to regular getDoc if unavailable
+          let accountSnap;
+          try {
+            accountSnap = await getDocFromServer(accountRef);
+          } catch (serverError: any) {
+            console.warn("getDocFromServer failed, falling back to cached getDoc:", serverError);
+            accountSnap = await getDoc(accountRef);
+          }
+          
+          if (accountSnap.exists()) {
+            await updateDoc(accountRef, {
+              balance: increment(t.type === 'income' ? -t.amount : t.amount)
+            });
+          }
+        } catch (accError) {
+          console.warn("Could not update account balance (account likely deleted):", accError);
+        }
       }
       setItemToDelete(null);
     } catch (e) {
@@ -123,24 +149,35 @@ export default function Finance() {
 
   const handleAddTransaction = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!manualTransaction.accountId || manualTransaction.amount <= 0) return;
+    if (manualTransaction.accountIds.length === 0 || manualTransaction.amount <= 0) return;
 
     try {
-      await recordTransaction(
-        manualTransaction.accountId,
-        manualTransaction.type,
-        manualTransaction.amount,
-        manualTransaction.category,
-        manualTransaction.description || manualTransaction.category,
-        undefined,
-        user?.uid
-      );
+      const splitAmount = manualTransaction.amount / manualTransaction.accountIds.length;
+      
+      // If multiple accounts are selected, record a transaction for each
+      for (const accId of manualTransaction.accountIds) {
+        await recordTransaction(
+          accId,
+          manualTransaction.type,
+          splitAmount,
+          manualTransaction.category,
+          manualTransaction.accountIds.length > 1 
+            ? `${manualTransaction.description || manualTransaction.category} (Split)`
+            : (manualTransaction.description || manualTransaction.category),
+          undefined,
+          user?.uid,
+          manualTransaction.date,
+          manualTransaction.department
+        );
+      }
+
       setIsTransactionModalOpen(false);
       setManualTransaction({
-        accountId: accounts.find(a => a.isDefault)?.id || accounts[0]?.id || '',
-        type: 'expense',
+        accountIds: [],
+        type: 'income',
         amount: 0,
-        category: 'Daily Operations',
+        category: 'Daily Operation',
+        department: 'container',
         description: '',
         date: new Date().toISOString().split('T')[0]
       });
@@ -149,9 +186,20 @@ export default function Finance() {
     }
   };
 
-  const totalBalance = accounts.reduce((sum, acc) => sum + acc.balance, 0);
-  const totalIncome = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
-  const totalExpense = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+  const filteredAccounts = accounts.filter(acc => {
+    if (activeTab === 'all') return true;
+    return acc.department === activeTab;
+  });
+
+  const totalBalance = filteredAccounts.reduce((sum, acc) => sum + acc.balance, 0);
+  
+  const filteredTransactions = transactions.filter(t => {
+    if (activeTab === 'all') return true;
+    return t.department === activeTab;
+  });
+
+  const totalIncome = filteredTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+  const totalExpense = filteredTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
 
   return (
     <div className="space-y-6">
@@ -163,26 +211,69 @@ export default function Finance() {
         <div className="flex gap-2">
           <button 
             onClick={() => {
-              setManualTransaction(prev => ({...prev, accountId: accounts.find(a => a.isDefault)?.id || accounts[0]?.id || ''}));
+              const defaultAcc = filteredAccounts.find(a => a.isDefault)?.id || filteredAccounts[0]?.id;
+              setManualTransaction(prev => ({
+                ...prev, 
+                accountIds: defaultAcc ? [defaultAcc] : [],
+                department: (activeTab === 'all' || activeTab === 'supplies') ? 'container' : activeTab as any
+              }));
               setIsTransactionModalOpen(true);
             }} 
             className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-emerald-500 transition-all active:scale-95 shadow-lg shadow-emerald-600/20"
           >
               <PlusCircle className="w-4 h-4"/> Record Entry
           </button>
-          <button onClick={() => setIsAddAccountOpen(true)} className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-indigo-500 transition-all active:scale-95">
+          <button onClick={() => {
+            setNewAccount({ name: '', type: 'cash', balance: 0, isDefault: false, department: (activeTab === 'all' || activeTab === 'supplies') ? 'other' : activeTab as any });
+            setIsAddAccountOpen(true);
+          }} className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-indigo-500 transition-all active:scale-95">
               <Plus className="w-4 h-4"/> New Account
           </button>
         </div>
       </header>
 
-      {/* Account Overview Cards */}
-      {accounts.length === 0 ? (
+      {/* Tabs Section */}
+      <div className="flex gap-1 p-1 bg-slate-950/50 border border-white/5 rounded-xl max-w-full overflow-x-auto custom-scrollbar scroll-smooth snap-x">
+        <button
+          onClick={() => setActiveTab('all')}
+          className={`snap-start shrink-0 px-2 sm:px-3 py-1.5 rounded-lg text-[8px] sm:text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === 'all' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}
+        >
+          All
+        </button>
+        <button
+          onClick={() => setActiveTab('container')}
+          className={`snap-start shrink-0 px-2 sm:px-3 py-1.5 rounded-lg text-[8px] sm:text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === 'container' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}
+        >
+          Container
+        </button>
+        <button
+          onClick={() => setActiveTab('junkshop')}
+          className={`snap-start shrink-0 px-2 sm:px-3 py-1.5 rounded-lg text-[8px] sm:text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === 'junkshop' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}
+        >
+          Junkshop
+        </button>
+        <button
+          onClick={() => setActiveTab('supplies')}
+          className={`snap-start shrink-0 px-2 sm:px-3 py-1.5 rounded-lg text-[8px] sm:text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === 'supplies' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}
+        >
+          Daily Supplies
+        </button>
+      </div>
+
+      {activeTab === 'supplies' ? (
+        <DailySupplies />
+      ) : (
+        <>
+          {/* Account Overview Cards */}
+          {filteredAccounts.length === 0 ? (
         <div className="bg-indigo-600/10 border border-indigo-500/20 p-8 rounded-3xl text-center">
             <Wallet className="w-12 h-12 text-indigo-400 mx-auto mb-4" />
-            <h2 className="text-xl font-bold text-white mb-2">Welcome to the Finance Module</h2>
-            <p className="text-slate-400 max-w-md mx-auto mb-6">To start tracking money movement, you need to create your first financial account (e.g., "Company Cash" or "Main Bank").</p>
-            <button onClick={() => setIsAddAccountOpen(true)} className="bg-indigo-600 text-white px-6 py-2 rounded-xl font-bold hover:bg-indigo-500 transition-all">
+            <h2 className="text-xl font-bold text-white mb-2">No accounts for this department</h2>
+            <p className="text-slate-400 max-w-md mx-auto mb-6">Create an account or select another department to view financial movements.</p>
+            <button onClick={() => {
+              setNewAccount({ name: '', type: 'cash', balance: 0, isDefault: false, department: activeTab === 'all' ? 'other' : activeTab as any });
+              setIsAddAccountOpen(true);
+            }} className="bg-indigo-600 text-white px-6 py-2 rounded-xl font-bold hover:bg-indigo-500 transition-all">
                 Create First Account
             </button>
         </div>
@@ -190,21 +281,23 @@ export default function Finance() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-gradient-to-br from-indigo-600 to-blue-700 p-6 rounded-3xl border border-white/10 shadow-lg">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-white/70 text-[10px] font-black uppercase tracking-widest">Total Net Worth</h3>
+                <h3 className="text-white/70 text-[10px] font-black uppercase tracking-widest">
+                  {activeTab === 'all' ? 'Consolidated Net Worth' : `${activeTab} Net Worth`}
+                </h3>
                 <Wallet className="w-4 h-4 text-white/50" />
               </div>
               <p className="text-3xl font-black text-white tracking-tight">₱{totalBalance.toLocaleString(undefined, {minimumFractionDigits: 2})}</p>
           </div>
           <div className="bg-slate-900/50 p-6 rounded-3xl border border-white/5">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-slate-400 text-[10px] font-black uppercase tracking-widest">Total Income</h3>
+                <h3 className="text-slate-400 text-[10px] font-black uppercase tracking-widest">Inflow</h3>
                 <ArrowUpRight className="w-4 h-4 text-emerald-400" />
               </div>
               <p className="text-2xl font-black text-white tracking-tight text-emerald-400">₱{totalIncome.toLocaleString(undefined, {minimumFractionDigits: 2})}</p>
           </div>
           <div className="bg-slate-900/50 p-6 rounded-3xl border border-white/5">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-slate-400 text-[10px] font-black uppercase tracking-widest">Total Expense</h3>
+                <h3 className="text-slate-400 text-[10px] font-black uppercase tracking-widest">Outflow</h3>
                 <ArrowDownRight className="w-4 h-4 text-rose-400" />
               </div>
               <p className="text-2xl font-black text-white tracking-tight text-rose-400">₱{totalExpense.toLocaleString(undefined, {minimumFractionDigits: 2})}</p>
@@ -213,16 +306,21 @@ export default function Finance() {
       )}
 
       {/* Account Cards */}
-      {accounts.length > 0 && (
+      {filteredAccounts.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          {accounts.map(acc => (
+          {filteredAccounts.map(acc => (
             <div key={acc.id} className="bg-slate-900/80 p-5 rounded-2xl border border-white/5 hover:border-indigo-500/30 transition-all">
                 <div className='flex items-center justify-between mb-3'>
                   <div className="flex items-center gap-2">
                     <div className={`p-2 rounded-lg ${acc.type === 'cash' ? 'bg-emerald-500/10 text-emerald-400' : acc.type === 'bank' ? 'bg-blue-500/10 text-blue-400' : 'bg-purple-500/10 text-purple-400'}`}>
                       {acc.type === 'cash' ? <Banknote className='w-4 h-4'/> : acc.type === 'bank' ? <Building2 className='w-4 h-4' /> : <CreditCard className='w-4 h-4' />}
                     </div>
-                    <h3 className="text-xs font-bold text-white uppercase truncate max-w-[100px]">{acc.name}</h3>
+                    <div>
+                      <h3 className="text-xs font-bold text-white uppercase truncate max-w-[100px]">{acc.name}</h3>
+                      {acc.department && activeTab === 'all' && (
+                        <p className="text-[7px] font-black uppercase text-indigo-400 tracking-tighter">{acc.department}</p>
+                      )}
+                    </div>
                   </div>
                   <div className="flex items-center gap-1">
                     {acc.isDefault && <span className="text-[8px] bg-indigo-500 text-white px-1.5 py-0.5 rounded font-black">DEFAULT</span>}
@@ -242,18 +340,28 @@ export default function Finance() {
       
       {/* Transaction List */}
       <div className="bg-slate-900/50 p-6 rounded-3xl border border-white/5">
-        <h2 className="text-lg font-bold text-white mb-4">Recent Transactions</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-bold text-white">
+            {activeTab === 'all' ? 'Recent Transactions' : activeTab === 'container' ? 'Container Movements' : 'Junkshop Movements'}
+          </h2>
+          <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{filteredTransactions.length} entries</span>
+        </div>
         <div className="space-y-4">
-          {transactions.map(t => (
+          {filteredTransactions.map(t => (
             <div 
               key={t.id} 
               className={`flex justify-between items-center bg-slate-800/30 p-4 rounded-xl transition-all group ${t.referenceId ? 'cursor-pointer hover:bg-slate-800/50 border border-transparent hover:border-white/10' : ''}`}
             >
               <div onClick={() => handleTransactionClick(t)} className="flex-1">
-                <p className='font-bold text-white flex items-center gap-2'>
-                  {t.description}
+                <div className='flex items-center gap-2'>
+                  <p className='font-bold text-white'>{t.description}</p>
+                  {t.department && t.department !== 'other' && activeTab === 'all' && (
+                    <span className="text-[8px] bg-indigo-500/10 text-indigo-400 px-1.5 py-0.5 rounded font-black uppercase tracking-tighter">
+                      {t.department}
+                    </span>
+                  )}
                   {t.referenceId && <span className='text-[10px] bg-white/10 text-white/50 px-1.5 py-0.5 rounded uppercase font-black tracking-tighter'>Details Available</span>}
-                </p>
+                </div>
                 <p className='text-xs text-slate-400'>{t.category} • {new Date(t.date).toLocaleDateString()}</p>
               </div>
               <div className="flex items-center gap-4">
@@ -468,36 +576,77 @@ export default function Finance() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Account</label>
-                <select
-                  required
-                  className="w-full bg-slate-800 border border-white/5 p-3 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  value={manualTransaction.accountId}
-                  onChange={e => setManualTransaction({ ...manualTransaction, accountId: e.target.value })}
-                >
-                  <option value="">Select Account</option>
-                  {accounts.map(acc => (
-                    <option key={acc.id} value={acc.id}>{acc.name} (₱{acc.balance.toLocaleString()})</option>
-                  ))}
-                </select>
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 tracking-[0.2em]">Select Account(s)</label>
+                <div className="space-y-2 max-h-[150px] overflow-y-auto p-3 bg-slate-800 rounded-xl border border-white/5">
+                   {filteredAccounts.map(acc => (
+                     <label key={acc.id} className="flex items-center justify-between p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-all cursor-pointer group">
+                       <div className="flex items-center gap-2">
+                         <input 
+                           type="checkbox"
+                           className="w-4 h-4 rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-indigo-500"
+                           checked={manualTransaction.accountIds.includes(acc.id)}
+                           onChange={(e) => {
+                             const ids = e.target.checked 
+                               ? [...manualTransaction.accountIds, acc.id]
+                               : manualTransaction.accountIds.filter(id => id !== acc.id);
+                             setManualTransaction({...manualTransaction, accountIds: ids});
+                           }}
+                         />
+                         <span className="text-sm font-bold text-white group-hover:text-indigo-400 transition-colors">{acc.name}</span>
+                       </div>
+                       <span className="text-[10px] font-mono text-slate-400">₱{acc.balance.toLocaleString()}</span>
+                     </label>
+                   ))}
+                </div>
+                {manualTransaction.accountIds.length > 1 && (
+                  <p className="text-[9px] text-indigo-400 italic font-medium ml-1">Amount will be split equally between {manualTransaction.accountIds.length} accounts</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Department</label>
+                <div className="grid grid-cols-4 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setManualTransaction({ ...manualTransaction, department: 'container' })}
+                    className={`py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all border ${manualTransaction.department === 'container' ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-white/5 text-slate-400 hover:text-white'}`}
+                  >
+                    Container
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setManualTransaction({ ...manualTransaction, department: 'junkshop' })}
+                    className={`py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all border ${manualTransaction.department === 'junkshop' ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-white/5 text-slate-400 hover:text-white'}`}
+                  >
+                    Junkshop
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setManualTransaction({ ...manualTransaction, department: 'supplies' })}
+                    className={`py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all border ${manualTransaction.department === 'supplies' ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-white/5 text-slate-400 hover:text-white'}`}
+                  >
+                    Supplies
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setManualTransaction({ ...manualTransaction, department: 'other' })}
+                    className={`py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all border ${manualTransaction.department === 'other' ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-white/5 text-slate-400 hover:text-white'}`}
+                  >
+                    Other
+                  </button>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Category</label>
-                  <select
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Date</label>
+                  <input
                     required
+                    type="date"
                     className="w-full bg-slate-800 border border-white/5 p-3 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
-                    value={manualTransaction.category}
-                    onChange={e => setManualTransaction({ ...manualTransaction, category: e.target.value })}
-                  >
-                    <option value="Daily Operations">Daily Operations</option>
-                    <option value="Junkshop">Junkshop</option>
-                    <option value="Other Business">Other Business</option>
-                    <option value="Personal">Personal</option>
-                    <option value="Utilities">Utilities</option>
-                    <option value="Others">Others</option>
-                  </select>
+                    value={manualTransaction.date}
+                    onChange={e => setManualTransaction({ ...manualTransaction, date: e.target.value })}
+                  />
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Amount</label>
@@ -514,10 +663,31 @@ export default function Finance() {
               </div>
 
               <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Category</label>
+                <select
+                  required
+                  className="w-full bg-slate-800 border border-white/5 p-3 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                  value={manualTransaction.category}
+                  onChange={e => setManualTransaction({ ...manualTransaction, category: e.target.value })}
+                >
+                  <option value="Daily Operation">Daily Operation</option>
+                  <option value="Utility">Utility</option>
+                  <option value="Transport">Transport</option>
+                  <option value="Supplies">Supplies</option>
+                  <option value="Maintenance">Maintenance</option>
+                  <option value="Wages">Wages</option>
+                  <option value="Rent">Rent</option>
+                  <option value="Personal">Personal</option>
+                  <option value="Other Business">Other Business</option>
+                  <option value="Others">Others</option>
+                </select>
+              </div>
+
+              <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Description</label>
                 <input
                   type="text"
-                  placeholder="e.g. Electricity bill, Junkshop supplies..."
+                  placeholder="e.g. Electricity bill, fuel for truck..."
                   className="w-full bg-slate-800 border border-white/5 p-3 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   value={manualTransaction.description}
                   onChange={e => setManualTransaction({ ...manualTransaction, description: e.target.value })}
@@ -560,6 +730,39 @@ export default function Finance() {
               value={newAccount.balance}
               onChange={e => setNewAccount({...newAccount, balance: parseFloat(e.target.value)})} 
             />
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Account Department</label>
+              <div className="grid grid-cols-4 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setNewAccount({ ...newAccount, department: 'container' })}
+                  className={`py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all border ${newAccount.department === 'container' ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-white/5 text-slate-400 hover:text-white'}`}
+                >
+                  Container
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setNewAccount({ ...newAccount, department: 'junkshop' })}
+                  className={`py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all border ${newAccount.department === 'junkshop' ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-white/5 text-slate-400 hover:text-white'}`}
+                >
+                  Junkshop
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setNewAccount({ ...newAccount, department: 'supplies' })}
+                  className={`py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all border ${newAccount.department === 'supplies' ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-white/5 text-slate-400 hover:text-white'}`}
+                >
+                  Supplies
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setNewAccount({ ...newAccount, department: 'other' })}
+                  className={`py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all border ${newAccount.department === 'other' ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-white/5 text-slate-400 hover:text-white'}`}
+                >
+                  General
+                </button>
+              </div>
+            </div>
             <label className="flex items-center gap-2 text-slate-300">
               <input 
                 type="checkbox" 
@@ -606,6 +809,8 @@ export default function Finance() {
             </div>
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   );
