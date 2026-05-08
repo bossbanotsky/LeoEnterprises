@@ -5,7 +5,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { ContainerRepair, Invoice } from "../types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "./ui/dialog";
 import { Button } from "./ui/button";
-import { Loader2, Plus, Wrench, Edit, Trash2, LayoutGrid, List } from "lucide-react";
+import { Loader2, Plus, Wrench, Edit, Trash2, LayoutGrid, List, ArrowUpDown } from "lucide-react";
 import { useToast } from "../contexts/ToastContext";
 
 const PLATFORMS = ['P1', 'P2', 'P3', 'P4', 'P5', 'P6'] as const;
@@ -424,17 +424,13 @@ export default function ContainerRepairList() {
           </div>
         )}
         {activeTab === 'repaired' && (
-          <div className="ml-auto flex bg-slate-950/50 rounded-lg p-1 border border-white/5 self-center items-center gap-2 px-3">
-             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest hidden sm:inline">Sort:</span>
-             <select 
-               value={repairedSortOrder}
-               onChange={(e) => setRepairedSortOrder(e.target.value as 'asc' | 'desc')}
-               className="bg-transparent text-xs font-black text-emerald-400 focus:outline-none cursor-pointer tracking-widest appearance-none pr-1"
-             >
-               <option value="asc" className="bg-slate-900 text-emerald-400">Oldest to Newest</option>
-               <option value="desc" className="bg-slate-900 text-emerald-400">Newest to Oldest</option>
-             </select>
-          </div>
+          <button
+              onClick={() => setRepairedSortOrder(repairedSortOrder === 'asc' ? 'desc' : 'asc')}
+              className="ml-auto flex items-center gap-1.5 px-3 py-1.5 bg-slate-950/50 hover:bg-slate-950 rounded-lg border border-white/5 text-[10px] sm:text-xs font-black uppercase tracking-widest text-emerald-400 transition-colors"
+          >
+            <ArrowUpDown className="w-3 h-3" />
+            {repairedSortOrder === 'asc' ? 'Oldest First' : 'Newest First'}
+          </button>
         )}
       </div>
 
