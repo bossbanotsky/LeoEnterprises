@@ -23,19 +23,20 @@ export default function ContainerRepairList() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   // Form State
-  const [type, setType] = useState<'local' | 'foreign'>('local');
-  const [localCode, setLocalCode] = useState("");
-  const [foreignCode, setForeignCode] = useState("");
+  const [formData, setFormData] = useState({
+    type: 'local' as 'local' | 'foreign',
+    localCode: "",
+    foreignCode: "",
+    status: 'active' as 'active' | 'repairing' | 'repaired',
+    platform: null as RepairPlatform | null,
+    hasBV: false,
+    hasAV: false,
+    note: ""
+  });
 
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
-
   const [activeTab, setActiveTab] = useState<'active' | 'repairing' | 'repaired'>('active');
   const [viewMode, setViewMode] = useState<'list' | 'platform'>('list');
-  const [status, setStatus] = useState<'active' | 'repairing' | 'repaired'>('active');
-  const [platform, setPlatform] = useState<RepairPlatform | null>(null);
-  const [hasBV, setHasBV] = useState(false);
-  const [hasAV, setHasAV] = useState(false);
-  const [note, setNote] = useState("");
 
   const [repairedSortOrder, setRepairedSortOrder] = useState<'asc' | 'desc'>('asc');
 
@@ -69,7 +70,7 @@ export default function ContainerRepairList() {
         // If it's in the repaired tab, check if it's already billed
         if (c.status === 'repaired') {
             const codeDisplay = c.type === 'foreign' ? `${c.localCode} - ${c.foreignCode}` : `${c.localCode} - ${c.localCode}`;
-            const isBilled = invoices.some(inv => (inv.status === 'pending' || inv.status === 'paid') && inv.containers.some(ic => ic.code === codeDisplay));
+            const isBilled = invoices.some(inv => (inv.status === 'billing' || inv.status === 'paid') && inv.containers.some(ic => ic.code === codeDisplay));
             return !isBilled;
         }
         return true;
@@ -95,27 +96,31 @@ export default function ContainerRepairList() {
 
   const handleOpenAdd = () => {
     setEditingId(null);
-    setType('local');
-    setLocalCode("");
-    setForeignCode("");
-    setStatus('active');
-    setPlatform(null);
-    setHasBV(false);
-    setHasAV(false);
-    setNote("");
+    setFormData({
+        type: 'local',
+        localCode: "",
+        foreignCode: "",
+        status: 'active',
+        platform: null,
+        hasBV: false,
+        hasAV: false,
+        note: ""
+    });
     setIsAddOpen(true);
   };
 
   const handleOpenEdit = (c: ContainerRepair) => {
     setEditingId(c.id);
-    setType(c.type);
-    setLocalCode(c.localCode || "");
-    setForeignCode(c.foreignCode || "");
-    setStatus(c.status || 'active');
-    setPlatform(c.platform || null);
-    setHasBV(c.hasBV || false);
-    setHasAV(c.hasAV || false);
-    setNote(c.note || "");
+    setFormData({
+        type: c.type,
+        localCode: c.localCode || "",
+        foreignCode: c.foreignCode || "",
+        status: c.status || 'active',
+        platform: c.platform || null,
+        hasBV: c.hasBV || false,
+        hasAV: c.hasAV || false,
+        note: c.note || ""
+    });
     setIsAddOpen(true);
   };
 
@@ -239,11 +244,11 @@ export default function ContainerRepairList() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
-    if (type === 'local' && !localCode) {
+    if (formData.type === 'local' && !formData.localCode) {
       showToast("Local code is required for local containers.", "error");
       return;
     }
-    if (type === 'foreign' && !foreignCode) {
+    if (formData.type === 'foreign' && !formData.foreignCode) {
       showToast("Foreign code is required for foreign containers.", "error");
       return;
     }
@@ -251,7 +256,7 @@ export default function ContainerRepairList() {
     setIsAdding(true);
     try {
       // Check for duplicates
-      const currentContainerCode = (type === 'foreign' ? `${localCode} - ${foreignCode}` : `${localCode} - ${localCode}`).trim().toUpperCase();
+      const currentContainerCode = (formData.type === 'foreign' ? `${formData.localCode} - ${formData.foreignCode}` : `${formData.localCode} - ${formData.localCode}`).trim().toUpperCase();
       
       const isDuplicate = containers.some(c => {
         if (c.id === editingId) return false;
@@ -266,32 +271,32 @@ export default function ContainerRepairList() {
       }
 
       const historyEntry = {
-        status,
-        platform: status === 'repairing' ? platform : null,
-        hasBV,
-        hasAV,
+        status: formData.status,
+        platform: formData.status === 'repairing' ? formData.platform : null,
+        hasBV: formData.hasBV,
+        hasAV: formData.hasAV,
         timestamp: new Date().toISOString(),
-        note: note || null,
+        note: formData.note || null,
         updatedBy: user.uid,
       };
 
       if (editingId) {
         await setDoc(doc(db, "containerRepairs", editingId), {
-          type,
-          localCode: localCode || null,
-          foreignCode: type === 'foreign' ? foreignCode : localCode,
-          status,
-          platform: status === 'repairing' ? platform : null,
-          hasBV,
-          hasAV,
-          note: note || null,
+          type: formData.type,
+          localCode: formData.localCode || null,
+          foreignCode: formData.type === 'foreign' ? formData.foreignCode : formData.localCode,
+          status: formData.status,
+          platform: formData.status === 'repairing' ? formData.platform : null,
+          hasBV: formData.hasBV,
+          hasAV: formData.hasAV,
+          note: formData.note || null,
           updatedAt: new Date().toISOString(),
           history: arrayUnion(historyEntry),
         }, { merge: true });
         
         // If status changed to repaired, complete associated Pakyaw jobs
-        if (status === 'repaired') {
-          const containerCode = (type === 'foreign' ? `${localCode} - ${foreignCode}` : `${localCode} - ${localCode}`).trim();
+        if (formData.status === 'repaired') {
+          const containerCode = (formData.type === 'foreign' ? `${formData.localCode} - ${formData.foreignCode}` : `${formData.localCode} - ${formData.localCode}`).trim();
           console.log('Completing Pakyaw jobs for container:', containerCode);
           const q = query(
             collection(db, 'pakyawJobs'), 
@@ -311,22 +316,20 @@ export default function ContainerRepairList() {
             const attQuery = query(collection(db, 'attendance'), where('pakyawJobId', '==', jobDoc.id));
             const attSnapshot = await getDocs(attQuery);
             console.log('Found attendance records to update:', attSnapshot.size);
-            // No need to update status to 'completed' as this isn't a valid attendance status.
-            // The job completion is tracked by 'status' in PakyawJob, which is used for calculation.
           }
         }
         
         showToast("Container Repair updated successfully", "success");
       } else {
         await addDoc(collection(db, "containerRepairs"), {
-          type,
-          localCode: localCode || null,
-          foreignCode: type === 'foreign' ? foreignCode : localCode,
-          status,
-          platform: status === 'repairing' ? platform : null,
-          hasBV,
-          hasAV,
-          note: note || null,
+          type: formData.type,
+          localCode: formData.localCode || null,
+          foreignCode: formData.type === 'foreign' ? formData.foreignCode : formData.localCode,
+          status: formData.status,
+          platform: formData.status === 'repairing' ? formData.platform : null,
+          hasBV: formData.hasBV,
+          hasAV: formData.hasAV,
+          note: formData.note || null,
           createdAt: new Date().toISOString(),
           createdBy: user.uid,
           history: [historyEntry],
@@ -334,12 +337,16 @@ export default function ContainerRepairList() {
         showToast("Container Repair added successfully", "success");
       }
       setIsAddOpen(false);
-      setType('local');
-      setLocalCode("");
-      setForeignCode("");
-      setPlatform(null);
-      setHasBV(false);
-      setHasAV(false);
+      setFormData({
+        type: 'local',
+        localCode: "",
+        foreignCode: "",
+        status: 'active',
+        platform: null,
+        hasBV: false,
+        hasAV: false,
+        note: ""
+      });
     } catch (error) {
       console.error(error);
       showToast("Failed to save container repair", "error");
@@ -585,24 +592,24 @@ export default function ContainerRepairList() {
               <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Container Type</label>
               <div className="flex gap-4">
                 <label className="flex items-center gap-1.5 cursor-pointer">
-                  <input type="radio" checked={type === 'local'} onChange={() => setType('local')} className="w-3 h-3 text-indigo-600 focus:ring-indigo-500 bg-slate-800 border-slate-700" />
+                  <input type="radio" checked={formData.type === 'local'} onChange={() => setFormData({...formData, type: 'local'})} className="w-3 h-3 text-indigo-600 focus:ring-indigo-500 bg-slate-800 border-slate-700" />
                   <span className="text-[10px] uppercase font-bold text-slate-400">Local</span>
                 </label>
                 <label className="flex items-center gap-1.5 cursor-pointer">
-                  <input type="radio" checked={type === 'foreign'} onChange={() => setType('foreign')} className="w-3 h-3 text-indigo-600 focus:ring-indigo-500 bg-slate-800 border-slate-700" />
+                  <input type="radio" checked={formData.type === 'foreign'} onChange={() => setFormData({...formData, type: 'foreign'})} className="w-3 h-3 text-indigo-600 focus:ring-indigo-500 bg-slate-800 border-slate-700" />
                   <span className="text-[10px] uppercase font-bold text-slate-400">Foreign</span>
                 </label>
               </div>
             </div>
 
-            {type === 'foreign' && (
+            {formData.type === 'foreign' && (
               <div className="space-y-0.5">
                 <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Foreign Code *</label>
                 <input
                   type="text"
                   required
-                  value={foreignCode}
-                  onChange={(e) => setForeignCode(e.target.value.toUpperCase())}
+                  value={formData.foreignCode}
+                  onChange={(e) => setFormData({...formData, foreignCode: e.target.value.toUpperCase()})}
                   className="w-full bg-slate-950 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
                   placeholder="Enter foreign code"
                 />
@@ -611,13 +618,13 @@ export default function ContainerRepairList() {
 
             <div className="space-y-0.5">
               <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">
-                Local Code {type === 'local' ? '*' : '(Optional)'}
+                Local Code {formData.type === 'local' ? '*' : '(Optional)'}
               </label>
               <input
                 type="text"
-                required={type === 'local'}
-                value={localCode}
-                onChange={(e) => setLocalCode(e.target.value.toUpperCase())}
+                required={formData.type === 'local'}
+                value={formData.localCode}
+                onChange={(e) => setFormData({...formData, localCode: e.target.value.toUpperCase()})}
                 className="w-full bg-slate-950 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
                 placeholder="Enter local code"
               />
@@ -627,21 +634,21 @@ export default function ContainerRepairList() {
               <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Status</label>
               <div className="flex gap-4">
                 <label className="flex items-center gap-1.5 cursor-pointer">
-                  <input type="radio" checked={status === 'active'} onChange={() => setStatus('active')} className="w-3 h-3 text-indigo-500 focus:ring-indigo-500 bg-slate-800 border-slate-700" />
+                  <input type="radio" checked={formData.status === 'active'} onChange={() => setFormData({...formData, status: 'active'})} className="w-3 h-3 text-indigo-500 focus:ring-indigo-500 bg-slate-800 border-slate-700" />
                   <span className="text-[9px] text-indigo-400 font-black uppercase tracking-widest">Active</span>
                 </label>
                 <label className="flex items-center gap-1.5 cursor-pointer">
-                  <input type="radio" checked={status === 'repairing'} onChange={() => setStatus('repairing')} className="w-3 h-3 text-amber-500 focus:ring-amber-500 bg-slate-800 border-slate-700" />
+                  <input type="radio" checked={formData.status === 'repairing'} onChange={() => setFormData({...formData, status: 'repairing'})} className="w-3 h-3 text-amber-500 focus:ring-amber-500 bg-slate-800 border-slate-700" />
                   <span className="text-[9px] text-amber-500 font-black uppercase tracking-widest">Repairing</span>
                 </label>
                 <label className="flex items-center gap-1.5 cursor-pointer">
-                  <input type="radio" checked={status === 'repaired'} onChange={() => setStatus('repaired')} className="w-3 h-3 text-emerald-500 focus:ring-emerald-500 bg-slate-800 border-slate-700" />
+                  <input type="radio" checked={formData.status === 'repaired'} onChange={() => setFormData({...formData, status: 'repaired'})} className="w-3 h-3 text-emerald-500 focus:ring-emerald-500 bg-slate-800 border-slate-700" />
                   <span className="text-[9px] text-emerald-500 font-black uppercase tracking-widest">Repaired</span>
                 </label>
               </div>
             </div>
 
-            {status === 'repairing' && (
+            {formData.status === 'repairing' && (
               <div className="space-y-1.5">
                 <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Assign Platform</label>
                 <div className="grid grid-cols-4 gap-1">
@@ -649,16 +656,16 @@ export default function ContainerRepairList() {
                     <button
                       key={p}
                       type="button"
-                      onClick={() => setPlatform(p)}
-                      className={`py-1 rounded-lg text-[10px] font-black transition-all border ${platform === p ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-slate-950 border-white/10 text-slate-500 hover:text-white'}`}
+                      onClick={() => setFormData({...formData, platform: p})}
+                      className={`py-1 rounded-lg text-[10px] font-black transition-all border ${formData.platform === p ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-slate-950 border-white/10 text-slate-500 hover:text-white'}`}
                     >
                       {p}
                     </button>
                   ))}
                   <button
                     type="button"
-                    onClick={() => setPlatform(null)}
-                    className={`py-1 px-2 rounded-lg text-[10px] font-black transition-all border col-span-2 ${platform === null ? 'bg-slate-700 border-slate-600 text-white' : 'bg-slate-950 border-white/10 text-slate-500'}`}
+                    onClick={() => setFormData({...formData, platform: null})}
+                    className={`py-1 px-2 rounded-lg text-[10px] font-black transition-all border col-span-2 ${formData.platform === null ? 'bg-slate-700 border-slate-600 text-white' : 'bg-slate-950 border-white/10 text-slate-500'}`}
                   >
                     None
                   </button>
@@ -670,11 +677,11 @@ export default function ContainerRepairList() {
               <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Video Tracking</label>
               <div className="grid grid-cols-2 gap-4">
                 <label className="flex items-center gap-2 cursor-pointer p-2 rounded-lg bg-slate-950/50 border border-white/5 hover:bg-slate-950 transition-colors">
-                  <input type="checkbox" checked={hasBV} onChange={(e) => setHasBV(e.target.checked)} className="w-4 h-4 rounded border-slate-700 bg-slate-800 text-indigo-600 focus:ring-indigo-500" />
+                  <input type="checkbox" checked={formData.hasBV} onChange={(e) => setFormData({...formData, hasBV: e.target.checked})} className="w-4 h-4 rounded border-slate-700 bg-slate-800 text-indigo-600 focus:ring-indigo-500" />
                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Before Video (BV)</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer p-2 rounded-lg bg-slate-950/50 border border-white/5 hover:bg-slate-950 transition-colors">
-                  <input type="checkbox" checked={hasAV} onChange={(e) => setHasAV(e.target.checked)} className="w-4 h-4 rounded border-slate-700 bg-slate-800 text-emerald-600 focus:ring-emerald-500" />
+                  <input type="checkbox" checked={formData.hasAV} onChange={(e) => setFormData({...formData, hasAV: e.target.checked})} className="w-4 h-4 rounded border-slate-700 bg-slate-800 text-emerald-600 focus:ring-emerald-500" />
                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">After Video (AV)</span>
                 </label>
               </div>
@@ -683,8 +690,8 @@ export default function ContainerRepairList() {
             <div className="space-y-0.5">
               <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Note (Optional)</label>
               <textarea
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
+                value={formData.note}
+                onChange={(e) => setFormData({...formData, note: e.target.value})}
                 className="w-full bg-slate-950 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-indigo-500/50 min-h-[50px] resize-none"
                 placeholder="Enter notes..."
               />

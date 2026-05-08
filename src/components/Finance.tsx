@@ -365,7 +365,7 @@ export default function Finance() {
                 <p className='text-xs text-slate-400'>{t.category} • {new Date(t.date).toLocaleDateString()}</p>
               </div>
               <div className="flex items-center gap-4">
-                <p className={`font-black ${t.type === 'income' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                <p className={`text-sm font-bold ${t.type === 'income' ? 'text-emerald-400' : 'text-rose-400'} whitespace-nowrap`}>
                   {t.type === 'income' ? '+' : '-'}₱{t.amount.toLocaleString(undefined, {minimumFractionDigits: 2})}
                 </p>
                 <button 

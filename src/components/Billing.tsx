@@ -241,7 +241,7 @@ export default function Billing({ mode = 'invoices' }: BillingProps) {
             'income',
             totalSum,
             'Billing',
-            `Payment for Invoice #${form.invoiceNumber}`,
+            `Payment of Invoice #${form.invoiceNumber}`,
             referenceId || 'inv-paid',
             user.uid
         );
@@ -439,7 +439,7 @@ export default function Billing({ mode = 'invoices' }: BillingProps) {
   const filteredInvoices = invoices.filter(inv => {
     // Mode-based filtering
     if (mode === 'invoices') {
-      if (inv.status !== 'pending' && inv.status !== 'billing' && inv.status !== 'cancelled') return false;
+      if (inv.status !== 'pending' && inv.status !== 'cancelled') return false;
     } else if (mode === 'billing') {
       if (inv.status !== 'billing' && inv.status !== 'paid') return false;
     }
