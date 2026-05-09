@@ -93,6 +93,16 @@ export default function Attendance() {
 
   const handleSaveProof = async (photoUrl?: string) => {
     if (!user || !singleDate) return;
+    
+    // Optimization: Check if anything actually changed
+    const isNotesChanged = proofNotes !== (dailyProof?.notes || '');
+    const isNameChanged = photographerName !== (dailyProof?.photographer || '');
+    
+    // Only proceed if there's a new photo OR if text data changed
+    if (!photoUrl && !isNotesChanged && !isNameChanged) {
+      return;
+    }
+
     setIsSavingProof(true);
     try {
       const proofId = dailyProof?.id || `proof_${singleDate}`;
@@ -114,7 +124,11 @@ export default function Attendance() {
 
       await setDoc(doc(db, 'dailyProofs', proofId), proofData, { merge: true });
       setShowCamera(false);
-      await addAuditLog('Saved Daily Proof', 'DailyProof', `Saved proof for ${singleDate}.`);
+      
+      // Only log if it's a significant update
+      if (photoUrl || isNotesChanged || isNameChanged) {
+        await addAuditLog('Saved Daily Proof', 'DailyProof', `Saved proof for ${singleDate}.`);
+      }
     } catch (err) {
       handleFirestoreError(err, OperationType.WRITE, 'dailyProofs');
     } finally {
