@@ -119,19 +119,30 @@ export default function CameraCapture({ onCapture, onClose }: CameraCaptureProps
 
   return (
     <div 
-      className="fixed inset-0 z-[9999] bg-black flex flex-col items-center justify-center overflow-hidden"
+      className="fixed inset-0 z-[9999] bg-black flex flex-col overflow-hidden select-none touch-none"
       style={{ height: '100dvh' }}
     >
-      <div className="absolute inset-0 w-full h-full flex items-center justify-center">
+      {/* Header Overlay */}
+      <div className="absolute top-0 inset-x-0 p-4 flex justify-between items-center z-30 pointer-events-none">
+        <button 
+          onClick={() => { stopCamera(); onClose(); }}
+          className="p-3 bg-black/40 text-white rounded-full backdrop-blur-md border border-white/10 active:scale-95 transition-all pointer-events-auto"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      </div>
+
+      {/* Camera Viewport */}
+      <div className="flex-1 relative bg-slate-950 overflow-hidden flex items-center justify-center">
         {error ? (
-          <div className="flex flex-col items-center justify-center p-8 text-center bg-slate-950 w-full h-full">
-            <div className="w-20 h-20 bg-rose-500/10 rounded-full flex items-center justify-center mb-6">
-              <X className="w-10 h-10 text-rose-500" />
+          <div className="flex flex-col items-center justify-center p-8 text-center w-full h-full relative z-10">
+            <div className="w-16 h-16 bg-rose-500/10 rounded-full flex items-center justify-center mb-6">
+              <X className="w-8 h-8 text-rose-500" />
             </div>
-            <p className="text-white font-black text-lg mb-8 leading-relaxed max-w-xs">{error}</p>
+            <p className="text-white font-black text-sm mb-8 leading-relaxed max-w-xs">{error}</p>
             <button 
               onClick={startCamera}
-              className="px-10 py-4 bg-white text-slate-900 rounded-2xl font-black uppercase text-xs tracking-[0.2em] hover:bg-slate-200 active:scale-95 transition-all"
+              className="px-8 py-3 bg-white text-slate-900 rounded-xl font-black uppercase text-[10px] tracking-widest active:scale-95 transition-all"
             >
               Retry Camera
             </button>
@@ -142,10 +153,10 @@ export default function CameraCapture({ onCapture, onClose }: CameraCaptureProps
             animate={{ opacity: 1 }}
             src={capturedImage} 
             alt="Captured" 
-            className="w-full h-full object-cover" 
+            className="w-full h-full object-contain" 
           />
         ) : (
-          <div className="relative w-full h-full flex items-center justify-center overflow-hidden">
+          <>
             <video 
               ref={videoRef} 
               autoPlay 
@@ -155,60 +166,48 @@ export default function CameraCapture({ onCapture, onClose }: CameraCaptureProps
             />
             {isStarting && (
               <div className="absolute inset-0 flex items-center justify-center bg-black">
-                <div className="flex flex-col items-center gap-6">
-                  <div className="w-12 h-12 border-4 border-white/10 border-t-white rounded-full animate-spin" />
-                  <span className="text-xs font-black text-white uppercase tracking-[0.4em] animate-pulse">Loading Camera</span>
-                </div>
+                <RefreshCw className="w-8 h-8 text-white/20 animate-spin" />
               </div>
             )}
-          </div>
+          </>
         )}
       </div>
 
-      {/* Controls Overlay - Compact horizontal bar */}
-      <div className="absolute inset-x-0 bottom-0 pb-8 pt-20 bg-gradient-to-t from-black/90 via-black/40 to-transparent flex flex-col items-center z-20">
+      {/* Control Bar Overlay - Absolutely positioned at bottom */}
+      <div className="absolute bottom-0 inset-x-0 pb-12 pt-16 bg-gradient-to-t from-black/80 via-black/40 to-transparent flex items-center justify-center z-40">
         {!error && (
-          <div className="flex items-center justify-around w-full max-w-md px-6">
-            <button 
-              onClick={() => { stopCamera(); onClose(); }}
-              className="w-12 h-12 bg-white/10 text-white rounded-full flex items-center justify-center hover:bg-white/20 transition-all border border-white/10 active:scale-90"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
+          <div className="flex items-center justify-center w-full px-6">
             {!capturedImage ? (
               <div className="relative">
-                <div className="absolute -inset-4 bg-white/20 rounded-full blur-2xl animate-pulse" />
+                <div className="absolute -inset-4 bg-white/10 rounded-full blur-2xl animate-pulse" />
                 <button 
                   onClick={capturePhoto}
                   disabled={!stream || isStarting}
-                  className="relative w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-2xl hover:scale-105 active:scale-90 transition-all disabled:opacity-20"
+                  className="relative w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-[0_0_40px_rgba(255,255,255,0.2)] active:scale-90 transition-all disabled:opacity-20"
                 >
-                  <div className="w-16 h-16 rounded-full border-[4px] border-slate-950 flex items-center justify-center">
+                  <div className="w-17 h-17 rounded-full border-[4px] border-slate-950 flex items-center justify-center">
                     <Camera className="w-8 h-8 text-slate-950" />
                   </div>
                 </button>
               </div>
             ) : (
-              <div className="flex gap-3">
+              <div className="flex gap-4 w-full max-w-xs">
                 <button 
                   onClick={handleRetake}
-                  className="flex items-center gap-2 px-6 py-3 bg-white/10 text-white rounded-2xl font-black uppercase text-[9px] tracking-widest border border-white/20 hover:bg-white/20 active:scale-95 transition-all"
+                  className="flex-1 flex items-center justify-center gap-2 h-12 bg-white/10 text-white rounded-2xl font-black uppercase text-[9px] tracking-widest border border-white/20 backdrop-blur-md active:scale-95 transition-all"
                 >
                   <RefreshCw className="w-4 h-4" />
                   Retake
                 </button>
                 <button 
                   onClick={handleSave}
-                  className="flex items-center gap-2 px-8 py-3 bg-blue-600 text-white rounded-2xl font-black uppercase text-[9px] tracking-widest shadow-2xl shadow-blue-500/40 hover:bg-blue-500 active:scale-95 transition-all"
+                  className="flex-[1.5] flex items-center justify-center gap-2 h-12 bg-blue-600 text-white rounded-2xl font-black uppercase text-[9px] tracking-widest shadow-2xl shadow-blue-500/40 active:scale-95 transition-all"
                 >
                   <Check className="w-4 h-4" />
-                  Save
+                  Use Photo
                 </button>
               </div>
             )}
-
-            <div className="w-12 h-12" /> {/* Balanced spacer */}
           </div>
         )}
       </div>

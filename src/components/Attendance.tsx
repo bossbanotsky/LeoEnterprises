@@ -67,6 +67,21 @@ export default function Attendance() {
     return () => unsubscribe();
   }, [user, singleDate, activeTab]);
 
+  const handleDeletePhoto = async () => {
+    if (!dailyProof || !user) return;
+    if (!window.confirm('Are you sure you want to delete this proof photo?')) return;
+
+    try {
+      await setDoc(doc(db, 'dailyProofs', dailyProof.id), {
+        photoUrl: deleteField(),
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+      await addAuditLog('Deleted Daily Proof Photo', 'DailyProof', `Deleted photo for ${singleDate}.`);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, 'dailyProofs');
+    }
+  };
+
   const handleSaveProof = async (photoUrl?: string) => {
     if (!user || !singleDate) return;
     setIsSavingProof(true);
@@ -763,12 +778,22 @@ export default function Attendance() {
                     {dailyProof?.photoUrl && (
                       <div className="flex items-center gap-2">
                         <span className="text-[9px] font-black text-emerald-400 uppercase bg-emerald-500/10 px-2 py-1 rounded-full border border-emerald-500/20">Uploaded</span>
-                        <button 
-                          onClick={() => setShowProofPhoto(true)}
-                          className="w-8 h-8 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center hover:bg-blue-500/30 transition-all"
-                        >
-                          <FileText className="w-4 h-4" />
-                        </button>
+                        <div className="flex items-center bg-white/5 rounded-full p-1 border border-white/10">
+                          <button 
+                            onClick={() => setShowProofPhoto(true)}
+                            className="w-7 h-7 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center hover:bg-blue-500/30 transition-all"
+                            title="View Photo"
+                          >
+                            <FileText className="w-3.5 h-3.5" />
+                          </button>
+                          <button 
+                            onClick={handleDeletePhoto}
+                            className="w-7 h-7 rounded-full text-rose-400 flex items-center justify-center hover:bg-rose-500/10 transition-all ml-1"
+                            title="Delete Photo"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
                     )}
                     <button 
