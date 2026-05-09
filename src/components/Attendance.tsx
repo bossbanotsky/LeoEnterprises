@@ -34,7 +34,7 @@ export default function Attendance() {
   const [proofNotes, setProofNotes] = useState('');
   const [photographerName, setPhotographerName] = useState('');
   const [showProofPhoto, setShowProofPhoto] = useState(false);
-  const [isProofExpanded, setIsProofExpanded] = useState(true);
+  const [isProofExpanded, setIsProofExpanded] = useState(false);
 
   // Fetch Daily Proof for selected singleDate
   useEffect(() => {
@@ -52,13 +52,10 @@ export default function Attendance() {
         setDailyProof({ ...data, id: docSnap.id });
         setProofNotes(data.notes || '');
         setPhotographerName(data.photographer || '');
-        // Collapse if already has photo to save space
-        if (data.photoUrl) setIsProofExpanded(false);
       } else {
         setDailyProof(null);
         setProofNotes('');
         setPhotographerName('');
-        setIsProofExpanded(true);
       }
     }, (err) => {
       handleFirestoreError(err, OperationType.GET, 'dailyProofs');
