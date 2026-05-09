@@ -35,6 +35,7 @@ export default function DailySupplies() {
   const [editingSupply, setEditingSupply] = useState<DailySupply | null>(null);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'pending' | 'settled' | 'all'>('pending');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'Ice' | 'Water' | 'Ice & Water' | 'Other'>('all');
 
   // Form state
 
@@ -313,10 +314,20 @@ export default function DailySupplies() {
 
   const filteredSupplies = supplies.filter(supply => {
     const isSettled = supply.paymentMethod === 'company' || supply.reimbursed || supply.debtPaid;
-    if (viewMode === 'pending') return !isSettled;
-    if (viewMode === 'settled') return isSettled;
-    return true; // all
+    
+    // View mode filter
+    if (viewMode === 'pending' && isSettled) return false;
+    if (viewMode === 'settled' && !isSettled) return false;
+    
+    // Type filter
+    if (typeFilter !== 'all' && supply.itemType !== typeFilter) return false;
+
+    return true;
   });
+
+  const unpaidDebtsTotal = supplies
+    .filter(s => s.paymentMethod === 'debt' && !s.debtPaid)
+    .reduce((sum, s) => sum + (typeof s.totalCost === 'number' ? s.totalCost : 0), 0);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -332,6 +343,49 @@ export default function DailySupplies() {
               </h2>
               <p className="text-indigo-200 text-sm max-w-md mt-1">Manage ice, water, and daily operational supplies.</p>
             </div>
+            
+            <div className="text-right">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Total Unpaid Debts</span>
+              <p className="text-2xl font-black text-rose-400">₱{unpaidDebtsTotal.toLocaleString(undefined, {minimumFractionDigits: 2})}</p>
+            </div>
+          </div>
+          
+          <div className="flex justify-between w-full items-center mb-4 flex-wrap gap-4">
+            <div className="flex gap-2 flex-wrap items-center">
+              <div className="flex gap-2 bg-slate-900/50 p-1 rounded-xl">
+                <button
+                  onClick={() => setViewMode('pending')}
+                  className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'pending' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+                >
+                  Pending
+                </button>
+                <button
+                  onClick={() => setViewMode('settled')}
+                  className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'settled' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+                >
+                  Settled
+                </button>
+                <button
+                  onClick={() => setViewMode('all')}
+                  className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'all' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+                >
+                  All
+                </button>
+              </div>
+
+              <select
+                value={typeFilter}
+                onChange={e => setTypeFilter(e.target.value as any)}
+                className="bg-slate-900/50 text-slate-400 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border border-white/5 focus:outline-none"
+              >
+                <option value="all">All Items</option>
+                <option value="Ice">Ice</option>
+                <option value="Water">Water</option>
+                <option value="Ice & Water">Ice & Water</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            
             <button
               onClick={() => {
                 setEditingSupply(null);
@@ -348,35 +402,13 @@ export default function DailySupplies() {
                 });
                 setIsAddOpen(true);
               }}
-              className="bg-indigo-500 hover:bg-indigo-400 text-white px-6 py-3 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all shadow-lg active:scale-95 flex items-center gap-2"
+              className="bg-indigo-500 hover:bg-indigo-400 text-white px-6 py-3 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all shadow-lg active:scale-95 flex items-center gap-2 whitespace-nowrap"
             >
               <Plus className="w-4 h-4" /> Record Supply
             </button>
           </div>
-
-          <div className="flex gap-2">
-            <button
-              onClick={() => setViewMode('pending')}
-              className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'pending' ? 'bg-indigo-600 text-white shadow-lg' : 'bg-slate-900/50 text-slate-400 hover:text-white'}`}
-            >
-              Pending
-            </button>
-             <button
-              onClick={() => setViewMode('settled')}
-              className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'settled' ? 'bg-indigo-600 text-white shadow-lg' : 'bg-slate-900/50 text-slate-400 hover:text-white'}`}
-            >
-              Settled
-            </button>
-             <button
-              onClick={() => setViewMode('all')}
-              className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'all' ? 'bg-indigo-600 text-white shadow-lg' : 'bg-slate-900/50 text-slate-400 hover:text-white'}`}
-            >
-              All Records
-            </button>
           </div>
         </div>
-      </div>
-
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredSupplies.map(supply => (
           <div key={supply.id} className="bg-slate-900 border border-white/5 p-5 rounded-2xl relative overflow-hidden hover:border-indigo-500/30 transition-all flex flex-col justify-between">
