@@ -173,37 +173,37 @@ export default function CameraCapture({ onCapture, onClose }: CameraCaptureProps
         )}
       </div>
 
-      {/* Control Bar Overlay - Absolutely positioned at bottom */}
-      <div className="absolute bottom-0 inset-x-0 pb-12 pt-16 bg-gradient-to-t from-black/80 via-black/40 to-transparent flex items-center justify-center z-40">
+      {/* Control Bar Overlay - Absolutely positioned at bottom with safe area padding */}
+      <div className="absolute bottom-6 inset-x-0 px-6 flex flex-col items-center z-40">
         {!error && (
-          <div className="flex items-center justify-center w-full px-6">
+          <div className="flex items-center justify-center w-full max-w-sm">
             {!capturedImage ? (
               <div className="relative">
-                <div className="absolute -inset-4 bg-white/10 rounded-full blur-2xl animate-pulse" />
+                <div className="absolute -inset-6 bg-white/10 rounded-full blur-3xl animate-pulse" />
                 <button 
                   onClick={capturePhoto}
                   disabled={!stream || isStarting}
-                  className="relative w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-[0_0_40px_rgba(255,255,255,0.2)] active:scale-90 transition-all disabled:opacity-20"
+                  className="relative w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-[0_0_50px_rgba(255,255,255,0.3)] active:scale-90 transition-all disabled:opacity-20 z-10"
                 >
-                  <div className="w-17 h-17 rounded-full border-[4px] border-slate-950 flex items-center justify-center">
+                  <div className="w-16 h-16 rounded-full border-[6px] border-slate-950 flex items-center justify-center">
                     <Camera className="w-8 h-8 text-slate-950" />
                   </div>
                 </button>
               </div>
             ) : (
-              <div className="flex gap-4 w-full max-w-xs">
+              <div className="flex gap-4 w-full bg-black/60 backdrop-blur-xl p-4 rounded-[40px] border border-white/10 shadow-2xl">
                 <button 
                   onClick={handleRetake}
-                  className="flex-1 flex items-center justify-center gap-2 h-12 bg-white/10 text-white rounded-2xl font-black uppercase text-[9px] tracking-widest border border-white/20 backdrop-blur-md active:scale-95 transition-all"
+                  className="flex-1 flex items-center justify-center gap-2 h-14 bg-white/10 text-white rounded-3xl font-black uppercase text-[10px] tracking-widest border border-white/20 active:scale-95 transition-all"
                 >
-                  <RefreshCw className="w-4 h-4" />
+                  <RefreshCw className="w-5 h-5" />
                   Retake
                 </button>
                 <button 
                   onClick={handleSave}
-                  className="flex-[1.5] flex items-center justify-center gap-2 h-12 bg-blue-600 text-white rounded-2xl font-black uppercase text-[9px] tracking-widest shadow-2xl shadow-blue-500/40 active:scale-95 transition-all"
+                  className="flex-[1.8] flex items-center justify-center gap-2 h-14 bg-blue-600 text-white rounded-3xl font-black uppercase text-[11px] tracking-widest shadow-2xl shadow-blue-500/40 active:scale-95 transition-all"
                 >
-                  <Check className="w-4 h-4" />
+                  <Check className="w-5 h-5" />
                   Use Photo
                 </button>
               </div>

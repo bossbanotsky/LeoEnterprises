@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
 import { Employee, Attendance as AttendanceType, PakyawJob, DailyProof } from '../types';
 import { format, parseISO, eachDayOfInterval, startOfWeek, endOfWeek, addDays, subDays } from 'date-fns';
-import { ChevronDown, ChevronUp, Check, X, ChevronLeft, ChevronRight, Calendar, Calculator, Download, Plus, Camera, FileText, User, MapPin } from 'lucide-react';
+import { ChevronDown, ChevronUp, Check, X, ChevronLeft, ChevronRight, Calendar, Calculator, Download, Plus, Camera, FileText, User, MapPin, RefreshCw } from 'lucide-react';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Skeleton } from './ui/Skeleton';
@@ -67,18 +67,27 @@ export default function Attendance() {
     return () => unsubscribe();
   }, [user, singleDate, activeTab]);
 
-  const handleDeletePhoto = async () => {
-    if (!dailyProof || !user) return;
-    if (!window.confirm('Are you sure you want to delete this proof photo?')) return;
+  const [isDeletingPhoto, setIsDeletingPhoto] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
+  const handleDeletePhoto = async () => {
+    if (!dailyProof || !user || !dailyProof.id) return;
+    
+    setIsDeletingPhoto(true);
     try {
-      await setDoc(doc(db, 'dailyProofs', dailyProof.id), {
+      const proofRef = doc(db, 'dailyProofs', dailyProof.id);
+      await setDoc(proofRef, {
         photoUrl: deleteField(),
         updatedAt: new Date().toISOString()
       }, { merge: true });
+      
       await addAuditLog('Deleted Daily Proof Photo', 'DailyProof', `Deleted photo for ${singleDate}.`);
+      setShowDeleteConfirm(false);
     } catch (err) {
+      console.error('Delete photo error:', err);
       handleFirestoreError(err, OperationType.WRITE, 'dailyProofs');
+    } finally {
+      setIsDeletingPhoto(false);
     }
   };
 
@@ -760,115 +769,184 @@ export default function Attendance() {
         ) : activeTab === 'mark' ? (
           <div className="grid grid-cols-1 gap-3">
             {/* Daily Proof Section */}
-            <div className="bg-slate-900/40 rounded-3xl border border-white/5 backdrop-blur-md mb-2 overflow-hidden relative">
-              <div className="absolute top-0 right-0 p-4 opacity-5">
-                <Camera className="w-12 h-12 text-white" />
+            <div className="bg-slate-900 border border-white/5 rounded-[32px] mb-4 overflow-hidden shadow-2xl relative">
+              <div className="absolute top-0 right-0 p-6 opacity-5 pointer-events-none">
+                <Camera className="w-16 h-16 text-white" />
               </div>
               
-              <div className="p-4 sm:p-5">
-                <div className="flex items-center justify-between">
-                  <div className="cursor-pointer" onClick={() => setIsProofExpanded(!isProofExpanded)}>
-                    <h3 className="text-sm font-black text-white uppercase tracking-widest italic flex items-center gap-2">
+              <div className="p-5 sm:p-6">
+                <div 
+                  className="flex items-center justify-between cursor-pointer group"
+                  onClick={() => setIsProofExpanded(!isProofExpanded)}
+                >
+                  <div className="flex-1">
+                    <h3 className="text-sm font-black text-white uppercase tracking-[0.2em] italic flex items-center gap-2 group-hover:text-blue-400 transition-colors">
                       Daily Group Proof
-                      {isProofExpanded ? <ChevronUp className="w-4 h-4 text-white/40" /> : <ChevronDown className="w-4 h-4 text-white/40" />}
+                      <motion.div
+                        animate={{ rotate: isProofExpanded ? 180 : 0 }}
+                        transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                      >
+                        <ChevronDown className="w-4 h-4 text-white/40" />
+                      </motion.div>
                     </h3>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">Requirement for Verification</p>
+                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tight mt-0.5">Verification requirement for current shift</p>
                   </div>
-                  <div className="flex items-center gap-3">
-                    {dailyProof?.photoUrl && (
-                      <div className="flex items-center gap-2">
-                        <span className="text-[9px] font-black text-emerald-400 uppercase bg-emerald-500/10 px-2 py-1 rounded-full border border-emerald-500/20">Uploaded</span>
-                        <div className="flex items-center bg-white/5 rounded-full p-1 border border-white/10">
-                          <button 
-                            onClick={() => setShowProofPhoto(true)}
-                            className="w-7 h-7 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center hover:bg-blue-500/30 transition-all"
-                            title="View Photo"
-                          >
-                            <FileText className="w-3.5 h-3.5" />
-                          </button>
-                          <button 
-                            onClick={handleDeletePhoto}
-                            className="w-7 h-7 rounded-full text-rose-400 flex items-center justify-center hover:bg-rose-500/10 transition-all ml-1"
-                            title="Delete Photo"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                    <button 
-                      onClick={() => setIsProofExpanded(!isProofExpanded)}
-                      className="w-8 h-8 rounded-full bg-white/5 text-white/40 flex items-center justify-center"
-                    >
-                      {isProofExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                    </button>
-                  </div>
+                  
+                  {dailyProof?.photoUrl && (
+                    <div className="flex items-center gap-2 pr-2">
+                       <div className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
+                          <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest">Verified</span>
+                       </div>
+                    </div>
+                  )}
                 </div>
 
-                {isProofExpanded && (
-                  <motion.div 
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    className="mt-5 relative z-10"
-                  >
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-3">
-                        <button 
-                          onClick={() => setShowCamera(true)}
-                          className="w-full aspect-video bg-white/5 border border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center gap-3 hover:bg-white/10 transition-all group overflow-hidden relative"
-                        >
-                          {dailyProof?.photoUrl ? (
-                             <img src={dailyProof.photoUrl} alt="Daily Proof" className="w-full h-full object-cover opacity-40 group-hover:opacity-60 transition-opacity" />
-                          ) : null}
-                          <div className="absolute inset-0 flex flex-col items-center justify-center">
-                            <div className="w-12 h-12 bg-white/10 text-white rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-                              <Camera className="w-6 h-6" />
+                <AnimatePresence>
+                  {isProofExpanded && (
+                    <motion.div 
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-5 relative z-10">
+                        <div className="space-y-4">
+                          <div className="relative group/photo aspect-video bg-white/5 border border-white/10 rounded-2xl overflow-hidden shadow-inner cursor-pointer">
+                            {dailyProof?.photoUrl ? (
+                              <>
+                                <img 
+                                  src={dailyProof.photoUrl} 
+                                  alt="Daily Proof" 
+                                  className="w-full h-full object-cover transition-transform duration-500 group-hover/photo:scale-105" 
+                                  onClick={() => setShowProofPhoto(true)}
+                                />
+                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/photo:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2" onClick={() => setShowProofPhoto(true)}>
+                                  <div className="w-10 h-10 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center border border-white/20">
+                                    <FileText className="w-5 h-5 text-white" />
+                                  </div>
+                                  <span className="text-[10px] font-black text-white uppercase tracking-widest">Tap to View Full</span>
+                                </div>
+                              </>
+                            ) : (
+                              <div 
+                                onClick={() => setShowCamera(true)}
+                                className="w-full h-full flex flex-col items-center justify-center gap-3 hover:bg-white/5 transition-colors"
+                              >
+                                <div className="w-14 h-14 bg-white/5 text-white/40 rounded-full flex items-center justify-center border border-white/10 border-dashed group-hover:scale-110 transition-transform">
+                                  <Camera className="w-7 h-7" />
+                                </div>
+                                <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">No photo uploaded yet</span>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="flex flex-wrap gap-2">
+                            {dailyProof?.photoUrl ? (
+                              <>
+                                <button 
+                                  onClick={() => setShowCamera(true)}
+                                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-white/5 text-white rounded-xl font-black uppercase text-[10px] tracking-widest border border-white/10 hover:bg-white/10 transition-all"
+                                >
+                                  <RefreshCw className="w-4 h-4 text-white/60" />
+                                  Update Photo
+                                </button>
+                                <button 
+                                  onClick={() => setShowDeleteConfirm(true)}
+                                  className="px-4 py-3 bg-rose-500/10 text-rose-500 rounded-xl font-black uppercase text-[10px] tracking-widest border border-rose-500/20 hover:bg-rose-500 hover:text-white transition-all group"
+                                >
+                                  <X className="w-4 h-4 group-hover:scale-125 transition-transform" />
+                                </button>
+                              </>
+                            ) : (
+                              <button 
+                                onClick={() => setShowCamera(true)}
+                                className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-blue-600 text-white rounded-2xl font-black uppercase text-xs tracking-[0.2em] shadow-xl shadow-blue-500/20 hover:bg-blue-500 hover:scale-[1.02] active:scale-95 transition-all"
+                              >
+                                <Camera className="w-5 h-5" />
+                                Open Camera
+                              </button>
+                            )}
+                          </div>
+
+                          <AnimatePresence>
+                            {showDeleteConfirm && (
+                              <motion.div 
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: 10 }}
+                                className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl space-y-3"
+                              >
+                                <p className="text-[10px] font-black text-rose-400 uppercase tracking-widest text-center">Delete proof photo permanently?</p>
+                                <div className="flex gap-2">
+                                  <button 
+                                    onClick={() => setShowDeleteConfirm(false)}
+                                    className="flex-1 h-10 bg-white/5 text-white rounded-xl text-[9px] font-black uppercase tracking-widest border border-white/10"
+                                  >
+                                    Cancel
+                                  </button>
+                                  <button 
+                                    onClick={handleDeletePhoto}
+                                    disabled={isDeletingPhoto}
+                                    className="flex-1 h-10 bg-rose-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg shadow-rose-600/20 disabled:opacity-50"
+                                  >
+                                    {isDeletingPhoto ? 'Deleting...' : 'Confirm Delete'}
+                                  </button>
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <Label className="text-[10px] font-black text-white/40 uppercase tracking-widest ml-1">Photographer Details</Label>
+                            <div className="relative group">
+                              <div className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 group-focus-within:text-blue-500 transition-colors">
+                                <User className="w-full h-full" />
+                              </div>
+                              <Input 
+                                placeholder="Employee who took the proof..."
+                                value={photographerName}
+                                onChange={(e) => setPhotographerName(e.target.value)}
+                                onBlur={() => handleSaveProof()}
+                                className="h-12 pl-12 bg-white/5 border-white/10 text-white text-sm font-bold rounded-2xl focus:ring-blue-500/20 focus:bg-white/10 transition-all"
+                              />
                             </div>
-                            <span className="text-[10px] font-black text-white uppercase tracking-widest mt-2">
-                              {dailyProof?.photoUrl ? 'Retake Group Photo' : 'Take Group Photo'}
-                            </span>
                           </div>
-                        </button>
 
-                        <div className="space-y-1">
-                          <Label className="text-[9px] font-black text-white/40 uppercase tracking-widest ml-1">Photographer Name</Label>
-                          <div className="relative">
-                            <User className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/30" />
-                            <Input 
-                              placeholder="Who took the photo?"
-                              value={photographerName}
-                              onChange={(e) => setPhotographerName(e.target.value)}
+                          <div className="p-4 bg-white/[0.02] border border-white/5 rounded-2xl space-y-2">
+                            <h4 className="text-[10px] font-black text-white/40 uppercase tracking-widest flex items-center gap-2">
+                              <MapPin className="w-3.5 h-3.5" />
+                              Site Information
+                            </h4>
+                            <div className="flex flex-col gap-1">
+                               <span className="text-xs font-bold text-white/80">{singleDate} (Current Shift)</span>
+                               <span className="text-[10px] text-white/30 font-medium italic">Timestamp will be logged upon submission</span>
+                            </div>
+                          </div>
+
+                          <div className="flex-1 flex flex-col space-y-1">
+                            <Label className="text-[9px] font-black text-white/40 uppercase tracking-widest ml-1 flex justify-between">
+                              Notes / Reason
+                            </Label>
+                            <textarea
+                              placeholder="Add reason if no photo or other details..."
+                              value={proofNotes}
+                              onChange={(e) => setProofNotes(e.target.value)}
                               onBlur={() => handleSaveProof()}
-                              className="h-9 pl-9 bg-white/5 border-white/10 text-white text-xs font-bold rounded-xl focus:ring-blue-500/20"
+                              className="flex-1 min-h-[100px] bg-white/5 border border-white/10 text-white text-xs font-medium p-3 rounded-2xl focus:ring-2 focus:ring-blue-500/20 resize-none placeholder:text-white/10"
                             />
+                            {isSavingProof && (
+                              <div className="text-[8px] font-black text-blue-400 uppercase tracking-widest text-right mt-1 animate-pulse">
+                                Saving...
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
-
-                      <div className="space-y-3 flex flex-col">
-                        <div className="flex-1 flex flex-col space-y-1">
-                          <Label className="text-[9px] font-black text-white/40 uppercase tracking-widest ml-1 flex justify-between">
-                            External / Off-Site Notes
-                            <span className="text-[8px] opacity-70 italic lowercase">(Name - Location - Reason)</span>
-                          </Label>
-                          <textarea
-                            placeholder="1. Juan - Site A - Installation..."
-                            value={proofNotes}
-                            onChange={(e) => setProofNotes(e.target.value)}
-                            onBlur={() => handleSaveProof()}
-                            className="flex-1 min-h-[120px] bg-white/5 border border-white/10 text-white text-xs font-medium p-3 rounded-2xl focus:ring-2 focus:ring-blue-500/20 resize-none placeholder:text-white/10"
-                          />
-                        </div>
-                        {isSavingProof && (
-                          <div className="text-[9px] font-black text-blue-400 uppercase tracking-widest text-center animate-pulse">
-                            Auto-Saving...
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
 
