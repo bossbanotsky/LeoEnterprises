@@ -104,6 +104,12 @@ export default function Payroll() {
 
   const handleMarkAsPaid = async (bulkId: string) => {
     try {
+      // Find bulk payroll data to get the date range
+      const bulkDoc = await getDoc(doc(db, 'bulkPayrolls', bulkId));
+      const bulkData = bulkDoc.data();
+      const startDateStr = bulkData?.startDate;
+      const endDateStr = bulkData?.endDate;
+
       // Find accounts for splitting/routing
       const allAccSnap = await getDocsFirebase(collection(db, 'accounts'));
       const allAccounts = allAccSnap.docs.map(d => ({ id: d.id, ...d.data() } as any));
@@ -112,11 +118,26 @@ export default function Payroll() {
       const containerAcc = allAccounts.find(a => a.name.toLowerCase().replace(/\s+/g, '').includes('container'));
       const defaultAcc = allAccounts.find(a => a.isDefault) || allAccounts.find(a => a.type === 'cash') || allAccounts[0];
 
+      const paidAt = new Date().toISOString();
       await updateDoc(doc(db, 'bulkPayrolls', bulkId), {
         status: 'paid',
-        paidAt: new Date().toISOString()
+        paidAt
       });
       
+      // Mark Daily Proofs for deletion if they fall within this range
+      if (startDateStr && endDateStr) {
+        const proofsQ = query(
+          collection(db, 'dailyProofs'),
+          where('date', '>=', startDateStr),
+          where('date', '<=', endDateStr)
+        );
+        const proofsSnap = await getDocs(proofsQ);
+        const proofUpdates = proofsSnap.docs.map(async (pDoc) => {
+          await updateDoc(pDoc.ref, { payrollPaidAt: paidAt });
+        });
+        await Promise.all(proofUpdates);
+      }
+
       const payrollsQ = query(collection(db, 'payrolls'), where('bulkId', '==', bulkId));
       const payrollsSnap = await getDocs(payrollsQ);
       

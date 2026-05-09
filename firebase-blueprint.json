@@ -238,6 +238,21 @@
         "uid": { "type": "string" }
       },
       "required": ["invoiceNumber", "date", "status", "createdAt", "uid"]
+    },
+    "DailyProof": {
+      "title": "Daily Proof",
+      "description": "Daily attendance proof (photo and notes)",
+      "type": "object",
+      "properties": {
+        "date": { "type": "string", "format": "date" },
+        "photoUrl": { "type": "string", "description": "Base64 encoded compressed photo" },
+        "photographer": { "type": "string" },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "isTemporary": { "type": "boolean" },
+        "payrollPaidAt": { "type": "string", "format": "date-time", "description": "When the payroll covering this date was paid" }
+      },
+      "required": ["date", "photoUrl", "photographer", "createdAt"]
     }
   },
   "firestore": {
@@ -252,6 +267,10 @@
     "/attendance/{attendanceId}": {
       "schema": { "$ref": "#/entities/Attendance" },
       "description": "Attendance records"
+    },
+    "/dailyProofs/{proofId}": {
+      "schema": { "$ref": "#/entities/DailyProof" },
+      "description": "Daily attendance proof photos and notes"
     },
     "/payrolls/{payrollId}": {
       "schema": { "$ref": "#/entities/Payroll" },

@@ -242,3 +242,15 @@ export interface Invoice {
   updatedAt: string;
   uid: string;
 }
+
+export interface DailyProof {
+  id: string;
+  date: string;
+  photoUrl: string;
+  photographer: string;
+  notes: string;
+  createdAt: string;
+  updatedAt?: string;
+  isTemporary: boolean;
+  payrollPaidAt?: string;
+}

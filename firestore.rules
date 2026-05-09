@@ -172,5 +172,10 @@ service cloud.firestore {
       allow update: if isMasterAdmin() && isValidInvoice(incoming());
       allow delete: if isMasterAdmin();
     }
+
+    match /dailyProofs/{proofId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isSignedIn();
+    }
   }
 }

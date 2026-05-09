@@ -1,15 +1,17 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { collection, onSnapshot, query, where, doc, setDoc, orderBy, deleteField, deleteDoc } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, doc, setDoc, orderBy, deleteField, deleteDoc, getDocs } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType, addAuditLog } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
-import { Employee, Attendance as AttendanceType, PakyawJob } from '../types';
+import { Employee, Attendance as AttendanceType, PakyawJob, DailyProof } from '../types';
 import { format, parseISO, eachDayOfInterval, startOfWeek, endOfWeek, addDays, subDays } from 'date-fns';
-import { ChevronDown, ChevronUp, Check, X, ChevronLeft, ChevronRight, Calendar, Calculator, Download, Plus } from 'lucide-react';
+import { ChevronDown, ChevronUp, Check, X, ChevronLeft, ChevronRight, Calendar, Calculator, Download, Plus, Camera, FileText, User, MapPin } from 'lucide-react';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Skeleton } from './ui/Skeleton';
+import { motion, AnimatePresence } from 'motion/react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
+import CameraCapture from './CameraCapture';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -25,6 +27,105 @@ export default function Attendance() {
   const [expandedEmp, setExpandedEmp] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  
+  const [dailyProof, setDailyProof] = useState<DailyProof | null>(null);
+  const [showCamera, setShowCamera] = useState(false);
+  const [isSavingProof, setIsSavingProof] = useState(false);
+  const [proofNotes, setProofNotes] = useState('');
+  const [photographerName, setPhotographerName] = useState('');
+  const [showProofPhoto, setShowProofPhoto] = useState(false);
+  const [isProofExpanded, setIsProofExpanded] = useState(true);
+
+  // Fetch Daily Proof for selected singleDate
+  useEffect(() => {
+    if (!user || activeTab !== 'mark') return;
+
+    const proofQ = query(
+      collection(db, 'dailyProofs'),
+      where('date', '==', singleDate)
+    );
+
+    const unsubscribe = onSnapshot(proofQ, (snapshot) => {
+      if (!snapshot.empty) {
+        const docSnap = snapshot.docs[0];
+        const data = docSnap.data() as DailyProof;
+        setDailyProof({ ...data, id: docSnap.id });
+        setProofNotes(data.notes || '');
+        setPhotographerName(data.photographer || '');
+        // Collapse if already has photo to save space
+        if (data.photoUrl) setIsProofExpanded(false);
+      } else {
+        setDailyProof(null);
+        setProofNotes('');
+        setPhotographerName('');
+        setIsProofExpanded(true);
+      }
+    }, (err) => {
+      handleFirestoreError(err, OperationType.GET, 'dailyProofs');
+    });
+
+    return () => unsubscribe();
+  }, [user, singleDate, activeTab]);
+
+  const handleSaveProof = async (photoUrl?: string) => {
+    if (!user || !singleDate) return;
+    setIsSavingProof(true);
+    try {
+      const proofId = dailyProof?.id || `proof_${singleDate}`;
+      const proofData: Partial<DailyProof> = {
+        date: singleDate,
+        notes: proofNotes,
+        photographer: photographerName,
+        updatedAt: new Date().toISOString() as any,
+        isTemporary: true
+      };
+
+      if (photoUrl) {
+        proofData.photoUrl = photoUrl;
+      }
+
+      if (!dailyProof) {
+        (proofData as any).createdAt = new Date().toISOString();
+      }
+
+      await setDoc(doc(db, 'dailyProofs', proofId), proofData, { merge: true });
+      setShowCamera(false);
+      await addAuditLog('Saved Daily Proof', 'DailyProof', `Saved proof for ${singleDate}.`);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, 'dailyProofs');
+    } finally {
+      setIsSavingProof(false);
+    }
+  };
+
+  // Cleanup effect: Delete proofs older than 3 days after payroll payment
+  useEffect(() => {
+    if (!user) return;
+    const cleanupOldProofs = async () => {
+      try {
+        const proofsRef = collection(db, 'dailyProofs');
+        const q = query(proofsRef, where('payrollPaidAt', '!=', null));
+        const snapshot = await getDocs(q);
+        
+        const now = new Date();
+        const deletePromises = snapshot.docs.map(async (docSnap) => {
+          const data = docSnap.data();
+          if (data.payrollPaidAt) {
+            const paidDate = new Date(data.payrollPaidAt);
+            const diffDays = (now.getTime() - paidDate.getTime()) / (1000 * 3600 * 24);
+            if (diffDays > 3) {
+              await deleteDoc(doc(db, 'dailyProofs', docSnap.id));
+            }
+          }
+        });
+        await Promise.all(deletePromises);
+      } catch (err) {
+        console.error('Proof cleanup failed:', err);
+      }
+    };
+    
+    cleanupOldProofs();
+  }, [user]);
 
   const employees = useMemo(() => {
     return allEmps
@@ -643,6 +744,109 @@ export default function Attendance() {
           </div>
         ) : activeTab === 'mark' ? (
           <div className="grid grid-cols-1 gap-3">
+            {/* Daily Proof Section */}
+            <div className="bg-slate-900/40 rounded-3xl border border-white/5 backdrop-blur-md mb-2 overflow-hidden relative">
+              <div className="absolute top-0 right-0 p-4 opacity-5">
+                <Camera className="w-12 h-12 text-white" />
+              </div>
+              
+              <div className="p-4 sm:p-5">
+                <div className="flex items-center justify-between">
+                  <div className="cursor-pointer" onClick={() => setIsProofExpanded(!isProofExpanded)}>
+                    <h3 className="text-sm font-black text-white uppercase tracking-widest italic flex items-center gap-2">
+                      Daily Group Proof
+                      {isProofExpanded ? <ChevronUp className="w-4 h-4 text-white/40" /> : <ChevronDown className="w-4 h-4 text-white/40" />}
+                    </h3>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">Requirement for Verification</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {dailyProof?.photoUrl && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-[9px] font-black text-emerald-400 uppercase bg-emerald-500/10 px-2 py-1 rounded-full border border-emerald-500/20">Uploaded</span>
+                        <button 
+                          onClick={() => setShowProofPhoto(true)}
+                          className="w-8 h-8 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center hover:bg-blue-500/30 transition-all"
+                        >
+                          <FileText className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
+                    <button 
+                      onClick={() => setIsProofExpanded(!isProofExpanded)}
+                      className="w-8 h-8 rounded-full bg-white/5 text-white/40 flex items-center justify-center"
+                    >
+                      {isProofExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                {isProofExpanded && (
+                  <motion.div 
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="mt-5 relative z-10"
+                  >
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-3">
+                        <button 
+                          onClick={() => setShowCamera(true)}
+                          className="w-full aspect-video bg-white/5 border border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center gap-3 hover:bg-white/10 transition-all group overflow-hidden relative"
+                        >
+                          {dailyProof?.photoUrl ? (
+                             <img src={dailyProof.photoUrl} alt="Daily Proof" className="w-full h-full object-cover opacity-40 group-hover:opacity-60 transition-opacity" />
+                          ) : null}
+                          <div className="absolute inset-0 flex flex-col items-center justify-center">
+                            <div className="w-12 h-12 bg-white/10 text-white rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                              <Camera className="w-6 h-6" />
+                            </div>
+                            <span className="text-[10px] font-black text-white uppercase tracking-widest mt-2">
+                              {dailyProof?.photoUrl ? 'Retake Group Photo' : 'Take Group Photo'}
+                            </span>
+                          </div>
+                        </button>
+
+                        <div className="space-y-1">
+                          <Label className="text-[9px] font-black text-white/40 uppercase tracking-widest ml-1">Photographer Name</Label>
+                          <div className="relative">
+                            <User className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/30" />
+                            <Input 
+                              placeholder="Who took the photo?"
+                              value={photographerName}
+                              onChange={(e) => setPhotographerName(e.target.value)}
+                              onBlur={() => handleSaveProof()}
+                              className="h-9 pl-9 bg-white/5 border-white/10 text-white text-xs font-bold rounded-xl focus:ring-blue-500/20"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-3 flex flex-col">
+                        <div className="flex-1 flex flex-col space-y-1">
+                          <Label className="text-[9px] font-black text-white/40 uppercase tracking-widest ml-1 flex justify-between">
+                            External / Off-Site Notes
+                            <span className="text-[8px] opacity-70 italic lowercase">(Name - Location - Reason)</span>
+                          </Label>
+                          <textarea
+                            placeholder="1. Juan - Site A - Installation..."
+                            value={proofNotes}
+                            onChange={(e) => setProofNotes(e.target.value)}
+                            onBlur={() => handleSaveProof()}
+                            className="flex-1 min-h-[120px] bg-white/5 border border-white/10 text-white text-xs font-medium p-3 rounded-2xl focus:ring-2 focus:ring-blue-500/20 resize-none placeholder:text-white/10"
+                          />
+                        </div>
+                        {isSavingProof && (
+                          <div className="text-[9px] font-black text-blue-400 uppercase tracking-widest text-center animate-pulse">
+                            Auto-Saving...
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </div>
+            </div>
+
             {employees.map(emp => {
               const atts = attendanceData[`${emp.id}_${singleDate}`] || [];
               const hasPakyaw = atts.some(a => a.status === 'pakyaw');
@@ -1076,6 +1280,40 @@ export default function Attendance() {
       )}
     </div>
     
+      {/* Proof Photo Modal */}
+      <Dialog open={showProofPhoto} onOpenChange={setShowProofPhoto}>
+        <DialogContent className="max-w-2xl bg-black/90 border-white/10 p-0 overflow-hidden">
+          {dailyProof?.photoUrl && (
+            <div className="relative aspect-[4/3]">
+              <img src={dailyProof.photoUrl} alt="Group Proof" className="w-full h-full object-contain shadow-2xl" />
+              <div className="absolute bottom-0 inset-x-0 p-6 bg-gradient-to-t from-black to-transparent">
+                <p className="text-white font-black uppercase text-xs">Proof for {format(parseISO(singleDate), 'MMMM d, yyyy')}</p>
+                <p className="text-white/60 text-[10px] font-bold uppercase tracking-widest mt-1">Shot by: {dailyProof.photographer || 'Unspecified'}</p>
+                {dailyProof.notes && (
+                  <div className="mt-4 p-3 bg-white/5 rounded-xl border border-white/10 backdrop-blur-sm">
+                    <p className="text-[10px] font-medium text-white/80 whitespace-pre-wrap">{dailyProof.notes}</p>
+                  </div>
+                )}
+              </div>
+              <button 
+                onClick={() => setShowProofPhoto(false)}
+                className="absolute top-4 right-4 w-10 h-10 bg-black/50 text-white rounded-full flex items-center justify-center backdrop-blur-md border border-white/20"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Camera Capture UI */}
+      {showCamera && (
+        <CameraCapture 
+          onCapture={(photo) => handleSaveProof(photo)}
+          onClose={() => setShowCamera(false)}
+        />
+      )}
+
       {/* Export Options Modal */}
       <Dialog open={showExportModal} onOpenChange={setShowExportModal}>
         <DialogContent className="sm:max-w-md border-slate-200 dark:border-slate-800">
