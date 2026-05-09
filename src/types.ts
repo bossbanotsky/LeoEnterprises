@@ -29,6 +29,7 @@ export interface Employee {
 
   // Profile Picture
   photoURL?: string;
+  carryOverBalance?: number;
 }
 
 export interface Attendance {
@@ -49,6 +50,7 @@ export interface CashAdvanceDeduction {
   payrollId: string;
   amount: number;
   date: string;
+  period?: string;
 }
 
 export interface Account {
@@ -82,6 +84,7 @@ export interface CashAdvance {
   amount: number;
   remainingBalance: number;
   notes?: string;
+  originPayrollId?: string;
   deductions?: CashAdvanceDeduction[];
   createdAt: string;
   uid: string;
@@ -159,8 +162,11 @@ export interface Payroll {
   totalPay: number;
   cashAdvanceIds?: string[];
   bulkId: string | null;
-  status?: 'paid';
+  status?: 'paid' | 'carried_over';
   isAttendancePaid?: boolean;
+  carryOverFromPrevious?: number;
+  carryOverToNext?: number;
+  carryOverNotes?: string;
   dailyAttendanceLog?: { date: string, status: string, regHrs: number, otHrs: number, isWorkDay: boolean }[];
   uid: string;
   generatedAt: string;

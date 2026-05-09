@@ -56,9 +56,9 @@ export function calculateAttendanceHours(att: Attendance) {
     } else if (att.status === 'present') {
       regHrs = 8;
     } else if (att.status === 'ut') {
-      regHrs = 5; 
+      regHrs = 4; // Standard half-day if no times provided
     } else if (att.status === 'hd') {
-      regHrs = 5; // 7am - 12pm is 5 hours
+      regHrs = 4; // Standard half-day if no times provided
     } else {
       regHrs = 0;
     }

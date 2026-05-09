@@ -122,3 +122,18 @@ export async function deleteTransaction(transactionId: string) {
     throw error;
   }
 }
+
+export async function deleteTransactionsByReference(referenceId: string) {
+  try {
+    const { getDocs, query, where, collection } = await import('firebase/firestore');
+    const q = query(collection(db, 'transactions'), where('referenceId', '==', referenceId));
+    const snap = await getDocs(q);
+    
+    for (const txDoc of snap.docs) {
+      await deleteTransaction(txDoc.id);
+    }
+  } catch (error) {
+    console.error('Error deleting transactions by reference:', error);
+    throw error;
+  }
+}

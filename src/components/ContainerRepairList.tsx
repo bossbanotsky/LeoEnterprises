@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, setDoc, doc, deleteDoc, arrayUnion, where, getDocs, updateDoc, getDoc } from "firebase/firestore";
-import { db } from "../firebase";
+import { db, addAuditLog, handleFirestoreError, OperationType } from "../firebase";
 import { useAuth } from "../contexts/AuthContext";
 import { ContainerRepair, Invoice } from "../types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "./ui/dialog";
@@ -163,7 +163,7 @@ export default function ContainerRepairList() {
         const data = containerDoc.data() as ContainerRepair;
         if (!data) continue;
 
-        await updateDoc(docRef, {
+        const updateData: any = {
             status: newStatus,
             updatedAt: new Date().toISOString(),
             history: arrayUnion({
@@ -172,7 +172,14 @@ export default function ContainerRepairList() {
               note: `Bulk update to ${newStatus}`,
               updatedBy: user?.uid,
             })
-        });
+        };
+
+        if (newStatus !== 'repairing') {
+          updateData.platform = null;
+        }
+
+        await updateDoc(docRef, updateData);
+        await addAuditLog('Updated Container', 'Containers', `Updated status to ${newStatus}.`);
 
         if (newStatus === 'repaired') {
             const containerCode = (data.type === 'foreign' ? `${data.localCode} - ${data.foreignCode}` : `${data.localCode} - ${data.localCode}`).trim();
@@ -199,6 +206,7 @@ export default function ContainerRepairList() {
   };
 
   const handleBulkDelete = async () => {
+    if (!window.confirm(`Are you sure you want to delete ${selectedIds.length} selected container(s) and their associated jobs/attendance? This cannot be undone.`)) return;
     try {
       await Promise.all(selectedIds.map(async (id) => {
           const docRef = doc(db, "containerRepairs", id);
@@ -220,6 +228,7 @@ export default function ContainerRepairList() {
           }
           await deleteDoc(docRef);
       }));
+      await addAuditLog('Bulk Deleted Containers', 'Containers', `Deleted ${selectedIds.length} container(s).`);
       showToast("Selected containers and associated items deleted successfully", "success");
       setSelectedIds([]);
     } catch (error) {
@@ -237,6 +246,7 @@ export default function ContainerRepairList() {
 
       if (data) {
         const containerCode = (data.type === 'foreign' ? `${data.localCode} - ${data.foreignCode}` : `${data.localCode} - ${data.localCode}`).trim();
+        await addAuditLog('Deleted Container', 'Containers', `Deleted container ${containerCode}.`);
         const q = query(collection(db, 'pakyawJobs'), where('containerNumber', '==', containerCode));
         const snapshot = await getDocs(q);
         for (const jobDoc of snapshot.docs) {
@@ -353,6 +363,7 @@ export default function ContainerRepairList() {
           createdBy: user.uid,
           history: [historyEntry],
         });
+        await addAuditLog('Added Container', 'Containers', `Added container ${currentContainerCode}.`);
         showToast("Container Repair added successfully", "success");
       }
       setIsAddOpen(false);
@@ -497,14 +508,22 @@ export default function ContainerRepairList() {
                 <div className="flex items-center justify-between mb-2">
                   <h3 className={`text-sm sm:text-xl font-black italic tracking-tighter ${containerOnPlatform ? 'text-amber-500' : 'text-slate-700'}`}>{p}</h3>
                   {containerOnPlatform && (
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      onClick={() => handleOpenEdit(containerOnPlatform)}
-                      className="h-6 w-6 sm:h-8 sm:w-8 p-0 text-slate-400 hover:text-white hover:bg-white/5"
-                    >
-                      <Edit className="w-3 h-3 sm:w-4 sm:h-4" />
-                    </Button>
+                    <div className="flex items-center gap-1 sm:gap-2">
+                      <input 
+                        type="checkbox" 
+                        checked={selectedIds.includes(containerOnPlatform.id)} 
+                        onChange={() => toggleSelect(containerOnPlatform.id)} 
+                        className="w-4 h-4 rounded border-slate-700 bg-slate-800 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                      />
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => handleOpenEdit(containerOnPlatform)}
+                        className="h-6 w-6 sm:h-8 sm:w-8 p-0 text-slate-400 hover:text-white hover:bg-white/5"
+                      >
+                        <Edit className="w-3 h-3 sm:w-4 sm:h-4" />
+                      </Button>
+                    </div>
                   )}
                 </div>
                 

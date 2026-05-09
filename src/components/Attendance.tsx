@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { collection, onSnapshot, query, where, doc, setDoc, orderBy, deleteField, deleteDoc } from 'firebase/firestore';
-import { db, handleFirestoreError, OperationType } from '../firebase';
+import { db, handleFirestoreError, OperationType, addAuditLog } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
 import { Employee, Attendance as AttendanceType, PakyawJob } from '../types';
@@ -242,6 +242,9 @@ export default function Attendance() {
       } else if (value === 'present') {
         updated.timeIn = '07:00'; 
         updated.timeOut = '16:00'; 
+      } else if (value === 'ut') {
+        updated.timeIn = '08:00'; // Defaults to 1 hour late
+        updated.timeOut = '16:00';
       } else if (value === 'absent' || value === 'pakyaw') {
         updated.timeIn = deleteField() as any;
         updated.timeOut = deleteField() as any;
@@ -324,6 +327,7 @@ export default function Attendance() {
         userId: user.uid, 
         createdAt: updated.createdAt || new Date().toISOString() 
       }, { merge: true });
+      await addAuditLog('Marked Attendance', 'Attendance', `Marked attendance for employee ID ${employeeId} on ${date}.`);
     } catch (error) { 
       setError(`Save failed`); 
       handleFirestoreError(error, OperationType.WRITE, 'attendance'); 

@@ -94,6 +94,23 @@ export interface FirestoreErrorInfo {
   }
 }
 
+export async function addAuditLog(action: string, module: string, details?: any) {
+  if (auth.currentUser) {
+    try {
+      await addDoc(collection(db, 'logs'), {
+        message: `${module}: ${action}`,
+        level: 'info',
+        details: details ? (typeof details === 'string' ? details : JSON.stringify(details)) : null,
+        createdAt: new Date().toISOString(),
+        uid: auth.currentUser.uid,
+        userEmail: auth.currentUser.email
+      });
+    } catch (logError) {
+      console.error('Failed to log audit event to Firestore', logError);
+    }
+  }
+}
+
 export async function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
   const errInfo: FirestoreErrorInfo = {
     error: error instanceof Error ? error.message : String(error),

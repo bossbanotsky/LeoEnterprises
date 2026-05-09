@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, orderBy, addDoc, doc, updateDoc, deleteDoc, getDoc, deleteField } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db, addAuditLog, handleFirestoreError, OperationType } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
 import { recordTransaction, deleteTransaction } from '../services/financeService';
@@ -109,6 +109,7 @@ export default function DailySupplies() {
         delete supplyData.debtPaid;
 
         await updateDoc(doc(db, 'dailySupplies', editingSupply.id), supplyData);
+        await addAuditLog('Updated supply', 'Daily Supplies', `Updated supply ${formData.itemType}.`);
       } else {
         // If company is paying directly, auto-deduct from selected accounts
         let txIds: string[] = [];
@@ -138,6 +139,7 @@ export default function DailySupplies() {
 
         supplyData.financeTransactionIds = txIds;
         await addDoc(collection(db, 'dailySupplies'), supplyData);
+        await addAuditLog('Added supply', 'Daily Supplies', `Added supply ${formData.itemType}.`);
       }
       
       setIsAddOpen(false);
@@ -285,6 +287,7 @@ export default function DailySupplies() {
         await deleteTransaction((supply as any).settlementTransactionId);
       }
       await deleteDoc(doc(db, 'dailySupplies', supply.id));
+      await addAuditLog('Deleted supply', 'Daily Supplies', `Deleted supply ${supply.itemType}.`);
       setDeleteConfirmId(null);
     } catch (e) {
       console.error(e);

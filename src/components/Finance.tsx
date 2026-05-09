@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { collection, addDoc, query, onSnapshot, orderBy, deleteDoc, doc, updateDoc, getDoc, increment, where, limit, getDocs, getDocFromServer } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db, addAuditLog } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
 import { recordTransaction } from '../services/financeService';
@@ -59,11 +59,13 @@ export default function Finance() {
         ...newAccount,
         updatedAt: new Date().toISOString()
       });
+      await addAuditLog('Updated Account', 'Finance', `Updated account ${newAccount.name}.`);
     } else {
       await addDoc(collection(db, 'accounts'), { 
         ...newAccount, 
         createdAt: new Date().toISOString() 
       });
+      await addAuditLog('Added Account', 'Finance', `Added account ${newAccount.name}.`);
     }
     setIsAddAccountOpen(false);
     setEditingId(null);
@@ -84,7 +86,9 @@ export default function Finance() {
 
   const deleteAccount = async (id: string) => {
     try {
+      const accName = accounts.find(a => a.id === id)?.name || id;
       await deleteDoc(doc(db, 'accounts', id));
+      await addAuditLog('Deleted Account', 'Finance', `Deleted account ${accName}.`);
       setItemToDelete(null);
     } catch (e) {
       console.error(e);
@@ -120,6 +124,7 @@ export default function Finance() {
   const deleteTransaction = async (t: Transaction) => {
     try {
       await deleteDoc(doc(db, 'transactions', t.id));
+      await addAuditLog('Deleted transaction', 'Finance', `Deleted ${t.type} of ₱${t.amount}.`);
       if (t.accountId) {
         try {
           const accountRef = doc(db, 'accounts', t.accountId);
@@ -406,6 +411,21 @@ export default function Finance() {
               </div>
             ) : detailData ? (
               <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
+                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Account</p>
+                    <p className="text-white font-bold text-sm tracking-tight">
+                      {accounts.find(a => a.id === selectedTransaction.accountId)?.name || 'Unknown Account'}
+                    </p>
+                  </div>
+                  <div className="bg-white/5 p-4 rounded-2xl border border-white/5 text-right">
+                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Department</p>
+                    <span className="text-[10px] bg-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded font-black uppercase tracking-widest">
+                      {selectedTransaction.department || 'Other'}
+                    </span>
+                  </div>
+                </div>
+
                 {selectedTransaction.category === 'Billing' && (
                   <>
                     <div className="grid grid-cols-2 gap-4">
@@ -529,12 +549,24 @@ export default function Finance() {
                 )}
               </div>
             ) : (
-              <div className="text-center py-12 space-y-4 bg-white/5 rounded-3xl border border-white/5">
+              <div className="text-center py-12 space-y-6 bg-white/5 rounded-3xl border border-white/5">
                 <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto">
                     <Search className="w-8 h-8 text-slate-600" />
                 </div>
-                <p className="text-slate-500 font-bold">Document Archive Not Found</p>
-                <p className="text-slate-600 text-[10px] font-mono">REF: {selectedTransaction.referenceId}</p>
+                <div>
+                  <p className="text-slate-500 font-bold mb-1">Document Archive Not Found</p>
+                  <p className="text-slate-600 text-[10px] font-mono mb-4">REF: {selectedTransaction.referenceId}</p>
+                  <button 
+                    onClick={() => {
+                      setItemToDelete({ id: selectedTransaction.id, type: 'transaction', transaction: selectedTransaction });
+                      setSelectedTransaction(null);
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 bg-rose-600/20 text-rose-400 rounded-xl hover:bg-rose-600/30 transition-all mx-auto text-xs font-bold"
+                  >
+                    <Trash2 className="w-4 h-4" /> Remove Orphaned Entry
+                  </button>
+                  <p className="text-[10px] text-slate-600 mt-4 max-w-[200px] mx-auto italic">This record exists in Finance but its source document (Payroll or Cash Advance) was already deleted.</p>
+                </div>
               </div>
             )}
             <div className="mt-8 pt-6 border-t border-white/5">

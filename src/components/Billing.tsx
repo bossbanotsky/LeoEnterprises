@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { recordTransaction } from '../services/financeService';
 import { collection, onSnapshot, addDoc, updateDoc, query, orderBy, deleteDoc, doc, getDoc, getDocs, where } from 'firebase/firestore';
-import { db, handleFirestoreError, OperationType } from '../firebase';
+import { db, handleFirestoreError, OperationType, addAuditLog } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useCompanyInfo } from '../hooks/useCompanyInfo';
 import { Invoice, InvoiceItem } from '../types';
@@ -219,12 +219,14 @@ export default function Billing({ mode = 'invoices' }: BillingProps) {
       let referenceId = editingId;
       if (editingId && invoiceRef) {
         await updateDoc(invoiceRef, invoiceData);
+        await addAuditLog('Updated Invoice', 'Billing', `Updated invoice ${invoiceData.invoiceNumber}.`);
         showToast('Invoice updated successfully', 'success');
       } else {
         const docRef = await addDoc(collection(db, 'invoices'), {
           ...invoiceData,
           createdAt: new Date().toISOString()
         });
+        await addAuditLog('Added Invoice', 'Billing', `Created invoice ${invoiceData.invoiceNumber}.`);
         referenceId = docRef.id;
         showToast('Invoice created successfully', 'success');
       }
@@ -304,6 +306,7 @@ export default function Billing({ mode = 'invoices' }: BillingProps) {
       const invoiceSnap = await getDoc(invoiceRef);
       if (invoiceSnap.exists()) {
         const data = invoiceSnap.data();
+        const invoiceNum = data.invoiceNumber || id;
         if (data.status === 'paid') {
           // Find a cash account
           const cashAccQ = query(collection(db, 'accounts'), where('type', '==', 'cash'));
@@ -315,13 +318,16 @@ export default function Billing({ mode = 'invoices' }: BillingProps) {
             'expense',
             data.totalSum || 0,
             'Billing',
-            `Reversal: Invoice #${data.invoiceNumber} deleted`,
+            `Reversal: Invoice #${invoiceNum} deleted`,
             `${id}-reversal`,
             user?.uid
           );
         }
+        await deleteDoc(invoiceRef);
+        await addAuditLog('Deleted Invoice', 'Billing', `Deleted invoice #${invoiceNum}.`);
+      } else {
+         await deleteDoc(invoiceRef);
       }
-      await deleteDoc(invoiceRef);
       setDeleteConfirmId(null);
     } catch (error) {
       handleFirestoreError(error, OperationType.DELETE, 'invoices');

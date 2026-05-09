@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, addDoc, updateDoc, query, orderBy, deleteDoc, doc, setDoc, getDocs, where } from 'firebase/firestore';
-import { db, handleFirestoreError, OperationType } from '../firebase';
+import { db, handleFirestoreError, OperationType, addAuditLog } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
 import { Employee, PakyawJob, ContainerRepair, Attendance } from '../types';
@@ -135,6 +135,7 @@ export default function Pakyaw() {
           totalPrice: parseFloat(form.totalPrice),
           employeeIds: form.employeeIds
         });
+        await addAuditLog('Updated Pakyaw Job', 'Pakyaw', `Updated job for container ${form.containerNumber}.`);
         setEditingId(null);
       } else {
         const jobRef = await addDoc(collection(db, 'pakyawJobs'), {
@@ -147,6 +148,7 @@ export default function Pakyaw() {
           createdAt: new Date().toISOString(),
           uid: user.uid
         });
+        await addAuditLog('Added Pakyaw Job', 'Pakyaw', `Added job for container ${form.containerNumber}.`);
         pjwId = jobRef.id;
 
         if (bulkCreateAttendance) {
@@ -188,7 +190,9 @@ export default function Pakyaw() {
   const handleDelete = async (id: string) => {
     if (!user) return;
     try {
+      const jobDesc = jobs.find(j => j.id === id)?.description || id;
       await deleteDoc(doc(db, 'pakyawJobs', id));
+      await addAuditLog('Deleted Pakyaw Job', 'Pakyaw', `Deleted job ${jobDesc}.`);
     } catch (error) {
       handleFirestoreError(error, OperationType.DELETE, 'pakyawJobs');
     }

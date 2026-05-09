@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
-import { db, handleFirestoreError, OperationType } from '../firebase';
+import { db, handleFirestoreError, OperationType, addAuditLog } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
 import { Employee } from '../types';
@@ -89,6 +89,7 @@ export default function Employees() {
           photoURL: form.photoURL || '',
           role: form.role || 'employee'
         });
+        await addAuditLog('Updated employee', 'HR', `Employee ${form.fullName} (${finalCustomId}) was updated.`);
         setEditingEmployee(null);
       } else {
         await addDoc(collection(db, 'employees'), {
@@ -105,6 +106,7 @@ export default function Employees() {
           createdAt: new Date().toISOString(),
           uid: user.uid
         });
+        await addAuditLog('Added employee', 'HR', `Employee ${form.fullName} (${finalCustomId}) was added.`);
       }
       setIsAddOpen(false);
       setForm({ customId: '', fullName: '', position: '', dailySalary: '', email: '', loginPassword: '', photoURL: '', role: 'employee' });
@@ -116,7 +118,9 @@ export default function Employees() {
   const handleDeleteEmployee = async (id: string) => {
     if (!user) return;
     try {
+      const empName = employees.find(e => e.id === id)?.fullName || id;
       await deleteDoc(doc(db, 'employees', id));
+      await addAuditLog('Deleted employee', 'HR', `Employee ${empName} was deleted.`);
       setSelectedEmployee(null);
     } catch (error) {
       handleFirestoreError(error, OperationType.DELETE, 'employees');
@@ -171,6 +175,7 @@ export default function Employees() {
     try {
       const newStatus = emp.status === 'active' ? 'inactive' : 'active';
       await updateDoc(doc(db, 'employees', emp.id), { status: newStatus });
+      await addAuditLog('Changed employee status', 'HR', `Employee ${emp.fullName} status changed to ${newStatus}.`);
       setSelectedEmployee({ ...emp, status: newStatus });
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, 'employees');
@@ -235,6 +240,7 @@ export default function Employees() {
           await updateDoc(doc(db, 'employees', emp.id), { customId: newId });
         }
       }
+      await addAuditLog('Rearranged Employee IDs', 'HR', `Employee IDs have been sequentially reassigned.`);
     } catch (error) {
       console.error("Error rearranging IDs:", error);
     } finally {

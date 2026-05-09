@@ -939,8 +939,8 @@ export default function EmployeeDashboard() {
                         <span>Balance Due</span>
                       )}
                     </div>
-                    <div className={`text-2xl font-black italic tracking-tighter leading-none ${(selectedPayslip.totalPay - calculatePaidAmount(selectedPayslip)) <= 0 ? 'text-emerald-500' : (selectedPayslip.totalPay < 0 ? 'text-red-600' : 'text-blue-600')}`}>
-                      ₱{(selectedPayslip.totalPay - calculatePaidAmount(selectedPayslip)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    <div className={`text-2xl font-black italic tracking-tighter leading-none ${(selectedPayslip.totalPay - (selectedPayslip.carryOverToNext || 0) - calculatePaidAmount(selectedPayslip)) <= 0 ? 'text-emerald-500' : (selectedPayslip.totalPay - (selectedPayslip.carryOverToNext || 0) < 0 ? 'text-red-600' : 'text-blue-600')}`}>
+                      ₱{(selectedPayslip.totalPay - (selectedPayslip.carryOverToNext || 0) - calculatePaidAmount(selectedPayslip)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </div>
                     {calculatePaidAmount(selectedPayslip) > 0 && calculatePaidAmount(selectedPayslip) < selectedPayslip.totalPay && (
                       <div className="text-[8px] font-black text-slate-400 mt-1 uppercase tracking-tight">
@@ -980,6 +980,13 @@ export default function EmployeeDashboard() {
                           <div className="flex justify-between items-center">
                             <span className="text-green-600 font-bold text-[8px] uppercase">OT ({selectedPayslip.totalOtHours}h)</span>
                             <span className="font-black text-green-600">{selectedPayslip.otPay.toFixed(2)}</span>
+                          </div>
+                        )}
+
+                        {selectedPayslip.carryOverFromPrevious > 0 && (
+                          <div className="flex justify-between items-center bg-emerald-50 p-1.5 rounded-lg border border-emerald-100">
+                             <span className="text-emerald-700 font-black text-[7px] uppercase tracking-wider">Carry-over from Prev</span>
+                             <span className="font-black text-emerald-700">₱{selectedPayslip.carryOverFromPrevious.toFixed(2)}</span>
                           </div>
                         )}
                       </div>
@@ -1066,7 +1073,14 @@ export default function EmployeeDashboard() {
                         </div>
                       ))}
 
-                      {selectedPayslip.cashAdvanceDeduction === 0 && !selectedPayslip.isAttendancePaid && (!selectedPayslip.pakyawItems || !selectedPayslip.pakyawItems.some((i: any) => i.isPaid)) && (
+                      {selectedPayslip.carryOverToNext > 0 && (
+                        <div className="flex justify-between items-center bg-amber-50 p-1.5 rounded-lg border border-amber-100">
+                          <span className="text-amber-700 font-bold text-[7px] uppercase tracking-tighter">Transferred to Next</span>
+                          <span className="font-black text-amber-700">-{selectedPayslip.carryOverToNext.toFixed(2)}</span>
+                        </div>
+                      )}
+
+                      {selectedPayslip.cashAdvanceDeduction === 0 && !selectedPayslip.isAttendancePaid && (!selectedPayslip.pakyawItems || !selectedPayslip.pakyawItems.some((i: any) => i.isPaid)) && (selectedPayslip.carryOverToNext === 0 || !selectedPayslip.carryOverToNext) && (
                         <div className="p-2 border border-dashed border-slate-100 rounded-md text-center">
                           <span className="text-[7px] text-slate-300 uppercase font-black">None</span>
                         </div>
@@ -1075,7 +1089,7 @@ export default function EmployeeDashboard() {
                       <div className="flex justify-between items-center border-t border-slate-100 pt-1 mt-1">
                          <span className="text-red-600 font-black uppercase text-[9px]">Total Ded</span>
                          <span className="text-red-600 font-black text-[11px] font-mono italic">
-                           -{(selectedPayslip.cashAdvanceDeduction + calculatePaidAmount(selectedPayslip)).toFixed(2)}
+                           -{(selectedPayslip.cashAdvanceDeduction + calculatePaidAmount(selectedPayslip) + (selectedPayslip.carryOverToNext || 0)).toFixed(2)}
                          </span>
                       </div>
                     </div>
