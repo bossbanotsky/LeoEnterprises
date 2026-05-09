@@ -37,6 +37,10 @@ export default function ContainerRepairList() {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'active' | 'repairing' | 'repaired'>('active');
   const [viewMode, setViewMode] = useState<'list' | 'platform'>('list');
+  
+  const [searchQuery, setSearchQuery] = useState("");
+  const [typeFilter, setTypeFilter] = useState<'all' | 'local' | 'foreign'>('all');
+  const [foreignSubType, setForeignSubType] = useState<'all' | 'no-local' | 'has-foreign'>('all');
 
   const [repairedSortOrder, setRepairedSortOrder] = useState<'asc' | 'desc'>('asc');
 
@@ -67,6 +71,21 @@ export default function ContainerRepairList() {
     let filtered = containers.filter(c => {
         if ((c.status || 'active') !== activeTab) return false;
         
+        // Search
+        if (searchQuery) {
+            const code = (c.type === 'foreign' ? `${c.localCode || ''} - ${c.foreignCode || ''}` : `${c.localCode || ''} - ${c.localCode || ''}`).trim().toLowerCase();
+            if (!code.includes(searchQuery.toLowerCase())) return false;
+        }
+
+        // Type filter
+        if (typeFilter !== 'all' && c.type !== typeFilter) return false;
+
+        // Foreign sub-filter
+        if (c.type === 'foreign' && foreignSubType !== 'all') {
+            if (foreignSubType === 'no-local' && c.localCode) return false; // This has local code
+            if (foreignSubType === 'has-foreign' && !c.foreignCode) return false; // This does not have foreign code
+        }
+        
         // If it's in the repaired tab, check if it's already billed
         if (c.status === 'repaired') {
             const codeDisplay = c.type === 'foreign' ? `${c.localCode} - ${c.foreignCode}` : `${c.localCode} - ${c.localCode}`;
@@ -92,7 +111,7 @@ export default function ContainerRepairList() {
     }
 
     return filtered;
-  }, [containers, activeTab, invoices, repairedSortOrder]);
+  }, [containers, activeTab, invoices, repairedSortOrder, searchQuery, typeFilter, foreignSubType]);
 
   const handleOpenAdd = () => {
     setEditingId(null);
@@ -381,6 +400,41 @@ export default function ContainerRepairList() {
             <Button onClick={handleBulkDelete} variant="destructive">Delete Selected</Button>
         </div>
       )}
+
+      <div className="bg-slate-900/40 p-4 rounded-xl border border-white/5 flex flex-wrap gap-4 items-center">
+        <input 
+          type="text"
+          placeholder="Search by code..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="bg-slate-950 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-indigo-500 flex-1 min-w-[200px]"
+        />
+        
+        <select 
+          value={typeFilter}
+          onChange={(e) => {
+            setTypeFilter(e.target.value as 'all' | 'local' | 'foreign');
+            setForeignSubType('all');
+          }}
+          className="bg-slate-950 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+        >
+          <option value="all">All Types</option>
+          <option value="local">Local</option>
+          <option value="foreign">Foreign</option>
+        </select>
+
+        {typeFilter === 'foreign' && (
+          <select 
+            value={foreignSubType}
+            onChange={(e) => setForeignSubType(e.target.value as 'all' | 'no-local' | 'has-foreign')}
+            className="bg-slate-950 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          >
+            <option value="all">Any Foreign</option>
+            <option value="no-local">No Local Code</option>
+            <option value="has-foreign">Has Foreign Code</option>
+          </select>
+        )}
+      </div>
 
       <div className="flex border-b border-white/10 mt-6 relative overflow-x-auto pb-1 custom-scrollbar w-full">
         <button
