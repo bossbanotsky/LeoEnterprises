@@ -794,8 +794,9 @@ export default function Attendance() {
                   
                   {dailyProof?.photoUrl && (
                     <div className="flex items-center gap-2 pr-2">
-                       <div className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
-                          <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest">Verified</span>
+                       <div className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full flex items-center gap-2">
+                          <Check className="w-3 h-3 text-emerald-400" />
+                          <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest">Saved</span>
                        </div>
                     </div>
                   )}
@@ -820,16 +821,16 @@ export default function Attendance() {
                                   className="w-full h-full object-cover transition-transform duration-500 group-hover/photo:scale-105" 
                                   onClick={() => setShowProofPhoto(true)}
                                 />
-                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/photo:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2" onClick={() => setShowProofPhoto(true)}>
-                                  <div className="w-10 h-10 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center border border-white/20">
-                                    <FileText className="w-5 h-5 text-white" />
+                                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/photo:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 z-10" onClick={(e) => { e.stopPropagation(); setShowProofPhoto(true); }}>
+                                  <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center border border-white/20 shadow-2xl">
+                                    <FileText className="w-6 h-6 text-white" />
                                   </div>
-                                  <span className="text-[10px] font-black text-white uppercase tracking-widest">Tap to View Full</span>
+                                  <span className="text-[10px] font-black text-white uppercase tracking-[0.2em] bg-black/40 px-3 py-1 rounded-full border border-white/5 backdrop-blur-sm">Tap to View</span>
                                 </div>
                               </>
                             ) : (
                               <div 
-                                onClick={() => setShowCamera(true)}
+                                onClick={(e) => { e.stopPropagation(); setShowCamera(true); }}
                                 className="w-full h-full flex flex-col items-center justify-center gap-3 hover:bg-white/5 transition-colors"
                               >
                                 <div className="w-14 h-14 bg-white/5 text-white/40 rounded-full flex items-center justify-center border border-white/10 border-dashed group-hover:scale-110 transition-transform">
@@ -871,25 +872,30 @@ export default function Attendance() {
                           <AnimatePresence>
                             {showDeleteConfirm && (
                               <motion.div 
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: 10 }}
-                                className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl space-y-3"
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.95 }}
+                                className="absolute inset-0 z-50 bg-slate-950/90 backdrop-blur-xl flex flex-col items-center justify-center p-6 text-center"
                               >
-                                <p className="text-[10px] font-black text-rose-400 uppercase tracking-widest text-center">Delete proof photo permanently?</p>
-                                <div className="flex gap-2">
+                                <div className="w-16 h-16 bg-rose-500/10 rounded-full flex items-center justify-center mb-4">
+                                  <X className="w-8 h-8 text-rose-500" />
+                                </div>
+                                <h4 className="text-sm font-black text-white uppercase tracking-widest italic mb-2">Delete Photo?</h4>
+                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight mb-6 max-w-[200px]">This action cannot be undone. The proof photo will be removed from the record.</p>
+                                
+                                <div className="flex gap-3 w-full max-w-[240px]">
                                   <button 
                                     onClick={() => setShowDeleteConfirm(false)}
-                                    className="flex-1 h-10 bg-white/5 text-white rounded-xl text-[9px] font-black uppercase tracking-widest border border-white/10"
+                                    className="flex-1 h-12 bg-white/5 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest border border-white/10 active:scale-95 transition-all"
                                   >
                                     Cancel
                                   </button>
                                   <button 
-                                    onClick={handleDeletePhoto}
+                                    onClick={(e) => { e.stopPropagation(); handleDeletePhoto(); }}
                                     disabled={isDeletingPhoto}
-                                    className="flex-1 h-10 bg-rose-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg shadow-rose-600/20 disabled:opacity-50"
+                                    className="flex-1 h-12 bg-rose-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-rose-600/30 active:scale-95 transition-all disabled:opacity-50"
                                   >
-                                    {isDeletingPhoto ? 'Deleting...' : 'Confirm Delete'}
+                                    {isDeletingPhoto ? 'Deleting...' : 'Delete'}
                                   </button>
                                 </div>
                               </motion.div>

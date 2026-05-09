@@ -67,8 +67,8 @@ export default function CameraCapture({ onCapture, onClose }: CameraCaptureProps
       const video = videoRef.current;
       const canvas = canvasRef.current;
       
-      // Target dimensions for compression
-      const MAX_DIM = 1024;
+      // Target dimensions for compression (800px for high compression but super visible)
+      const MAX_DIM = 800;
       let width = video.videoWidth;
       let height = video.videoHeight;
 
@@ -88,9 +88,13 @@ export default function CameraCapture({ onCapture, onClose }: CameraCaptureProps
       canvas.height = height;
       const ctx = canvas.getContext('2d');
       if (ctx) {
+        // High quality smoothing before compression
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
         ctx.drawImage(video, 0, 0, width, height);
-        // High quality but highly compressed JPG
-        const base64 = canvas.toDataURL('image/jpeg', 0.5);
+        
+        // Full compression but visible (0.4 quality, 800px max)
+        const base64 = canvas.toDataURL('image/jpeg', 0.4);
         setCapturedImage(base64);
         stopCamera();
       }
@@ -191,20 +195,28 @@ export default function CameraCapture({ onCapture, onClose }: CameraCaptureProps
                 </button>
               </div>
             ) : (
-              <div className="flex gap-4 w-full bg-black/60 backdrop-blur-xl p-4 rounded-[40px] border border-white/10 shadow-2xl">
+              <div className="flex flex-col gap-4 w-full">
+                <div className="flex gap-4 bg-black/60 backdrop-blur-xl p-4 rounded-[40px] border border-white/10 shadow-2xl">
+                  <button 
+                    onClick={handleRetake}
+                    className="flex-1 flex items-center justify-center gap-2 h-14 bg-white/10 text-white rounded-3xl font-black uppercase text-[10px] tracking-widest border border-white/20 active:scale-95 transition-all"
+                  >
+                    <RefreshCw className="w-5 h-5" />
+                    Retake
+                  </button>
+                  <button 
+                    onClick={handleSave}
+                    className="flex-[1.8] flex items-center justify-center gap-2 h-14 bg-blue-600 text-white rounded-3xl font-black uppercase text-[11px] tracking-widest shadow-2xl shadow-blue-500/40 active:scale-95 transition-all"
+                  >
+                    <Check className="w-5 h-5" />
+                    Use Photo
+                  </button>
+                </div>
                 <button 
-                  onClick={handleRetake}
-                  className="flex-1 flex items-center justify-center gap-2 h-14 bg-white/10 text-white rounded-3xl font-black uppercase text-[10px] tracking-widest border border-white/20 active:scale-95 transition-all"
+                  onClick={() => { setCapturedImage(null); stopCamera(); onClose(); }}
+                  className="mx-auto px-6 py-2 bg-white/5 text-white/40 text-[10px] uppercase font-black tracking-widest hover:text-white transition-colors"
                 >
-                  <RefreshCw className="w-5 h-5" />
-                  Retake
-                </button>
-                <button 
-                  onClick={handleSave}
-                  className="flex-[1.8] flex items-center justify-center gap-2 h-14 bg-blue-600 text-white rounded-3xl font-black uppercase text-[11px] tracking-widest shadow-2xl shadow-blue-500/40 active:scale-95 transition-all"
-                >
-                  <Check className="w-5 h-5" />
-                  Use Photo
+                  Cancel & Exit
                 </button>
               </div>
             )}
