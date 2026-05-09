@@ -19,7 +19,7 @@ export default function Finance() {
     type: 'cash' | 'bank' | 'wallet';
     balance: number;
     isDefault: boolean;
-    department?: 'container' | 'junkshop' | 'other';
+    department?: 'container' | 'junkshop' | 'supplies' | 'other';
   }>({ name: '', type: 'cash', balance: 0, isDefault: false, department: 'other' });
 
   const [manualTransaction, setManualTransaction] = useState({
@@ -27,7 +27,7 @@ export default function Finance() {
     type: 'income' as 'income' | 'expense',
     amount: 0,
     category: 'Daily Operation',
-    department: 'container' as 'container' | 'junkshop' | 'other',
+    department: 'container' as 'container' | 'junkshop' | 'supplies' | 'other',
     description: '',
     date: new Date().toISOString().split('T')[0]
   });

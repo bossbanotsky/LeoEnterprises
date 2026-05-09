@@ -57,9 +57,29 @@ export default function Employees() {
       const dailySalary = parseFloat(form.dailySalary);
       const hourlyRate = dailySalary / 8;
       
+      let finalCustomId = form.customId || '';
+
+      // Check for duplicate ID
+      if (finalCustomId) {
+        const isDuplicate = employees.some(emp => 
+          emp.customId === finalCustomId && 
+          (!editingEmployee || emp.id !== editingEmployee.id)
+        );
+
+        if (isDuplicate) {
+          // If duplicate, get the next one
+          const nextId = getNextEmployeeId(form.position);
+          alert(`Employee ID "${finalCustomId}" already exists. Re-assigning to next available ID: ${nextId}`);
+          finalCustomId = nextId;
+        }
+      } else if (form.role === 'employee') {
+        // Auto-generate if empty for regular employees
+        finalCustomId = getNextEmployeeId(form.position);
+      }
+      
       if (editingEmployee) {
         await updateDoc(doc(db, 'employees', editingEmployee.id), {
-          customId: form.customId || '',
+          customId: finalCustomId,
           fullName: form.fullName,
           position: form.position || 'Staff',
           dailySalary,
@@ -72,7 +92,7 @@ export default function Employees() {
         setEditingEmployee(null);
       } else {
         await addDoc(collection(db, 'employees'), {
-          customId: form.customId || '',
+          customId: finalCustomId,
           fullName: form.fullName,
           position: form.position || 'Staff',
           status: 'active',
@@ -157,23 +177,92 @@ export default function Employees() {
     }
   };
 
-  const activeEmployees = useMemo(() => {
-    return employees.filter(e => e.status === 'active' || !e.status);
-  }, [employees]);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'deactivated'>('active');
+  const [isRearranging, setIsRearranging] = useState(false);
+  const [sortOption, setSortOption] = useState<'alphabetical' | 'id'>('alphabetical');
 
-  const archivedEmployees = useMemo(() => {
-    return employees.filter(e => e.status === 'inactive');
-  }, [employees]);
+  const getNextEmployeeId = (position: string = '') => {
+    const posLower = position.toLowerCase();
+    const prefix = posLower.includes('labor') ? 'LEL' 
+                 : posLower.includes('skill') ? 'LEK' 
+                 : 'LE';
 
-  const [activeTab, setActiveTab] = useState<'active' | 'archived'>('active');
+    const idsWithPrefix = employees
+      .filter(e => (e.role === 'employee' || !e.role) && e.customId?.startsWith(`${prefix}-`))
+      .map(e => {
+        const match = e.customId?.match(new RegExp(`${prefix}-(\\d+)`));
+        return match ? parseInt(match[1]) : 0;
+      });
+    const maxId = idsWithPrefix.length > 0 ? Math.max(...idsWithPrefix) : 0;
+    const nextId = maxId + 1;
+    return `${prefix}-${nextId.toString().padStart(3, '0')}`;
+  };
+
+  const handleRearrangeIds = async () => {
+    if (!user) return;
+    
+    setIsRearranging(true);
+    try {
+      const regularEmployees = employees
+        .filter(e => e.role === 'employee' || !e.role)
+        .sort((a, b) => {
+          const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          return timeA - timeB;
+        });
+
+      let laborCount = 0;
+      let skilledCount = 0;
+      let otherCount = 0;
+
+      for (let i = 0; i < regularEmployees.length; i++) {
+        const emp = regularEmployees[i];
+        const posLower = (emp.position || '').toLowerCase();
+        let newId = '';
+
+        if (posLower.includes('labor')) {
+          laborCount++;
+          newId = `LEL-${laborCount.toString().padStart(3, '0')}`;
+        } else if (posLower.includes('skill')) {
+          skilledCount++;
+          newId = `LEK-${skilledCount.toString().padStart(3, '0')}`;
+        } else {
+          otherCount++;
+          newId = `LE-${otherCount.toString().padStart(3, '0')}`;
+        }
+
+        if (emp.customId !== newId) {
+          await updateDoc(doc(db, 'employees', emp.id), { customId: newId });
+        }
+      }
+    } catch (error) {
+      console.error("Error rearranging IDs:", error);
+    } finally {
+      setIsRearranging(false);
+    }
+  };
+
+  const counts = useMemo(() => {
+    return {
+      all: employees.length,
+      active: employees.filter(e => e.status === 'active' || !e.status).length,
+      deactivated: employees.filter(e => e.status === 'inactive').length
+    };
+  }, [employees]);
 
   const filteredEmployees = useMemo(() => {
-    const list = activeTab === 'active' ? activeEmployees : archivedEmployees;
+    let list = employees;
+    if (statusFilter === 'active') {
+      list = employees.filter(e => e.status === 'active' || !e.status);
+    } else if (statusFilter === 'deactivated') {
+      list = employees.filter(e => e.status === 'inactive');
+    }
+    
     return list.filter(emp => 
         (emp.fullName || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
         (emp.position && emp.position.toLowerCase().includes(searchQuery.toLowerCase()))
     );
-  }, [activeTab, activeEmployees, archivedEmployees, searchQuery]);
+  }, [statusFilter, employees, searchQuery]);
 
   // Grouping logic
   const groupedEmployees: Record<string, Employee[]> = {};
@@ -185,28 +274,77 @@ export default function Employees() {
   
   const sortedPositions = Object.keys(groupedEmployees).sort();
 
+  sortedPositions.forEach(pos => {
+    groupedEmployees[pos].sort((a, b) => {
+      if (sortOption === 'alphabetical') {
+        return (a.fullName || '').localeCompare(b.fullName || '');
+      } else {
+        return (a.customId || '').localeCompare(b.customId || '', undefined, { numeric: true, sensitivity: 'base' });
+      }
+    });
+  });
+
   return (
     <div className="h-full flex flex-col relative">
       <div className="mb-4">
-        <h1 className="text-2xl md:text-3xl font-black text-white mb-4 uppercase italic tracking-tight">Employees</h1>
-        <div className="flex bg-slate-950 p-1 rounded-xl border border-white/10 mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-black text-white uppercase italic tracking-tight">HR Management</h1>
+            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">Total Workforce: {counts.all} Employees</p>
+            {(user?.email === 'marqueznorthed@gmail.com' || employees.find(e => e.uid === user?.uid)?.role === 'admin' || employees.find(e => e.uid === user?.uid)?.role === 'ceo') && (
+              <button 
+                onClick={handleRearrangeIds}
+                disabled={isRearranging}
+                className="mt-3 text-[10px] font-black uppercase tracking-widest text-white hover:text-blue-300 transition-colors flex items-center gap-2 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg border border-blue-500 shadow-lg disabled:opacity-50"
+              >
+                {isRearranging ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
+                Rearrange LE-IDs
+              </button>
+            )}
+          </div>
+          
+          <div className="flex bg-slate-950 p-1 rounded-xl border border-white/10 shrink-0">
             <button 
-                className={`flex-1 px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${activeTab === 'active' ? 'bg-white/10 text-white shadow-xl' : 'text-slate-500 hover:text-white'}`}
-                onClick={() => setActiveTab('active')}
-            >Active</button>
+                className={`px-3 py-2 text-[9px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center gap-2 ${statusFilter === 'all' ? 'bg-white/10 text-white shadow-xl' : 'text-slate-500 hover:text-white'}`}
+                onClick={() => setStatusFilter('all')}
+            >
+              All
+              <span className={`px-1.5 py-0.5 rounded-md ${statusFilter === 'all' ? 'bg-white/20' : 'bg-white/5'}`}>{counts.all}</span>
+            </button>
             <button 
-                className={`flex-1 px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${activeTab === 'archived' ? 'bg-white/10 text-white shadow-xl' : 'text-slate-500 hover:text-white'}`}
-                onClick={() => setActiveTab('archived')}
-            >Archived</button>
+                className={`px-3 py-2 text-[9px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center gap-2 ${statusFilter === 'active' ? 'bg-white/10 text-white shadow-xl' : 'text-slate-500 hover:text-white'}`}
+                onClick={() => setStatusFilter('active')}
+            >
+              Active
+              <span className={`px-1.5 py-0.5 rounded-md ${statusFilter === 'active' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/5'}`}>{counts.active}</span>
+            </button>
+            <button 
+                className={`px-3 py-2 text-[9px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center gap-2 ${statusFilter === 'deactivated' ? 'bg-white/10 text-white shadow-xl' : 'text-slate-500 hover:text-white'}`}
+                onClick={() => setStatusFilter('deactivated')}
+            >
+              Deactivated
+              <span className={`px-1.5 py-0.5 rounded-md ${statusFilter === 'deactivated' ? 'bg-rose-500/20 text-rose-400' : 'bg-white/5'}`}>{counts.deactivated}</span>
+            </button>
+          </div>
         </div>
-        <div className="relative group">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 transition-colors group-focus-within:text-blue-500" />
-          <Input 
-            placeholder="Search employees..." 
-            className="pl-10 bg-transparent border border-white/10 rounded-xl h-12 text-white placeholder:text-slate-500 focus-visible:ring-blue-500 transition-all font-bold"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+        <div className="flex gap-2">
+          <div className="relative group flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 transition-colors group-focus-within:text-blue-500" />
+            <Input 
+              placeholder="Search employees..." 
+              className="pl-10 bg-transparent border border-white/10 rounded-xl h-12 text-white placeholder:text-slate-500 focus-visible:ring-blue-500 transition-all font-bold"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <select
+            value={sortOption}
+            onChange={(e) => setSortOption(e.target.value as 'alphabetical' | 'id')}
+            className="bg-slate-950 border border-white/10 rounded-xl px-3 h-12 text-[10px] font-black uppercase tracking-widest text-slate-300 focus:outline-none focus:border-blue-500 cursor-pointer"
+          >
+            <option value="alphabetical">Sort A-Z</option>
+            <option value="id">Sort by ID</option>
+          </select>
         </div>
       </div>
 
@@ -229,7 +367,7 @@ export default function Employees() {
                 <div className="w-2 h-2 rounded-full bg-blue-500" /> {position}
               </h2>
               <div className="space-y-4">
-                {groupedEmployees[position].sort((a, b) => a.fullName.localeCompare(b.fullName)).map(emp => (
+                {groupedEmployees[position].map(emp => (
                     <Interactive 
                       key={emp.id} 
                       onClick={() => setSelectedEmployee(emp)}
@@ -273,7 +411,7 @@ export default function Employees() {
                             ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40 shadow-[0_0_15px_rgba(16,185,129,0.2)]' 
                             : 'bg-white/5 text-white/30 border-white/10'
                         }`}>
-                          {emp.status || 'Active'}
+                          {(emp.status === 'inactive') ? 'Deactivated' : (emp.status || 'Active')}
                         </span>
                         <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-blue-600 transition-colors">
                           <ChevronRight className="w-4 h-4 text-white/40 group-hover:text-white" />
@@ -297,6 +435,8 @@ export default function Employees() {
         if (!open) {
           setEditingEmployee(null);
           setForm({ customId: '', fullName: '', position: '', dailySalary: '', email: '', loginPassword: '', photoURL: '', role: 'employee' });
+        } else if (!editingEmployee) {
+          setForm(prev => ({ ...prev, customId: '' }));
         }
       }}>
         <DialogTrigger render={<button className="absolute bottom-6 right-2 w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg flex items-center justify-center transition-transform active:scale-95 z-10" />}>
@@ -348,7 +488,7 @@ export default function Employees() {
           <form onSubmit={handleAddEmployee} className="space-y-4 max-h-[60vh] overflow-y-auto px-1">
             <div className="space-y-2">
               <Label>Employee ID (Optional)</Label>
-              <Input value={form.customId} onChange={e => setForm({...form, customId: e.target.value})} placeholder="e.g. EMP-001" className="rounded-xl" />
+              <Input value={form.customId} onChange={e => setForm({...form, customId: e.target.value})} placeholder="Auto-generates (e.g. LEL/LEK) based on Position" className="rounded-xl" />
             </div>
             <div className="space-y-2">
               <Label>Full Name</Label>
@@ -555,7 +695,7 @@ export default function Employees() {
                   <div>
                     <div className="font-medium text-slate-900 dark:text-white">Account Status</div>
                     <div className="text-sm text-slate-500 dark:text-slate-400">
-                      Currently {selectedEmployee.status || 'active'}
+                      Currently {selectedEmployee.status === 'inactive' ? 'Deactivated' : (selectedEmployee.status || 'active')}
                     </div>
                   </div>
                   <Button 
