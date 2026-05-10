@@ -248,10 +248,13 @@ export default function Attendance() {
     
     let total = 0;
     const date = key.split('_')[1];
-    const hourlyRate = emp.dailySalary / 8;
 
     atts.forEach(att => {
       if (att.status === 'absent') return;
+      
+      // Use historical rate if available, fall back to current
+      const rateToUse = att.hourlyRate || (emp.dailySalary / 8);
+
       if (att.status === 'pakyaw') {
         if (ignorePakyaw) return;
         const jobId = att.pakyawJobId;
@@ -262,7 +265,7 @@ export default function Attendance() {
           }
         }
       } else {
-        total += ((att.regularHours || 0) + (att.otHours || 0)) * hourlyRate;
+        total += ((att.regularHours || 0) + (att.otHours || 0)) * rateToUse;
       }
     });
 
@@ -276,10 +279,13 @@ export default function Attendance() {
     dates.forEach(date => {
       const key = `${emp.id}_${date}`;
       const atts = attendanceData[key] || [];
-      const hourlyRate = emp.dailySalary / 8;
 
       atts.forEach(att => {
         if (att.status === 'absent') return;
+
+        // Use historical rate if available, fall back to current
+        const rateToUse = att.hourlyRate || (emp.dailySalary / 8);
+
         if (att.status === 'pakyaw') {
           const jobId = att.pakyawJobId;
           if (jobId) {
@@ -292,7 +298,7 @@ export default function Attendance() {
             }
           }
         } else {
-          total += ((att.regularHours || 0) + (att.otHours || 0)) * hourlyRate;
+          total += ((att.regularHours || 0) + (att.otHours || 0)) * rateToUse;
         }
       });
     });
@@ -448,6 +454,10 @@ export default function Attendance() {
     // Persist to Firebase
     if (!user) return;
     try {
+      const employee = allEmps.find(e => e.id === employeeId);
+      const dailyRate = employee?.dailySalary || 0;
+      const hourlyRate = dailyRate / 8;
+
       const docId = recordId || `${employeeId}_${date}_${Date.now()}`;
       const { id, ...dataToSave } = updated;
       
@@ -461,6 +471,8 @@ export default function Attendance() {
         employeeId, 
         date, 
         userId: user.uid, 
+        dailyRate,
+        hourlyRate,
         createdAt: updated.createdAt || new Date().toISOString() 
       }, { merge: true });
       await addAuditLog('Marked Attendance', 'Attendance', `Marked attendance for employee ID ${employeeId} on ${date}.`);
@@ -1332,6 +1344,9 @@ export default function Attendance() {
                                            <span>{att.timeIn} - {att.timeOut}</span>
                                            <span className="text-slate-400">({att.regularHours}h {att.otHours ? `+ ${att.otHours}h OT` : ''})</span>
                                          </>
+                                       )}
+                                       {att.dailyRate && (
+                                         <span className="text-slate-400 border-l border-slate-200 dark:border-slate-700 pl-2">₱{att.dailyRate}/day</span>
                                        )}
                                        {isPakyaw_detail && (
                                          <span className="text-amber-600">

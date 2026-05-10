@@ -41,6 +41,8 @@ export interface Attendance {
   status: 'present' | 'absent' | 'pakyaw' | 'ut' | 'hd';
   regularHours: number;
   otHours: number;
+  dailyRate: number;
+  hourlyRate: number;
   pakyawJobId?: string; // Add this
   createdAt: string;
   userId: string;

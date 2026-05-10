@@ -678,11 +678,20 @@ export default function Payroll() {
           }
         });
 
+        let regularPay = 0;
+        let otPay = 0;
+
         dateRange.forEach(date => {
           const att = empAtts.find(a => a.date === date);
           
           if (att) {
             const { regHrs, otHrs } = calculateAttendanceHours(att);
+            
+            // IMPORTANT: Use historical rate from snapshot if it exists, otherwise fall back to current
+            const effectiveHourlyRate = att.hourlyRate || (emp.dailySalary / 8);
+            regularPay += regHrs * effectiveHourlyRate;
+            otPay += otHrs * effectiveHourlyRate;
+
             const dailyWorkLog = `${format(parseISO(date), 'MMM dd')}: ${regHrs}h Reg${otHrs ? `, ${otHrs}h OT` : ''}${att.status === 'hd' ? ' (HD)' : ''}`;
             
             let statusLabel: string = att.status;
@@ -736,11 +745,7 @@ export default function Payroll() {
           }
         });
 
-        const hourlyRate = emp.dailySalary / 8;
-        const regularPay = totalRegularHours * hourlyRate;
-        const otPay = totalOtHours * hourlyRate;
-        
-        // Finalize totalPakyawPay from items
+        // Pakyaw logic... (already handles completed status)
         totalPakyawPay = pakyawItems.reduce((sum, item) => sum + (item.status === 'completed' ? item.amount : 0), 0);
         
         const totalEarnings = regularPay + otPay + totalPakyawPay;
