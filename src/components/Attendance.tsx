@@ -27,6 +27,7 @@ export default function Attendance() {
   const [expandedEmp, setExpandedEmp] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
   
   const [dailyProof, setDailyProof] = useState<DailyProof | null>(null);
   const [showCamera, setShowCamera] = useState(false);
@@ -165,9 +166,37 @@ export default function Attendance() {
   const employees = useMemo(() => {
     return allEmps
       .filter(e => (e.status === 'active' || !e.status) && (e.role || '').toLowerCase() !== 'ceo' && (e.role || '').toLowerCase() !== 'admin')
-      .filter(e => (e.fullName || '').toLowerCase().includes(searchTerm.toLowerCase()))
+      .filter(e => {
+        const matchesSearch = (e.fullName || '').toLowerCase().includes(searchTerm.toLowerCase());
+        if (!matchesSearch) return false;
+
+        if (statusFilter === 'all' || activeTab === 'report') return true;
+
+        const atts = attendanceData[`${e.id}_${singleDate}`] || [];
+        
+        if (statusFilter === 'absent') {
+          return atts.length === 0 || atts.some(a => a.status === 'absent');
+        }
+        if (statusFilter === 'ot') {
+          return atts.some(a => a.otHours > 0);
+        }
+        if (statusFilter === 'present') {
+          return atts.some(a => a.status === 'present');
+        }
+        if (statusFilter === 'ut') {
+          return atts.some(a => a.status === 'ut');
+        }
+        if (statusFilter === 'hd') {
+          return atts.some(a => a.status === 'hd');
+        }
+        if (statusFilter === 'pakyaw') {
+          return atts.some(a => a.status === 'pakyaw');
+        }
+
+        return true;
+      })
       .sort((a, b) => a.fullName.localeCompare(b.fullName));
-  }, [allEmps, searchTerm]);
+  }, [allEmps, searchTerm, statusFilter, attendanceData, singleDate, activeTab]);
   
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportScope, setExportScope] = useState<'bulk' | 'individual'>('bulk');
@@ -784,6 +813,32 @@ export default function Attendance() {
         </div>
       </div>
 
+      {activeTab === 'mark' && (
+        <div className="flex overflow-x-auto gap-2 pb-2 scrollbar-hide px-1 -mt-1 sm:mt-0 no-scrollbar">
+          {[
+            { id: 'all', label: 'All' },
+            { id: 'present', label: 'Present' },
+            { id: 'absent', label: 'Absent' },
+            { id: 'ut', label: 'Undertime' },
+            { id: 'hd', label: 'Half Day' },
+            { id: 'ot', label: 'With OT' },
+            { id: 'pakyaw', label: 'Pakyaw' }
+          ].map(f => (
+            <button
+              key={f.id}
+              onClick={() => setStatusFilter(f.id)}
+              className={`whitespace-nowrap px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-[0.15em] border transition-all duration-300 ${
+                statusFilter === f.id 
+                ? 'bg-blue-600 text-white border-blue-500 shadow-[0_0_20px_rgba(37,99,235,0.3)]' 
+                : 'bg-white/5 text-white/40 border-white/10 hover:border-white/20 hover:text-white/60'
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="flex-1 overflow-y-auto pb-20 px-1">
         {loading ? (
           <div className="space-y-4">
@@ -978,6 +1033,48 @@ export default function Attendance() {
                 </AnimatePresence>
               </div>
             </div>
+
+            <div className="flex items-center justify-between px-2 mb-2">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black text-white/20 uppercase tracking-widest italic">
+                  Showing {employees.length} {employees.length === 1 ? 'employee' : 'employees'}
+                </span>
+                {statusFilter !== 'all' && (
+                  <span className="px-2 py-0.5 bg-blue-500/10 border border-blue-500/20 rounded-full text-[8px] font-black text-blue-400 uppercase tracking-widest">
+                    {statusFilter}
+                  </span>
+                )}
+              </div>
+              {(statusFilter !== 'all' || searchTerm) && (
+                <button 
+                  onClick={() => { setStatusFilter('all'); setSearchTerm(''); }}
+                  className="text-[9px] font-black text-rose-400 uppercase tracking-widest flex items-center gap-1 hover:text-rose-300 transition-colors"
+                >
+                  <X className="w-3 h-3" />
+                  Reset
+                </button>
+              )}
+            </div>
+
+            {employees.length === 0 && (
+              <div className="py-12 flex flex-col items-center justify-center text-center px-6 bg-white/[0.02] border border-white/5 rounded-[40px] mt-2">
+                <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-4">
+                  <User className="w-8 h-8 text-white/20" />
+                </div>
+                <h4 className="text-sm font-black text-white uppercase tracking-widest italic mb-2">No Employees Found</h4>
+                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tight max-w-[200px]">
+                  {statusFilter !== 'all' 
+                    ? `No one is marked as "${statusFilter}" on this date.` 
+                    : "No matches found for your search term."}
+                </p>
+                <button 
+                  onClick={() => { setStatusFilter('all'); setSearchTerm(''); }}
+                  className="mt-6 px-6 py-2 bg-white/5 text-white rounded-xl text-[10px] font-black uppercase tracking-widest border border-white/10 hover:bg-white/10 transition-all"
+                >
+                  Show All Employees
+                </button>
+              </div>
+            )}
 
             {employees.map(emp => {
               const atts = attendanceData[`${emp.id}_${singleDate}`] || [];
