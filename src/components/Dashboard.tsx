@@ -171,23 +171,41 @@ export default function Dashboard() {
         const pakyawSet = new Set<string>();
         const absentSet = new Set<string>();
 
+        const employeeRecords: Record<string, Attendance[]> = {};
         attDaySnapshot.forEach((doc) => {
-          const data = doc.data();
+          const data = { id: doc.id, ...doc.data() } as Attendance;
           if (activeEmpIds.has(data.employeeId)) {
-            loggedIds.add(data.employeeId);
-            const isHD = data.status === "hd" || (data.timeIn === "07:00" && data.timeOut === "12:00");
-            const isUT = (data.status === "ut" || (data.status === "present" && data.regularHours !== undefined && data.regularHours < 8 && data.regularHours > 0)) && !isHD;
-            const isPresent = data.status === "present" && !isUT && !isHD;
-
-            if (isPresent) presentSet.add(data.employeeId);
-            else if (isUT) utSet.add(data.employeeId);
-            else if (isHD) hdSet.add(data.employeeId);
-            else if (data.status === "pakyaw") pakyawSet.add(data.employeeId);
-            else if (data.status === "absent") absentSet.add(data.employeeId);
-            
-            const { otHrs } = calculateAttendanceHours(data as Attendance);
-            if (otHrs > 0) ot += otHrs;
+            if (!employeeRecords[data.employeeId]) employeeRecords[data.employeeId] = [];
+            employeeRecords[data.employeeId].push(data);
           }
+        });
+
+        Object.entries(employeeRecords).forEach(([empId, records]) => {
+          loggedIds.add(empId);
+          
+          let dayRegHrs = 0;
+          let dayOtHrs = 0;
+          const statuses = new Set<string>();
+
+          records.forEach(att => {
+            const { regHrs, otHrs } = calculateAttendanceHours(att);
+            dayRegHrs += regHrs;
+            dayOtHrs += otHrs;
+            statuses.add(att.status);
+          });
+
+          ot += dayOtHrs;
+
+          // Determine dominant status for grouping
+          const isHD = statuses.has('hd') || (dayRegHrs > 0 && dayRegHrs <= 4 && !statuses.has('pakyaw'));
+          const isUT = (statuses.has('ut') || (statuses.has('present') && dayRegHrs < 8 && dayRegHrs > 0)) && !isHD;
+          const isPresent = statuses.has('present') && !isUT && !isHD;
+
+          if (statuses.has('pakyaw')) pakyawSet.add(empId);
+          else if (isPresent) presentSet.add(empId);
+          else if (isUT) utSet.add(empId);
+          else if (isHD) hdSet.add(empId);
+          else if (statuses.has('absent') && dayRegHrs === 0) absentSet.add(empId);
         });
 
         Array.from(activeEmpIds).forEach(id => {
@@ -292,6 +310,13 @@ export default function Dashboard() {
           },
         );
 
+        // Group by date to handle multiple shifts correctly
+        const dailyRecords: Record<string, Attendance[]> = {};
+        empAttendances.forEach(att => {
+           if (!dailyRecords[att.date]) dailyRecords[att.date] = [];
+           dailyRecords[att.date].push(att);
+        });
+
         let presentDays = 0;
         let hdDays = 0;
         let otHours = 0;
@@ -299,37 +324,56 @@ export default function Dashboard() {
         let utDays = 0;
         let absentDays = 0;
         let pakyawDays = 0;
-        let regularHoursCount = 0;
+        let regularPayCount = 0;
+        let otPayCount = 0;
 
-        combinedAttendances.forEach((att) => {
-          const { regHrs, otHrs: calculatedOtHrs } = calculateAttendanceHours(att);
-          
-          if (calculatedOtHrs > 0) {
-            otHours += calculatedOtHrs;
+        // Process actual attendance
+        Object.values(dailyRecords).forEach(records => {
+          let dayRegHrs = 0;
+          let dayOtHrs = 0;
+          let dayRegPay = 0;
+          let dayOtPay = 0;
+          const statuses = new Set<string>();
+
+          records.forEach(att => {
+            const { regHrs, otHrs } = calculateAttendanceHours(att);
+            const hourlyRateToUse = att.hourlyRate || (emp.dailySalary / 8);
+            
+            dayRegHrs += regHrs;
+            dayOtHrs += otHrs;
+            dayRegPay += regHrs * hourlyRateToUse;
+            dayOtPay += otHrs * hourlyRateToUse;
+            statuses.add(att.status);
+          });
+
+          if (dayOtHrs > 0) {
+            otHours += dayOtHrs;
             otDays++;
+            otPayCount += dayOtPay;
           }
 
-          const isHD =
-            att.status === "hd" ||
-            (att.timeIn === "07:00" && att.timeOut === "12:00");
-          const isUT =
-            (att.status === "ut" ||
-              (att.status === "present" &&
-                regHrs < 8 &&
-                regHrs > 0)) &&
-            !isHD;
-          const isPresent = att.status === "present" && !isUT && !isHD;
+          const isHD = statuses.has('hd') || (dayRegHrs > 0 && dayRegHrs <= 4 && !statuses.has('pakyaw'));
+          const isUT = (statuses.has('ut') || (statuses.has('present') && dayRegHrs < 8 && dayRegHrs > 0)) && !isHD;
+          const isPresent = statuses.has('present') && !isUT && !isHD;
 
-          if (isPresent || isHD || isUT) {
+          if (statuses.has('pakyaw')) {
+            pakyawDays++;
+          } else if (isPresent || isHD || isUT) {
             if (isPresent) presentDays++;
             else if (isHD) hdDays++;
             else if (isUT) utDays++;
             
-            regularHoursCount += regHrs;
-          } else if (att.status === "absent") {
+            regularPayCount += dayRegPay;
+          } else if (statuses.has('absent')) {
             absentDays++;
-          } else if (att.status === "pakyaw") {
-            pakyawDays++;
+          }
+        });
+
+        // Add implicit absents for missing days
+        workingDays.forEach((day) => {
+          const dateStr = format(day, "yyyy-MM-dd");
+          if (!attendedDates.has(dateStr)) {
+            absentDays++;
           }
         });
 
@@ -346,8 +390,8 @@ export default function Dashboard() {
         );
 
         const hourlyRate = (emp.dailySalary || 0) / 8;
-        const regularPay = regularHoursCount * hourlyRate;
-        const otPayAmount = otHours * hourlyRate;
+        const regularPay = regularPayCount;
+        const otPayAmount = otPayCount;
 
         // Cash Advance for period
         const empCAs = cashAdvances.filter(

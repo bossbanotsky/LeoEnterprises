@@ -1138,163 +1138,138 @@ export default function Attendance() {
                     </div>
                   </div>
                   
-                  {expandedEmp === emp.id && atts.map((att, idx) => {
-                    const isHD = att.status === 'hd' || (att.timeIn === '07:00' && att.timeOut === '12:00');
-                    const isUT = (att.status === 'ut' || (att.status === 'present' && (att.regularHours || 0) < 8 && (att.regularHours || 0) > 0)) && !isHD;
-                    const isPresent = att.status === 'present' && !isUT && !isHD;
-                    const isPakyaw = att.status === 'pakyaw';
+                  {expandedEmp === emp.id && (
+                    <div className="space-y-4">
+                      {atts.map((att, idx) => {
+                        const isHD = att.status === 'hd' || (att.timeIn === '07:00' && att.timeOut === '12:00');
+                        const isUT = (att.status === 'ut' || (att.status === 'present' && (att.regularHours || 0) < 8 && (att.regularHours || 0) > 0)) && !isHD;
+                        const isPresent = att.status === 'present' && !isUT && !isHD;
+                        const isPakyaw = att.status === 'pakyaw';
 
-                    return (
-                        <div 
-                          key={`${att.id || 'new'}_${idx}`} 
-                          className="mb-4 pt-4 border-t border-white/5 bg-white/5 p-3 rounded-2xl relative group/card"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              deleteAttendance(att.id, emp.id, singleDate);
-                            }}
-                            className="absolute -top-2 -right-2 w-6 h-6 bg-rose-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover/card:opacity-100 transition-opacity shadow-lg z-10"
+                        return (
+                          <div 
+                            key={`${att.id || 'new'}_${idx}`} 
+                            className="pt-4 border-t border-white/5 bg-white/5 p-3 rounded-2xl relative group/card"
+                            onClick={(e) => e.stopPropagation()}
                           >
-                            <X className="w-3 h-3" />
-                          </button>
-                          
-                          {(isPresent || isUT || isHD) && (
-                            <div className="space-y-3 mb-4">
-                              <div className="grid grid-cols-2 gap-3">
-                                <div className="space-y-1">
-                                  <Label className="text-[9px] font-black text-white/50 uppercase tracking-widest leading-none">Time In</Label>
-                                  <Input 
-                                    type="time" 
-                                    value={att?.timeIn || '07:00'} 
-                                    onChange={e => handleAttendanceChange(emp.id, singleDate, 'timeIn', e.target.value, att.id)} 
-                                    className="h-8 rounded-lg bg-white/5 border border-white/10 font-mono text-xs p-2 text-white [color-scheme:dark]" 
-                                    onClick={(e) => e.stopPropagation()}
-                                  />
-                                </div>
-                                <div className="space-y-1">
-                                  <Label className="text-[9px] font-black text-white/50 uppercase tracking-widest leading-none">Time Out</Label>
-                                  <Input 
-                                    type="time" 
-                                    value={att?.timeOut || '16:00'} 
-                                    onChange={e => handleAttendanceChange(emp.id, singleDate, 'timeOut', e.target.value, att.id)} 
-                                    className="h-8 rounded-lg bg-white/5 border border-white/10 font-mono text-xs p-2 text-white [color-scheme:dark]" 
-                                    onClick={(e) => e.stopPropagation()}
-                                  />
-                                </div>
-                              </div>
-
-                            <div className="flex items-center gap-2 p-2 bg-slate-950/40 rounded-xl border border-white/5">
-                              <div className="flex-1 text-center border-r border-white/10 last:border-0">
-                                <div className="text-[8px] font-black text-white/40 uppercase tracking-widest">Regular</div>
-                                <div className="text-xs font-black text-white">{att.regularHours || 0}h</div>
-                              </div>
-                              <div className="flex-1 text-center border-r border-white/10 last:border-0">
-                                <div className="text-[8px] font-black text-emerald-400 uppercase tracking-widest">Overtime</div>
-                                <div className="text-xs font-black text-emerald-400">{(att.otHours || 0).toFixed(1)}h</div>
-                              </div>
-                              {(isUT || (att.regularHours || 0) < 8) && (
-                                <div className="flex-1 text-center border-r border-white/10 last:border-0">
-                                  <div className="text-[8px] font-black text-amber-400 uppercase tracking-widest">Undertime</div>
-                                  <div className="text-xs font-black text-amber-400">
-                                    {Math.max(0, 8 - (att.regularHours || 0)).toFixed(1)}h
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deleteAttendance(att.id, emp.id, singleDate);
+                              }}
+                              className="absolute -top-2 -right-2 w-6 h-6 bg-rose-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover/card:opacity-100 transition-opacity shadow-lg z-10"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                            
+                            {(isPresent || isUT || isHD) && (
+                              <div className="space-y-3 mb-4">
+                                <div className="grid grid-cols-2 gap-3">
+                                  <div className="space-y-1">
+                                    <Label className="text-[9px] font-black text-white/50 uppercase tracking-widest leading-none">Time In</Label>
+                                    <Input 
+                                      type="time" 
+                                      value={att?.timeIn || '07:00'} 
+                                      onChange={e => handleAttendanceChange(emp.id, singleDate, 'timeIn', e.target.value, att.id)} 
+                                      className="h-8 rounded-lg bg-white/5 border border-white/10 font-mono text-xs p-2 text-white [color-scheme:dark]" 
+                                    />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <Label className="text-[9px] font-black text-white/50 uppercase tracking-widest leading-none">Time Out</Label>
+                                    <Input 
+                                      type="time" 
+                                      value={att?.timeOut || '16:00'} 
+                                      onChange={e => handleAttendanceChange(emp.id, singleDate, 'timeOut', e.target.value, att.id)} 
+                                      className="h-8 rounded-lg bg-white/5 border border-white/10 font-mono text-xs p-2 text-white [color-scheme:dark]" 
+                                    />
                                   </div>
                                 </div>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                        
-                        {isPakyaw && (
-                          <div className="space-y-3 mb-4">
-                            <div>
-                               <Label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">Assigned Pakyaw Job</Label>
-                               <select 
-                                 value={att?.pakyawJobId || ''} 
-                                 onChange={(e) => handleAttendanceChange(emp.id, singleDate, 'pakyawJobId', e.target.value, att.id)} 
-                                 className="w-full h-9 px-3 rounded-xl border-0 bg-slate-950/40 text-white text-xs font-semibold focus:ring-2 focus:ring-blue-500/20"
-                               >
-                                <option value="">-- Select Job --</option>
-                                {pakyawJobs
-                                  .filter(job => job.employeeIds.includes(emp.id) && (job.status === 'pending' || job.id === att.pakyawJobId))
-                                  .map(job => <option key={job.id} value={job.id}>{job.containerNumber ? `[${job.containerNumber}] ` : ''}{job.description} (₱{job.totalPrice.toLocaleString()})</option>)
-                                }
-                              </select>
-                            </div>
-
-                            {att.pakyawJobId && (
-                               <div className="flex items-center justify-between p-2 bg-amber-500/10 rounded-xl border border-amber-500/20">
-                                  <span className="text-[9px] font-bold text-amber-400 uppercase tracking-wider">Pakyaw Share</span>
-                                  <span className="text-sm font-black text-amber-300">
-                                    {(() => {
-                                      const job = pakyawJobs.find(j => j.id === att.pakyawJobId);
-                                      return job ? `₱${(job.totalPrice / (job.employeeIds.length || 1)).toLocaleString()}` : '₱0';
-                                    })()}
-                                  </span>
-                               </div>
+                                <div className="flex items-center gap-2 p-2 bg-slate-950/40 rounded-xl border border-white/5">
+                                  <div className="flex-1 text-center border-r border-white/10">
+                                    <div className="text-[8px] font-black text-white/40 uppercase tracking-widest">Regular</div>
+                                    <div className="text-xs font-black text-white">{att.regularHours || 0}h</div>
+                                  </div>
+                                  <div className="flex-1 text-center border-r border-white/10">
+                                    <div className="text-[8px] font-black text-emerald-400 uppercase tracking-widest">OT</div>
+                                    <div className="text-xs font-black text-emerald-400">{(att.otHours || 0).toFixed(1)}h</div>
+                                  </div>
+                                </div>
+                              </div>
                             )}
-                          </div>
-                        )}
 
-                        <div className="grid grid-cols-5 gap-1.5 mt-auto">
-                          <button 
-                            onClick={() => handleAttendanceChange(emp.id, singleDate, 'status', 'present', att.id)} 
-                            className={`py-2 text-[8px] rounded-lg font-black uppercase tracking-widest transition-all border ${att.status === 'present' ? 'bg-emerald-600 text-white border-emerald-500/50 shadow-lg' : 'bg-white/5 text-white/40 border-white/10'}`}
-                          >
-                            Present
-                          </button>
-                          <button 
-                            onClick={() => handleAttendanceChange(emp.id, singleDate, 'status', 'pakyaw', att.id)} 
-                            className={`py-2 text-[8px] rounded-lg font-black uppercase tracking-widest transition-all border ${att.status === 'pakyaw' ? 'bg-amber-600 text-white border-amber-500/50 shadow-lg' : 'bg-white/5 text-white/40 border-white/10'}`}
-                          >
-                            Pakyaw
-                          </button>
-                          <button 
-                            onClick={() => handleAttendanceChange(emp.id, singleDate, 'status', 'hd', att.id)} 
-                            className={`py-2 text-[8px] rounded-lg font-black uppercase tracking-widest transition-all border ${att.status === 'hd' ? 'bg-indigo-600 text-white border-indigo-500/50 shadow-lg' : 'bg-white/5 text-white/40 border-white/10'}`}
-                          >
-                            HD
-                          </button>
-                          <button 
-                            onClick={() => handleAttendanceChange(emp.id, singleDate, 'status', 'ut', att.id)} 
-                            className={`py-2 text-[8px] rounded-lg font-black uppercase tracking-widest transition-all border ${att.status === 'ut' ? 'bg-sky-600 text-white border-sky-500/50 shadow-lg' : 'bg-white/5 text-white/40 border-white/10'}`}
-                          >
-                            UT
-                          </button>
-                          <button 
-                            onClick={() => handleAttendanceChange(emp.id, singleDate, 'status', 'absent', att.id)} 
-                            className={`py-2 text-[8px] rounded-lg font-black uppercase tracking-widest transition-all border ${att.status === 'absent' ? 'bg-rose-600 text-white border-rose-500/50 shadow-lg' : 'bg-white/5 text-white/40 border-white/10'}`}
-                          >
-                            Absent
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                  
-                  {expandedEmp === emp.id && (
-                    <div className="flex gap-2 mt-2" onClick={(e) => e.stopPropagation()}>
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleAttendanceChange(emp.id, singleDate, 'status', 'present');
-                          }}
-                          className="flex-1 py-3 bg-white/5 hover:bg-white/10 rounded-2xl border border-white/10 text-[10px] font-black text-white/60 uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2"
-                        >
-                          <Plus className="w-3.5 h-3.5 text-blue-400" />
-                          Add Record
-                        </button>
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleAttendanceChange(emp.id, singleDate, 'status', 'pakyaw');
-                          }}
-                          className="flex-1 py-3 bg-amber-500/10 hover:bg-amber-500/20 rounded-2xl border border-amber-500/20 text-[10px] font-black text-amber-500 uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2"
-                        >
-                          <Plus className="w-3.5 h-3.5 text-amber-400" />
-                          Add Pakyaw
-                        </button>
+                            {isPakyaw && (
+                              <div className="space-y-3 mb-4">
+                                <div>
+                                   <Label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">Assigned Pakyaw Job</Label>
+                                   <select 
+                                     value={att?.pakyawJobId || ''} 
+                                     onChange={(e) => handleAttendanceChange(emp.id, singleDate, 'pakyawJobId', e.target.value, att.id)} 
+                                     className="w-full h-9 px-3 rounded-xl border-0 bg-slate-950/40 text-white text-xs font-semibold focus:ring-2 focus:ring-blue-500/20"
+                                   >
+                                    <option value="">-- Select Job --</option>
+                                    {pakyawJobs
+                                      .filter(job => job.employeeIds.includes(emp.id) && (job.status === 'pending' || job.id === att.pakyawJobId))
+                                      .map(job => <option key={job.id} value={job.id}>{job.containerNumber ? `[${job.containerNumber}] ` : ''}{job.description} (₱{job.totalPrice.toLocaleString()})</option>)
+                                    }
+                                  </select>
+                                </div>
+
+                                {att.pakyawJobId && (
+                                   <div className="flex items-center justify-between p-2 bg-amber-500/10 rounded-xl border border-amber-500/20">
+                                      <span className="text-[9px] font-bold text-amber-400 uppercase tracking-wider">Pakyaw Share</span>
+                                      <span className="text-sm font-black text-amber-300">
+                                        {(() => {
+                                          const job = pakyawJobs.find(j => j.id === att.pakyawJobId);
+                                          return job ? `₱${(job.totalPrice / (job.employeeIds.length || 1)).toLocaleString()}` : '₱0';
+                                        })()}
+                                      </span>
+                                   </div>
+                                )}
+                              </div>
+                            )}
+
+                            <div className="grid grid-cols-5 gap-1.5 mt-auto">
+                              <button 
+                                onClick={() => handleAttendanceChange(emp.id, singleDate, 'status', 'present', att.id)} 
+                                className={`py-2 text-[8px] rounded-lg font-black uppercase tracking-widest transition-all border ${att.status === 'present' ? 'bg-emerald-600 text-white border-emerald-500/50 shadow-lg' : 'bg-white/5 text-white/40 border-white/10'}`}
+                              >
+                                Present
+                              </button>
+                              <button 
+                                onClick={() => handleAttendanceChange(emp.id, singleDate, 'status', 'hd', att.id)} 
+                                className={`py-2 text-[8px] rounded-lg font-black uppercase tracking-widest transition-all border ${att.status === 'hd' ? 'bg-indigo-600 text-white border-indigo-500/50 shadow-lg' : 'bg-white/5 text-white/40 border-white/10'}`}
+                              >
+                                Half Day
+                              </button>
+                              <button 
+                                onClick={() => handleAttendanceChange(emp.id, singleDate, 'status', 'ut', att.id)} 
+                                className={`py-2 text-[8px] rounded-lg font-black uppercase tracking-widest transition-all border ${att.status === 'ut' ? 'bg-sky-600 text-white border-sky-500/50 shadow-lg' : 'bg-white/5 text-white/40 border-white/10'}`}
+                              >
+                                Undertime
+                              </button>
+                              <button 
+                                onClick={() => handleAttendanceChange(emp.id, singleDate, 'status', 'pakyaw', att.id)} 
+                                className={`py-2 text-[8px] rounded-lg font-black uppercase tracking-widest transition-all border ${att.status === 'pakyaw' ? 'bg-amber-600 text-white border-amber-500/50 shadow-lg' : 'bg-white/5 text-white/40 border-white/10'}`}
+                              >
+                                Pakyaw
+                              </button>
+                               <button 
+                                onClick={() => handleAttendanceChange(emp.id, singleDate, 'status', 'absent', att.id)} 
+                                className={`py-2 text-[8px] rounded-lg font-black uppercase tracking-widest transition-all border ${att.status === 'absent' ? 'bg-rose-600 text-white border-rose-500/50 shadow-lg' : 'bg-white/5 text-white/40 border-white/10'}`}
+                              >
+                                Absent
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      <button 
+                        onClick={() => handleAttendanceChange(emp.id, singleDate, 'status', 'present')}
+                        className="w-full py-3 bg-blue-500/10 border border-dashed border-blue-500/20 text-blue-400 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-500/20 transition-all flex items-center justify-center gap-2"
+                      >
+                        <Plus className="w-3 h-3" />
+                        Add New Shift Interval
+                      </button>
                     </div>
                   )}
                 </div>

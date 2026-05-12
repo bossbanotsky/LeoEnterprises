@@ -642,6 +642,9 @@ export default function Payroll() {
         let cashAdvanceDetails: string[] = [];
         let appliedCashAdvanceIds: string[] = [];
         let totalPakyawPay = 0;
+        let presentEarnings = 0;
+        let hdEarnings = 0;
+        let utEarnings = 0;
         let pakyawDetails: string[] = [];
         let pakyawItems: PayrollPakyawDetail[] = [];
         let dailyAttendanceLog: { date: string, status: string, regHrs: number, otHrs: number, isWorkDay: boolean }[] = [];
@@ -682,53 +685,63 @@ export default function Payroll() {
         let otPay = 0;
 
         dateRange.forEach(date => {
-          const att = empAtts.find(a => a.date === date);
+          const dayAtts = empAtts.filter(a => a.date === date);
           
-          if (att) {
-            const { regHrs, otHrs } = calculateAttendanceHours(att);
-            
-            // IMPORTANT: Use historical rate from snapshot if it exists, otherwise fall back to current
-            const effectiveHourlyRate = att.hourlyRate || (emp.dailySalary / 8);
-            regularPay += regHrs * effectiveHourlyRate;
-            otPay += otHrs * effectiveHourlyRate;
+          if (dayAtts.length > 0) {
+            let dayRegHrs = 0;
+            let dayOtHrs = 0;
+            let dayRegularPay = 0;
+            let dayOtPay = 0;
+            let statuses = new Set<string>();
 
-            const dailyWorkLog = `${format(parseISO(date), 'MMM dd')}: ${regHrs}h Reg${otHrs ? `, ${otHrs}h OT` : ''}${att.status === 'hd' ? ' (HD)' : ''}`;
-            
-            let statusLabel: string = att.status;
-            if (att.status === 'present' || att.status === 'ut' || att.status === 'hd') {
-              if (att.status === 'hd' || (att.timeIn === '07:00' && att.timeOut === '12:00')) {
-                totalHalfDays++;
-                totalRegularHours += regHrs;
-                statusLabel = 'halfday';
-              } else if (regHrs < 8) { 
-                totalUndertimeDays++;
-                const deficit = 8 - regHrs;
-                totalUndertimeHours += deficit;
-                totalRegularHours += regHrs;
-                undertimeDetails.push(`${format(parseISO(date), 'MMM dd')}: ${regHrs}h (Deficit: -${deficit.toFixed(1)}h)`);
-                statusLabel = 'undertime';
-              } else {
-                totalPresent++;
-                totalRegularHours += regHrs;
-                statusLabel = 'present';
-              }
+            dayAtts.forEach(att => {
+              const { regHrs, otHrs } = calculateAttendanceHours(att);
+              dayRegHrs += regHrs;
+              dayOtHrs += otHrs;
+
+              // IMPORTANT: Use historical rate from snapshot if it exists, otherwise fall back to current
+              const effectiveHourlyRate = att.hourlyRate || (emp.dailySalary / 8);
+              dayRegularPay += regHrs * effectiveHourlyRate;
+              dayOtPay += otHrs * effectiveHourlyRate;
               
-              if (otHrs > 0) {
-                totalOtHours += otHrs;
-                otDetails.push(`${format(parseISO(date), 'MMM dd')}: ${otHrs}h OT`);
-              }
-            } else if (att.status === 'pakyaw') {
-              statusLabel = 'pakyaw';
-            } else if (att.status === 'absent') {
-              totalAbsent++;
-              absentDates.push(format(parseISO(date), 'MMM dd'));
+              statuses.add(att.status);
+            });
+
+            regularPay += dayRegularPay;
+            otPay += dayOtPay;
+            totalRegularHours += dayRegHrs;
+            totalOtHours += dayOtHrs;
+
+            let statusLabel: string = statuses.has('hd') ? 'halfday' : (dayRegHrs < 8 && !statuses.has('pakyaw') ? 'undertime' : 'present');
+            if (statuses.has('pakyaw')) statusLabel = 'pakyaw';
+            if (statuses.has('absent') && dayRegHrs === 0) statusLabel = 'absent';
+
+            if (statusLabel === 'halfday') {
+              totalHalfDays++;
+              hdEarnings += dayRegularPay;
+            } else if (statusLabel === 'undertime' && dayRegHrs < 8) {
+               totalUndertimeDays++;
+               utEarnings += dayRegularPay;
+               const deficit = 8 - dayRegHrs;
+               totalUndertimeHours += deficit;
+               undertimeDetails.push(`${format(parseISO(date), 'MMM dd')}: ${dayRegHrs}h (Deficit: -${deficit.toFixed(1)}h)`);
+            } else if (statusLabel === 'present') {
+               totalPresent++;
+               presentEarnings += dayRegularPay;
+            } else if (statusLabel === 'absent') {
+               totalAbsent++;
+               absentDates.push(format(parseISO(date), 'MMM dd'));
+            }
+
+            if (dayOtHrs > 0) {
+              otDetails.push(`${format(parseISO(date), 'MMM dd')}: ${dayOtHrs.toFixed(1)}h OT`);
             }
 
             dailyAttendanceLog.push({ 
               date, 
               status: statusLabel, 
-              regHrs, 
-              otHrs,
+              regHrs: dayRegHrs, 
+              otHrs: dayOtHrs,
               isWorkDay: true 
             });
           } else {
@@ -777,6 +790,9 @@ export default function Payroll() {
           otDetails,
           regularPay,
           otPay,
+          presentEarnings,
+          hdEarnings,
+          utEarnings,
           totalPakyawPay,
           pakyawDetails,
           pakyawItems,
@@ -1951,75 +1967,106 @@ export default function Payroll() {
               <div className="grid grid-cols-2 gap-3 font-sans">
                 <div className="space-y-2">
                   <div>
-                    <h3 className="text-[9px] font-black text-slate-900 border-b border-slate-100 pb-1 mb-1.5 uppercase flex justify-between items-center">
-                      Earnings <span>₱</span>
+                    <h3 className="text-[9px] font-black text-slate-900 border-b border-slate-900 pb-1 mb-2 uppercase flex justify-between items-center group">
+                      Earnings Breakdown
                       <Button 
                         variant="ghost" 
                         size="sm" 
                         onClick={() => handleMarkIndividualAsPaid(selectedPayslip.id, selectedPayslip.status)}
-                        className="h-5 px-2 text-[7px] font-black uppercase tracking-widest bg-slate-100 hover:bg-emerald-500 hover:text-white border border-slate-200 transition-all rounded-md"
+                        className="h-5 px-2 text-[7px] font-black uppercase tracking-widest bg-slate-100 hover:bg-emerald-500 hover:text-white border border-slate-200 transition-all rounded-md opacity-0 group-hover:opacity-100"
                       >
-                        {selectedPayslip.status === 'paid' ? 'Reset to Unpaid' : 'Mark Total Paid'}
+                        {selectedPayslip.status === 'paid' ? 'Paid' : 'Set Paid'}
                       </Button>
                     </h3>
-                    <div className="space-y-1.5 text-[10px]">
-                      <div className="space-y-1 border-b border-slate-50 pb-2 mb-1 group relative bg-slate-50/50 p-1.5 rounded-lg border border-slate-100/50">
-                        <div className="flex justify-between items-center">
-                          <div className="flex items-center gap-2">
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              onClick={() => handleToggleAttendancePaid(selectedPayslip)}
-                              className={`h-6 w-6 p-0 rounded-lg flex items-center justify-center transition-all shadow-sm ${selectedPayslip.isAttendancePaid ? 'bg-emerald-500 text-white' : 'bg-white text-slate-300 border border-slate-200 hover:border-emerald-500 hover:text-emerald-500'}`}
-                            >
-                              <CheckCircle className={`w-4 h-4 ${selectedPayslip.isAttendancePaid ? 'fill-emerald-500 text-white' : ''}`} />
-                            </Button>
-                            <div className="flex flex-col">
-                              <span className="text-slate-900 font-black text-[8px] uppercase leading-none">Regular Attendance</span>
-                              <span className={`text-[6px] font-black uppercase tracking-tighter ${selectedPayslip.isAttendancePaid ? 'text-emerald-500' : 'text-slate-400'}`}>
-                                {selectedPayslip.isAttendancePaid ? 'Paid' : 'Unpaid'}
-                              </span>
-                            </div>
-                          </div>
-                          <span className="font-black text-slate-900">₱{selectedPayslip.regularPay.toFixed(2)}</span>
-                        </div>
-                        
-                        {selectedPayslip.totalPresent > 0 && (
-                          <div className="flex justify-between items-center text-[8px]">
-                            <span className="text-slate-400">• {selectedPayslip.totalPresent} Days</span>
-                          </div>
-                        )}
-
-                        {selectedPayslip.totalHalfDays > 0 && (
-                          <div className="flex justify-between items-center text-[8px]">
-                            <span className="text-slate-400">• {selectedPayslip.totalHalfDays} Half</span>
-                          </div>
-                        )}
-
-                        {selectedPayslip.totalUndertimeDays > 0 && (
-                          <div className="flex flex-col gap-0.5 mt-1 border-l-2 border-amber-200 pl-2 ml-1">
-                            <span className="text-amber-600 font-bold text-[8px] uppercase">Undertime ({selectedPayslip.totalUndertimeHours}h Total Deficit)</span>
-                            {selectedPayslip.undertimeDetails?.map((det: string, idx: number) => (
-                              <span key={idx} className="text-[7px] text-slate-400 leading-none">{det}</span>
-                            ))}
-                          </div>
-                        )}
+                    
+                    <div className="space-y-1">
+                      {/* Detailed Breakdown Header */}
+                      <div className="flex justify-between text-[7px] font-black text-slate-400 uppercase tracking-widest px-1 mb-1">
+                        <span>Classification / Rate Math</span>
+                        <span>Total (₱)</span>
                       </div>
 
+                      {/* Regular Days Row */}
+                      <div className="bg-slate-50 p-2 rounded-lg border border-slate-100 space-y-1.5">
+                        <div className="flex items-center justify-between">
+                           <div className="flex items-center gap-1.5">
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                onClick={() => handleToggleAttendancePaid(selectedPayslip)}
+                                className={`h-5 w-5 p-0 rounded-md shrink-0 transition-all ${selectedPayslip.isAttendancePaid ? 'bg-emerald-500 text-white' : 'bg-white text-slate-300 border border-slate-200'}`}
+                              >
+                                <CheckCircle className="w-3 h-3" />
+                              </Button>
+                              <span className="text-slate-900 font-black text-[8px] uppercase">Attendance Pay</span>
+                           </div>
+                           <span className="font-black text-slate-900">₱{selectedPayslip.regularPay.toFixed(2)}</span>
+                        </div>
+                        
+                        <div className="space-y-1.5 pl-6 pt-1 border-t border-slate-200/50">
+                           {selectedPayslip.totalPresent > 0 && (
+                             <div className="flex justify-between items-center">
+                               <div className="flex flex-col">
+                                 <span className="text-[7px] font-bold text-slate-600 uppercase">Present</span>
+                                 <span className="text-[6px] text-slate-400">{selectedPayslip.totalPresent}d × ₱{(selectedPayslip.baseRate || 0).toFixed(0)}</span>
+                               </div>
+                               <span className="text-[7px] font-bold text-slate-900">₱{(selectedPayslip.presentEarnings || 0).toFixed(2)}</span>
+                             </div>
+                           )}
+                           {selectedPayslip.totalHalfDays > 0 && (
+                             <div className="flex justify-between items-center">
+                               <div className="flex flex-col">
+                                 <span className="text-[7px] font-bold text-indigo-600 uppercase">Half-Day</span>
+                                 <span className="text-[6px] text-slate-400">{selectedPayslip.totalHalfDays}d × ₱{((selectedPayslip.baseRate || 0) / 2).toFixed(0)}</span>
+                               </div>
+                               <span className="text-[7px] font-bold text-slate-900">₱{(selectedPayslip.hdEarnings || 0).toFixed(2)}</span>
+                             </div>
+                           )}
+                           {selectedPayslip.totalUndertimeDays > 0 && (
+                             <div className="flex justify-between items-center">
+                               <div className="flex flex-col">
+                                 <span className="text-[7px] font-bold text-amber-600 uppercase">Undertime</span>
+                                 <span className="text-[6px] text-slate-400">
+                                   {((selectedPayslip.totalUndertimeDays * 8) - selectedPayslip.totalUndertimeHours).toFixed(1)}h worked × ₱{((selectedPayslip.baseRate || 0) / 8).toFixed(2)}
+                                 </span>
+                               </div>
+                               <span className="text-[7px] font-bold text-slate-900">₱{(selectedPayslip.utEarnings || 0).toFixed(2)}</span>
+                             </div>
+                           )}
+                           {selectedPayslip.totalAbsent > 0 && (
+                             <div className="flex justify-between items-center">
+                               <div className="flex flex-col">
+                                 <span className="text-[7px] font-bold text-rose-500 uppercase">Absent</span>
+                                 <span className="text-[6px] text-slate-400">{selectedPayslip.totalAbsent}d × ₱0</span>
+                               </div>
+                               <span className="text-[7px] font-bold text-slate-900">₱0.00</span>
+                             </div>
+                           )}
+                        </div>
+                      </div>
+
+                      {/* Overtime Row */}
                       {selectedPayslip.totalOtHours > 0 && (
-                        <div className="space-y-1 bg-emerald-50/50 p-1.5 rounded-lg border border-emerald-100/50">
-                          <div className="flex justify-between items-center">
-                            <span className="text-emerald-700 font-black text-[8px] uppercase tracking-wider">Overtime Pay</span>
-                            <span className="font-black text-emerald-600">₱{selectedPayslip.otPay.toFixed(2)}</span>
+                        <div className="flex justify-between items-center bg-emerald-50/30 p-2 rounded-lg border border-emerald-100/50">
+                          <div className="flex flex-col">
+                            <span className="text-emerald-900 font-bold uppercase text-[8px]">Overtime Pay</span>
+                            <span className="text-[6px] text-emerald-500 font-medium">{selectedPayslip.totalOtHours.toFixed(1)} hrs × ₱{((selectedPayslip.baseRate || 0) / 8).toFixed(2)}/hr</span>
                           </div>
-                          <div className="flex flex-col gap-0.5 border-l-2 border-emerald-200 pl-2 ml-1">
-                            <span className="text-[7px] font-bold text-emerald-600/70 uppercase tracking-widest">{selectedPayslip.totalOtHours}h Total OT</span>
-                            {selectedPayslip.otDetails?.map((det: string, idx: number) => (
-                              <span key={idx} className="text-[7px] text-slate-400 leading-none">{det}</span>
-                            ))}
-                          </div>
+                          <span className="font-black text-emerald-900">{(selectedPayslip.otPay || 0).toFixed(2)}</span>
                         </div>
                       )}
+
+                      {/* Pakyaw Row */}
+                      {selectedPayslip.totalPakyawPay > 0 && (
+                        <div className="flex justify-between items-center bg-violet-50/30 p-2 rounded-lg border border-violet-100/50">
+                          <div className="flex flex-col">
+                            <span className="text-violet-900 font-bold uppercase text-[8px]">Pakyaw Earnings</span>
+                            <span className="text-[6px] text-violet-400 font-medium">Sum of completed job shares</span>
+                          </div>
+                          <span className="font-black text-violet-900">{(selectedPayslip.totalPakyawPay || 0).toFixed(2)}</span>
+                        </div>
+                      )}
+                    </div>
 
                       {selectedPayslip.carryOverFromPrevious > 0 && (
                         <div className="flex justify-between items-center bg-amber-50 p-1.5 rounded-lg border border-amber-100">
@@ -2144,7 +2191,6 @@ export default function Payroll() {
                     </div>
                   </div>
                 </div>
-              </div>
               
               {/* Compact Attendance Logs */}
               {selectedPayslip.dailyAttendanceLog && (
