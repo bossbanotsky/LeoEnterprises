@@ -169,10 +169,25 @@ export interface Payroll {
   carryOverFromPrevious?: number;
   carryOverToNext?: number;
   carryOverNotes?: string;
+  adjustments?: Adjustment[];
+  totalAdjustments?: number;
   dailyAttendanceLog?: { date: string, status: string, regHrs: number, otHrs: number, isWorkDay: boolean }[];
   uid: string;
   generatedAt: string;
   createdAt: string;
+}
+
+export interface Adjustment {
+  id: string;
+  employeeId: string;
+  type: 'bonus' | 'missed_ot' | 'missed_day' | 'missed_half_day' | 'deduction' | 'other';
+  amount: number;
+  description: string;
+  status: 'pending' | 'applied';
+  payrollId?: string;
+  date: string;
+  createdAt: string;
+  uid: string;
 }
 
 export interface Announcement {

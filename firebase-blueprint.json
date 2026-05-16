@@ -253,6 +253,23 @@
         "payrollPaidAt": { "type": "string", "format": "date-time", "description": "When the payroll covering this date was paid" }
       },
       "required": ["date", "photoUrl", "photographer", "createdAt"]
+    },
+    "Adjustment": {
+      "title": "Adjustment",
+      "description": "Manual payroll adjustment for an employee",
+      "type": "object",
+      "properties": {
+        "employeeId": { "type": "string" },
+        "type": { "type": "string", "enum": ["bonus", "missed_ot", "missed_day", "missed_half_day", "deduction", "other"] },
+        "amount": { "type": "number" },
+        "description": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "applied"] },
+        "payrollId": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "uid": { "type": "string" }
+      },
+      "required": ["employeeId", "type", "amount", "description", "status", "date", "createdAt", "uid"]
     }
   },
   "firestore": {
@@ -283,6 +300,10 @@
     "/cashAdvances/{cashAdvanceId}": {
       "schema": { "$ref": "#/entities/CashAdvance" },
       "description": "Cash advance records"
+    },
+    "/adjustments/{adjustmentId}": {
+      "schema": { "$ref": "#/entities/Adjustment" },
+      "description": "Manual payroll adjustments"
     },
     "/pakyawJobs/{pakyawJobId}": {
       "schema": { "$ref": "#/entities/PakyawJob" },

@@ -975,7 +975,7 @@ export default function EmployeeDashboard() {
                               )}
                               <span className="text-slate-900 font-black text-[8px] uppercase">Attendance Pay</span>
                            </div>
-                           <span className="font-black text-slate-900">₱{selectedPayslip.regularPay.toFixed(2)}</span>
+                           <span className="font-black text-slate-900">₱{(selectedPayslip.regularPay || 0).toFixed(2)}</span>
                         </div>
                         
                         <div className="space-y-1.5 pl-4 pt-1 border-t border-slate-200/50">
@@ -1002,7 +1002,7 @@ export default function EmployeeDashboard() {
                                <div className="flex flex-col">
                                  <span className="text-[7px] font-bold text-amber-600 uppercase">Undertime</span>
                                  <span className="text-[6px] text-slate-400">
-                                   {((selectedPayslip.totalUndertimeDays * 8) - selectedPayslip.totalUndertimeHours).toFixed(1)}h worked × ₱{((selectedPayslip.baseRate || 0) / 8).toFixed(2)}
+                                   {(((selectedPayslip.totalUndertimeDays || 0) * 8) - (selectedPayslip.totalUndertimeHours || 0)).toFixed(1)}h worked × ₱{((selectedPayslip.baseRate || 0) / 8).toFixed(2)}
                                  </span>
                                </div>
                                <span className="text-[7px] font-bold text-slate-900">₱{(selectedPayslip.utEarnings || 0).toFixed(2)}</span>
@@ -1017,6 +1017,11 @@ export default function EmployeeDashboard() {
                                <span className="text-[7px] font-bold text-slate-900">₱0.00</span>
                              </div>
                            )}
+
+                           <div className="pt-1 mt-1 border-t border-slate-200/50 flex justify-between items-center">
+                             <span className="text-[7px] font-black text-slate-500 uppercase">Attendance Subtotal</span>
+                             <span className="text-[8px] font-black text-slate-900">₱{(selectedPayslip.regularPay || 0).toFixed(2)}</span>
+                           </div>
                         </div>
                       </div>
 
@@ -1025,7 +1030,7 @@ export default function EmployeeDashboard() {
                         <div className="flex justify-between items-center bg-emerald-50/30 p-2 rounded-lg border border-emerald-100/50">
                           <div className="flex flex-col">
                             <span className="text-emerald-900 font-bold uppercase text-[8px]">Overtime Pay</span>
-                            <span className="text-[6px] text-emerald-500 font-medium">{selectedPayslip.totalOtHours.toFixed(1)} hrs × ₱{((selectedPayslip.baseRate || 0) / 8).toFixed(2)}/hr</span>
+                            <span className="text-[6px] text-emerald-500 font-medium">{(selectedPayslip.totalOtHours || 0).toFixed(1)} hrs × ₱{((selectedPayslip.baseRate || 0) / 8).toFixed(2)}/hr</span>
                           </div>
                           <span className="font-black text-emerald-900">{(selectedPayslip.otPay || 0).toFixed(2)}</span>
                         </div>
@@ -1038,16 +1043,41 @@ export default function EmployeeDashboard() {
                             <span className="text-violet-900 font-bold uppercase text-[8px]">Pakyaw Earnings</span>
                             <span className="text-[6px] text-violet-400 font-medium">Sum of completed job shares</span>
                           </div>
-                          <span className="font-black text-violet-900">{(selectedPayslip.totalPakyawPay || 0).toFixed(2)}</span>
+                          <span className="font-black text-violet-900">₱{(selectedPayslip.totalPakyawPay || 0).toFixed(2)}</span>
+                        </div>
+                      )}
+
+                      {/* Manual Adjustments Row */}
+                      {selectedPayslip.totalAdjustments !== 0 && (
+                        <div className="flex justify-between items-center bg-blue-50/30 p-2 rounded-lg border border-blue-100/50">
+                          <div className="flex flex-col">
+                            <span className="text-blue-900 font-bold uppercase text-[8px]">Manual Adjustments</span>
+                            <div className="space-y-0.5">
+                              {selectedPayslip.adjustments?.map((adj: any, i: number) => (
+                                <div key={i} className="text-[6px] text-blue-500 font-medium flex items-center gap-1">
+                                  <span className="opacity-50">●</span>
+                                  <span>{adj.description}: {adj.type === 'deduction' ? '-' : '+'}₱{adj.amount.toLocaleString()}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                          <span className={`font-black ${selectedPayslip.totalAdjustments > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                            {selectedPayslip.totalAdjustments > 0 ? '+' : ''}₱{(selectedPayslip.totalAdjustments || 0).toFixed(2)}
+                          </span>
                         </div>
                       )}
                       
                       {selectedPayslip.carryOverFromPrevious > 0 && (
                         <div className="flex justify-between items-center bg-emerald-50 p-1.5 rounded-lg border border-emerald-100">
                            <span className="text-emerald-700 font-black text-[7px] uppercase tracking-wider">Carry-over from Prev</span>
-                           <span className="font-black text-emerald-700">₱{selectedPayslip.carryOverFromPrevious.toFixed(2)}</span>
+                           <span className="font-black text-emerald-700">₱{(selectedPayslip.carryOverFromPrevious || 0).toFixed(2)}</span>
                         </div>
                       )}
+
+                      <div className="flex justify-between items-center border-t-2 border-slate-900 pt-1.5 mt-1.5">
+                        <span className="text-slate-900 font-black uppercase text-[9px] italic">Gross Earnings Total</span>
+                        <span className="text-slate-900 font-black text-[11px] italic">₱{(selectedPayslip.totalEarnings || selectedPayslip.totalGrossPay || 0).toFixed(2)}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1061,28 +1091,28 @@ export default function EmployeeDashboard() {
                       {selectedPayslip.cashAdvanceDeduction > 0 && (
                         <div className="flex justify-between items-center">
                           <span className="text-red-600 font-bold text-[8px] uppercase">Cash Adv.</span>
-                          <span className="font-black text-red-600">-{selectedPayslip.cashAdvanceDeduction.toFixed(2)}</span>
+                          <span className="font-black text-red-600">-{(selectedPayslip.cashAdvanceDeduction || 0).toFixed(2)}</span>
                         </div>
                       )}
 
                       {selectedPayslip.isAttendancePaid && (
                         <div className="flex justify-between items-center bg-emerald-50/50 p-1.5 rounded border border-emerald-100/50">
                           <span className="text-emerald-600 font-bold text-[7px] uppercase tracking-tighter">Paid Attendance</span>
-                          <span className="font-black text-emerald-600">-{ (selectedPayslip.regularPay + (selectedPayslip.otPay || 0)).toFixed(2) }</span>
+                          <span className="font-black text-emerald-600">-{ ((selectedPayslip.regularPay || 0) + (selectedPayslip.otPay || 0)).toFixed(2) }</span>
                         </div>
                       )}
 
                       {selectedPayslip.pakyawItems?.filter((i: any) => i.isPaid).map((item: any, idx: number) => (
                         <div key={idx} className="flex justify-between items-center bg-indigo-50/50 p-1.5 rounded border border-indigo-100/50">
                           <span className="text-indigo-600 font-bold text-[7px] uppercase tracking-tighter truncate max-w-[100px]">Paid: {item.description}</span>
-                          <span className="font-black text-indigo-600">-{item.amount.toFixed(0)}</span>
+                          <span className="font-black text-indigo-600">-{(item.amount || 0).toFixed(0)}</span>
                         </div>
                       ))}
 
                       {selectedPayslip.carryOverToNext > 0 && (
                         <div className="flex justify-between items-center bg-amber-50 p-1.5 rounded-lg border border-amber-100">
                           <span className="text-amber-700 font-bold text-[7px] uppercase tracking-tighter">Transferred to Next</span>
-                          <span className="font-black text-amber-700">-{selectedPayslip.carryOverToNext.toFixed(2)}</span>
+                          <span className="font-black text-amber-700">-{(selectedPayslip.carryOverToNext || 0).toFixed(2)}</span>
                         </div>
                       )}
 
@@ -1095,7 +1125,7 @@ export default function EmployeeDashboard() {
                       <div className="flex justify-between items-center border-t border-slate-100 pt-1 mt-1">
                          <span className="text-red-600 font-black uppercase text-[9px]">Total Ded</span>
                          <span className="text-red-600 font-black text-[11px] font-mono italic">
-                           -{(selectedPayslip.cashAdvanceDeduction + calculatePaidAmount(selectedPayslip) + (selectedPayslip.carryOverToNext || 0)).toFixed(2)}
+                           -{( (selectedPayslip.cashAdvanceDeduction || 0) + calculatePaidAmount(selectedPayslip) + (selectedPayslip.carryOverToNext || 0) ).toFixed(2)}
                          </span>
                       </div>
                     </div>

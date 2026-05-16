@@ -1,14 +1,42 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { recordTransaction, deleteTransactionsByReference } from '../services/financeService';
-import { collection, onSnapshot, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc, getDocs as getDocsFirebase, collection as col, arrayUnion, getDoc, orderBy, limit } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc, getDocs as getDocsFirebase, collection as col, arrayUnion, getDoc, orderBy, limit, deleteField } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType, addAuditLog } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
+import { useToast } from '../contexts/ToastContext';
 import { useCompanyInfo } from '../hooks/useCompanyInfo';
-import { Employee, Attendance, CashAdvance, PakyawJob, Payroll as PayrollRecord, PayrollPakyawDetail } from '../types';
+import { 
+  Employee, 
+  Attendance, 
+  CashAdvance, 
+  PakyawJob, 
+  Payroll as PayrollRecord, 
+  PayrollPakyawDetail,
+  Adjustment
+} from '../types';
 import { format, parseISO, eachDayOfInterval, isWithinInterval, isSunday } from "date-fns";
 import { calculateAttendanceHours } from "../lib/payrollUtils";
-import { Calendar, ChevronRight, FileText, Download, Trash2, Loader2, Users, CreditCard, CheckCircle, Search, Upload, Printer, ExternalLink } from 'lucide-react';
+import { 
+  Calendar, 
+  ChevronRight, 
+  FileText, 
+  Download, 
+  Trash2, 
+  Loader2, 
+  Users, 
+  CreditCard, 
+  CheckCircle, 
+  Search, 
+  Upload, 
+  Printer, 
+  ExternalLink,
+  Plus,
+  History,
+  AlertCircle,
+  ArrowRight,
+  CheckSquare
+} from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -20,6 +48,7 @@ import html2canvas from 'html2canvas';
 export default function Payroll() {
   const { user } = useAuth();
   const { companyInfo } = useCompanyInfo();
+  const { showToast } = useToast();
   const { employees, pakyawJobs, cashAdvances, loading: dataLoading } = useData();
   const [startDate, setStartDate] = useState(() => localStorage.getItem('payrollStartDate') || format(new Date(), 'yyyy-MM-01'));
   const [endDate, setEndDate] = useState(() => localStorage.getItem('payrollEndDate') || format(new Date(), 'yyyy-MM-15'));
@@ -30,7 +59,17 @@ export default function Payroll() {
   const [bulkPayrolls, setBulkPayrolls] = useState<any[]>([]);
   const [selectedBulkId, setSelectedBulkId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [itemToDelete, setItemToDelete] = useState<{ id: string; type: 'payroll' | 'bulk'; name?: string } | null>(null);
+  const [selectedPayslip, setSelectedPayslip] = useState<any>(null);
+  const [isExporting, setIsExporting] = useState(false);
+  const [selectedAdjustmentEmployee, setSelectedAdjustmentEmployee] = useState<string>('');
+  const [isAdjustmentDialogOpen, setIsAdjustmentDialogOpen] = useState(false);
+  const [adjustmentType, setAdjustmentType] = useState<Adjustment['type']>('bonus');
+  const [adjustmentAmount, setAdjustmentAmount] = useState<string>('');
+  const [adjustmentDescription, setAdjustmentDescription] = useState('');
+  const [pendingAdjustments, setPendingAdjustments] = useState<Adjustment[]>([]);
+  const [itemToDelete, setItemToDelete] = useState<{ id: string; type: 'payroll' | 'bulk' | 'adjustment'; name?: string } | null>(null);
+  const [viewMode, setViewMode] = useState<'process' | 'archives' | 'carryover'>('process');
+  const [archivedBulkRuns, setArchivedBulkRuns] = useState<any[]>([]);
 
   useEffect(() => {
     localStorage.setItem('payrollStartDate', startDate);
@@ -66,11 +105,6 @@ export default function Payroll() {
     }
   };
 
-  const [selectedPayslip, setSelectedPayslip] = useState<any>(null);
-  const [isExporting, setIsExporting] = useState(false);
-  const [viewMode, setViewMode] = useState<'process' | 'archives' | 'carryover'>('process');
-  const [archivedBulkRuns, setArchivedBulkRuns] = useState<any[]>([]);
-  
   // NEW PREVIEW STATE
   const [previewData, setPreviewData] = useState<{
     payrollsToSave: any[],
@@ -100,6 +134,61 @@ export default function Payroll() {
       htmlEl.style.height = 'auto';
       htmlEl.style.maxHeight = 'none';
     });
+  };
+
+  useEffect(() => {
+    const q = query(
+      collection(db, 'adjustments'),
+      where('status', '==', 'pending')
+    );
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const ads = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Adjustment));
+      setPendingAdjustments(ads);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handleSaveAdjustment = async () => {
+    if (!selectedAdjustmentEmployee || !adjustmentAmount || !adjustmentDescription) {
+      showToast('Please fill all required fields', 'error');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const adjustmentData: Omit<Adjustment, 'id'> = {
+        employeeId: selectedAdjustmentEmployee,
+        type: adjustmentType,
+        amount: parseFloat(adjustmentAmount),
+        description: adjustmentDescription,
+        status: 'pending',
+        date: format(new Date(), 'yyyy-MM-dd'),
+        createdAt: new Date().toISOString(),
+        uid: user?.uid || ''
+      };
+
+      await addDoc(collection(db, 'adjustments'), adjustmentData);
+      showToast('Adjustment saved for next payroll', 'success');
+      setIsAdjustmentDialogOpen(false);
+      setAdjustmentAmount('');
+      setAdjustmentDescription('');
+    } catch (error) {
+      console.error('Error saving adjustment:', error);
+      showToast('Failed to save adjustment', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteAdjustment = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, 'adjustments', id));
+      showToast('Adjustment deleted', 'success');
+      setItemToDelete(null);
+    } catch (error) {
+      console.error('Error deleting adjustment:', error);
+      showToast('Failed to delete adjustment', 'error');
+    }
   };
 
   const handleMarkAsPaid = async (bulkId: string) => {
@@ -649,15 +738,22 @@ export default function Payroll() {
         let pakyawItems: PayrollPakyawDetail[] = [];
         let dailyAttendanceLog: { date: string, status: string, regHrs: number, otHrs: number, isWorkDay: boolean }[] = [];
 
+        // Adjustments logic
+        const empAdjustments = pendingAdjustments.filter(a => a.employeeId === emp.id);
+        const totalAdjustmentsAmount = empAdjustments.reduce((sum, a) => {
+          if (a.type === 'deduction') return sum - a.amount;
+          return sum + a.amount;
+        }, 0);
+
         // Calculate Gross first to know how much we can deduct if we want to cap at 0
         // But the user wants to see "negative", so we deduct ALL outstanding found?
         // Actually, usually we only deduct from advances that are "due".
         // For simplicity, let's deduct all outstanding advances found.
         
         empCa.forEach(ca => {
-          cashAdvanceDeduction += ca.remainingBalance;
+          cashAdvanceDeduction += (ca.remainingBalance || 0);
           appliedCashAdvanceIds.push(ca.id);
-          cashAdvanceDetails.push(`CA ${format(parseISO(ca.date), 'MMM dd')}: ₱${ca.remainingBalance.toFixed(2)}`);
+          cashAdvanceDetails.push(`CA ${format(parseISO(ca.date), 'MMM dd')}: ₱${(ca.remainingBalance || 0).toFixed(2)}`);
         });
         
         empPjw.forEach(pj => {
@@ -675,7 +771,7 @@ export default function Payroll() {
 
           if (pj.status === 'completed') {
             totalPakyawPay += splitAmount;
-            pakyawDetails.push(`${jobName}: ₱${splitAmount.toFixed(2)}`);
+            pakyawDetails.push(`${jobName}: ₱${(splitAmount || 0).toFixed(2)}`);
           } else {
             pakyawDetails.push(`${jobName}: PENDING (Not Finished)`);
           }
@@ -724,7 +820,7 @@ export default function Payroll() {
                utEarnings += dayRegularPay;
                const deficit = 8 - dayRegHrs;
                totalUndertimeHours += deficit;
-               undertimeDetails.push(`${format(parseISO(date), 'MMM dd')}: ${dayRegHrs}h (Deficit: -${deficit.toFixed(1)}h)`);
+               undertimeDetails.push(`${format(parseISO(date), 'MMM dd')}: ${dayRegHrs}h (Deficit: -${(deficit || 0).toFixed(1)}h)`);
             } else if (statusLabel === 'present') {
                totalPresent++;
                presentEarnings += dayRegularPay;
@@ -734,7 +830,7 @@ export default function Payroll() {
             }
 
             if (dayOtHrs > 0) {
-              otDetails.push(`${format(parseISO(date), 'MMM dd')}: ${dayOtHrs.toFixed(1)}h OT`);
+              otDetails.push(`${format(parseISO(date), 'MMM dd')}: ${(dayOtHrs || 0).toFixed(1)}h OT`);
             }
 
             dailyAttendanceLog.push({ 
@@ -759,9 +855,9 @@ export default function Payroll() {
         });
 
         // Pakyaw logic... (already handles completed status)
-        totalPakyawPay = pakyawItems.reduce((sum, item) => sum + (item.status === 'completed' ? item.amount : 0), 0);
+        totalPakyawPay = pakyawItems.reduce((sum, item) => sum + (item.status === 'completed' ? (item.amount || 0) : 0), 0);
         
-        const totalEarnings = regularPay + otPay + totalPakyawPay;
+        const totalEarnings = regularPay + otPay + totalPakyawPay + totalAdjustmentsAmount;
         const carryOverFromPrevious = emp.carryOverBalance || 0;
         
         // Total before CA is Earnings - Previous Debt
@@ -796,6 +892,8 @@ export default function Payroll() {
           totalPakyawPay,
           pakyawDetails,
           pakyawItems,
+          adjustments: empAdjustments,
+          totalAdjustments: totalAdjustmentsAmount,
           dailyAttendanceLog, 
           totalEarnings,
           totalGrossPay,
@@ -896,6 +994,16 @@ export default function Payroll() {
             createdAt: new Date().toISOString()
           });
           payrollId = payrollDoc.id;
+
+          // Process Adjustments
+          if (finalPayload.adjustments && finalPayload.adjustments.length > 0) {
+            for (const adj of finalPayload.adjustments) {
+              await updateDoc(doc(db, 'adjustments', adj.id), {
+                status: 'applied',
+                payrollId: payrollId
+              });
+            }
+          }
           
           // DEDUCT CASH ADVANCES (Only for NEW payrolls to avoid multiple deductions)
           if (finalPayload.cashAdvanceIds && finalPayload.cashAdvanceIds.length > 0) {
@@ -1034,6 +1142,16 @@ export default function Payroll() {
         // Delete CA and its finance transactions
         await deleteTransactionsByReference(caDoc.id);
         await deleteDoc(doc(db, 'cashAdvances', caDoc.id));
+      }
+
+      // 1.5. REVERSE ADJUSTMENTS
+      const adjQ = query(collection(db, 'adjustments'), where('payrollId', '==', id));
+      const adjSnap = await getDocs(adjQ);
+      for (const adjDoc of adjSnap.docs) {
+        await updateDoc(adjDoc.ref, {
+          status: 'pending',
+          payrollId: deleteField()
+        });
       }
 
       // 2. REVERSE DEDUCTIONS effectively (if any CA were paid off)
@@ -1566,6 +1684,49 @@ export default function Payroll() {
           >
             {isLoading ? 'Generating...' : (selectedEmployeeId === 'all' ? 'Preview Bulk Payroll' : 'Preview Individual')}
           </Button>
+
+          <div className="mt-4 pt-4 border-t border-white/10">
+            <Button 
+              onClick={() => setIsAdjustmentDialogOpen(true)}
+              variant="outline"
+              className="w-full h-10 gap-2 border-white/10 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white rounded-xl text-[10px] uppercase font-black tracking-widest"
+            >
+              <Plus className="w-4 h-4" />
+              Add Manual Adjustment
+            </Button>
+            
+            {pendingAdjustments.length > 0 && (
+              <div className="mt-3 space-y-2">
+                <div className="flex items-center justify-between px-1">
+                  <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Pending Adjustments ({pendingAdjustments.length})</span>
+                </div>
+                <div className="max-h-40 overflow-y-auto space-y-1.5 pr-1 custom-scrollbar">
+                  {pendingAdjustments.map((adj) => {
+                    const emp = employees.find(e => e.id === adj.employeeId);
+                    return (
+                      <div key={adj.id} className="bg-white/5 border border-white/5 p-2 rounded-lg flex items-center justify-between group">
+                        <div className="min-w-0">
+                          <div className="text-[10px] font-bold text-white truncate">{emp?.fullName || 'Unknown'}</div>
+                          <div className="text-[8px] text-slate-500 truncate italic">{adj.description}</div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className={`text-[10px] font-black italic ${adj.type === 'deduction' ? 'text-red-400' : 'text-emerald-400'}`}>
+                            {adj.type === 'deduction' ? '-' : '+'}₱{adj.amount.toLocaleString()}
+                          </div>
+                          <button 
+                            onClick={() => setItemToDelete({ id: adj.id, type: 'adjustment', name: `${emp?.fullName}'s adjustment` })}
+                            className="text-white/20 hover:text-rose-500 transition-colors opacity-0 group-hover:opacity-100"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -1815,15 +1976,15 @@ export default function Payroll() {
                   </div>
                   <div>
                     <div className="text-[9px] text-slate-500 uppercase font-semibold text-center">Regular</div>
-                    <div className="font-medium text-[10px] text-center">₱{data.regularPay.toFixed(0)}</div>
+                    <div className="font-medium text-[10px] text-center">₱{(data.regularPay || 0).toFixed(0)}</div>
                   </div>
                   <div className="border-x border-slate-100 dark:border-slate-700">
                     <div className="text-[9px] text-green-600 uppercase font-semibold text-center">OT Pay</div>
-                    <div className="font-medium text-[10px] text-center text-green-600">₱{data.otPay.toFixed(0)}</div>
+                    <div className="font-medium text-[10px] text-center text-green-600">₱{(data.otPay || 0).toFixed(0)}</div>
                   </div>
                   <div className="border-r border-slate-100 dark:border-slate-700">
                     <div className="text-[9px] text-indigo-600 uppercase font-semibold text-center">Pakyaw</div>
-                    <div className="font-medium text-[10px] text-center text-indigo-600">₱{data.totalPakyawPay.toFixed(0)}</div>
+                    <div className="font-medium text-[10px] text-center text-indigo-600">₱{(data.totalPakyawPay || 0).toFixed(0)}</div>
                   </div>
                   <div className="text-right">
                     <div className="text-[9px] text-blue-600 uppercase font-bold tracking-tighter mb-0.5">
@@ -2000,7 +2161,7 @@ export default function Payroll() {
                               </Button>
                               <span className="text-slate-900 font-black text-[8px] uppercase">Attendance Pay</span>
                            </div>
-                           <span className="font-black text-slate-900">₱{selectedPayslip.regularPay.toFixed(2)}</span>
+                           <span className="font-black text-slate-900">₱{(selectedPayslip.regularPay || 0).toFixed(2)}</span>
                         </div>
                         
                         <div className="space-y-1.5 pl-6 pt-1 border-t border-slate-200/50">
@@ -2042,6 +2203,11 @@ export default function Payroll() {
                                <span className="text-[7px] font-bold text-slate-900">₱0.00</span>
                              </div>
                            )}
+
+                           <div className="pt-1 mt-1 border-t border-slate-200/50 flex justify-between items-center">
+                             <span className="text-[7px] font-black text-slate-500 uppercase">Attendance Subtotal</span>
+                             <span className="text-[8px] font-black text-slate-900">₱{(selectedPayslip.regularPay || 0).toFixed(2)}</span>
+                           </div>
                         </div>
                       </div>
 
@@ -2063,7 +2229,27 @@ export default function Payroll() {
                             <span className="text-violet-900 font-bold uppercase text-[8px]">Pakyaw Earnings</span>
                             <span className="text-[6px] text-violet-400 font-medium">Sum of completed job shares</span>
                           </div>
-                          <span className="font-black text-violet-900">{(selectedPayslip.totalPakyawPay || 0).toFixed(2)}</span>
+                          <span className="font-black text-violet-900">₱{(selectedPayslip.totalPakyawPay || 0).toFixed(2)}</span>
+                        </div>
+                      )}
+
+                      {/* Manual Adjustments Row */}
+                      {selectedPayslip.totalAdjustments !== 0 && (
+                        <div className="flex justify-between items-center bg-blue-50/30 p-2 rounded-lg border border-blue-100/50">
+                          <div className="flex flex-col">
+                            <span className="text-blue-900 font-bold uppercase text-[8px]">Manual Adjustments</span>
+                            <div className="space-y-0.5">
+                              {selectedPayslip.adjustments?.map((adj: any, i: number) => (
+                                <div key={i} className="text-[6px] text-blue-500 font-medium flex items-center gap-1">
+                                  <span className="opacity-50">●</span>
+                                  <span>{adj.description}: {adj.type === 'deduction' ? '-' : '+'}₱{adj.amount.toLocaleString()}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                          <span className={`font-black ${selectedPayslip.totalAdjustments > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                            {selectedPayslip.totalAdjustments > 0 ? '+' : ''}₱{(selectedPayslip.totalAdjustments || 0).toFixed(2)}
+                          </span>
                         </div>
                       )}
                     </div>
@@ -2071,7 +2257,7 @@ export default function Payroll() {
                       {selectedPayslip.carryOverFromPrevious > 0 && (
                         <div className="flex justify-between items-center bg-amber-50 p-1.5 rounded-lg border border-amber-100">
                            <span className="text-amber-700 font-black text-[7px] uppercase tracking-wider">Debt Carry-over (Prev)</span>
-                           <span className="font-black text-amber-700">₱{selectedPayslip.carryOverFromPrevious.toFixed(2)}</span>
+                           <span className="font-black text-amber-700">₱{(selectedPayslip.carryOverFromPrevious || 0).toFixed(2)}</span>
                         </div>
                       )}
 
@@ -2079,7 +2265,7 @@ export default function Payroll() {
                         <div className="space-y-2 mt-2 pt-2 border-t border-slate-50">
                           <div className="flex justify-between items-center">
                             <h3 className="text-indigo-600 font-black text-[8px] uppercase tracking-wider">Pakyaw Jobs Breakdown</h3>
-                            <span className="font-black text-indigo-600">₱{selectedPayslip.totalPakyawPay.toFixed(2)}</span>
+                            <span className="font-black text-indigo-600">₱{(selectedPayslip.totalPakyawPay || 0).toFixed(2)}</span>
                           </div>
 
                           {selectedPayslip.pakyawItems && selectedPayslip.pakyawItems.length > 0 ? (
@@ -2130,9 +2316,9 @@ export default function Payroll() {
                         </div>
                       )}
                       
-                      <div className="flex justify-between items-center border-t border-slate-100 pt-1">
-                        <span className="text-slate-500 font-bold uppercase text-[8px]">Earnings (Gross)</span>
-                        <span className="text-slate-700 font-black text-[10px] italic">₱{(selectedPayslip.totalEarnings || selectedPayslip.totalGrossPay).toFixed(2)}</span>
+                      <div className="flex justify-between items-center border-t-2 border-slate-900 pt-1.5 mt-1.5">
+                        <span className="text-slate-900 font-black uppercase text-[9px] italic">Gross Earnings Total</span>
+                        <span className="text-slate-900 font-black text-[11px] italic">₱{(selectedPayslip.totalEarnings || selectedPayslip.totalGrossPay || 0).toFixed(2)}</span>
                       </div>
                     </div>
                   </div>
@@ -2146,34 +2332,45 @@ export default function Payroll() {
                     <div className="space-y-1.5 font-mono">
                       <div className="flex justify-between items-center text-[10px]">
                         <span className="text-slate-500 font-bold uppercase">Earnings</span>
-                        <span className="font-bold text-slate-700">₱{(selectedPayslip.totalEarnings || selectedPayslip.totalGrossPay).toFixed(2)}</span>
+                        <span className="font-bold text-slate-700">₱{(selectedPayslip.totalEarnings || selectedPayslip.totalGrossPay || 0).toFixed(2)}</span>
                       </div>
+
+                      {selectedPayslip.totalAdjustments !== 0 && (
+                        <div className="flex justify-between items-center text-[10px]">
+                          <span className={`font-bold uppercase ${selectedPayslip.totalAdjustments > 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                            {selectedPayslip.totalAdjustments > 0 ? 'Bonus/Adj' : 'Manual Ded'}
+                          </span>
+                          <span className={`font-bold ${selectedPayslip.totalAdjustments > 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                            {selectedPayslip.totalAdjustments > 0 ? '+' : ''}₱{(selectedPayslip.totalAdjustments || 0).toFixed(2)}
+                          </span>
+                        </div>
+                      )}
                       
                       {selectedPayslip.carryOverFromPrevious > 0 && (
                         <div className="flex justify-between items-center text-[10px]">
                           <span className="text-amber-600 font-bold uppercase">Prev Debt</span>
-                          <span className="font-bold text-amber-600">-₱{selectedPayslip.carryOverFromPrevious.toFixed(2)}</span>
+                          <span className="font-bold text-amber-600">-₱{(selectedPayslip.carryOverFromPrevious || 0).toFixed(2)}</span>
                         </div>
                       )}
 
                       {selectedPayslip.cashAdvanceDeduction > 0 && (
                         <div className="flex justify-between items-center text-[10px]">
                           <span className="text-red-500 font-bold uppercase">Cash Adv</span>
-                          <span className="font-bold text-red-500">-₱{selectedPayslip.cashAdvanceDeduction.toFixed(2)}</span>
+                          <span className="font-bold text-red-500">-₱{(selectedPayslip.cashAdvanceDeduction || 0).toFixed(2)}</span>
                         </div>
                       )}
 
                       {selectedPayslip.isAttendancePaid && (
                         <div className="flex justify-between items-center text-[10px]">
                           <span className="text-emerald-600 font-bold uppercase">Daily Paid</span>
-                          <span className="font-bold text-emerald-600">-₱{(selectedPayslip.regularPay + (selectedPayslip.otPay || 0)).toFixed(2)}</span>
+                          <span className="font-bold text-emerald-600">-₱{((selectedPayslip.regularPay || 0) + (selectedPayslip.otPay || 0)).toFixed(2)}</span>
                         </div>
                       )}
 
                       {selectedPayslip.pakyawItems?.some((i: any) => i.isPaid) && (
                         <div className="flex justify-between items-center text-[10px]">
                           <span className="text-indigo-600 font-bold uppercase">Paid Pakyaw</span>
-                          <span className="font-bold text-indigo-600">-₱{selectedPayslip.pakyawItems.filter((i: any) => i.isPaid).reduce((sum: number, i: any) => sum + i.amount, 0).toFixed(0)}</span>
+                          <span className="font-bold text-indigo-600">-₱{selectedPayslip.pakyawItems.filter((i: any) => i.isPaid).reduce((sum: number, i: any) => sum + (i.amount || 0), 0).toFixed(0)}</span>
                         </div>
                       )}
 
@@ -2280,6 +2477,11 @@ export default function Payroll() {
                                 Pakyaw: {p.pakyawDetails.join(', ')}
                             </div>
                           )}
+                          {p.adjustments && p.adjustments.length > 0 && (
+                            <div className="mt-1 text-blue-500 font-bold">
+                                Adjustments: {p.adjustments.map((a: any) => `${a.description} (${a.type === 'deduction' ? '-' : '+'}₱${a.amount})`).join(', ')}
+                            </div>
+                          )}
                         </div>
                       </td>
                       <td className="px-6 py-4 text-center font-medium text-slate-700 dark:text-slate-300">
@@ -2335,6 +2537,86 @@ export default function Payroll() {
         </DialogContent>
       </Dialog>
 
+      {/* Adjustment Dialog */}
+      <Dialog open={isAdjustmentDialogOpen} onOpenChange={setIsAdjustmentDialogOpen}>
+        <DialogContent className="sm:max-w-[400px] bg-slate-900 border-white/10 text-white rounded-3xl p-6">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 italic uppercase font-black text-blue-400">
+              <Plus className="w-5 h-5" />
+              Add Manual Adjustment
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            <div className="space-y-1">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Target Staff</Label>
+              <select 
+                value={selectedAdjustmentEmployee}
+                onChange={(e) => setSelectedAdjustmentEmployee(e.target.value)}
+                className="w-full h-10 rounded-xl border border-white/10 bg-slate-950 p-2 text-sm text-white font-bold"
+              >
+                <option value="">Select Employee</option>
+                {employees.sort((a,b) => a.fullName.localeCompare(b.fullName)).map(emp => (
+                  <option key={emp.id} value={emp.id}>{emp.fullName}</option>
+                ))}
+              </select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Type</Label>
+                <select 
+                  value={adjustmentType}
+                  onChange={(e) => setAdjustmentType(e.target.value as any)}
+                  className="w-full h-10 rounded-xl border border-white/10 bg-slate-950 p-2 text-sm text-white font-bold"
+                >
+                  <option value="bonus">Bonus</option>
+                  <option value="missed_ot">Missed OT</option>
+                  <option value="missed_day">Missed Day</option>
+                  <option value="missed_half_day">Missed HD</option>
+                  <option value="deduction">Deduction</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Amount (₱)</Label>
+                <Input 
+                  type="number" 
+                  value={adjustmentAmount}
+                  onChange={(e) => setAdjustmentAmount(e.target.value)}
+                  className="h-10 rounded-xl bg-slate-950 border-white/10 text-white font-black"
+                  placeholder="0.00"
+                />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Description / Note</Label>
+              <Input 
+                value={adjustmentDescription}
+                onChange={(e) => setAdjustmentDescription(e.target.value)}
+                className="h-10 rounded-xl bg-slate-950 border-white/10 text-white font-bold"
+                placeholder="e.g. Forgot to add overtime last week"
+              />
+            </div>
+            <div className="pt-4 flex gap-2">
+              <Button 
+                variant="ghost" 
+                className="flex-1 rounded-xl text-white/50"
+                onClick={() => setIsAdjustmentDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button 
+                className="flex-1 rounded-xl bg-blue-600 hover:bg-blue-700 font-bold"
+                onClick={handleSaveAdjustment}
+                disabled={isLoading}
+              >
+                {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
+                Save
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Custom Confirmation Modal for Deletions */}
       {itemToDelete && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]">
@@ -2346,7 +2628,9 @@ export default function Payroll() {
             <p className="text-slate-400 text-sm mb-8 leading-relaxed">
               {itemToDelete.type === 'bulk' 
                 ? 'Are you sure you want to delete this entire payroll batch? All associated payslips will be permanently removed. This action cannot be undone.'
-                : `Are you sure you want to delete the payroll record for ${itemToDelete.name}? This action will permanently remove the record.`
+                : itemToDelete.type === 'adjustment'
+                  ? 'Are you sure you want to delete this manual adjustment? This action cannot be undone.'
+                  : `Are you sure you want to delete the payroll record for ${itemToDelete.name}? This action will permanently remove the record.`
               }
             </p>
             <div className="flex gap-3">
@@ -2357,7 +2641,11 @@ export default function Payroll() {
                 Cancel
               </button>
               <button 
-                onClick={() => itemToDelete.type === 'bulk' ? handleDeleteBulk(itemToDelete.id) : handleDeletePayroll(itemToDelete.id)}
+                onClick={() => {
+                  if (itemToDelete.type === 'bulk') handleDeleteBulk(itemToDelete.id);
+                  else if (itemToDelete.type === 'adjustment') handleDeleteAdjustment(itemToDelete.id);
+                  else handleDeletePayroll(itemToDelete.id);
+                }}
                 className="flex-1 py-3 px-4 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-2xl transition-all shadow-lg shadow-rose-600/20"
               >
                 Delete

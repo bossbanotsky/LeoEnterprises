@@ -48,6 +48,19 @@ service cloud.firestore {
              (data.status == 'pending' || data.status == 'billing' || data.status == 'paid' || data.status == 'cancelled');
     }
 
+    function isValidAdjustment(data) {
+      return data.employeeId is string &&
+             data.type is string &&
+             (data.type == 'bonus' || data.type == 'missed_ot' || data.type == 'missed_day' || data.type == 'missed_half_day' || data.type == 'deduction' || data.type == 'other') &&
+             data.amount is number &&
+             data.description is string &&
+             data.status is string &&
+             (data.status == 'pending' || data.status == 'applied') &&
+             data.date is string &&
+             data.createdAt is string &&
+             data.uid is string;
+    }
+
     // --- Collection Routes ---
 
     // Allow all authenticated users to read everything to resolve startup crashes.
@@ -84,6 +97,12 @@ service cloud.firestore {
     match /cashAdvances/{cashAdvanceId} {
       allow read: if isSignedIn();
       allow create, update, delete: if isMasterAdmin() || isSignedIn();
+    }
+
+    match /adjustments/{adjustmentId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidAdjustment(incoming());
+      allow update, delete: if isMasterAdmin() || isSignedIn();
     }
 
     match /pakyawJobs/{pakyawJobId} {
