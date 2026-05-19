@@ -201,6 +201,7 @@ export default function Attendance() {
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportScope, setExportScope] = useState<'bulk' | 'individual'>('bulk');
   const [exportEmpId, setExportEmpId] = useState<string>('all');
+  const [exportStatusFilter, setExportStatusFilter] = useState<string>('all');
 
   useEffect(() => {
     localStorage.setItem('payrollStartDate', startDate);
@@ -524,10 +525,26 @@ export default function Attendance() {
     doc.text(`Period: ${periodString}`, 14, 28);
     
     let yPos = 35;
+
+    const matchesStatusFilter = (atts: any[]) => {
+      if (exportStatusFilter === 'all') return true;
+      if (exportStatusFilter === 'present_all') return atts.length > 0;
+      if (exportStatusFilter === 'absent') return atts.length === 0;
+      return atts.some(a => a.status === exportStatusFilter);
+    };
     
-    const employeesToExport = exportScope === 'individual' && exportEmpId !== 'all'
+    const employeesToExport = (exportScope === 'individual' && exportEmpId !== 'all'
       ? employees.filter(e => e.id === exportEmpId)
-      : employees;
+      : employees.filter(emp => {
+          // In bulk mode, if we filter by status, we might want to only include employees 
+          // who have at least one record matching that status in the period
+          if (exportStatusFilter === 'all') return true;
+          return dates.some(d => matchesStatusFilter(attendanceData[`${emp.id}_${d}`] || []));
+      })).filter(emp => {
+        // Double check if employee has any data at all if filtering
+        if (exportStatusFilter === 'all') return true;
+        return dates.some(d => matchesStatusFilter(attendanceData[`${emp.id}_${d}`] || []));
+      });
 
     employeesToExport.forEach((emp, index) => {
       // Add a small gap between tables if printing multiple, unless it's a bulk table
@@ -540,51 +557,56 @@ export default function Attendance() {
       }
 
       const countedJobIdsInReport = new Set<string>();
-      const tableData = dates.map(date => {
-        const atts = attendanceData[`${emp.id}_${date}`] || [];
-        let statusDisplay = atts.length === 0 ? 'Absent' : atts.map(a => a.status.charAt(0).toUpperCase() + a.status.slice(1)).join(', ');
-        let timeInOut = atts.map(a => (a.timeIn && a.timeOut) ? `${a.timeIn}-${a.timeOut}` : '').filter(Boolean).join('\n') || '-- / --';
-        let reg = atts.reduce((s, a) => s + (a.regularHours || 0), 0).toFixed(1);
-        let ot = atts.reduce((s, a) => s + (a.otHours || 0), 0).toFixed(1);
-        
-        // Calculate daily pay without automatic pakyaw multiplication
-        let dailyRegPay = calculateDailyPay(emp, `${emp.id}_${date}`, true);
-        let dailyPakyawPay = 0;
-        
-        const pakyawNotes = atts.filter(a => a.status === 'pakyaw')
-          .map(a => {
-            const job = pakyawJobs.find(j => j.id === a.pakyawJobId);
-            if (job) {
-              if (job.status === 'completed') {
-                if (!countedJobIdsInReport.has(job.id)) {
-                  const share = (job.totalPrice / (job.employeeIds.length || 1));
-                  dailyPakyawPay += share;
-                  countedJobIdsInReport.add(job.id);
-                  return `${job.description} (₱${share.toLocaleString()})`;
+      let filteredPeriodTotal = 0;
+      
+      const tableData = dates
+        .filter(date => matchesStatusFilter(attendanceData[`${emp.id}_${date}`] || []))
+        .map(date => {
+          const atts = attendanceData[`${emp.id}_${date}`] || [];
+          let statusDisplay = atts.length === 0 ? 'Absent' : atts.map(a => a.status.charAt(0).toUpperCase() + a.status.slice(1)).join(', ');
+          let timeInOut = atts.map(a => (a.timeIn && a.timeOut) ? `${a.timeIn}-${a.timeOut}` : '').filter(Boolean).join('\n') || '-- / --';
+          let reg = atts.reduce((s, a) => s + (a.regularHours || 0), 0).toFixed(1);
+          let ot = atts.reduce((s, a) => s + (a.otHours || 0), 0).toFixed(1);
+          
+          // Calculate daily pay without automatic pakyaw multiplication
+          let dailyRegPay = calculateDailyPay(emp, `${emp.id}_${date}`, true);
+          let dailyPakyawPay = 0;
+          
+          const pakyawNotes = atts.filter(a => a.status === 'pakyaw')
+            .map(a => {
+              const job = pakyawJobs.find(j => j.id === a.pakyawJobId);
+              if (job) {
+                if (job.status === 'completed') {
+                  if (!countedJobIdsInReport.has(job.id)) {
+                    const share = (job.totalPrice / (job.employeeIds.length || 1));
+                    dailyPakyawPay += share;
+                    countedJobIdsInReport.add(job.id);
+                    return `${job.description} (₱${share.toLocaleString()})`;
+                  }
+                  return `${job.description} (cont.)`;
+                } else {
+                  return `${job.description} (In Progress)`;
                 }
-                return `${job.description} (cont.)`;
-              } else {
-                return `${job.description} (In Progress)`;
               }
-            }
-            return '';
-          }).filter(Boolean).join(', ');
+              return '';
+            }).filter(Boolean).join(', ');
 
-        const totalRowPay = dailyRegPay + dailyPakyawPay;
-        let detail = `₱${totalRowPay.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
-        if (pakyawNotes) detail += ` [${pakyawNotes}]`;
+          const totalRowPay = dailyRegPay + dailyPakyawPay;
+          filteredPeriodTotal += totalRowPay;
+          let detail = `₱${totalRowPay.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+          if (pakyawNotes) detail += ` [${pakyawNotes}]`;
 
-        return [
-          format(parseISO(date), 'MMM dd (EEE)'),
-          statusDisplay,
-          timeInOut,
-          reg,
-          ot,
-          detail
-        ];
-      });
+          return [
+            format(parseISO(date), 'MMM dd (EEE)'),
+            statusDisplay,
+            timeInOut,
+            reg,
+            ot,
+            detail
+          ];
+        });
 
-      if (exportScope === 'individual') {
+      if (exportScope === 'individual' && tableData.length > 0) {
         doc.setFontSize(12);
         doc.setTextColor(0);
         doc.text(`Employee: ${emp.fullName} (${emp.position || 'Staff'})`, 14, yPos);
@@ -603,7 +625,7 @@ export default function Attendance() {
         
         // Add footer for this employee
         doc.setFontSize(9);
-        doc.text(`Total Period Amount: ₱${calculatePeriodTotal(emp).toLocaleString(undefined, {minimumFractionDigits: 2})}`, 14, yPos);
+        doc.text(`Filtered Total: ₱${filteredPeriodTotal.toLocaleString(undefined, {minimumFractionDigits: 2})}`, 14, yPos);
         yPos += 5;
       }
     });
@@ -611,7 +633,9 @@ export default function Attendance() {
     if (exportScope === 'bulk') {
       // Bulk view: summarize by employee rather than per day, or flattened if single date
       if (activeTab === 'mark') {
-         const bulkData = employeesToExport.map(emp => {
+         const bulkData = employeesToExport
+          .filter(emp => matchesStatusFilter(attendanceData[`${emp.id}_${singleDate}`] || []))
+          .map(emp => {
             const atts = attendanceData[`${emp.id}_${singleDate}`] || [];
             let statusDisplay = atts.length === 0 ? 'Absent' : atts.map(a => a.status.charAt(0).toUpperCase() + a.status.slice(1)).join(', ');
             let timeInOut = atts.map(a => (a.timeIn && a.timeOut) ? `${a.timeIn}-${a.timeOut}` : '').filter(Boolean).join('\n') || '-- / --';
@@ -626,7 +650,7 @@ export default function Attendance() {
               ot,
               `₱${calculateDailyPay(emp, `${emp.id}_${singleDate}`).toLocaleString()}`
             ];
-         });
+          });
          
          autoTable(doc, {
             startY: yPos,
@@ -639,15 +663,19 @@ export default function Attendance() {
       } else {
          // Range Bulk Review
          const bulkData: any[] = [];
+         let grandFilteredTotal = 0;
          
          employeesToExport.forEach(emp => {
-            // Add a row to group by employee? To make the report clearer. Let's add a shaded row for the Employee name before their dates.
+            const employeeMatchedDates = dates.filter(d => matchesStatusFilter(attendanceData[`${emp.id}_${d}`] || []));
+            if (employeeMatchedDates.length === 0) return;
+
+            // Add a row to group by employee
             bulkData.push([{ content: `Employee: ${emp.fullName}`, colSpan: 7, styles: { fillColor: [240, 240, 240], fontStyle: 'bold' } }]);
             
             let periodTotal = 0;
             const countedJobsInBulk = new Set<string>();
 
-            dates.forEach(d => {
+            employeeMatchedDates.forEach(d => {
                 const atts = attendanceData[`${emp.id}_${d}`] || [];
                 
                 let dailyRegPay = calculateDailyPay(emp, `${emp.id}_${d}`, true);
@@ -695,6 +723,7 @@ export default function Attendance() {
 
             // Employee Subtotal
             bulkData.push([{ content: `Subtotal`, colSpan: 6, styles: { halign: 'right', fontStyle: 'bold' } }, { content: `₱${periodTotal.toLocaleString(undefined, {minimumFractionDigits: 2})}`, styles: { fontStyle: 'bold' } }]);
+            grandFilteredTotal += periodTotal;
          });
          
          autoTable(doc, {
@@ -711,7 +740,7 @@ export default function Attendance() {
           
           yPos = (doc as any).lastAutoTable.finalY + 10;
           doc.setFontSize(12);
-          doc.text(`Grand Total: ₱${calculateGrandTotal().toLocaleString(undefined, {minimumFractionDigits: 2})}`, 14, yPos);
+          doc.text(`Grand Filtered Total: ₱${grandFilteredTotal.toLocaleString(undefined, {minimumFractionDigits: 2})}`, 14, yPos);
       }
     }
 
@@ -1570,6 +1599,26 @@ export default function Attendance() {
                   </select>
                 </div>
               )}
+
+              <div className="space-y-2">
+                <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">Attendance Status Filter</Label>
+                <select 
+                  value={exportStatusFilter} 
+                  onChange={(e) => setExportStatusFilter(e.target.value)}
+                  className="w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="all">All Records (Present & Absent)</option>
+                  <option value="present_all">Any Work Done (Exclude Absent)</option>
+                  <option value="present">Present Only (Full Day)</option>
+                  <option value="hd">Half-day Only</option>
+                  <option value="ut">Undertime Only</option>
+                  <option value="pakyaw">Pakyaw Only</option>
+                  <option value="absent">Absent Only</option>
+                </select>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                  Filters which rows to include in the report based on mark attendance status.
+                </p>
+              </div>
             </div>
 
             <button 
