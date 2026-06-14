@@ -104,7 +104,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-2">
           <Link to="/" className="flex items-center group cursor-pointer whitespace-nowrap shrink">
               <span className="font-extrabold text-lg sm:text-2xl tracking-tighter leading-none group-hover:opacity-90 transition-opacity truncate">
-                <span className="text-white">LEO</span> <span className="text-blue-500">ENTERPRISES</span>
+                <span className="text-white">L & P</span> <span className="text-blue-500">TRADING & SERVICES</span>
               </span>
           </Link>
           
@@ -237,7 +237,7 @@ export default function LandingPage() {
                 Redefining <br /> <span className="text-slate-400">Service Excellence.</span>
               </h3>
               <p className="text-slate-400 text-lg font-light leading-relaxed mb-12 max-w-lg">
-                Headquartered in Bauan, Batangas, Leo Enterprises delivers mission-critical technical services across the region. We combine elite operational safety with innovative problem-solving.
+                Headquartered in Bauan, Batangas, L & P Trading and Services delivers mission-critical technical services across the region. We combine elite operational safety with innovative problem-solving.
               </p>
               
               <div className="grid grid-cols-2 gap-12 border-t border-white/5 pt-12">
@@ -304,7 +304,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center mb-24 relative z-10">
             <span className="text-xs font-bold text-blue-500 uppercase tracking-[0.2em] mb-4 block">Competitive Edge</span>
-            <h3 className="text-5xl lg:text-7xl font-semibold text-white tracking-tight leading-[1]">Why the Industry <br /><span className="text-slate-400">Prefers LEO</span></h3>
+            <h3 className="text-5xl lg:text-7xl font-semibold text-white tracking-tight leading-[1]">Why the Industry <br /><span className="text-slate-400">Prefers L & P</span></h3>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -378,7 +378,7 @@ export default function LandingPage() {
             Let's Build <br /> <span className="text-slate-400">Together.</span>
           </h3>
           <p className="text-lg text-slate-400 font-light leading-relaxed mb-16 max-w-2xl">
-            Ready to optimize your operations? Join the growing network of companies relying on Leo Enterprises for mission-critical industrial solutions.
+            Ready to optimize your operations? Join the growing network of companies relying on L & P Trading and Services for mission-critical industrial solutions.
           </p>
           
           <div className="flex flex-col sm:flex-row items-center gap-6 justify-center w-full">
@@ -398,7 +398,7 @@ export default function LandingPage() {
               </div>
               <div className="flex flex-col text-left">
                 <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-0.5">Official Email</span>
-                <span className="text-lg font-medium text-white tracking-tight">contact@leoenterprises.ph</span>
+                <span className="text-lg font-medium text-white tracking-tight">info@lptradingandservices.com</span>
               </div>
             </div>
           </div>
@@ -415,9 +415,9 @@ export default function LandingPage() {
             <div className="flex flex-col gap-4">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded bg-white/5 flex items-center justify-center border border-white/10">
-                  <span className="font-extrabold text-white text-sm">L</span>
+                  <span className="font-extrabold text-white text-sm">LP</span>
                 </div>
-                <span className="font-bold text-slate-300 text-sm tracking-widest uppercase">LEO ENTERPRISES</span>
+                <span className="font-bold text-slate-300 text-sm tracking-widest uppercase">L & P TRADING AND SERVICES</span>
               </div>
               <p className="text-slate-500 text-xs font-light leading-relaxed max-w-[200px]">
                 Industrial Multi-Service solutions delivered with precision.
@@ -447,9 +447,9 @@ export default function LandingPage() {
           <div className="w-full h-px bg-white/5 mb-8" />
           
           <div className="flex flex-col items-center text-center">
-             <p className="text-slate-600 text-[10px] font-medium uppercase tracking-[0.2em]">
-               © 2026 LEO ENTERPRISES ERP — ALL RIGHTS RESERVED.
-             </p>
+              <p className="text-slate-600 text-[10px] font-medium uppercase tracking-[0.2em]">
+                © 2026 L & P TRADING AND SERVICES — ALL RIGHTS RESERVED.
+              </p>
           </div>
         </div>
       </footer>

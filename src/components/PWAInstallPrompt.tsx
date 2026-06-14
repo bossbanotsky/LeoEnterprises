@@ -55,7 +55,7 @@ export default function PWAInstallPrompt() {
             </div>
             <div className="flex-1 min-w-0">
               <h4 className="font-bold text-slate-900 text-sm">Install App</h4>
-              <p className="text-xs text-slate-500 truncate">Use Leo Enterprises as an app</p>
+              <p className="text-xs text-slate-500 truncate">Use L & P Trading and Services as an app</p>
             </div>
             <div className="flex flex-col gap-1">
               <Button 

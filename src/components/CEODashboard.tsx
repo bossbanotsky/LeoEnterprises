@@ -562,7 +562,7 @@ export default function CEODashboard() {
             Executive Dashboard
           </h1>
           <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em] mt-2 ml-5 italic opacity-80">
-            Leo Enterprises • Operational Status
+            L & P Trading and Services • Operational Status
           </p>
         </div>
       </div>

@@ -60,20 +60,20 @@ export default function Layout() {
       </AnimatePresence>
 
       {/* Header */}
-      <header className="h-24 bg-transparent backdrop-blur-sm border-b border-white/5 flex items-center justify-between px-4 sm:px-8 sticky top-0 z-[100] gap-4">
+      <header className="h-20 sm:h-24 bg-transparent backdrop-blur-sm border-b border-white/5 flex items-center justify-between px-3 sm:px-8 sticky top-0 z-[100] gap-2 sm:gap-4">
         {/* Subtle gradient fade at the very top for extra readability */}
         <div className="absolute inset-x-0 top-0 h-full bg-gradient-to-b from-black/60 to-transparent pointer-events-none -z-10" />
         
         <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
           <Link to="/" className="flex items-center gap-2 sm:gap-3 group shrink-0 max-w-full">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-slate-900/80 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0 overflow-hidden shadow-2xl border border-white/20 group-hover:rotate-3 transition-transform backdrop-blur-md">
-              <span className="text-white font-black text-xl sm:text-2xl">L</span>
+            <div className="w-8 h-8 sm:w-12 sm:h-12 bg-slate-900/80 rounded-lg sm:rounded-2xl flex items-center justify-center shrink-0 overflow-hidden shadow-2xl border border-white/20 group-hover:rotate-3 transition-transform backdrop-blur-md">
+              <span className="text-white font-black text-xs sm:text-xl">L&P</span>
             </div>
             <div className="flex flex-col min-w-0 flex-1">
-              <span className="text-xl sm:text-3xl font-black tracking-[0.25em] sm:tracking-tighter text-white leading-none drop-shadow-xl group-hover:text-blue-400 transition-all uppercase whitespace-nowrap">
-                LEO <span className="text-blue-500 font-black italic underline decoration-blue-500/20 underline-offset-4">ENTERPRISES</span>
+              <span className="text-[10px] xs:text-xs sm:text-xl md:text-2xl lg:text-3xl font-black tracking-[0.05em] xs:tracking-[0.1em] sm:tracking-[0.25em] md:tracking-tighter text-white leading-none drop-shadow-xl group-hover:text-blue-400 transition-all uppercase whitespace-nowrap">
+                L & P <span className="text-blue-500 font-black italic underline decoration-blue-500/20 underline-offset-4">TRADING & SERVICES</span>
               </span>
-              <span className="text-[7px] sm:text-[11px] font-black text-white/60 uppercase tracking-[0.4em] sm:tracking-[0.6em] mt-1.5 italic leading-none whitespace-nowrap border-t border-white/10 pt-1">Operational Command System</span>
+              <span className="text-[6px] xs:text-[7px] sm:text-[11px] font-black text-white/60 uppercase tracking-[0.1em] xs:tracking-[0.3em] sm:tracking-[0.6em] mt-1 sm:mt-1.5 italic leading-none whitespace-nowrap border-t border-white/10 pt-1">Operational Command System</span>
             </div>
           </Link>
         </div>
@@ -81,10 +81,10 @@ export default function Layout() {
         <div className="flex items-center gap-2 ml-auto shrink-0">
           <button 
             onClick={logout} 
-            className="p-3.5 bg-red-600/20 hover:bg-red-600 text-red-500 hover:text-white border border-red-500/40 rounded-2xl transition-all duration-300 shadow-xl group active:scale-90 shrink-0"
+            className="p-2 sm:p-3.5 bg-red-600/20 hover:bg-red-600 text-red-500 hover:text-white border border-red-500/40 rounded-xl sm:rounded-2xl transition-all duration-300 shadow-xl group active:scale-90 shrink-0"
             title="Logout"
           >
-            <LogOut className="w-6 h-6 group-hover:rotate-12 transition-transform" />
+            <LogOut className="w-4 h-4 sm:w-6 sm:h-6 group-hover:rotate-12 transition-transform" />
           </button>
         </div>
       </header>

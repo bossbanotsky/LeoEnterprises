@@ -18,9 +18,9 @@ export default defineConfig(({mode}) => {
           maximumFileSizeToCacheInBytes: 4000000, // Increase to 4MB
         },
         manifest: {
-          name: 'Leo Enterprises ERP',
-          short_name: 'Leo ERP',
-          description: 'Multi-service solutions for Leo Enterprises',
+          name: 'L & P Trading and Services',
+          short_name: 'L&P ERP',
+          description: 'Multi-service solutions for L & P Trading and Services',
           theme_color: '#0f172a', // Navy Blue (slate-900)
           background_color: '#ffffff',
           display: 'standalone',

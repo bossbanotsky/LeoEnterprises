@@ -35,7 +35,8 @@ import {
   History,
   AlertCircle,
   ArrowRight,
-  CheckSquare
+  CheckSquare,
+  Edit
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -112,7 +113,114 @@ export default function Payroll() {
     targetEmployees: Employee[]
   } | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-  
+
+  // States for inline preview editing & overrides
+  const [editingPreviewIdx, setEditingPreviewIdx] = useState<number | null>(null);
+  const [editRegularPay, setEditRegularPay] = useState<string>('');
+  const [editOtPay, setEditOtPay] = useState<string>('');
+  const [editPakyawPay, setEditPakyawPay] = useState<string>('');
+  const [editAdjustments, setEditAdjustments] = useState<string>('');
+  const [editCashAdvanceDeduction, setEditCashAdvanceDeduction] = useState<string>('');
+  const [editCarryOverFromPrevious, setEditCarryOverFromPrevious] = useState<string>('');
+
+  // States for saved payroll overrides
+  const [isEditingSavedPayslip, setIsEditingSavedPayslip] = useState(false);
+  const [savedRegPay, setSavedRegPay] = useState<string>('');
+  const [savedOtPay, setSavedOtPay] = useState<string>('');
+  const [savedPakyawPay, setSavedPakyawPay] = useState<string>('');
+  const [savedAdjustments, setSavedAdjustments] = useState<string>('');
+  const [savedCashAdvanceDeduction, setSavedCashAdvanceDeduction] = useState<string>('');
+  const [savedCarryOverFromPrevious, setSavedCarryOverFromPrevious] = useState<string>('');
+
+  const handleSavePreviewOverride = (idx: number) => {
+    if (!previewData) return;
+    const newPayrolls = [...previewData.payrollsToSave];
+    const item = { ...newPayrolls[idx] };
+
+    const reg = parseFloat(editRegularPay) || 0;
+    const ot = parseFloat(editOtPay) || 0;
+    const pakyaw = parseFloat(editPakyawPay) || 0;
+    const adj = parseFloat(editAdjustments) || 0;
+    const ca = parseFloat(editCashAdvanceDeduction) || 0;
+    const cop = parseFloat(editCarryOverFromPrevious) || 0;
+
+    const totalEarnings = reg + ot + pakyaw + adj;
+    const totalGrossPay = totalEarnings - cop;
+    const totalPay = totalGrossPay - ca;
+
+    item.regularPay = reg;
+    item.otPay = ot;
+    item.totalPakyawPay = pakyaw;
+    item.totalAdjustments = adj;
+    item.cashAdvanceDeduction = ca;
+    item.carryOverFromPrevious = cop;
+    item.totalEarnings = totalEarnings;
+    item.totalGrossPay = totalGrossPay;
+    item.totalPay = totalPay;
+    item.isManualOverride = true; // Mark as customized
+
+    newPayrolls[idx] = item;
+
+    // Recalculate bulk total
+    const newBulkTotal = newPayrolls.reduce((sum, p) => sum + (p.status === 'carried_over' ? 0 : p.totalPay), 0);
+
+    setPreviewData({
+      ...previewData,
+      payrollsToSave: newPayrolls,
+      bulkTotalPay: newBulkTotal
+    });
+    setEditingPreviewIdx(null);
+  };
+
+  const handleSaveSavedPayslipOverride = async () => {
+    if (!selectedPayslip?.id) return;
+    setIsLoading(true);
+    try {
+      const reg = parseFloat(savedRegPay) || 0;
+      const ot = parseFloat(savedOtPay) || 0;
+      const pakyaw = parseFloat(savedPakyawPay) || 0;
+      const adj = parseFloat(savedAdjustments) || 0;
+      const ca = parseFloat(savedCashAdvanceDeduction) || 0;
+      const cop = parseFloat(savedCarryOverFromPrevious) || 0;
+
+      const totalEarnings = reg + ot + pakyaw + adj;
+      const totalGrossPay = totalEarnings - cop;
+      const totalPay = totalGrossPay - ca;
+
+      const updatedFields = {
+        regularPay: reg,
+        otPay: ot,
+        totalPakyawPay: pakyaw,
+        totalAdjustments: adj,
+        cashAdvanceDeduction: ca,
+        carryOverFromPrevious: cop,
+        totalEarnings,
+        totalGrossPay,
+        totalPay,
+        isManualOverride: true,
+        updatedAt: new Date().toISOString()
+      };
+
+      await updateDoc(doc(db, 'payrolls', selectedPayslip.id), updatedFields);
+      
+      // Update local state and the list of payroll data
+      setSelectedPayslip({
+        ...selectedPayslip,
+        ...updatedFields
+      });
+
+      setPayrollData(prev => prev.map(p => p.id === selectedPayslip.id ? { ...p, ...updatedFields } : p));
+
+      showToast('Payroll record updated successfully', 'success');
+      setIsEditingSavedPayslip(false);
+    } catch (error) {
+      console.error('Error updating saved payroll:', error);
+      showToast('Failed to update payroll', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const payslipRef = useRef<HTMLDivElement>(null);
 
   const sanitizeStyles = (payslipEl: HTMLElement) => {
@@ -2009,14 +2117,33 @@ export default function Payroll() {
         )}
       </div>
 
-      <Dialog open={!!selectedPayslip} onOpenChange={(open) => !open && setSelectedPayslip(null)}>
+      <Dialog open={!!selectedPayslip} onOpenChange={(open) => { if (!open) { setSelectedPayslip(null); setIsEditingSavedPayslip(false); } }}>
         <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden bg-white rounded-2xl w-[95vw] max-w-lg mx-auto border-none shadow-2xl">
           <div className="p-2 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 backdrop-blur-sm sticky top-0 z-10 font-sans">
             <DialogTitle className="flex items-center gap-2 text-slate-900 font-black uppercase italic tracking-tight text-sm">
               <FileText className="w-3.5 h-3.5 text-blue-600" />
               Payslip
             </DialogTitle>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              {!isEditingSavedPayslip && selectedPayslip?.id && (
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="h-8 gap-1 rounded-xl border-slate-200 text-blue-600 hover:bg-blue-50 hover:text-blue-700 transition-all font-bold text-[10px] uppercase tracking-widest"
+                  onClick={() => {
+                    setIsEditingSavedPayslip(true);
+                    setSavedRegPay((selectedPayslip.regularPay || 0).toString());
+                    setSavedOtPay((selectedPayslip.otPay || 0).toString());
+                    setSavedPakyawPay((selectedPayslip.totalPakyawPay || 0).toString());
+                    setSavedAdjustments((selectedPayslip.totalAdjustments || 0).toString());
+                    setSavedCashAdvanceDeduction((selectedPayslip.cashAdvanceDeduction || 0).toString());
+                    setSavedCarryOverFromPrevious((selectedPayslip.carryOverFromPrevious || 0).toString());
+                  }}
+                >
+                  <Edit className="w-3 h-3 text-blue-500 mr-0.5" />
+                  Override
+                </Button>
+              )}
               <Button 
                 size="sm" 
                 variant="outline" 
@@ -2045,17 +2172,108 @@ export default function Payroll() {
                 disabled={isExporting}
               >
                 {isExporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5 rotate-180" />}
-                {isExporting ? 'Exporting...' : 'Export PDF'}
+                {isExporting ? 'Exporting...' : 'Export'}
               </Button>
             </div>
           </div>
           
           {selectedPayslip && (
-            <div 
-              ref={payslipRef}
-              className="p-3 max-h-[90vh] overflow-y-auto payslip-mockup bg-white font-sans text-[10px]" 
-              style={{ backgroundColor: '#ffffff' }}
-            >
+            isEditingSavedPayslip ? (
+              <div className="p-6 space-y-4 font-sans bg-white text-slate-900 max-h-[85vh] overflow-y-auto">
+                <div className="border-b border-slate-200 pb-3">
+                  <h3 className="text-sm font-black uppercase text-blue-600 leading-none">Manual Override Payslip</h3>
+                  <p className="text-[10px] text-slate-400 mt-1.5 leading-tight">Directly modify computed numbers for {selectedPayslip.employeeName || selectedPayslip.employee?.fullName}.</p>
+                </div>
+                
+                <div className="space-y-3.5 pt-2">
+                  <div className="grid grid-cols-2 gap-3.5">
+                    <div className="space-y-1">
+                      <Label className="text-[10px] font-black uppercase tracking-wider text-slate-500">Regular Pay (₱)</Label>
+                      <Input 
+                        type="number"
+                        value={savedRegPay}
+                        onChange={(e) => setSavedRegPay(e.target.value)}
+                        className="h-10 text-xs font-bold text-slate-950 border-slate-200 bg-white"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[10px] font-black uppercase tracking-wider text-slate-500">Overtime Pay (₱)</Label>
+                      <Input 
+                        type="number"
+                        value={savedOtPay}
+                        onChange={(e) => setSavedOtPay(e.target.value)}
+                        className="h-10 text-xs font-bold text-slate-950 border-slate-200 bg-white"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3.5">
+                    <div className="space-y-1">
+                      <Label className="text-[10px] font-black uppercase tracking-wider text-slate-500">Pakyaw Paid (₱)</Label>
+                      <Input 
+                        type="number"
+                        value={savedPakyawPay}
+                        onChange={(e) => setSavedPakyawPay(e.target.value)}
+                        className="h-10 text-xs font-bold text-slate-950 border-slate-200 bg-white"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[10px] font-black uppercase tracking-wider text-slate-500">Bonus/Adjustment (₱)</Label>
+                      <Input 
+                        type="number"
+                        value={savedAdjustments}
+                        onChange={(e) => setSavedAdjustments(e.target.value)}
+                        className="h-10 text-xs font-bold text-slate-950 border-slate-200 bg-white"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3.5">
+                    <div className="space-y-1">
+                      <Label className="text-[10px] font-black uppercase tracking-wider text-slate-500">CA Deduction (₱)</Label>
+                      <Input 
+                        type="number"
+                        value={savedCashAdvanceDeduction}
+                        onChange={(e) => setSavedCashAdvanceDeduction(e.target.value)}
+                        className="h-10 text-xs font-bold text-slate-950 border-slate-200 bg-white"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[10px] font-black uppercase tracking-wider text-slate-500">Debt Carry-Over (₱)</Label>
+                      <Input 
+                        type="number"
+                        value={savedCarryOverFromPrevious}
+                        onChange={(e) => setSavedCarryOverFromPrevious(e.target.value)}
+                        className="h-10 text-xs font-bold text-slate-950 border-slate-200 bg-white"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-2.5 pt-6 justify-end border-t border-slate-100">
+                  <Button 
+                    variant="ghost" 
+                    className="rounded-xl font-bold text-xs"
+                    onClick={() => setIsEditingSavedPayslip(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    className="px-6 rounded-xl bg-blue-600 hover:bg-blue-700 font-bold text-xs text-white"
+                    onClick={handleSaveSavedPayslipOverride}
+                    disabled={isLoading}
+                  >
+                    {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CheckCircle className="w-4 h-4 mr-2" />}
+                    Save Override
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div 
+                ref={payslipRef}
+                className="p-3 max-h-[90vh] overflow-y-auto payslip-mockup bg-white font-sans text-[10px]" 
+                style={{ backgroundColor: '#ffffff' }}
+              >
               <div className="flex justify-between border-b border-slate-900 pb-2 mb-2">
                 <div>
                   <div className="inline-flex items-center gap-1 px-1 py-0.5 bg-blue-600 text-white text-[7px] font-black uppercase tracking-[0.1em] rounded mb-1">
@@ -2427,7 +2645,8 @@ export default function Payroll() {
                 </div>
               </div>
             </div>
-          )}
+          )
+        )}
         </DialogContent>
       </Dialog>
       <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
@@ -2465,13 +2684,104 @@ export default function Payroll() {
                 {previewData?.payrollsToSave.map((p, idx) => {
                   const emp = previewData.targetEmployees.find(e => e.id === p.employeeId);
                   const isCarriedOver = p.status === 'carried_over';
-                  return (
+                  return editingPreviewIdx === idx ? (
+                    <tr key={idx} className="bg-blue-50/20 dark:bg-blue-900/10">
+                      <td colSpan={5} className="px-6 py-6 font-sans">
+                        <div className="font-black text-xs text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-3 flex justify-between items-center">
+                          <span>Manual Pay Override: {emp?.fullName}</span>
+                          <span className="text-[9px] text-slate-400 dark:text-slate-500 lowercase italic font-normal">Recalculates instantly</span>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3.5 mb-4">
+                          <div className="space-y-1">
+                            <label className="text-[9px] font-black uppercase text-slate-450 dark:text-slate-400">Regular Pay (₱)</label>
+                            <Input 
+                              type="number"
+                              value={editRegularPay}
+                              onChange={(e) => setEditRegularPay(e.target.value)}
+                              className="h-8 max-h-8 text-xs font-bold bg-white dark:bg-slate-950 border-slate-205 text-slate-950 dark:text-white"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[9px] font-black uppercase text-slate-450 dark:text-slate-400">Overtime Pay (₱)</label>
+                            <Input 
+                              type="number"
+                              value={editOtPay}
+                              onChange={(e) => setEditOtPay(e.target.value)}
+                              className="h-8 max-h-8 text-xs font-bold bg-white dark:bg-slate-950 border-slate-205 text-slate-950 dark:text-white"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[9px] font-black uppercase text-slate-450 dark:text-slate-400">Pakyaw Paid (₱)</label>
+                            <Input 
+                              type="number"
+                              value={editPakyawPay}
+                              onChange={(e) => setEditPakyawPay(e.target.value)}
+                              className="h-8 max-h-8 text-xs font-bold bg-white dark:bg-slate-950 border-slate-205 text-slate-950 dark:text-white"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[9px] font-black uppercase text-slate-450 dark:text-slate-400">Adjustment/Bonus (₱)</label>
+                            <Input 
+                              type="number"
+                              value={editAdjustments}
+                              onChange={(e) => setEditAdjustments(e.target.value)}
+                              className="h-8 max-h-8 text-xs font-bold bg-white dark:bg-slate-950 border-slate-205 text-slate-950 dark:text-white"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[9px] font-black uppercase text-slate-450 dark:text-slate-400">CA Deduction (₱)</label>
+                            <Input 
+                              type="number"
+                              value={editCashAdvanceDeduction}
+                              onChange={(e) => setEditCashAdvanceDeduction(e.target.value)}
+                              className="h-8 max-h-8 text-xs font-bold bg-white dark:bg-slate-950 border-slate-205 text-slate-950 dark:text-white"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[9px] font-black uppercase text-slate-450 dark:text-slate-400">Debt Carry-Over (₱)</label>
+                            <Input 
+                              type="number"
+                              value={editCarryOverFromPrevious}
+                              onChange={(e) => setEditCarryOverFromPrevious(e.target.value)}
+                              className="h-8 max-h-8 text-xs font-bold bg-white dark:bg-slate-950 border-slate-205 text-slate-950 dark:text-white"
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="flex gap-2 justify-end">
+                          <Button 
+                            variant="ghost" 
+                            className="h-7 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 font-bold text-[10px] px-3 py-1 rounded-lg"
+                            onClick={() => setEditingPreviewIdx(null)}
+                          >
+                            Cancel
+                          </Button>
+                          <Button 
+                            className="h-7 bg-blue-600 hover:bg-blue-700 text-white font-bold text-[10px] px-4 py-1 rounded-lg"
+                            onClick={() => handleSavePreviewOverride(idx)}
+                          >
+                            Apply Override
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
                     <tr key={idx} className={`transition-colors ${isCarriedOver ? 'bg-amber-50/30' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}>
                       <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">
-                        {emp?.fullName}
+                        <div className="flex items-center gap-1.5 font-bold">
+                          {emp?.fullName}
+                          {p.isManualOverride && (
+                            <span className="text-[8px] bg-blue-600 text-white rounded px-1 font-black uppercase tracking-widest scale-90">Custom</span>
+                          )}
+                        </div>
                         <div className="text-[10px] text-slate-400 font-normal">
                           {p.carryOverFromPrevious > 0 && <div className="text-emerald-500 font-bold">+₱{(p.carryOverFromPrevious || 0).toLocaleString()} Carry-over from previous</div>}
-                          {p.totalPresent}d present, {p.totalHalfDays || 0}d half, {p.totalAbsent}d absent
+                          {!p.isManualOverride ? (
+                            <span>{p.totalPresent}d present, {p.totalHalfDays || 0}d half, {p.totalAbsent}d absent</span>
+                          ) : (
+                            <span className="text-blue-500 font-bold">Manual override values active</span>
+                          )}
                           {p.pakyawDetails && p.pakyawDetails.length > 0 && (
                             <div className="mt-1 text-indigo-400/80 font-medium">
                                 Pakyaw: {p.pakyawDetails.join(', ')}
@@ -2499,16 +2809,32 @@ export default function Payroll() {
                         )}
                       </td>
                       <td className="px-6 py-4 text-center uppercase">
-                        <button
-                          onClick={() => toggleCarryOver(idx)}
-                          className={`text-[10px] font-black px-3 py-1 rounded-full border transition-all ${
-                            isCarriedOver 
-                              ? 'bg-amber-500 text-white border-amber-500' 
-                              : 'text-slate-400 border-slate-200 hover:border-amber-400 hover:text-amber-500'
-                          }`}
-                        >
-                          {isCarriedOver ? 'Undo' : 'Carry Over'}
-                        </button>
+                        <div className="flex flex-col items-center gap-1.5 justify-center">
+                          <button
+                            onClick={() => toggleCarryOver(idx)}
+                            className={`text-[9px] font-black px-2 py-0.5 rounded-full border transition-all w-24 text-center ${
+                              isCarriedOver 
+                                ? 'bg-amber-500 text-white border-amber-500' 
+                                : 'text-slate-400 border-slate-200 dark:border-slate-800 hover:border-amber-400 hover:text-amber-500'
+                            }`}
+                          >
+                            {isCarriedOver ? 'Undo' : 'Carry Over'}
+                          </button>
+                          <button
+                            onClick={() => {
+                              setEditingPreviewIdx(idx);
+                              setEditRegularPay((p.regularPay || 0).toString());
+                              setEditOtPay((p.otPay || 0).toString());
+                              setEditPakyawPay((p.totalPakyawPay || 0).toString());
+                              setEditAdjustments((p.totalAdjustments || 0).toString());
+                              setEditCashAdvanceDeduction((p.cashAdvanceDeduction || 0).toString());
+                              setEditCarryOverFromPrevious((p.carryOverFromPrevious || 0).toString());
+                            }}
+                            className="text-[9px] font-black px-2 py-0.5 rounded-full border text-slate-450 border-slate-200 dark:border-slate-850 hover:border-blue-400 hover:text-blue-500 transition-all w-24 text-center"
+                          >
+                            Override
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );

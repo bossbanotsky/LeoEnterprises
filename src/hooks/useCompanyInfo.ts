@@ -11,7 +11,7 @@ export interface CompanyInfo {
 }
 
 const defaultCompany: CompanyInfo = {
-  name: 'Leo Enterprises',
+  name: 'L & P Trading and Services',
   address: 'Santa Maria, Bauan, Batangas',
   contact: '0994-606-4463'
 };
@@ -23,10 +23,21 @@ export function useCompanyInfo() {
   useEffect(() => {
     const fetchCompany = async () => {
       try {
-        const { getDoc } = await import('firebase/firestore');
+        const { getDoc, setDoc } = await import('firebase/firestore');
         const docSnap = await getDoc(doc(db, 'settings', 'company'));
         if (docSnap.exists()) {
-          setCompanyInfo({ ...defaultCompany, ...docSnap.data() });
+          const data = docSnap.data();
+          if (data && (data.name === 'Leo Enterprises' || !data.name)) {
+            // Automatically upgrade database records to L & P Trading and Services
+            const upgraded = { ...data, name: 'L & P Trading and Services' };
+            await setDoc(doc(db, 'settings', 'company'), upgraded, { merge: true });
+            setCompanyInfo({ ...defaultCompany, ...upgraded });
+          } else {
+            setCompanyInfo({ ...defaultCompany, ...data });
+          }
+        } else {
+          // If no doc exists, use default
+          setCompanyInfo(defaultCompany);
         }
         setLoading(false);
       } catch (error: any) {

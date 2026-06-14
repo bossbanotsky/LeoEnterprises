@@ -130,9 +130,9 @@ export default function ServiceDetail() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3 group">
             <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center group-hover:rotate-6 transition-transform">
-              <span className="text-white font-black">L</span>
+              <span className="text-white font-black">LP</span>
             </div>
-            <span className="font-bold text-slate-900 uppercase italic tracking-tighter">Leo </span>
+            <span className="font-bold text-slate-900 uppercase italic tracking-tighter">L & P</span>
           </Link>
           <Link to="/">
             <Button variant="ghost" className="flex items-center gap-2 text-slate-500 font-bold hover:text-slate-900 uppercase tracking-widest text-xs">
@@ -250,7 +250,7 @@ export default function ServiceDetail() {
       </section>
 
       <footer className="py-12 bg-slate-950 border-t border-white/5 text-center">
-         <p className="text-slate-500 text-xs font-bold uppercase tracking-[4px]">Leo Enterprises © 2026</p>
+          <p className="text-slate-500 text-[10px] font-bold uppercase tracking-[4px]">L & P Trading and Services © 2026</p>
       </footer>
     </div>
   );

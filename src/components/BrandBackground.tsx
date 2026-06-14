@@ -11,7 +11,7 @@ export default function BrandBackground() {
       <img 
         src={imgSrc} 
         onError={() => setImgSrc("https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=2500")}
-        alt="LEO Enterprises Industrial Background" 
+        alt="L & P Trading and Services Industrial Background" 
         className="fixed inset-0 w-full h-full object-cover opacity-100 transition-opacity duration-1000"
         referrerPolicy="no-referrer"
       />
