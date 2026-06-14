@@ -36,7 +36,8 @@ import {
   AlertCircle,
   ArrowRight,
   CheckSquare,
-  Edit
+  Edit,
+  RefreshCw
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -132,6 +133,13 @@ export default function Payroll() {
   const [savedCashAdvanceDeduction, setSavedCashAdvanceDeduction] = useState<string>('');
   const [savedCarryOverFromPrevious, setSavedCarryOverFromPrevious] = useState<string>('');
 
+  // Keep track of synchronized payslip IDs in a session to avoid multiple/infinite triggers
+  const syncedPayslipsRef = useRef<Set<string>>(new Set());
+
+  // Print layout options to fit 2 items on a single A4 page to minimize print costs
+  const [fitTwoPerA4, setFitTwoPerA4] = useState(false);
+  const [dupSingleOnA4, setDupSingleOnA4] = useState(false);
+
   const handleSavePreviewOverride = (idx: number) => {
     if (!previewData) return;
     const newPayrolls = [...previewData.payrollsToSave];
@@ -170,6 +178,396 @@ export default function Payroll() {
       bulkTotalPay: newBulkTotal
     });
     setEditingPreviewIdx(null);
+  };
+
+  const handleSyncPayslip = async (payslipId: string) => {
+    if (!user) return;
+    setIsLoading(true);
+    try {
+      // 1. Fetch current payslip from database
+      const payslipSnap = await getDoc(doc(db, 'payrolls', payslipId));
+      if (!payslipSnap.exists()) {
+        showToast('Payslip not found', 'error');
+        return;
+      }
+      const savedPayslip = { id: payslipSnap.id, ...payslipSnap.data() } as any;
+      const { employeeId, startDate, endDate } = savedPayslip;
+      
+      const emp = employees.find(e => e.id === employeeId);
+      if (!emp) {
+        showToast('Employee not found', 'error');
+        return;
+      }
+
+      // 2. REVERT original cash advance deductions of this payslip in Firestore before recalculation
+      if (savedPayslip.cashAdvanceIds) {
+        for (const caId of savedPayslip.cashAdvanceIds) {
+          const caRef = doc(db, 'cashAdvances', caId);
+          const caSnap = await getDoc(caRef);
+          if (caSnap.exists()) {
+            const caData = caSnap.data();
+            const targetD = (caData.deductions || []).find((d: any) => d.payrollId === payslipId);
+            if (targetD) {
+              await updateDoc(caRef, {
+                remainingBalance: (caData.remainingBalance || 0) + targetD.amount,
+                deductions: (caData.deductions || []).filter((d: any) => d.payrollId !== payslipId)
+              });
+            }
+          }
+        }
+      }
+
+      // Also revert status of adjustments linked to this payslip back to 'pending'
+      const adjQ = query(collection(db, 'adjustments'), where('payrollId', '==', payslipId));
+      const adjSnap = await getDocs(adjQ);
+      for (const adjDoc of adjSnap.docs) {
+        await updateDoc(adjDoc.ref, {
+          status: 'pending',
+          payrollId: deleteField()
+        });
+      }
+
+      // 3. FETCH latest live data directly from Firestore
+      // Attendance
+      const attQ = query(
+        collection(db, 'attendance'),
+        where('employeeId', '==', employeeId),
+        where('date', '>=', startDate),
+        where('date', '<=', endDate)
+      );
+      const attSnap = await getDocs(attQ);
+      const empAtts: Attendance[] = [];
+      attSnap.forEach(docSnap => empAtts.push({ id: docSnap.id, ...docSnap.data() } as Attendance));
+
+      // Outstanding Cash Advances
+      const caQ = query(
+        collection(db, 'cashAdvances'),
+        where('employeeId', '==', employeeId),
+        where('remainingBalance', '>', 0)
+      );
+      const caSnap = await getDocs(caQ);
+      const empCa: any[] = [];
+      caSnap.forEach(docSnap => empCa.push({ id: docSnap.id, ...docSnap.data() }));
+      empCa.sort((a, b) => a.date.localeCompare(b.date));
+
+      // Pakyaw Jobs
+      const pjQ = query(
+        collection(db, 'pakyawJobs'),
+        where('employeeIds', 'array-contains', employeeId)
+      );
+      const pjSnap = await getDocs(pjQ);
+      const allPjw: any[] = [];
+      pjSnap.forEach(docSnap => {
+        const pj = { id: docSnap.id, ...docSnap.data() } as any;
+        const startedInRange = pj.startDate >= startDate && pj.startDate <= endDate;
+        const completedAtDate = pj.completedAt ? pj.completedAt.split('T')[0] : null;
+        const completedInRange = completedAtDate && completedAtDate >= startDate && completedAtDate <= endDate;
+        if (startedInRange || completedInRange) {
+          allPjw.push(pj);
+        }
+      });
+
+      // Pending/Restored Adjustments
+      const freshAdjQ = query(
+        collection(db, 'adjustments'),
+        where('employeeId', '==', employeeId),
+        where('status', '==', 'pending')
+      );
+      const freshAdjSnap = await getDocs(freshAdjQ);
+      const empAdjustments: any[] = [];
+      freshAdjSnap.forEach(docSnap => empAdjustments.push({ id: docSnap.id, ...docSnap.data() }));
+
+      // 4. RUN ALL CALCULATIONS
+      const dateRange = eachDayOfInterval({
+        start: parseISO(startDate),
+        end: parseISO(endDate)
+      }).map(d => format(d, 'yyyy-MM-dd'));
+
+      let totalPresent = 0;
+      let totalHalfDays = 0;
+      let totalUndertimeDays = 0;
+      let totalUndertimeHours = 0;
+      let undertimeDetails: string[] = [];
+      let totalAbsent = 0;
+      let absentDates: string[] = [];
+      let totalRegularHours = 0;
+      let totalOtHours = 0;
+      let otDetails: string[] = [];
+      let cashAdvanceDeduction = 0;
+      let cashAdvanceDetails: string[] = [];
+      let appliedCashAdvanceIds: string[] = [];
+      let totalPakyawPay = 0;
+      let presentEarnings = 0;
+      let hdEarnings = 0;
+      let utEarnings = 0;
+      let pakyawDetails: string[] = [];
+      let pakyawItems: PayrollPakyawDetail[] = [];
+      let dailyAttendanceLog: { date: string, status: string, regHrs: number, otHrs: number, isWorkDay: boolean }[] = [];
+
+      const totalAdjustmentsAmount = empAdjustments.reduce((sum, a) => {
+        if (a.type === 'deduction') return sum - a.amount;
+        return sum + a.amount;
+      }, 0);
+
+      empCa.forEach(ca => {
+        cashAdvanceDeduction += (ca.remainingBalance || 0);
+        appliedCashAdvanceIds.push(ca.id);
+        cashAdvanceDetails.push(`CA ${format(parseISO(ca.date), 'MMMM dd, yyyy')}: ₱${(ca.remainingBalance || 0).toFixed(2)}`);
+      });
+
+      allPjw.forEach(pj => {
+        const splitAmount = pj.totalPrice / Math.max(1, pj.employeeIds.length);
+        const jobName = pj.containerNumber ? `[${pj.containerNumber}] ${pj.description}` : pj.description;
+        
+        const pakyawItem: PayrollPakyawDetail = {
+          jobId: pj.id,
+          description: jobName,
+          amount: splitAmount,
+          status: pj.status,
+          isPaid: false
+        };
+        pakyawItems.push(pakyawItem);
+
+        if (pj.status === 'completed') {
+          totalPakyawPay += splitAmount;
+          pakyawDetails.push(`${jobName}: ₱${(splitAmount || 0).toFixed(2)}`);
+        } else {
+          pakyawDetails.push(`${jobName}: PENDING (Not Finished)`);
+        }
+      });
+
+      let regularPay = 0;
+      let otPay = 0;
+
+      dateRange.forEach(date => {
+        const dayAtts = empAtts.filter(a => a.date === date);
+        
+        if (dayAtts.length > 0) {
+          let dayRegHrs = 0;
+          let dayOtHrs = 0;
+          let dayRegularPay = 0;
+          let dayOtPay = 0;
+          let statuses = new Set<string>();
+
+          dayAtts.forEach(att => {
+            const { regHrs, otHrs } = calculateAttendanceHours(att);
+            dayRegHrs += regHrs;
+            dayOtHrs += otHrs;
+
+            const effectiveHourlyRate = att.hourlyRate || (emp.dailySalary / 8);
+            dayRegularPay += regHrs * effectiveHourlyRate;
+            dayOtPay += otHrs * effectiveHourlyRate;
+            
+            statuses.add(att.status);
+          });
+
+          regularPay += dayRegularPay;
+          otPay += dayOtPay;
+          totalRegularHours += dayRegHrs;
+          totalOtHours += dayOtHrs;
+
+          let statusLabel: string = statuses.has('hd') ? 'halfday' : (dayRegHrs < 8 && !statuses.has('pakyaw') ? 'undertime' : 'present');
+          if (statuses.has('pakyaw')) statusLabel = 'pakyaw';
+          if (statuses.has('absent') && dayRegHrs === 0) statusLabel = 'absent';
+
+          if (statusLabel === 'halfday') {
+            totalHalfDays++;
+            hdEarnings += dayRegularPay;
+          } else if (statusLabel === 'undertime' && dayRegHrs < 8) {
+             totalUndertimeDays++;
+             utEarnings += dayRegularPay;
+             const deficit = 8 - dayRegHrs;
+             totalUndertimeHours += deficit;
+             undertimeDetails.push(`${format(parseISO(date), 'MMMM dd, yyyy')}: ${dayRegHrs}h (Deficit: -${(deficit || 0).toFixed(1)}h)`);
+          } else if (statusLabel === 'present') {
+             totalPresent++;
+             presentEarnings += dayRegularPay;
+          } else if (statusLabel === 'absent') {
+             totalAbsent++;
+             absentDates.push(format(parseISO(date), 'MMMM dd, yyyy'));
+          }
+
+          if (dayOtHrs > 0) {
+            otDetails.push(`${format(parseISO(date), 'MMMM dd, yyyy')}: ${(dayOtHrs || 0).toFixed(1)}h OT`);
+          }
+
+          dailyAttendanceLog.push({ 
+            date, 
+            status: statusLabel, 
+            regHrs: dayRegHrs, 
+            otHrs: dayOtHrs,
+            isWorkDay: true 
+          });
+        } else {
+          totalAbsent++;
+          absentDates.push(format(parseISO(date), 'MMMM dd, yyyy'));
+          dailyAttendanceLog.push({ 
+            date, 
+            status: 'absent', 
+            regHrs: 0, 
+            otHrs: 0,
+            isWorkDay: false 
+          });
+        }
+      });
+
+      const totalEarnings = regularPay + otPay + totalPakyawPay + totalAdjustmentsAmount;
+      const empRef = doc(db, 'employees', employeeId);
+      const empSnap = await getDoc(empRef);
+      const carryOverFromPrevious = empSnap.exists() ? (empSnap.data().carryOverBalance || 0) : (emp.carryOverBalance || 0);
+
+      const totalGrossPay = totalEarnings - carryOverFromPrevious;
+      const totalPay = totalGrossPay - cashAdvanceDeduction;
+
+      // 5. UPDATE FIRESTORE PAYROLL DOCUMENT
+      const updatedPayload = {
+        totalPresent,
+        totalHalfDays,
+        totalUndertimeDays,
+        totalUndertimeHours,
+        undertimeDetails,
+        totalAbsent,
+        absentDates,
+        totalRegularHours,
+        totalOtHours,
+        otDetails,
+        regularPay,
+        otPay,
+        presentEarnings,
+        hdEarnings,
+        utEarnings,
+        totalPakyawPay,
+        pakyawDetails,
+        pakyawItems,
+        adjustments: empAdjustments,
+        totalAdjustments: totalAdjustmentsAmount,
+        dailyAttendanceLog, 
+        totalEarnings,
+        totalGrossPay,
+        cashAdvanceDeduction,
+        cashAdvanceDetails,
+        cashAdvanceIds: appliedCashAdvanceIds,
+        carryOverFromPrevious,
+        totalPay,
+        isManualOverride: false, // reset override markers when synchronized
+        updatedAt: new Date().toISOString()
+      };
+
+      await updateDoc(doc(db, 'payrolls', payslipId), updatedPayload);
+
+      // Re-apply Adjustments to status='applied'
+      if (empAdjustments.length > 0) {
+        for (const adj of empAdjustments) {
+          await updateDoc(doc(db, 'adjustments', adj.id), {
+            status: 'applied',
+            payrollId: payslipId
+          });
+        }
+      }
+
+      // Re-apply Cash Advance deductions
+      if (appliedCashAdvanceIds.length > 0) {
+        for (const caId of appliedCashAdvanceIds) {
+          const caRef = doc(db, 'cashAdvances', caId);
+          const caSnap = await getDoc(caRef);
+          if (caSnap.exists()) {
+            const caData = caSnap.data();
+            const deductionAmount = caData.remainingBalance;
+            await updateDoc(caRef, {
+              remainingBalance: 0,
+              deductions: arrayUnion({
+                payrollId: payslipId,
+                amount: deductionAmount,
+                period: `${startDate} to ${endDate}`,
+                date: new Date().toISOString()
+              })
+            });
+          }
+        }
+      }
+
+      // Update employee's carryOverBalance
+      if (empSnap.exists()) {
+        const empData = empSnap.data();
+        const currentBal = empData.carryOverBalance || 0;
+        
+        let oldCarryOverToNext = savedPayslip.carryOverToNext || 0;
+        let oldCarryOverFromPrevious = savedPayslip.carryOverFromPrevious || 0;
+
+        const netOldAdjustment = oldCarryOverToNext - oldCarryOverFromPrevious;
+        
+        let finalCarryOverToNext = 0;
+        if (totalPay < 0) {
+          const deficit = Math.abs(totalPay);
+          const existingCaQ = query(collection(db, 'cashAdvances'), where('originPayrollId', '==', payslipId), limit(1));
+          const existingCaSnap = await getDocs(existingCaQ);
+
+          if (existingCaSnap.empty) {
+            const newCaRef = await addDoc(collection(db, 'cashAdvances'), {
+              employeeId,
+              date: new Date().toISOString().split('T')[0],
+              amount: deficit,
+              remainingBalance: deficit,
+              deductions: [],
+              notes: `Auto-CA from Deficit (Period: ${startDate} to ${endDate})`,
+              originPayrollId: payslipId, 
+              createdAt: new Date().toISOString(),
+              uid: user.uid
+            });
+
+            // Transaction
+            const accSnap = await getDocs(query(collection(db, 'accounts'), where('type', '==', 'cash')));
+            const accountId = accSnap.empty ? 'cash-account-id' : accSnap.docs[0].id;
+            await recordTransaction(
+              accountId,
+              'expense',
+              deficit,
+              'Cash Advance',
+              `Auto-CA for ${emp.fullName} (Deficit - Synced)`,
+              newCaRef.id,
+              user.uid
+            );
+          } else {
+            const caId = existingCaSnap.docs[0].id;
+            const caData = existingCaSnap.docs[0].data();
+            if (caData.amount !== deficit) {
+              await updateDoc(doc(db, 'cashAdvances', caId), {
+                amount: deficit,
+                remainingBalance: deficit - (caData.amount - caData.remainingBalance),
+                notes: `Auto-CA Updated (Period: ${startDate} to ${endDate})`
+              });
+            }
+          }
+        } else {
+          const existingCaQ = query(collection(db, 'cashAdvances'), where('originPayrollId', '==', payslipId));
+          const existingCaSnap = await getDocs(existingCaQ);
+          for (const caDoc of existingCaSnap.docs) {
+            await deleteTransactionsByReference(caDoc.id);
+            await deleteDoc(doc(db, 'cashAdvances', caDoc.id));
+          }
+        }
+
+        const netNewAdjustment = finalCarryOverToNext - carryOverFromPrevious;
+        const newBalance = currentBal - netOldAdjustment + netNewAdjustment;
+        
+        await updateDoc(empRef, { carryOverBalance: newBalance });
+      }
+
+      // Re-trigger local selection update
+      const freshSnap = await getDoc(doc(db, 'payrolls', payslipId));
+      if (freshSnap.exists()) {
+        const liveRecord = { id: freshSnap.id, employee: emp, ...freshSnap.data() };
+        setSelectedPayslip(liveRecord);
+        setPayrollData(prev => prev.map(p => p.id === payslipId ? liveRecord : p));
+      }
+
+      showToast('Payslip synced successfully', 'success');
+    } catch (error) {
+      console.error('Error syncing payslip:', error);
+      showToast('Failed to sync payslip', 'error');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSaveSavedPayslipOverride = async () => {
@@ -238,9 +636,21 @@ export default function Payroll() {
       htmlEl.style.transition = 'none';
       htmlEl.style.animation = 'none';
       htmlEl.style.transform = 'none';
-      htmlEl.style.overflow = 'visible';
-      htmlEl.style.height = 'auto';
-      htmlEl.style.maxHeight = 'none';
+      
+      // Only remove overflow constraints from the root element or containers that have overflow-y scrollable properties
+      if (htmlEl === payslipEl || htmlEl.classList.contains('payslip-mockup')) {
+        htmlEl.style.overflow = 'visible';
+        htmlEl.style.height = 'auto';
+        htmlEl.style.maxHeight = 'none';
+      } else {
+        const overflowY = style.overflowY;
+        const maxHeight = style.maxHeight;
+        if (overflowY === 'auto' || overflowY === 'scroll' || (maxHeight && maxHeight !== 'none')) {
+          htmlEl.style.overflow = 'visible';
+          htmlEl.style.maxHeight = 'none';
+          // Do not touch height to preserve fixed aspect ratios of descendants like avatars
+        }
+      }
     });
   };
 
@@ -522,6 +932,34 @@ export default function Payroll() {
     }
   };
 
+  const addLongImageToPdf = (
+    pdf: any,
+    imgData: string,
+    canvasHeight: number,
+    canvasWidth: number,
+    pdfWidth: number,
+    pdfHeight: number,
+    isFirstItem: boolean
+  ) => {
+    const imgRatio = canvasHeight / canvasWidth;
+    const finalWidth = pdfWidth - 20;
+    const finalHeight = finalWidth * imgRatio;
+    const pageHeight = pdfHeight - 20;
+    
+    let leftHeight = finalHeight;
+    let k = 0;
+    
+    while (leftHeight > 0) {
+      if (!isFirstItem || k > 0) {
+        pdf.addPage();
+      }
+      const yOffset = 10 - (k * pageHeight);
+      pdf.addImage(imgData, 'PNG', 10, yOffset, finalWidth, finalHeight);
+      leftHeight -= pageHeight;
+      k++;
+    }
+  };
+
   const handlePrint = async () => {
     if (!payslipRef.current || !selectedPayslip) return;
     
@@ -563,11 +1001,29 @@ export default function Payroll() {
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       
-      const imgRatio = canvas.height / canvas.width;
-      const finalWidth = pdfWidth - 20;
-      const finalHeight = finalWidth * imgRatio;
+      if (dupSingleOnA4) {
+        const imgRatio = canvas.height / canvas.width;
+        const maxHalfHeight = (pdfHeight - 30) / 2; // ~133.5mm
+        const finalWidth = Math.min(pdfWidth - 20, maxHalfHeight / imgRatio);
+        const finalHeight = finalWidth * imgRatio;
+        const marginX = (pdfWidth - finalWidth) / 2;
+        
+        // Copy 1 (Top Half)
+        const marginY1 = 10 + (maxHalfHeight - finalHeight) / 2;
+        pdf.addImage(imgData, 'PNG', marginX, marginY1, finalWidth, finalHeight);
+        
+        // cutting line
+        pdf.setDrawColor(220, 220, 220);
+        pdf.setLineWidth(0.15);
+        pdf.line(10, 148.5, pdfWidth - 10, 148.5);
+        
+        // Copy 2 (Bottom Half)
+        const marginY2 = 152 + (maxHalfHeight - finalHeight) / 2;
+        pdf.addImage(imgData, 'PNG', marginX, marginY2, finalWidth, finalHeight);
+      } else {
+        addLongImageToPdf(pdf, imgData, canvas.height, canvas.width, pdfWidth, pdfHeight, true);
+      }
       
-      pdf.addImage(imgData, 'PNG', 10, 10, finalWidth, Math.min(finalHeight, pdfHeight - 20));
       pdf.autoPrint();
       window.open(pdf.output('bloburl'), '_blank');
       
@@ -616,11 +1072,29 @@ export default function Payroll() {
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       
-      const imgRatio = canvas.height / canvas.width;
-      const finalWidth = pdfWidth - 20;
-      const finalHeight = finalWidth * imgRatio;
+      if (dupSingleOnA4) {
+        const imgRatio = canvas.height / canvas.width;
+        const maxHalfHeight = (pdfHeight - 30) / 2; // ~133.5mm
+        const finalWidth = Math.min(pdfWidth - 20, maxHalfHeight / imgRatio);
+        const finalHeight = finalWidth * imgRatio;
+        const marginX = (pdfWidth - finalWidth) / 2;
+        
+        // Copy 1 (Top Half)
+        const marginY1 = 10 + (maxHalfHeight - finalHeight) / 2;
+        pdf.addImage(imgData, 'PNG', marginX, marginY1, finalWidth, finalHeight);
+        
+        // cutting line
+        pdf.setDrawColor(220, 220, 220);
+        pdf.setLineWidth(0.15);
+        pdf.line(10, 148.5, pdfWidth - 10, 148.5);
+        
+        // Copy 2 (Bottom Half)
+        const marginY2 = 152 + (maxHalfHeight - finalHeight) / 2;
+        pdf.addImage(imgData, 'PNG', marginX, marginY2, finalWidth, finalHeight);
+      } else {
+        addLongImageToPdf(pdf, imgData, canvas.height, canvas.width, pdfWidth, pdfHeight, true);
+      }
       
-      pdf.addImage(imgData, 'PNG', 10, 10, finalWidth, Math.min(finalHeight, pdfHeight - 20));
       pdf.save(`payslip_${selectedPayslip.employee.fullName.replace(/\s+/g, '_')}_${startDate}.pdf`);
     } catch (error) {
       console.error('Error exporting PDF:', error);
@@ -678,12 +1152,30 @@ export default function Payroll() {
           }
           
           const imgData = canvas.toDataURL('image/png');
-          const imgRatio = canvas.height / canvas.width;
-          const finalWidth = pdfWidth - 20;
-          const finalHeight = finalWidth * imgRatio;
           
-          if (i > 0) pdf.addPage();
-          pdf.addImage(imgData, 'PNG', 10, 10, finalWidth, Math.min(finalHeight, pdfHeight - 20));
+          if (fitTwoPerA4) {
+            const isTop = (i % 2 === 0);
+            if (i > 0 && isTop) {
+              pdf.addPage();
+            }
+            const yOffset = isTop ? 10 : 152;
+            const maxHalfHeight = (pdfHeight - 30) / 2; // ~133.5mm
+            const imgRatio = canvas.height / canvas.width;
+            const finalWidth = Math.min(pdfWidth - 20, maxHalfHeight / imgRatio);
+            const finalHeight = finalWidth * imgRatio;
+            const marginX = (pdfWidth - finalWidth) / 2;
+            const marginY = yOffset + (maxHalfHeight - finalHeight) / 2;
+            
+            pdf.addImage(imgData, 'PNG', marginX, marginY, finalWidth, finalHeight);
+            
+            if (isTop && i < displayedPayrolls.length - 1) {
+              pdf.setDrawColor(220, 220, 220);
+              pdf.setLineWidth(0.15);
+              pdf.line(10, 148.5, pdfWidth - 10, 148.5);
+            }
+          } else {
+            addLongImageToPdf(pdf, imgData, canvas.height, canvas.width, pdfWidth, pdfHeight, i === 0);
+          }
         }
       }
       
@@ -783,6 +1275,22 @@ export default function Payroll() {
       }
     }
   }, [payrollData]);
+
+  // Reset the list of synced IDs when selection filters change
+  useEffect(() => {
+    syncedPayslipsRef.current.clear();
+  }, [startDate, endDate, selectedBulkId, selectedEmployeeId, viewMode]);
+
+  // Automatically trigger sync behind the scenes when a payslip is opened/selected to be viewed
+  useEffect(() => {
+    if (selectedPayslip?.id && !selectedPayslip.isManualOverride && !isLoading) {
+      const pId = selectedPayslip.id;
+      if (!syncedPayslipsRef.current.has(pId)) {
+        syncedPayslipsRef.current.add(pId);
+        handleSyncPayslip(pId);
+      }
+    }
+  }, [selectedPayslip?.id]);
 
   const handlePreviewPayroll = async () => {
     if (!startDate || !endDate || employees.length === 0) return;
@@ -1084,16 +1592,44 @@ export default function Payroll() {
         
         let oldCarryOverToNext = 0;
         let oldCarryOverFromPrevious = 0;
+        let payrollId = '';
 
         if (!existingSnap.empty) {
-          const oldData = existingSnap.docs[0].data();
+          const oldDoc = existingSnap.docs[0];
+          payrollId = oldDoc.id;
+          const oldData = oldDoc.data();
           oldCarryOverToNext = oldData.carryOverToNext || 0;
           oldCarryOverFromPrevious = oldData.carryOverFromPrevious || 0;
-        }
 
-        let payrollId = '';
-        if (!existingSnap.empty) {
-          payrollId = existingSnap.docs[0].id;
+          // REVERT OLD CASH ADVANCE DEDUCTIONS before saving new ones
+          if (oldData.cashAdvanceIds) {
+            for (const caId of oldData.cashAdvanceIds) {
+              const caRef = doc(db, 'cashAdvances', caId);
+              const caSnap = await getDoc(caRef);
+              if (caSnap.exists()) {
+                const caData = caSnap.data();
+                const targetD = (caData.deductions || []).find((d: any) => d.payrollId === payrollId);
+                if (targetD) {
+                  await updateDoc(caRef, {
+                    remainingBalance: (caData.remainingBalance || 0) + targetD.amount,
+                    deductions: (caData.deductions || []).filter((d: any) => d.payrollId !== payrollId)
+                  });
+                }
+              }
+            }
+          }
+
+          // REVERT OLD ADJUSTMENTS SET TO PENDING before saving new ones
+          const oldAdjQ = query(collection(db, 'adjustments'), where('payrollId', '==', payrollId));
+          const oldAdjSnap = await getDocs(oldAdjQ);
+          for (const oldAdjDoc of oldAdjSnap.docs) {
+            await updateDoc(oldAdjDoc.ref, {
+              status: 'pending',
+              payrollId: deleteField()
+            });
+          }
+
+          // Update existing payroll record
           await updateDoc(doc(db, 'payrolls', payrollId), finalPayload);
         } else {
           const payrollDoc = await addDoc(collection(db, 'payrolls'), {
@@ -1102,35 +1638,35 @@ export default function Payroll() {
             createdAt: new Date().toISOString()
           });
           payrollId = payrollDoc.id;
+        }
 
-          // Process Adjustments
-          if (finalPayload.adjustments && finalPayload.adjustments.length > 0) {
-            for (const adj of finalPayload.adjustments) {
-              await updateDoc(doc(db, 'adjustments', adj.id), {
-                status: 'applied',
-                payrollId: payrollId
-              });
-            }
+        // APPLY NEW ADJUSTMENTS (Both new and updated/regenerated payrolls)
+        if (finalPayload.adjustments && finalPayload.adjustments.length > 0) {
+          for (const adj of finalPayload.adjustments) {
+            await updateDoc(doc(db, 'adjustments', adj.id), {
+              status: 'applied',
+              payrollId: payrollId
+            });
           }
-          
-          // DEDUCT CASH ADVANCES (Only for NEW payrolls to avoid multiple deductions)
-          if (finalPayload.cashAdvanceIds && finalPayload.cashAdvanceIds.length > 0) {
-            for (const caId of finalPayload.cashAdvanceIds) {
-              const caRef = doc(db, 'cashAdvances', caId);
-              const caSnap = await getDoc(caRef);
-              if (caSnap.exists()) {
-                const caData = caSnap.data();
-                const deductionAmount = caData.remainingBalance;
-                await updateDoc(caRef, {
-                  remainingBalance: 0,
-                  deductions: arrayUnion({
-                    payrollId: payrollId,
-                    amount: deductionAmount,
-                    period: `${startDate} to ${endDate}`,
-                    date: new Date().toISOString()
-                  })
-                });
-              }
+        }
+        
+        // APPLY NEW CASH ADVANCES DEDUCTIONS (Both new and updated/regenerated payrolls)
+        if (finalPayload.cashAdvanceIds && finalPayload.cashAdvanceIds.length > 0) {
+          for (const caId of finalPayload.cashAdvanceIds) {
+            const caRef = doc(db, 'cashAdvances', caId);
+            const caSnap = await getDoc(caRef);
+            if (caSnap.exists()) {
+              const caData = caSnap.data();
+              const deductionAmount = caData.remainingBalance;
+              await updateDoc(caRef, {
+                remainingBalance: 0,
+                deductions: arrayUnion({
+                  payrollId: payrollId,
+                  amount: deductionAmount,
+                  period: `${startDate} to ${endDate}`,
+                  date: new Date().toISOString()
+                })
+              });
             }
           }
         }
@@ -1870,7 +2406,7 @@ export default function Payroll() {
                       <FileText className="w-5 h-5" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-0.5">
+                      <div className="flex flex-wrap items-center gap-2 mb-0.5">
                         {viewMode === 'archives' ? (
                           <span className="text-[9px] font-black text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded uppercase tracking-widest border border-emerald-500/30">Paid</span>
                         ) : (
@@ -1966,6 +2502,23 @@ export default function Payroll() {
                       <h2 className="text-2xl font-black italic text-blue-400">₱{(balanceToPay || 0).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</h2>
                     </div>
                   </div>
+                  {/* Paper Saving Option Toggle */}
+                  <div 
+                    className="flex items-center gap-2 mb-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl p-3 self-start text-xs font-medium text-slate-200 transition-all cursor-pointer relative z-10 select-none" 
+                    onClick={() => setFitTwoPerA4(!fitTwoPerA4)}
+                  >
+                    <input
+                      id="fitTwoPerA4"
+                      type="checkbox"
+                      checked={fitTwoPerA4}
+                      onChange={(e) => setFitTwoPerA4(e.target.checked)}
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-4 h-4 text-emerald-500 bg-slate-800 border-slate-705 rounded focus:ring-emerald-500 cursor-pointer"
+                    />
+                    <label htmlFor="fitTwoPerA4" className="cursor-pointer font-bold uppercase tracking-wider text-[9px] text-emerald-300">
+                      Fit 2 Employees per A4 Page (Minimize Print Costs)
+                    </label>
+                  </div>
                   <div className="flex flex-col sm:flex-row gap-3 relative z-10 w-full mb-4">
                     <div className="grid grid-cols-2 sm:flex gap-3 w-full">
                       <Button 
@@ -2019,7 +2572,7 @@ export default function Payroll() {
                 onClick={() => setSelectedPayslip(data)}
                 className={`bento-card flex-col p-4 cursor-pointer hover:border-blue-300 transition-colors ${data.status === 'paid' ? 'bg-emerald-50/5 border-emerald-500/20 shadow-inner' : 'bg-white dark:bg-slate-800'}`}
               >
-                <div className="flex justify-between items-center mb-3">
+                <div className="flex flex-wrap sm:flex-nowrap justify-between items-center gap-2 mb-3">
                   <div className="flex items-center gap-2 min-w-0 flex-1">
                     <div className="w-6 h-6 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center font-bold text-[10px] overflow-hidden shrink-0">
                       {data.employee.photoURL ? (
@@ -2038,7 +2591,7 @@ export default function Payroll() {
                           <span className="text-[7px] bg-blue-500/10 text-blue-500 px-1 py-0.5 rounded uppercase font-black tracking-widest border border-blue-500/20 leading-none">Carry-Over</span>
                         )}
                       </div>
-                      <div className="flex items-center gap-1.5 mt-0.5">
+                      <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
                         <div className={`flex items-center gap-0.5 px-1 py-0.5 rounded-[3px] text-[6px] font-black uppercase tracking-tighter ${data.isAttendancePaid ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-400'}`}>
                           {data.isAttendancePaid ? 'Daily Paid' : 'Daily Unpaid'}
                         </div>
@@ -2119,60 +2672,78 @@ export default function Payroll() {
 
       <Dialog open={!!selectedPayslip} onOpenChange={(open) => { if (!open) { setSelectedPayslip(null); setIsEditingSavedPayslip(false); } }}>
         <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden bg-white rounded-2xl w-[95vw] max-w-lg mx-auto border-none shadow-2xl">
-          <div className="p-2 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 backdrop-blur-sm sticky top-0 z-10 font-sans">
-            <DialogTitle className="flex items-center gap-2 text-slate-900 font-black uppercase italic tracking-tight text-sm">
+          <div className="p-3 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-stretch sm:items-center bg-slate-50/50 backdrop-blur-sm sticky top-0 z-10 font-sans gap-2.5">
+            <DialogTitle className="flex items-center gap-2 text-slate-900 font-black uppercase italic tracking-tight text-sm shrink-0">
               <FileText className="w-3.5 h-3.5 text-blue-600" />
               Payslip
             </DialogTitle>
-            <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="flex flex-wrap items-center gap-1 sm:gap-1.5 justify-start sm:justify-end max-w-full">
               {!isEditingSavedPayslip && selectedPayslip?.id && (
-                <Button 
-                  size="sm" 
-                  variant="outline" 
-                  className="h-8 gap-1 rounded-xl border-slate-200 text-blue-600 hover:bg-blue-50 hover:text-blue-700 transition-all font-bold text-[10px] uppercase tracking-widest"
-                  onClick={() => {
-                    setIsEditingSavedPayslip(true);
-                    setSavedRegPay((selectedPayslip.regularPay || 0).toString());
-                    setSavedOtPay((selectedPayslip.otPay || 0).toString());
-                    setSavedPakyawPay((selectedPayslip.totalPakyawPay || 0).toString());
-                    setSavedAdjustments((selectedPayslip.totalAdjustments || 0).toString());
-                    setSavedCashAdvanceDeduction((selectedPayslip.cashAdvanceDeduction || 0).toString());
-                    setSavedCarryOverFromPrevious((selectedPayslip.carryOverFromPrevious || 0).toString());
-                  }}
-                >
-                  <Edit className="w-3 h-3 text-blue-500 mr-0.5" />
-                  Override
-                </Button>
+                <>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="h-7 sm:h-8 gap-1 rounded-xl border-slate-205 text-amber-600 hover:bg-amber-50 hover:text-amber-700 transition-all font-bold text-[9px] uppercase tracking-wider px-2 sm:px-2.5"
+                    onClick={() => handleSyncPayslip(selectedPayslip.id)}
+                    disabled={isLoading}
+                  >
+                    {isLoading ? <Loader2 className="w-2.5 h-2.5 sm:w-3 sm:h-3 animate-spin text-amber-500" /> : <RefreshCw className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-amber-500" />}
+                    <span className="hidden min-[480px]:inline">Sync Live</span>
+                    <span className="min-[480px]:hidden">Sync</span>
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="h-7 sm:h-8 gap-1 rounded-xl border-slate-205 text-blue-600 hover:bg-blue-50 hover:text-blue-700 transition-all font-bold text-[9px] uppercase tracking-wider px-2 sm:px-2.5"
+                    onClick={() => {
+                      setIsEditingSavedPayslip(true);
+                      setSavedRegPay((selectedPayslip.regularPay || 0).toString());
+                      setSavedOtPay((selectedPayslip.otPay || 0).toString());
+                      setSavedPakyawPay((selectedPayslip.totalPakyawPay || 0).toString());
+                      setSavedAdjustments((selectedPayslip.totalAdjustments || 0).toString());
+                      setSavedCashAdvanceDeduction((selectedPayslip.cashAdvanceDeduction || 0).toString());
+                      setSavedCarryOverFromPrevious((selectedPayslip.carryOverFromPrevious || 0).toString());
+                    }}
+                  >
+                    <Edit className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-blue-500" />
+                    <span className="hidden min-[480px]:inline">Override</span>
+                    <span className="min-[480px]:hidden">Edit</span>
+                  </Button>
+                </>
               )}
               <Button 
                 size="sm" 
                 variant="outline" 
-                className="h-8 gap-1.5 rounded-xl border-slate-200 text-slate-600 hover:bg-green-50 hover:text-green-600 hover:border-green-200 transition-all font-bold text-[10px] uppercase tracking-widest"
+                className="h-7 sm:h-8 gap-1 rounded-xl border-slate-205 text-slate-600 hover:bg-green-50 hover:text-green-600 hover:border-green-200 transition-all font-bold text-[9px] uppercase tracking-wider px-2 sm:px-2.5"
                 onClick={handlePrint}
                 disabled={isExporting}
               >
-                {isExporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Printer className="w-3.5 h-3.5" />}
-                {isExporting ? 'Printing...' : 'Print'}
+                {isExporting ? <Loader2 className="w-2.5 h-2.5 sm:w-3 sm:h-3 animate-spin" /> : <Printer className="w-2.5 h-2.5 sm:w-3 sm:h-3" />}
+                <span className="hidden min-[480px]:inline">Print</span>
+                <span className="min-[480px]:hidden">Print</span>
               </Button>
               {selectedPayslip?.id && (
                 <Button 
                   size="sm" 
                   variant="ghost" 
-                  className="h-8 text-red-500 hover:text-red-600 hover:bg-red-50 font-bold text-[10px] uppercase tracking-widest"
+                  className="h-7 sm:h-8 gap-1 text-red-500 hover:text-red-600 hover:bg-red-50 font-bold text-[9px] uppercase tracking-wider px-2"
                   onClick={() => handleDeletePayroll(selectedPayslip.id)}
                 >
-                  <Trash2 className="w-4 h-4" /> Delete
+                  <Trash2 className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                  <span className="hidden min-[480px]:inline">Delete</span>
+                  <span className="min-[480px]:hidden">Del</span>
                 </Button>
               )}
               <Button 
                 size="sm" 
                 variant="outline" 
-                className="h-8 gap-1.5 rounded-xl border-slate-200 text-slate-600 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-all font-bold text-[10px] uppercase tracking-widest"
+                className="h-7 sm:h-8 gap-1 rounded-xl border-slate-205 text-slate-600 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-all font-bold text-[9px] uppercase tracking-wider px-2 sm:px-2.5"
                 onClick={handleExportPDF}
                 disabled={isExporting}
               >
-                {isExporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5 rotate-180" />}
-                {isExporting ? 'Exporting...' : 'Export'}
+                {isExporting ? <Loader2 className="w-2.5 h-2.5 sm:w-3 sm:h-3 animate-spin" /> : <Upload className="w-2.5 h-2.5 sm:w-3 sm:h-3 rotate-180" />}
+                <span className="hidden min-[480px]:inline">Export</span>
+                <span className="min-[480px]:hidden">PDF</span>
               </Button>
             </div>
           </div>
@@ -2269,11 +2840,28 @@ export default function Payroll() {
                 </div>
               </div>
             ) : (
-              <div 
-                ref={payslipRef}
-                className="p-3 max-h-[90vh] overflow-y-auto payslip-mockup bg-white font-sans text-[10px]" 
-                style={{ backgroundColor: '#ffffff' }}
-              >
+              <>
+                <div className="bg-slate-50 px-4 py-2.5 border-b border-slate-100 flex items-center justify-between font-sans text-[10px] shrink-0">
+                  <span className="font-black text-slate-500 uppercase tracking-widest text-[8px]">Layout Options:</span>
+                  <div className="flex items-center gap-1.5 cursor-pointer" onClick={() => setDupSingleOnA4(!dupSingleOnA4)}>
+                    <input
+                      type="checkbox"
+                      id="dupSingleOnA4"
+                      checked={dupSingleOnA4}
+                      onChange={(e) => setDupSingleOnA4(e.target.checked)}
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-3.5 h-3.5 text-blue-600 bg-white border-slate-300 rounded focus:ring-blue-500 cursor-pointer"
+                    />
+                    <label htmlFor="dupSingleOnA4" className="text-slate-650 font-bold cursor-pointer select-none">
+                      Duplicate copy onto 1 A4 page (Saves Paper)
+                    </label>
+                  </div>
+                </div>
+                <div 
+                  ref={payslipRef}
+                  className="p-3 max-h-[90vh] overflow-y-auto payslip-mockup bg-white font-sans text-[10px]" 
+                  style={{ backgroundColor: '#ffffff' }}
+                >
               <div className="flex justify-between border-b border-slate-900 pb-2 mb-2">
                 <div>
                   <div className="inline-flex items-center gap-1 px-1 py-0.5 bg-blue-600 text-white text-[7px] font-black uppercase tracking-[0.1em] rounded mb-1">
@@ -2281,7 +2869,7 @@ export default function Payroll() {
                   </div>
                   <h2 className="text-xl font-black text-slate-900 leading-none italic uppercase">PAYSLIP</h2>
                   <div className="text-[9px] font-bold text-slate-400 mt-1 uppercase tracking-tight">
-                    Pay Period: <span className="text-slate-900">{format(parseISO(selectedPayslip.startDate), 'MM/dd')} - {format(parseISO(selectedPayslip.endDate), 'MM/dd/yy')}</span>
+                    Pay Period: <span className="text-slate-900">{format(parseISO(selectedPayslip.startDate), 'MMMM dd, yyyy')} - {format(parseISO(selectedPayslip.endDate), 'MMMM dd, yyyy')}</span>
                   </div>
                   <div className="flex items-center gap-2 mt-2">
                     <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center font-bold text-lg overflow-hidden shrink-0 border border-slate-200">
@@ -2343,7 +2931,7 @@ export default function Payroll() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 font-sans">
+              <div className="grid grid-cols-1 min-[480px]:grid-cols-2 gap-3 font-sans">
                 <div className="space-y-2">
                   <div>
                     <h3 className="text-[9px] font-black text-slate-900 border-b border-slate-900 pb-1 mb-2 uppercase flex justify-between items-center group">
@@ -2610,7 +3198,7 @@ export default function Payroll() {
               {/* Compact Attendance Logs */}
               {selectedPayslip.dailyAttendanceLog && (
                 <div className="mt-3 pt-2 border-t border-slate-100 font-sans">
-                  <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-1">
+                  <div className="grid grid-cols-4 min-[400px]:grid-cols-5 min-[500px]:grid-cols-6 md:grid-cols-8 gap-1">
                     {selectedPayslip.dailyAttendanceLog.map((log: any, i: number) => (
                       <div key={i} className={`py-1 rounded border flex flex-col items-center justify-center text-center ${
                         log.status === 'present' ? 'bg-emerald-50/30 border-emerald-100/50' :
@@ -2620,7 +3208,7 @@ export default function Payroll() {
                         'bg-slate-50/30 border-slate-100/50'
                       }`}>
                         <div className="text-[7px] font-bold text-slate-400 uppercase tracking-tighter">
-                          {format(parseISO(log.date), 'MM/dd')}
+                          {format(parseISO(log.date), 'MM/dd/yyyy')}
                         </div>
                         <div className={`text-[7px] font-black uppercase ${
                           log.status === 'present' ? 'text-emerald-600' :
@@ -2645,6 +3233,7 @@ export default function Payroll() {
                 </div>
               </div>
             </div>
+            </>
           )
         )}
         </DialogContent>
@@ -2669,7 +3258,7 @@ export default function Payroll() {
             </div>
           </div>
           
-          <div className="p-0 max-h-[50vh] overflow-y-auto">
+          <div className="p-0 max-h-[50vh] overflow-y-auto overflow-x-auto">
             <table className="w-full text-sm text-left">
               <thead className="text-[10px] text-slate-400 uppercase bg-slate-50/50 dark:bg-slate-800/50 sticky top-0 z-10 font-bold tracking-wider">
                 <tr>

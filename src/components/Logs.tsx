@@ -39,7 +39,7 @@ export default function Logs() {
             </div>
             <div className="flex-1 min-w-0">
               <div className="font-bold text-slate-900 dark:text-white">{log.message}</div>
-              <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">{format(parseISO(log.createdAt), 'MMM dd, yyyy HH:mm:ss')}</div>
+              <div className="text-xs text-slate-600 dark:text-slate-300 font-medium mt-1">{format(parseISO(log.createdAt), 'MMMM dd, yyyy HH:mm:ss')}</div>
               {log.details && (
                 <pre className="mt-2 text-xs bg-slate-100 dark:bg-slate-900 p-2 rounded-lg overflow-x-auto text-slate-700 dark:text-slate-300">
                   {log.details}

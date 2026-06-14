@@ -355,7 +355,7 @@ export default function Finance() {
           {filteredTransactions.map(t => (
             <div 
               key={t.id} 
-              className={`flex justify-between items-center bg-slate-800/30 p-4 rounded-xl transition-all group ${t.referenceId ? 'cursor-pointer hover:bg-slate-800/50 border border-transparent hover:border-white/10' : ''}`}
+              className={`flex flex-col sm:flex-row justify-between items-start sm:items-center bg-slate-800/30 p-4 rounded-xl transition-all gap-3 group ${t.referenceId ? 'cursor-pointer hover:bg-slate-800/50 border border-transparent hover:border-white/10' : ''}`}
             >
               <div onClick={() => handleTransactionClick(t)} className="flex-1">
                 <div className='flex items-center gap-2'>
@@ -367,7 +367,7 @@ export default function Finance() {
                   )}
                   {t.referenceId && <span className='text-[10px] bg-white/10 text-white/50 px-1.5 py-0.5 rounded uppercase font-black tracking-tighter'>Details Available</span>}
                 </div>
-                <p className='text-xs text-slate-400'>{t.category} • {new Date(t.date).toLocaleDateString()}</p>
+                <p className='text-xs text-slate-300 font-medium mt-0.5'>{t.category} • {new Date(t.date.includes('T') ? t.date : t.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
               </div>
               <div className="flex items-center gap-4">
                 <p className={`text-sm font-bold ${t.type === 'income' ? 'text-emerald-400' : 'text-rose-400'} whitespace-nowrap`}>
@@ -534,10 +534,10 @@ export default function Finance() {
                         <h3 className="text-[10px] font-black text-white uppercase tracking-widest mb-3 px-1">Repayment History</h3>
                         <div className="space-y-2">
                           {detailData.deductions.map((d: any, i: number) => (
-                            <div key={i} className="flex justify-between items-center text-xs bg-white/5 p-3 rounded-xl border border-white/5 hover:bg-white/10 transition-all">
+                            <div key={i} className="flex flex-wrap gap-2 justify-between items-center text-xs bg-white/5 p-3 rounded-xl border border-white/5 hover:bg-white/10 transition-all">
                               <div className="flex items-center gap-2">
                                 <Receipt className="w-3 h-3 text-slate-400" />
-                                <span className="text-slate-400">Payroll Deduction • {new Date(d.date).toLocaleDateString()}</span>
+                                <span className="text-slate-200 font-medium font-sans">Payroll Deduction • {new Date(d.date.includes('T') ? d.date : d.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
                               </div>
                               <span className="text-emerald-400 font-bold tracking-tight">-₱{d.amount.toLocaleString()}</span>
                             </div>

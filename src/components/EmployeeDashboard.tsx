@@ -507,7 +507,7 @@ export default function EmployeeDashboard() {
                       <div className="flex items-center gap-3 mt-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                         <span className="text-cyan-400">By {ann.authorName}</span>
                         <span>•</span>
-                        <span>{format(parseISO(ann.createdAt), 'MMM d, h:mm a')}</span>
+                        <span>{format(parseISO(ann.createdAt), 'MMMM dd, yyyy, h:mm a')}</span>
                       </div>
                     </div>
                     {!hasViewed && (
@@ -709,9 +709,9 @@ export default function EmployeeDashboard() {
                     </div>
                     <div>
                       <div className="font-bold text-slate-900 dark:text-white text-sm">
-                        {format(parseISO(pay.startDate), 'MMM dd')} - {format(parseISO(pay.endDate), 'MMM dd, yyyy')}
+                        {format(parseISO(pay.startDate), 'MMMM dd, yyyy')} - {format(parseISO(pay.endDate), 'MMMM dd, yyyy')}
                       </div>
-                      <div className="text-[10px] text-slate-500 dark:text-slate-400">Generated on {format(parseISO(pay.generatedAt), 'MMM dd, h:mm a')}</div>
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400">Generated on {format(parseISO(pay.generatedAt), 'MMMM dd, yyyy, h:mm a')}</div>
                     </div>
                   </div>
                   <div className="text-right">
@@ -823,9 +823,9 @@ export default function EmployeeDashboard() {
                   </div>
                   <div>
                     <div className="font-black text-white text-sm uppercase tracking-tight">
-                      {format(parseISO(pay.startDate), 'MMM dd')} - {format(parseISO(pay.endDate), 'MMM dd, yyyy')}
+                      {format(parseISO(pay.startDate), 'MMMM dd, yyyy')} - {format(parseISO(pay.endDate), 'MMMM dd, yyyy')}
                     </div>
-                    <div className="text-[10px] font-bold text-white/50 uppercase tracking-widest mt-1">Paid on {format(parseISO(pay.generatedAt), 'MMM dd')}</div>
+                    <div className="text-[10px] font-bold text-white/50 uppercase tracking-widest mt-1">Paid on {format(parseISO(pay.generatedAt), 'MMMM dd, yyyy')}</div>
                   </div>
                 </div>
                 <div className="text-right">
@@ -854,7 +854,7 @@ export default function EmployeeDashboard() {
                 </div>
                 <div>
                   <div className="font-black text-white text-sm">₱{ca.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
-                  <div className="text-[10px] font-bold text-white/50 uppercase tracking-widest">{format(parseISO(ca.date), 'MMM dd, yyyy')} {ca.notes && `• ${ca.notes}`}</div>
+                  <div className="text-[10px] font-bold text-white/50 uppercase tracking-widest">{format(parseISO(ca.date), 'MMMM dd, yyyy')} {ca.notes && `• ${ca.notes}`}</div>
                 </div>
               </div>
             </div>

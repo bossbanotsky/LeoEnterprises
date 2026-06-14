@@ -317,8 +317,8 @@ export default function Pakyaw() {
                             {job.containerNumber ? <span className="text-indigo-600 dark:text-indigo-400 mr-1.5">[{job.containerNumber}]</span> : null}
                             {job.description}
                           </h3>
-                          <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-2">
-                            <span>{format(parseISO(job.startDate), 'MMM dd, yyyy')}</span>
+                          <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 flex flex-wrap items-center gap-2">
+                            <span>{format(parseISO(job.startDate), 'MMMM dd, yyyy')}</span>
                             <span>•</span>
                             <span>{job.employeeIds.length} worker{job.employeeIds.length !== 1 ? 's' : ''}</span>
                           </div>

@@ -639,7 +639,7 @@ export default function ContainerRepairList() {
                         })()}
                       </td>
                       <td className="p-4 max-w-[200px] truncate group-hover:text-white transition-colors" onClick={() => handleOpenEdit(c)} title={c.note || ""}>{c.note || "-"}</td>
-                      <td className="p-4 text-slate-400 text-xs whitespace-nowrap" onClick={() => handleOpenEdit(c)}>{new Date(c.createdAt).toLocaleDateString()}</td>
+                      <td className="p-4 text-slate-200 text-xs font-semibold whitespace-nowrap" onClick={() => handleOpenEdit(c)}>{new Date(c.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</td>
                     </tr>
                   ))
                 )}
@@ -788,8 +788,8 @@ export default function ContainerRepairList() {
                            </div>
                            {h.note && <p className="text-[9px] text-slate-400 italic">"{h.note}"</p>}
                         </div>
-                        <span className="text-[7px] text-slate-500 whitespace-nowrap text-right">
-                          {new Date(h.timestamp).toLocaleDateString()} {new Date(h.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
+                        <span className="text-[10px] text-slate-300 font-medium whitespace-nowrap text-right">
+                          {new Date(h.timestamp).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} {new Date(h.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
                         </span>
                       </div>
                     </div>

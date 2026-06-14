@@ -422,7 +422,7 @@ export default function DailySupplies() {
               <div className="flex justify-between items-start mb-4 relative z-10">
                 <div>
                   <h3 className="text-lg font-black text-white tracking-tight">{supply.itemType}</h3>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{new Date(supply.date).toLocaleDateString()}</p>
+                  <p className="text-xs font-medium text-slate-300 mt-1 uppercase tracking-normal">{new Date(supply.date.includes('T') ? supply.date : supply.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-xl font-black text-indigo-400 tracking-tighter">₱{supply.totalCost.toLocaleString()}</p>

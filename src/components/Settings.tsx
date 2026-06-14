@@ -229,23 +229,6 @@ export default function Settings() {
               </div>
               <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-amber-500 transition-colors" />
             </div>
-            <div 
-              className="p-4 flex items-center justify-between cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors group"
-              onClick={toggleDarkMode}
-            >
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  {isDarkMode ? <Moon className="w-5 h-5 text-slate-600 dark:text-slate-300" /> : <Sun className="w-5 h-5 text-slate-600 dark:text-slate-300" />}
-                </div>
-                <div>
-                  <span className="block font-semibold text-slate-900 dark:text-white">Dark Mode</span>
-                  <span className="text-[10px] text-slate-500 dark:text-slate-400">Adjust visual appearance</span>
-                </div>
-              </div>
-              <div className={`w-11 h-6 rounded-full p-1 transition-all duration-300 ${isDarkMode ? 'bg-blue-600' : 'bg-slate-200 dark:bg-slate-700'}`}>
-                <div className={`w-4 h-4 rounded-full bg-white shadow-md transition-transform duration-300 ${isDarkMode ? 'translate-x-5' : 'translate-x-0'}`} />
-              </div>
-            </div>
           </div>
         </div>
 

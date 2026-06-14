@@ -236,7 +236,7 @@ export default function CashAdvance() {
                         <div className="flex justify-between items-start mb-2">
                           <div>
                             <div className="flex items-center gap-2">
-                              <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{format(parseISO(ca.date), 'MMMM dd, yyyy')}</div>
+                              <div className="text-xs font-semibold text-slate-400 uppercase tracking-wide">{format(parseISO(ca.date), 'MMMM dd, yyyy')}</div>
                               {ca.originPayrollId && (
                                 <span className="text-[8px] bg-red-500/10 text-red-500 px-1.5 py-0.5 rounded uppercase font-black tracking-tighter shadow-sm">
                                   AUTO-GENERATED
@@ -259,7 +259,7 @@ export default function CashAdvance() {
                             {ca.deductions.map((d, i) => (
                               <div key={i} className="flex justify-between items-start text-[10px] border-b border-slate-100 dark:border-slate-800 last:border-0 pb-1 last:pb-0">
                                 <div className="flex flex-col">
-                                  <span className="text-slate-500 font-medium">{format(parseISO(d.date), 'MMM dd, HH:mm')}</span>
+                                  <span className="text-slate-500 font-medium">{format(parseISO(d.date), 'MMMM dd, yyyy, HH:mm')}</span>
                                   {d.period && <span className="text-[8px] text-slate-400 leading-none mt-0.5">Payroll: {d.period}</span>}
                                 </div>
                                 <span className="font-black text-blue-600">-₱{d.amount.toLocaleString()}</span>

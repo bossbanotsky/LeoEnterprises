@@ -516,7 +516,7 @@ export default function Attendance() {
     const doc = new jsPDF();
     const periodString = activeTab === 'mark' 
       ? format(parseISO(singleDate), 'MMMM d, yyyy')
-      : `${format(parseISO(startDate), 'MMM d, yyyy')} to ${format(parseISO(endDate), 'MMM d, yyyy')}`;
+      : `${format(parseISO(startDate), 'MMMM d, yyyy')} to ${format(parseISO(endDate), 'MMMM d, yyyy')}`;
 
     doc.setFontSize(16);
     doc.text('Attendance Report', 14, 22);
@@ -597,7 +597,7 @@ export default function Attendance() {
           if (pakyawNotes) detail += ` [${pakyawNotes}]`;
 
           return [
-            format(parseISO(date), 'MMM dd (EEE)'),
+            format(parseISO(date), 'MMMM dd, yyyy (EEE)'),
             statusDisplay,
             timeInOut,
             reg,
@@ -711,7 +711,7 @@ export default function Attendance() {
                 if (pakyawNotes) detail += ` [${pakyawNotes}]`;
 
                 bulkData.push([
-                  format(parseISO(d), 'MMM dd'),
+                  format(parseISO(d), 'MMMM dd, yyyy'),
                   '', // Empty Name column since we used a group header
                   statusDisplay,
                   timeInOut,
@@ -1309,13 +1309,13 @@ export default function Attendance() {
           <div className="space-y-4">
             {employees.length > 0 && (
               <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-4 sm:p-5 text-white shadow-lg shadow-blue-200 dark:shadow-none mb-2">
-                <div className="flex items-center justify-between mb-1">
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
                   <div className="flex items-center gap-2 opacity-80 uppercase tracking-widest text-[10px] font-bold">
                     <Calculator className="w-3 h-3" />
                     Period Overview
                   </div>
                   <span className="text-[10px] font-medium bg-white/20 px-2 py-0.5 rounded-full">
-                    {format(parseISO(startDate), 'MMM dd')} - {format(parseISO(endDate), 'MMM dd')}
+                    {format(parseISO(startDate), 'MMMM dd, yyyy')} - {format(parseISO(endDate), 'MMMM dd, yyyy')}
                   </span>
                 </div>
                 <div className="flex items-end justify-between">
@@ -1414,7 +1414,7 @@ export default function Attendance() {
                       return (
                         <div key={date} className="pt-4 first:pt-4 border-b last:border-0 border-slate-100 dark:border-slate-800 pb-4">
                           <div className="flex justify-between items-center mb-3">
-                            <span className="font-bold text-sm text-slate-700 dark:text-slate-200">{format(parseISO(date), 'MMM dd, EEE')}</span>
+                            <span className="font-bold text-sm text-slate-700 dark:text-slate-200">{format(parseISO(date), 'MMMM dd, yyyy (EEE)')}</span>
                             <div className="text-right">
                                <div className="text-[11px] font-black text-blue-600 dark:text-blue-400">₱{calculateDailyPay(emp, `${emp.id}_${date}`).toLocaleString()}</div>
                                <div className="text-[8px] text-slate-400 uppercase font-bold tracking-tighter leading-none">Day Total</div>
@@ -1559,10 +1559,10 @@ export default function Attendance() {
           
           <div className="space-y-6 mt-4">
             <div className="space-y-4 text-sm">
-              <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800">
+              <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800">
                 <span className="font-bold text-slate-700 dark:text-slate-300">Period Selected:</span>
                 <span className="text-blue-600 dark:text-blue-400 font-bold">
-                  {activeTab === 'mark' ? format(parseISO(singleDate), 'MMMM d, yyyy') : `${format(parseISO(startDate), 'MMM d, yy')} - ${format(parseISO(endDate), 'MMM d, yy')}`}
+                  {activeTab === 'mark' ? format(parseISO(singleDate), 'MMMM d, yyyy') : `${format(parseISO(startDate), 'MMMM d, yyyy')} - ${format(parseISO(endDate), 'MMMM d, yyyy')}`}
                 </span>
               </div>
 

@@ -86,18 +86,18 @@ export default function ServiceDetail() {
   const Icon = service.icon;
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-transparent">
       {/* Dynamic Header */}
-      <nav className="fixed top-0 w-full z-50 bg-white/60 border-b border-slate-100">
+      <nav className="fixed top-0 w-full z-50 bg-slate-900/60 backdrop-blur-md border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center group-hover:rotate-6 transition-transform">
+            <div className="w-10 h-10 bg-amber-600 rounded-xl flex items-center justify-center group-hover:rotate-6 transition-transform">
               <span className="text-white font-black">LP</span>
             </div>
-            <span className="font-bold text-slate-900 uppercase italic tracking-tighter">L & P</span>
+            <span className="font-bold text-foreground uppercase italic tracking-tighter">L & P</span>
           </Link>
           <Link to="/">
-            <Button variant="ghost" className="flex items-center gap-2 text-slate-500 font-bold hover:text-slate-900 uppercase tracking-widest text-xs">
+            <Button variant="ghost" className="flex items-center gap-2 text-stone-500 font-bold hover:text-foreground uppercase tracking-widest text-xs">
               <ArrowLeft className="w-4 h-4" /> Back to home
             </Button>
           </Link>
@@ -116,7 +116,7 @@ export default function ServiceDetail() {
               <div className="w-16 h-16 rounded-2xl bg-blue-600/10 flex items-center justify-center mb-10">
                 <Icon className="w-8 h-8 text-blue-600" />
               </div>
-              <h1 className="text-4xl lg:text-7xl font-bold text-slate-900 tracking-[-0.04em] leading-[0.95] mb-8 uppercase italic">
+              <h1 className="text-4xl lg:text-7xl font-bold text-foreground tracking-[-0.04em] leading-[0.95] mb-8 uppercase italic">
                 {service.title}
               </h1>
               <p className="text-xl text-[#6b7280] font-medium leading-relaxed mb-12 tracking-tight">
@@ -129,7 +129,7 @@ export default function ServiceDetail() {
                      <div className="w-6 h-6 rounded-full bg-blue-600/10 flex items-center justify-center text-blue-600">
                        <ChevronRight className="w-4 h-4" />
                      </div>
-                     <span className="text-slate-700 font-bold tracking-tight uppercase italic text-sm">{detail}</span>
+                     <span className="text-foreground font-bold tracking-tight uppercase italic text-sm">{detail}</span>
                    </div>
                  ))}
               </div>
@@ -139,7 +139,7 @@ export default function ServiceDetail() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.8 }}
-              className="relative aspect-square rounded-[60px] overflow-hidden border-8 border-slate-50 shadow-2xl shadow-slate-200"
+              className="relative aspect-square rounded-[60px] overflow-hidden border border-stone-700/60 shadow-2xl"
             >
               <img 
                 src={service.image} 
@@ -154,7 +154,7 @@ export default function ServiceDetail() {
       </section>
 
       {/* Highlights */}
-      <section className="py-20 bg-slate-50 border-y border-slate-100">
+      <section className="py-20 border-y border-stone-800">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex flex-wrap items-center justify-center gap-10 md:gap-20">
              <div className="flex items-center gap-4">

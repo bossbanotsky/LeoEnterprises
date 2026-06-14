@@ -1069,7 +1069,7 @@ export default function Billing({ mode = 'invoices' }: BillingProps) {
                   
                   {/* Card */}
                   <div className="w-[calc(100%-2.5rem)] md:w-[calc(50%-1.5rem)] p-3 rounded-xl bg-slate-800 border border-slate-700/50 shadow-md transform transition-all group-hover:scale-[1.02]">
-                    <div className="flex items-center justify-between mb-1">
+                    <div className="flex flex-wrap items-center justify-between gap-1 mb-1">
                       <span className={`text-xs font-bold uppercase tracking-wider ${
                         h.status === 'active' ? 'text-blue-400' :
                         h.status === 'repairing' ? 'text-amber-400' :
@@ -1078,8 +1078,8 @@ export default function Billing({ mode = 'invoices' }: BillingProps) {
                       }`}>
                         {h.status} {h.platform && <span className="text-white ml-1">@ {h.platform}</span>}
                       </span>
-                      <time className="text-[10px] font-medium text-slate-500">
-                        {new Date(h.timestamp).toLocaleDateString()}
+                      <time className="text-xs font-semibold text-slate-300">
+                        {new Date(h.timestamp).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                       </time>
                     </div>
                     
