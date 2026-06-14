@@ -69,11 +69,16 @@ export default function Layout() {
             <div className="w-8 h-8 sm:w-12 sm:h-12 bg-slate-900/80 rounded-lg sm:rounded-2xl flex items-center justify-center shrink-0 overflow-hidden shadow-2xl border border-white/20 group-hover:rotate-3 transition-transform backdrop-blur-md">
               <span className="text-white font-black text-xs sm:text-xl">L&P</span>
             </div>
-            <div className="flex flex-col min-w-0 flex-1">
-              <span className="text-[10px] xs:text-xs sm:text-xl md:text-2xl lg:text-3xl font-black tracking-[0.05em] xs:tracking-[0.1em] sm:tracking-[0.25em] md:tracking-tighter text-white leading-none drop-shadow-xl group-hover:text-blue-400 transition-all uppercase whitespace-nowrap">
-                L & P <span className="text-blue-500 font-black italic underline decoration-blue-500/20 underline-offset-4">TRADING & SERVICES</span>
-              </span>
-              <span className="text-[6px] xs:text-[7px] sm:text-[11px] font-black text-white/60 uppercase tracking-[0.1em] xs:tracking-[0.3em] sm:tracking-[0.6em] mt-1 sm:mt-1.5 italic leading-none whitespace-nowrap border-t border-white/10 pt-1">Operational Command System</span>
+            <div className="flex flex-col min-w-0 flex-1 justify-center">
+              <div className="flex flex-col sm:flex-row sm:items-baseline gap-x-1.5 leading-none">
+                <span className="text-[11px] sm:text-lg md:text-2xl lg:text-3xl font-black text-white uppercase drop-shadow-xl group-hover:text-blue-400 transition-all tracking-wider sm:tracking-normal">
+                  L & P
+                </span>
+                <span className="text-blue-500 text-[9px] sm:text-lg md:text-2xl lg:text-3xl font-black italic underline decoration-blue-500/20 underline-offset-2 uppercase whitespace-nowrap mt-0.5 sm:mt-0">
+                  TRADING AND SERVICES
+                </span>
+              </div>
+              <span className="text-[6px] sm:text-[11px] font-black text-white/60 uppercase tracking-[0.1em] sm:tracking-[0.6em] mt-1 sm:mt-1.5 italic leading-none whitespace-nowrap border-t border-white/10 pt-1">Operational Command System</span>
             </div>
           </Link>
         </div>

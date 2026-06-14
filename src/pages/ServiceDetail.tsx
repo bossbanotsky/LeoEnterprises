@@ -13,7 +13,8 @@ import {
   ShieldCheck,
   Clock,
   Settings,
-  ChevronDown
+  ChevronDown,
+  Recycle
 } from 'lucide-react';
 import { Category } from '../services/galleryService';
 import GalleryViewer from '../components/GalleryViewer';
@@ -22,83 +23,44 @@ import { ErrorBoundary } from '../components/ErrorBoundary';
 import { Button } from '../components/ui/button';
 
 const serviceData: Record<string, any> = {
+  "trading": {
+    title: "Scrap & Metal Trading (Junkshop)",
+    icon: Recycle,
+    category: "Scrap Trading",
+    description: "L & P Scrap Trading and Junkshop operates under strict precision weighing, offering top competitive pricing for all varieties of recyclable materials. We buy bulk scraps from commercial, residential, and industrial partners.",
+    details: [
+      "We buy all kinds of metal scraps (iron, steel, copper wire, aluminum, brass)",
+      "Used lead-acid batteries and scrap automotive electronics",
+      "Industrial machinery decommissioning, dismantling, and retrievement",
+      "Cardboard cartons, paper, structural materials, and reusable plastics"
+    ],
+    image: "https://images.unsplash.com/photo-1544724569-5f546fd6f2b5?auto=format&fit=crop&q=80&w=1200"
+  },
   "hauling": {
-    title: "Hauling & Logistics",
+    title: "All Kinds of Hauling Services",
     icon: Truck,
     category: "Hauling Services",
-    description: "Our hauling and logistics services are designed for heavy-duty industrial needs. We utilize a modern fleet and certified operators to ensure safe, timely, and efficient transport of materials, debris, and high-value equipment.",
+    description: "Our hauling and logistics services are designed for heavy-duty industrial and junkshop transport needs. We utilize a modern fleet of bulk dump trucks and certified operators to ensure safe, timely, and efficient transport of materials, scraps, debris, and high-value equipment.",
     details: [
-      "Industrial material transport",
-      "Debris removal & management",
-      "Heavy equipment mobilization",
-      "End-to-end logistics planning"
+      "Heavy industrial materials and bulk scrap hauling",
+      "Excavation clearing, debris removal & construction site cleanup",
+      "Lifting, loading, and high-capacity dumping logistics",
+      "Modernized logistics planning & heavy equipment mobilization support"
     ],
     image: "https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?auto=format&fit=crop&q=80&w=1200"
   },
   "civil-works": {
-    title: "Civil Works & Construction",
+    title: "Civil Works & Construction Support",
     icon: HardHat,
     category: "Civil Works",
-    description: "From structural foundations to project completion, our civil works team delivers robust engineering solutions. We specialize in construction support that meets the most demanding industrial standards.",
+    description: "From structural foundations to construction finishing, our civil works team delivers robust engineering support. We specialize in construction projects, structural fabrications, brickwork, masonry, and steel installations.",
     details: [
-      "Structural foundation works",
-      "Project infrastructure support",
-      "General construction services",
-      "Facility renovation & expansion"
+      "Structural foundations, steel fixing, and concrete pouring",
+      "Land excavation, grading, profiling, and earthworks clearing support",
+      "Masonry walls, plaster works, and professional bricklaying",
+      "Heavy construction framework setup and customized civil developments"
     ],
     image: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&q=80&w=1200"
-  },
-  "fabrication": {
-    title: "Fabrication & Metal Works",
-    icon: Hammer,
-    category: "Fabrication",
-    description: "High-precision metal fabrication tailored to your specific technical requirements. Our shop handles everything from custom structural components to complex industrial repairs.",
-    details: [
-      "Custom metal fabrication",
-      "Industrial welding services",
-      "Structural steel works",
-      "Precision tool & die repairs"
-    ],
-    image: "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&q=80&w=1200"
-  },
-  "maintenance": {
-    title: "Maintenance Services",
-    icon: Wrench,
-    category: "Repairs & Maintenance",
-    description: "Operational longevity depends on expert maintenance. We provide comprehensive facility and equipment management services to prevent downtime and optimize performance.",
-    details: [
-      "Preventive maintenance programs",
-      "Facility equipment management",
-      "Mechanical system repairs",
-      "Utility system optimization"
-    ],
-    image: "https://images.unsplash.com/photo-1581094794329-c8112a89af12?auto=format&fit=crop&q=80&w=1200"
-  },
-  "it-services": {
-    title: "IT Solutions & Networking",
-    icon: Cpu,
-    category: "IT Services",
-    description: "Powering your digital infrastructure with advanced networking and enterprise software solutions. We ensure your business stays connected and secure in an evolving digital landscape.",
-    details: [
-      "Enterprise network setup",
-      "Cybersecurity implementation",
-      "Cloud system management",
-      "Technical software support"
-    ],
-    image: "https://images.unsplash.com/photo-1510511459019-5dda7724fd87?auto=format&fit=crop&q=80&w=1200"
-  },
-  "cctv": {
-    title: "CCTV & Security Systems",
-    icon: Camera,
-    category: "CCTV Installation",
-    description: "State-of-the-art surveillance and integrated security protocols. We design and install high-definition monitoring systems that provide 24/7 protection for your assets.",
-    details: [
-      "HD surveillance installation",
-      "Remote monitoring systems",
-      "Access control integration",
-      "Integrated alarm solutions"
-    ],
-    image: "https://images.unsplash.com/photo-1454165833767-027eeed15c3e?auto=format&fit=crop&q=80&w=1200"
   }
 };
 

@@ -19,7 +19,9 @@ import {
   CheckCircle2,
   Users,
   Award,
-  ZapIcon
+  ZapIcon,
+  Recycle,
+  Scale
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -28,58 +30,31 @@ import PWAInstallPrompt from '../components/PWAInstallPrompt';
 
 const services = [
   {
-    slug: "hauling",
-    title: "Hauling & Logistics",
-    icon: Truck,
-    description: "Industry-leading heavy-duty hauling and logistics solutions optimized for reliability and safety.",
-    category: "Hauling Services" as Category,
+    slug: "trading",
+    title: "Scrap & Metal Trading",
+    icon: Recycle,
+    description: "L & P Scrap Trading / Junkshop: We buy all kinds of scrap materials! From steel, cooper, aluminum, industrial battery scraps to paper, plastics, and old heavy machinery at the best rates.",
+    category: "Scrap Trading" as any,
     color: "blue",
-    image: "https://images.unsplash.com/photo-1580674684081-7619685050b8?auto=format&fit=crop&q=80&w=1200"
+    image: "https://images.unsplash.com/photo-1544724569-5f546fd6f2b5?auto=format&fit=crop&q=80&w=1200"
   },
   {
     slug: "civil-works",
-    title: "Civil Works & Construction",
+    title: "Civil Works & Construction Support",
     icon: HardHat,
-    description: "Comprehensive construction support from structural foundations to project finishing.",
+    description: "Robust civil works solutions for industrial facilities. Our team handles professional concrete works, site preparations, steel fixing, structures, and land developments.",
     category: "Civil Works" as Category,
     color: "orange",
     image: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&q=80&w=1200"
   },
   {
-    slug: "fabrication",
-    title: "Fabrication & Metal Works",
-    icon: Hammer,
-    description: "Precision metal fabrication and industrial repair services for custom technical needs.",
-    category: "Fabrication" as Category,
+    slug: "hauling",
+    title: "All Kinds of Hauling Services",
+    icon: Truck,
+    description: "L & P Hauling: End-to-end hauling services for heavy materials, debris clearing, and industrial transport. Powered by high-capacity bulk dump trucks and a certified operations team.",
+    category: "Hauling Services" as Category,
     color: "slate",
-    image: "https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?auto=format&fit=crop&q=80&w=1200"
-  },
-  {
-    slug: "maintenance",
-    title: "Building Maintenance",
-    icon: Wrench,
-    description: "Electrical, plumbing, and general building maintenance services to ensure facility efficiency.",
-    category: "Repairs & Maintenance" as Category,
-    color: "indigo",
-    image: "https://images.unsplash.com/photo-1581092160562-40aa08e78837?auto=format&fit=crop&q=80&w=1200"
-  },
-  {
-    slug: "it-services",
-    title: "IT Solutions & Networking",
-    icon: Cpu,
-    description: "Advanced computing infrastructure, secure networking, and enterprise software systems.",
-    category: "IT Services" as Category,
-    color: "teal",
-    image: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=1200"
-  },
-  {
-    slug: "cctv",
-    title: "CCTV & Security Systems",
-    icon: Camera,
-    description: "Integrated security protocols and multi-monitor surveillance rooms for 24/7 protection.",
-    category: "CCTV Installation" as Category,
-    color: "red",
-    image: "https://images.unsplash.com/photo-1557597774-9d2739f85a76?auto=format&fit=crop&q=80&w=1200"
+    image: "https://images.unsplash.com/photo-1580674684081-7619685050b8?auto=format&fit=crop&q=80&w=1200"
   }
 ];
 
@@ -94,17 +69,18 @@ export default function LandingPage() {
         className="fixed inset-0 z-[-2] bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: `url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=2560')` }}
       />
-      {/* Dark overlay for readability - much lighter in the center */}
-      <div className="fixed inset-0 z-[-1] bg-gradient-to-b from-[#050505]/70 via-[#050505]/20 to-[#050505]/80 backdrop-blur-[1px]" />
+      {/* Dark overlay for readability - deep premium obsidian veil with backdrop blur */}
+      <div className="fixed inset-0 z-[-1] bg-gradient-to-b from-[#050505]/90 via-[#050505]/75 to-[#050505]/95 backdrop-blur-[3px]" />
       
       <PWAInstallPrompt />
 
       {/* Navigation */}
       <nav className="fixed top-0 w-full z-50 bg-[#050505]/40 backdrop-blur-xl border-b border-white/5 transition-all duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-2">
-          <Link to="/" className="flex items-center group cursor-pointer whitespace-nowrap shrink">
-              <span className="font-extrabold text-lg sm:text-2xl tracking-tighter leading-none group-hover:opacity-90 transition-opacity truncate">
-                <span className="text-white">L & P</span> <span className="text-blue-500">TRADING & SERVICES</span>
+          <Link to="/" className="flex items-center group cursor-pointer min-w-0 flex-1 sm:flex-initial">
+              <span className="font-extrabold tracking-tighter leading-none group-hover:opacity-90 transition-opacity flex flex-col xs:flex-row xs:items-baseline gap-y-0.5 xs:gap-x-2">
+                <span className="text-white text-xl xs:text-2xl sm:text-3xl md:text-4xl uppercase font-black tracking-normal">L & P</span>
+                <span className="text-blue-500 text-[11px] xs:text-lg sm:text-3xl md:text-4xl font-black italic underline decoration-blue-500/20 underline-offset-2 uppercase whitespace-nowrap">TRADING AND SERVICES</span>
               </span>
           </Link>
           
@@ -146,13 +122,13 @@ export default function LandingPage() {
              <span className="text-xs font-medium tracking-widest uppercase text-slate-300">Operational Excellence</span>
           </div>
           
-          <h1 className="text-5xl md:text-8xl lg:text-[110px] font-semibold tracking-tight leading-[0.9] mb-10 text-white">
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-sky-300">Industrial &</span> <br /> 
-            <span className="font-light text-slate-300">Technical Solutions.</span> 
+          <h1 className="text-5xl md:text-8xl lg:text-[100px] font-semibold tracking-tight leading-[0.9] mb-10 text-white">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-sky-300">Trading and</span> <br /> 
+            <span className="font-light text-slate-200">Industrial Services.</span> 
           </h1>
           
-          <p className="text-lg md:text-2xl text-slate-400 max-w-2xl mx-auto font-light leading-relaxed mb-16">
-            From heavy-duty hauling to high-tech digital systems, we provide comprehensive services built for performance, reliability, and precision business growth.
+          <p className="text-lg md:text-2xl text-slate-200 max-w-2xl mx-auto font-light leading-relaxed mb-16 shadow-text">
+            L & P is your premier partner buying all kinds of scrap materials, alongside providing top-tier industrial civil works and professional heavy-duty hauling solutions.
           </p>
 
           <a href="#services" className="relative group inline-block">
@@ -172,9 +148,9 @@ export default function LandingPage() {
       <section id="services" className="relative py-32 lg:py-48 overflow-hidden">
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center mb-32 max-w-4xl mx-auto">
-            <span className="text-xs font-bold text-blue-500 uppercase tracking-[0.2em] mb-4 block">Our Expertise</span>
-            <h3 className="text-5xl lg:text-7xl font-semibold text-white tracking-tight leading-[1] mb-8">Multi-Industry <br /><span className="text-slate-400">Professional Services</span></h3>
-            <p className="text-xl text-slate-400 leading-relaxed font-light">
+            <span className="text-xs font-bold text-blue-400 uppercase tracking-[0.2em] mb-4 block">Our Expertise</span>
+            <h3 className="text-5xl lg:text-7xl font-semibold text-white tracking-tight leading-[1] mb-8">Refocused <br /><span className="text-slate-200 font-normal">Core Capabilities</span></h3>
+            <p className="text-xl text-slate-300 leading-relaxed font-light">
               We leverage modern technology and heavy industry experience to deliver end-to-end solutions for high-demand business environments.
             </p>
           </div>
@@ -203,12 +179,12 @@ export default function LandingPage() {
                 
                 <div className="relative z-10 flex-1 flex flex-col px-8 pb-8 pt-4">
                   <h4 className="text-xl font-semibold text-white mb-3 tracking-tight pr-4 group-hover:text-blue-400 transition-colors">{service.title}</h4>
-                  <p className="text-slate-400 leading-relaxed text-sm mb-auto font-light">
+                  <p className="text-slate-200 leading-relaxed text-sm mb-auto font-light">
                     {service.description}
                   </p>
                   
                   <div className="pt-6 border-t border-white/5 flex items-center justify-between group-hover:border-white/10 transition-colors mt-4">
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em] group-hover:text-white transition-colors flex items-center gap-2">
+                    <span className="text-[10px] font-bold text-slate-300 uppercase tracking-[0.15em] group-hover:text-white transition-colors flex items-center gap-2">
                       Explore Details
                     </span>
                     <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-white group-hover:text-slate-950 transition-all duration-300 border border-white/5 group-hover:border-transparent">
@@ -232,22 +208,22 @@ export default function LandingPage() {
               viewport={{ once: true }}
               transition={{ duration: 0.8 }}
             >
-              <span className="text-xs font-bold text-blue-500 uppercase tracking-[0.2em] mb-4 block">Our Identity</span>
+              <span className="text-xs font-bold text-blue-400 uppercase tracking-[0.2em] mb-4 block">Our Identity</span>
               <h3 className="text-5xl lg:text-7xl font-semibold tracking-tight leading-[1] mb-8 text-white">
-                Redefining <br /> <span className="text-slate-400">Service Excellence.</span>
+                Redefining <br /> <span className="text-slate-200 font-normal">Service Excellence.</span>
               </h3>
-              <p className="text-slate-400 text-lg font-light leading-relaxed mb-12 max-w-lg">
+              <p className="text-slate-300 text-lg font-light leading-relaxed mb-12 max-w-lg">
                 Headquartered in Bauan, Batangas, L & P Trading and Services delivers mission-critical technical services across the region. We combine elite operational safety with innovative problem-solving.
               </p>
               
               <div className="grid grid-cols-2 gap-12 border-t border-white/5 pt-12">
                 <div>
                   <div className="text-4xl font-light text-white mb-3 tracking-tighter">12+</div>
-                  <div className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em]">Years of Operations</div>
+                  <div className="text-[10px] text-slate-300 font-black uppercase tracking-[0.2em]">Years of Operations</div>
                 </div>
                 <div>
                   <div className="text-4xl font-light text-white mb-3 tracking-tighter">800+</div>
-                  <div className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em]">Expert Projects</div>
+                  <div className="text-[10px] text-slate-300 font-black uppercase tracking-[0.2em]">Expert Projects</div>
                 </div>
               </div>
             </motion.div>
@@ -278,15 +254,14 @@ export default function LandingPage() {
                 </div>
               </div>
               
-              {/* Floating Stat Card */}
-              <div className="absolute -bottom-8 -left-8 bg-[#0a0a0a]/80 backdrop-blur-xl border border-white/10 p-6 rounded-[24px] shadow-2xl hidden md:block max-w-[240px]">
+              <div className="absolute -bottom-8 -left-8 bg-[#0a0a0a]/90 backdrop-blur-xl border border-white/10 p-6 rounded-[24px] shadow-2xl hidden md:block max-w-[240px]">
                 <div className="flex items-center gap-4 mb-3">
                   <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white border border-white/5">
-                    <Users className="w-5 h-5" />
+                    <Users className="w-5 h-5 animate-pulse text-blue-400" />
                   </div>
                   <span className="font-semibold text-sm uppercase tracking-wider text-white">Elite Team</span>
                 </div>
-                <p className="text-slate-400 text-xs font-light tracking-wide leading-relaxed">
+                <p className="text-slate-200 text-xs font-medium tracking-wide leading-relaxed">
                   Powered by 100+ specialized technical personnel.
                 </p>
               </div>
@@ -303,8 +278,8 @@ export default function LandingPage() {
         <div className="absolute bottom-0 left-0 w-1/3 h-1/2 bg-blue-400/5 blur-[120px]" />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center mb-24 relative z-10">
-            <span className="text-xs font-bold text-blue-500 uppercase tracking-[0.2em] mb-4 block">Competitive Edge</span>
-            <h3 className="text-5xl lg:text-7xl font-semibold text-white tracking-tight leading-[1]">Why the Industry <br /><span className="text-slate-400">Prefers L & P</span></h3>
+            <span className="text-xs font-bold text-blue-400 uppercase tracking-[0.2em] mb-4 block">Competitive Edge</span>
+            <h3 className="text-5xl lg:text-7xl font-semibold text-white tracking-tight leading-[1]">Why the Industry <br /><span className="text-slate-200 font-normal">Prefers L & P</span></h3>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -358,7 +333,7 @@ export default function LandingPage() {
                 
                 <div className="p-8 flex-1 flex flex-col pt-2">
                   <h4 className="text-xl font-semibold mb-3 tracking-tight text-white group-hover:text-blue-400 transition-colors uppercase text-xs tracking-[2px]">{item.title}</h4>
-                  <p className="text-slate-400 text-sm font-light leading-relaxed">
+                  <p className="text-slate-200 text-sm font-light leading-relaxed">
                     {item.desc}
                   </p>
                 </div>
@@ -373,11 +348,11 @@ export default function LandingPage() {
         <div className="absolute top-0 right-0 w-1/3 h-1/2 bg-blue-400/5 blur-[120px]" />
         <div className="absolute bottom-0 left-0 w-1/2 h-full bg-blue-600/5 blur-[150px]" />
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center flex flex-col items-center">
-          <span className="text-xs font-bold text-blue-500 uppercase tracking-[0.2em] mb-4 block">Initiate Project</span>
+          <span className="text-xs font-bold text-blue-400 uppercase tracking-[0.2em] mb-4 block">Initiate Project</span>
           <h3 className="text-5xl lg:text-7xl font-semibold text-white tracking-tight leading-[1] mb-8">
-            Let's Build <br /> <span className="text-slate-400">Together.</span>
+            Let's Build <br /> <span className="text-slate-200 font-normal">Together.</span>
           </h3>
-          <p className="text-lg text-slate-400 font-light leading-relaxed mb-16 max-w-2xl">
+          <p className="text-lg text-slate-300 font-light leading-relaxed mb-16 max-w-2xl">
             Ready to optimize your operations? Join the growing network of companies relying on L & P Trading and Services for mission-critical industrial solutions.
           </p>
           
@@ -387,7 +362,7 @@ export default function LandingPage() {
                 <Phone className="w-5 h-5" />
               </div>
               <div className="flex flex-col text-left">
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-0.5">Direct Hotline</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Direct Hotline</span>
                 <span className="text-lg font-medium text-white tracking-tight">0994-606-4463</span>
               </div>
             </div>
@@ -397,7 +372,7 @@ export default function LandingPage() {
                 <Mail className="w-5 h-5" />
               </div>
               <div className="flex flex-col text-left">
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-0.5">Official Email</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Official Email</span>
                 <span className="text-lg font-medium text-white tracking-tight">info@lptradingandservices.com</span>
               </div>
             </div>
@@ -419,26 +394,26 @@ export default function LandingPage() {
                 </div>
                 <span className="font-bold text-slate-300 text-sm tracking-widest uppercase">L & P TRADING AND SERVICES</span>
               </div>
-              <p className="text-slate-500 text-xs font-light leading-relaxed max-w-[200px]">
+              <p className="text-slate-400 text-xs font-light leading-relaxed max-w-[200px]">
                 Industrial Multi-Service solutions delivered with precision.
               </p>
             </div>
             
             <div className="flex flex-col gap-4">
               <h4 className="text-slate-300 font-bold uppercase tracking-widest text-[10px] mb-2">Company</h4>
-              <a href="#services" className="text-slate-500 hover:text-white text-xs font-light transition-colors">Services</a>
-              <a href="#about" className="text-slate-500 hover:text-white text-xs font-light transition-colors">Our Story</a>
-              <a href="#contact" className="text-slate-500 hover:text-white text-xs font-light transition-colors">Contact</a>
+              <a href="#services" className="text-slate-400 hover:text-white text-xs font-medium transition-colors">Services</a>
+              <a href="#about" className="text-slate-400 hover:text-white text-xs font-medium transition-colors">Our Story</a>
+              <a href="#contact" className="text-slate-400 hover:text-white text-xs font-medium transition-colors">Contact</a>
             </div>
 
             <div className="flex flex-col gap-4">
               <h4 className="text-slate-300 font-bold uppercase tracking-widest text-[10px] mb-2">Access</h4>
-              <Link to="/login" className="text-blue-500 hover:text-blue-400 text-xs font-light transition-colors">Employee Portal</Link>
+              <Link to="/login" className="text-blue-400 hover:text-blue-300 text-xs font-medium transition-colors">Employee Portal</Link>
             </div>
 
             <div className="flex flex-col gap-4">
               <h4 className="text-slate-300 font-bold uppercase tracking-widest text-[10px] mb-2">PWA Performance</h4>
-              <p className="text-slate-600 text-xs font-light leading-relaxed">
+              <p className="text-slate-400 text-xs font-light leading-relaxed">
                 Built with precision, deployed for high-demand business environments.
               </p>
             </div>
@@ -447,7 +422,7 @@ export default function LandingPage() {
           <div className="w-full h-px bg-white/5 mb-8" />
           
           <div className="flex flex-col items-center text-center">
-              <p className="text-slate-600 text-[10px] font-medium uppercase tracking-[0.2em]">
+              <p className="text-slate-400 text-[10px] font-medium uppercase tracking-[0.2em]">
                 © 2026 L & P TRADING AND SERVICES — ALL RIGHTS RESERVED.
               </p>
           </div>
