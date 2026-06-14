@@ -138,19 +138,19 @@ export default function Layout() {
 
           const getLabelColor = (label: string) => {
             switch(label.toLowerCase()) {
-              case 'dash': return 'text-amber-700';
-              case 'chat': return 'text-teal-700';
-              case 'news': return 'text-amber-800';
-              case 'staff': return 'text-emerald-700';
-              case 'attend': return 'text-rose-700';
-              case 'pakyaw': return 'text-orange-700';
-              case 'advance': return 'text-amber-800';
-              case 'payroll': return 'text-amber-700';
-              case 'finance': return 'text-emerald-750';
-              case 'billing': return 'text-emerald-700';
-              case 'gallery': return 'text-amber-900';
+              case 'dash': return 'text-amber-500';
+              case 'chat': return 'text-teal-500';
+              case 'news': return 'text-amber-500';
+              case 'staff': return 'text-emerald-500';
+              case 'attend': return 'text-rose-500';
+              case 'pakyaw': return 'text-orange-500';
+              case 'advance': return 'text-amber-500';
+              case 'payroll': return 'text-amber-500';
+              case 'finance': return 'text-emerald-500';
+              case 'billing': return 'text-emerald-500';
+              case 'gallery': return 'text-amber-500';
               case 'gear': return 'text-stone-300';
-              default: return 'text-amber-700';
+              default: return 'text-amber-500';
             }
           };
 

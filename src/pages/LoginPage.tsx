@@ -120,7 +120,7 @@ export default function LoginPage() {
           </div>
 
           {error && (
-            <div className="mb-6 p-4 text-[10px] text-red-700 bg-red-50 border border-red-200 rounded-2xl font-bold uppercase tracking-widest leading-relaxed">
+            <div className="mb-6 p-4 text-[10px] text-red-400 bg-red-500/10 border border-red-500/20 rounded-2xl font-bold uppercase tracking-widest leading-relaxed">
               {error}
             </div>
           )}
@@ -158,7 +158,7 @@ export default function LoginPage() {
             
             <Button 
               type="submit"
-              className={`w-full h-15 rounded-full ${role === 'admin' ? 'bg-stone-900 hover:bg-stone-800 text-white' : 'bg-amber-600 hover:bg-amber-700 text-white'} transition-all active:scale-95 font-bold uppercase tracking-widest text-xs mt-4`}
+              className={`w-full h-15 rounded-full ${role === 'admin' ? 'bg-amber-600 hover:bg-amber-700 text-white' : 'bg-amber-600 hover:bg-amber-700 text-white'} transition-all active:scale-95 font-bold uppercase tracking-widest text-xs mt-4`}
               disabled={isLoading}
             >
               {isLoading ? (
@@ -176,7 +176,7 @@ export default function LoginPage() {
             <div className="mt-8">
               <div className="w-full relative py-4 flex items-center justify-center">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-stone-200/60"></div>
+                  <div className="w-full border-t border-stone-700/60"></div>
                 </div>
                 <div className="relative bg-slate-900 px-3 text-[9px] font-black text-stone-400 uppercase tracking-widest">Single Sign On</div>
               </div>
@@ -185,7 +185,7 @@ export default function LoginPage() {
                 onClick={handleGoogleLogin} 
                 type="button"
                 variant="ghost"
-                className="w-full h-12 rounded-2xl flex items-center justify-center border border-stone-250 bg-stone-50/50 hover:bg-amber-50/30 transition-all font-bold uppercase tracking-widest text-[9px] text-stone-600"
+                className="w-full h-12 rounded-2xl flex items-center justify-center border border-stone-700/50 bg-slate-800/30 hover:bg-slate-800 transition-all font-bold uppercase tracking-widest text-[9px] text-foreground"
                 disabled={isLoading}
               >
                 <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 mr-2 shrink-0">

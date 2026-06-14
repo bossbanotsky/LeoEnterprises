@@ -27,7 +27,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode, allowedRoles?: ('admin' | 'employee' | 'ceo')[] }) => {
   const { user, userData, loading } = useAuth();
   const location = useLocation();
-  if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-50 font-bold text-slate-400 uppercase tracking-widest animate-pulse">Establishing Session...</div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center bg-background font-bold text-muted-foreground uppercase tracking-widest animate-pulse">Establishing Session...</div>;
   if (!user || !userData) return <Navigate to="/" />;
   
   if (allowedRoles && !allowedRoles.includes(userData.role as any)) {
