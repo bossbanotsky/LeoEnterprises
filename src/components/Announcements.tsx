@@ -214,7 +214,7 @@ export default function Announcements() {
               </div>
             ) : (
               activeAnnouncements.map(ann => (
-                        <div key={ann.id} className="bento-card p-6 group transition-all hover:border-blue-500 relative overflow-hidden bg-slate-900/40 backdrop-blur-md border border-white/10 shadow-2xl">
+                        <div key={ann.id} className="bento-card p-6 group transition-all hover:border-blue-500 relative overflow-hidden bg-slate-900/40 border border-white/10 shadow-2xl">
                           <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${
                             ann.priority === 'high' ? 'bg-red-500 shadow-[0_0_15px_rgba(239,68,68,0.5)]' : ann.priority === 'medium' ? 'bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.5)]' : 'bg-white/20'
                           }`}></div>
@@ -275,7 +275,7 @@ export default function Announcements() {
           </div>
           <div className="grid gap-3">
             {pastAnnouncements.map(ann => (
-              <div key={ann.id} className="bg-slate-900/40 backdrop-blur-sm p-5 rounded-[24px] flex items-center justify-between border border-white/5 opacity-60 hover:opacity-100 transition-all group overflow-hidden relative">
+              <div key={ann.id} className="bg-slate-900/40 p-5 rounded-[24px] flex items-center justify-between border border-white/5 opacity-60 hover:opacity-100 transition-all group overflow-hidden relative">
                 <div className="absolute inset-y-0 left-0 w-1 bg-white/10 group-hover:bg-blue-500/50 transition-colors" />
                 <div className="text-left">
                   <h4 className="font-black text-white text-base uppercase italic tracking-tight">{ann.title}</h4>
@@ -370,7 +370,7 @@ export default function Announcements() {
 
       {/* Custom Confirmation Modal */}
       {deleteId && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]">
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-[9999]">
           <div className="bg-slate-900 border border-white/10 p-8 rounded-3xl w-full max-w-sm shadow-2xl text-center">
             <div className="w-16 h-16 bg-rose-500/10 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-4">
               <Trash2 className="w-8 h-8" />

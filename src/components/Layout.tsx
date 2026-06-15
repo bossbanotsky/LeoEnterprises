@@ -60,7 +60,7 @@ export default function Layout() {
       </AnimatePresence>
 
       {/* Header */}
-      <header className="h-20 sm:h-24 bg-slate-900/50 backdrop-blur-md border-b border-amber-600/10 flex items-center justify-between px-4 sm:px-8 sticky top-0 z-[100] gap-2">
+      <header className="h-20 sm:h-24 bg-slate-900/20 border-b border-amber-600/10 flex items-center justify-between px-4 sm:px-8 sticky top-0 z-[100] gap-2">
         <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
           <Link to="/" className="flex items-center gap-2 sm:gap-3 group shrink-0 max-w-full">
             <div className="w-8 h-8 sm:w-11 sm:h-11 bg-amber-600 rounded-xl flex items-center justify-center shrink-0 overflow-hidden shadow-md border border-amber-500/20 group-hover:scale-105 transition-transform">
@@ -102,7 +102,7 @@ export default function Layout() {
             transition={{ duration: 0.3, ease: 'easeOut' }}
             className="h-full p-2 sm:p-4 lg:p-8 max-w-7xl mx-auto w-full mb-28"
           >
-            <div className="bg-slate-900/50 backdrop-blur-xl rounded-[40px] p-4 sm:p-10 min-h-[75vh] relative overflow-hidden border border-amber-600/10 shadow-[0_20px_50px_rgba(0,0,0,0.3)] text-foreground">
+            <div className="bg-slate-900/20 rounded-[40px] p-4 sm:p-10 min-h-[75vh] relative overflow-hidden border border-amber-600/10 shadow-[0_20px_50px_rgba(0,0,0,0.3)] text-foreground">
               <div className="relative z-10 text-left">
                 <Outlet />
               </div>
@@ -112,7 +112,7 @@ export default function Layout() {
       </main>
 
       {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-slate-900/50 backdrop-blur-2xl border-t border-amber-600/10 flex flex-row items-center overflow-x-auto overflow-y-hidden z-50 pb-[env(safe-area-inset-bottom)] h-[calc(4.5rem+env(safe-area-inset-bottom))] shadow-[0_-10px_35px_rgba(0,0,0,0.3)] snap-x snap-mandatory px-4 gap-1 scroll-smooth no-scrollbar">
+      <nav className="fixed bottom-0 left-0 right-0 bg-slate-900/20 border-t border-amber-600/10 flex flex-row items-center overflow-x-auto overflow-y-hidden z-50 pb-[env(safe-area-inset-bottom)] h-[calc(4.5rem+env(safe-area-inset-bottom))] shadow-[0_-10px_35px_rgba(0,0,0,0.3)] snap-x snap-mandatory px-4 gap-1 scroll-smooth no-scrollbar">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
           const Icon = item.icon;

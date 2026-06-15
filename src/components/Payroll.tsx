@@ -2486,7 +2486,7 @@ export default function Payroll() {
                 </div>
 
                 {/* Grand Total Summary Card */}
-                <div className="bg-gradient-to-br from-slate-900/40 to-blue-900/40 backdrop-blur-xl rounded-2xl p-6 text-white shadow-2xl border border-white/10 relative overflow-hidden group">
+                <div className="bg-slate-900 dark:bg-slate-800 rounded-2xl p-6 text-white shadow-2xl border border-slate-700 relative overflow-hidden group">
                   <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full -mr-16 -mt-16 transition-transform group-hover:scale-150 duration-700"></div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6 relative z-10">
                     <div>
@@ -2519,12 +2519,12 @@ export default function Payroll() {
                       Fit 2 Employees per A4 Page (Minimize Print Costs)
                     </label>
                   </div>
-                  <div className="flex flex-col sm:flex-row gap-3 relative z-10 w-full mb-4">
+                  <div className="flex flex-col sm:flex-row gap-3 relative z-10 w-full mb-4 bg-slate-900 dark:bg-slate-800 rounded-2xl p-2 sm:p-4">
                     <div className="grid grid-cols-2 sm:flex gap-3 w-full">
                       <Button 
                         size="sm" 
                         variant="secondary" 
-                        className="h-12 sm:h-10 gap-3 bg-white/10 hover:bg-white/20 text-white border border-white/10 font-bold uppercase tracking-widest text-[10px] backdrop-blur-md px-6 shadow-xl" 
+                        className="h-12 sm:h-10 gap-3 bg-white/10 hover:bg-white/20 text-white border border-white/10 font-bold uppercase tracking-widest text-[10px] px-6 shadow-xl" 
                         onClick={handleBulkExportPDF}
                         disabled={isExporting}
                       >
@@ -2672,7 +2672,7 @@ export default function Payroll() {
 
       <Dialog open={!!selectedPayslip} onOpenChange={(open) => { if (!open) { setSelectedPayslip(null); setIsEditingSavedPayslip(false); } }}>
         <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden bg-white rounded-2xl w-[95vw] max-w-lg mx-auto border-none shadow-2xl">
-          <div className="p-3 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-stretch sm:items-center bg-slate-50/50 backdrop-blur-sm sticky top-0 z-10 font-sans gap-2.5">
+          <div className="p-3 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-stretch sm:items-center bg-slate-50/50 sticky top-0 z-10 font-sans gap-2.5">
             <DialogTitle className="flex items-center gap-2 text-slate-900 font-black uppercase italic tracking-tight text-sm shrink-0">
               <FileText className="w-3.5 h-3.5 text-blue-600" />
               Payslip
@@ -3239,7 +3239,7 @@ export default function Payroll() {
         </DialogContent>
       </Dialog>
       <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-        <DialogContent className="sm:max-w-[700px] bg-white dark:bg-slate-900 border-none rounded-3xl p-0 overflow-hidden shadow-2xl">
+        <DialogContent className="sm:max-w-4xl bg-white dark:bg-slate-900 border-none rounded-3xl p-0 overflow-hidden shadow-2xl payroll-preview-dialog">
           <div className="bg-slate-50 dark:bg-slate-800 p-6 flex flex-col items-center justify-center border-b border-slate-100 dark:border-slate-800">
             <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Payroll Preview</h2>
             <div className="text-sm text-slate-500 dark:text-slate-400">
@@ -3534,7 +3534,7 @@ export default function Payroll() {
 
       {/* Custom Confirmation Modal for Deletions */}
       {itemToDelete && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]">
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-[9999]">
           <div className="bg-slate-900 border border-white/10 p-8 rounded-3xl w-full max-w-sm shadow-2xl text-center">
             <div className="w-16 h-16 bg-rose-500/10 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-4">
               <Trash2 className="w-8 h-8" />

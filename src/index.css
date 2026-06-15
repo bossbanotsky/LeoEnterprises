@@ -42,8 +42,6 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
 
 .bento-card {
   background: var(--card-bg);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
   border: 1px solid var(--border);
   border-radius: 28px;
   padding: 18px;
@@ -97,50 +95,45 @@ button:active {
   width: 100%;
   max-width: 900px;
   min-height: 220px;
-  background: #ffffff;
+  background: #0f172a;
   margin: 0 auto;
-  border: 1px solid #000000;
+  border: 1px solid #1e293b;
   padding: 15px;
   display: flex;
   flex-direction: column;
   font-size: 0.7rem;
   position: relative;
-  color: #0f172a;
-  --tw-text-opacity: 1;
+  color: #f1f5f9;
 }
 
 .payslip-mockup * {
-  border-color: #e2e8f0 !important;
+  border-color: #334155 !important;
 }
 
-.payslip-mockup .text-blue-600 { color: #1d4ed8 !important; }
-.payslip-mockup .text-blue-500 { color: #2563eb !important; }
-.payslip-mockup .text-blue-400 { color: #3b82f6 !important; }
-.payslip-mockup .text-red-600, .payslip-mockup .text-red-500, .payslip-mockup .text-red-400 { color: #dc2626 !important; }
-.payslip-mockup .text-green-600, .payslip-mockup .text-emerald-600, .payslip-mockup .text-emerald-500, .payslip-mockup .text-emerald-400 { color: #059669 !important; }
-.payslip-mockup .text-cyan-400, .payslip-mockup .text-cyan-500, .payslip-mockup .text-cyan-600 { color: #0891b2 !important; }
-.payslip-mockup .text-indigo-400, .payslip-mockup .text-indigo-500, .payslip-mockup .text-indigo-600 { color: #4f46e5 !important; }
-.payslip-mockup .text-rose-400, .payslip-mockup .text-rose-500, .payslip-mockup .text-rose-600 { color: #e11d48 !important; }
-.payslip-mockup .text-slate-900 { color: #020617 !important; }
-.payslip-mockup .text-slate-600 { color: #1e293b !important; }
-.payslip-mockup .text-slate-500 { color: #334155 !important; }
-.payslip-mockup .text-slate-400, .payslip-mockup .text-slate-300, .payslip-mockup .text-slate-200 { color: #475569 !important; }
-.payslip-mockup .bg-white { background-color: #ffffff !important; }
-.payslip-mockup .bg-slate-50 { background-color: #f8fafc !important; }
-.payslip-mockup .bg-amber-50 { background-color: #fef08a !important; }
-.payslip-mockup .bg-red-50 { background-color: #fee2e2 !important; }
-.payslip-mockup .bg-green-50 { background-color: #dcfce7 !important; }
-.payslip-mockup .text-amber-700 { color: #78350f !important; }
-.payslip-mockup .text-amber-600 { color: #92400e !important; }
-.payslip-mockup .text-amber-500 { color: #b45309 !important; }
-.payslip-mockup .border-amber-100 { border-color: #fef3c7 !important; }
-.payslip-mockup .border-red-100 { border-color: #fee2e2 !important; }
-.payslip-mockup .border-slate-800 { border-color: #1e293b !important; }
-.payslip-mockup .border-slate-200 { border-color: #e2e8f0 !important; }
-.payslip-mockup .text-xs { font-size: 0.75rem !important; }
-.payslip-mockup .text-sm { font-size: 0.875rem !important; }
-.payslip-mockup .text-xl { font-size: 1.25rem !important; }
-.payslip-mockup .text-2xl { font-size: 1.5rem !important; }
+.payslip-mockup .text-blue-600 { color: #60a5fa !important; }
+.payslip-mockup .text-blue-500 { color: #3b82f6 !important; }
+.payslip-mockup .text-blue-400 { color: #2563eb !important; }
+.payslip-mockup .text-red-600, .payslip-mockup .text-red-500, .payslip-mockup .text-red-400 { color: #f87171 !important; }
+.payslip-mockup .text-green-600, .payslip-mockup .text-emerald-600, .payslip-mockup .text-emerald-500, .payslip-mockup .text-emerald-400 { color: #34d399 !important; }
+.payslip-mockup .text-cyan-400, .payslip-mockup .text-cyan-500, .payslip-mockup .text-cyan-600 { color: #22d3ee !important; }
+.payslip-mockup .text-indigo-400, .payslip-mockup .text-indigo-500, .payslip-mockup .text-indigo-600 { color: #818cf8 !important; }
+.payslip-mockup .text-rose-400, .payslip-mockup .text-rose-500, .payslip-mockup .text-rose-600 { color: #fb7185 !important; }
+.payslip-mockup .text-slate-900 { color: #f1f5f9 !important; }
+.payslip-mockup .text-slate-600 { color: #cbd5e1 !important; }
+.payslip-mockup .text-slate-500 { color: #94a3b8 !important; }
+.payslip-mockup .text-slate-400, .payslip-mockup .text-slate-300, .payslip-mockup .text-slate-200 { color: #64748b !important; }
+.payslip-mockup .bg-white { background-color: #0f172a !important; }
+.payslip-mockup .bg-slate-50 { background-color: #1e293b !important; }
+.payslip-mockup .bg-amber-50 { background-color: #78350f !important; }
+.payslip-mockup .bg-red-50 { background-color: #7f1d1d !important; }
+.payslip-mockup .bg-green-50 { background-color: #064e3b !important; }
+.payslip-mockup .text-amber-700 { color: #f59e0b !important; }
+.payslip-mockup .text-amber-600 { color: #fbbf24 !important; }
+.payslip-mockup .text-amber-500 { color: #fcd34d !important; }
+.payslip-mockup .border-amber-100 { border-color: #92400e !important; }
+.payslip-mockup .border-red-100 { border-color: #7f1d1d !important; }
+.payslip-mockup .border-slate-800 { border-color: #334155 !important; }
+.payslip-mockup .border-slate-200 { border-color: #1e293b !important; }
 
 /* Force themes for payslip so global text color utility classes get light theme colors */
 .payslip-mockup {
@@ -382,13 +375,11 @@ button:active {
   .text-slate-500, .text-stone-500, .text-slate-400, .text-stone-400, .text-slate-300, .text-stone-300 {
     color: var(--text-muted) !important;
   }
-  .bg-white, .bg-slate-50, .bg-stone-50, .bg-slate-100, .bg-stone-100, .bg-slate-800, .bg-slate-900, .bg-slate-900\/80, .bg-slate-800\/80, .bg-slate-800\/50, .bg-slate-900\/50, .bg-card {
-    background-color: rgba(28, 25, 23, 0.35) !important;
-    backdrop-filter: blur(24px) !important;
-    -webkit-backdrop-filter: blur(24px) !important;
-  }
   .border-slate-100, .border-slate-200, .border-stone-100, .border-stone-200, .border-stone-200\/60, .border-slate-700, .border-slate-800, .border-stone-700, .border-stone-800 {
     border-color: rgba(217, 119, 6, 0.15) !important;
+  }
+  .payroll-preview-dialog {
+    background-color: #0f172a !important;
   }
   .no-scrollbar::-webkit-scrollbar {
     display: none;

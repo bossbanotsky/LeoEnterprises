@@ -755,7 +755,7 @@ export default function Attendance() {
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <button 
             onClick={() => setShowExportModal(true)}
-            className="hidden sm:flex items-center gap-2 px-4 py-2 bg-white/10 text-white border border-white/20 font-black uppercase tracking-widest text-[10px] rounded-xl shadow-xl hover:bg-white/20 transition-all backdrop-blur-md"
+            className="hidden sm:flex items-center gap-2 px-4 py-2 bg-white/10 text-white border border-white/20 font-black uppercase tracking-widest text-[10px] rounded-xl shadow-xl hover:bg-white/20 transition-all"
           >
             <Download className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Export Report</span>
@@ -786,7 +786,7 @@ export default function Attendance() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 shrink-0">
         <div className="flex gap-2">
           {activeTab === 'mark' ? (
-            <div className="bg-white/5 p-2 rounded-2xl border border-white/10 shadow-2xl flex items-center gap-1 flex-1 group backdrop-blur-xl">
+            <div className="bg-white/5 p-2 rounded-2xl border border-white/10 shadow-2xl flex items-center gap-1 flex-1 group">
               <button 
                 onClick={handlePrevDate}
                 className="p-2.5 hover:bg-white/10 rounded-xl transition-all text-white/50 hover:text-white"
@@ -826,7 +826,7 @@ export default function Attendance() {
           )}
         </div>
         
-        <div className="bg-white/5 p-2 rounded-2xl border border-white/10 shadow-2xl flex items-center gap-1 group backdrop-blur-xl">
+        <div className="bg-white/5 p-2 rounded-2xl border border-white/10 shadow-2xl flex items-center gap-1 group">
            <div className="flex-1 bg-slate-950/40 px-3 py-2 rounded-xl flex items-center gap-2 border border-white/5">
             <div className="w-1 h-6 bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
             <div className="flex flex-col flex-1">
@@ -929,10 +929,10 @@ export default function Attendance() {
                                   onClick={() => setShowProofPhoto(true)}
                                 />
                                 <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/photo:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 z-10" onClick={(e) => { e.stopPropagation(); setShowProofPhoto(true); }}>
-                                  <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center border border-white/20 shadow-2xl">
+                                  <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center border border-white/20 shadow-2xl">
                                     <FileText className="w-6 h-6 text-white" />
                                   </div>
-                                  <span className="text-[10px] font-black text-white uppercase tracking-[0.2em] bg-black/40 px-3 py-1 rounded-full border border-white/5 backdrop-blur-sm">Tap to View</span>
+                                  <span className="text-[10px] font-black text-white uppercase tracking-[0.2em] bg-black/40 px-3 py-1 rounded-full border border-white/5">Tap to View</span>
                                 </div>
                               </>
                             ) : (
@@ -982,7 +982,7 @@ export default function Attendance() {
                                 initial={{ opacity: 0, scale: 0.95 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 exit={{ opacity: 0, scale: 0.95 }}
-                                className="absolute inset-0 z-50 bg-slate-950/90 backdrop-blur-xl flex flex-col items-center justify-center p-6 text-center"
+                                className="absolute inset-0 z-50 bg-slate-950/90 flex flex-col items-center justify-center p-6 text-center"
                               >
                                 <div className="w-16 h-16 bg-rose-500/10 rounded-full flex items-center justify-center mb-4">
                                   <X className="w-8 h-8 text-rose-500" />
@@ -1110,7 +1110,7 @@ export default function Attendance() {
               const hasPakyaw = atts.some(a => a.status === 'pakyaw');
               
               return (
-                <div key={emp.id} className="bg-slate-900/40 p-4 rounded-3xl border border-white/5 backdrop-blur-md transition-colors hover:bg-slate-800/60">
+                <div key={emp.id} className="bg-slate-900/40 p-4 rounded-3xl border border-white/5 transition-colors hover:bg-slate-800/60">
                   <div 
                     className="flex items-center justify-between mb-4 cursor-pointer" 
                     onClick={() => setExpandedEmp(expandedEmp === emp.id ? null : emp.id)}
@@ -1526,14 +1526,14 @@ export default function Attendance() {
                 <p className="text-white font-black uppercase text-xs">Proof for {format(parseISO(singleDate), 'MMMM d, yyyy')}</p>
                 <p className="text-white/60 text-[10px] font-bold uppercase tracking-widest mt-1">Shot by: {dailyProof.photographer || 'Unspecified'}</p>
                 {dailyProof.notes && (
-                  <div className="mt-4 p-3 bg-white/5 rounded-xl border border-white/10 backdrop-blur-sm">
+                  <div className="mt-4 p-3 bg-white/5 rounded-xl border border-white/10">
                     <p className="text-[10px] font-medium text-white/80 whitespace-pre-wrap">{dailyProof.notes}</p>
                   </div>
                 )}
               </div>
               <button 
                 onClick={() => setShowProofPhoto(false)}
-                className="absolute top-4 right-4 w-10 h-10 bg-black/50 text-white rounded-full flex items-center justify-center backdrop-blur-md border border-white/20"
+                className="absolute top-4 right-4 w-10 h-10 bg-black/50 text-white rounded-full flex items-center justify-center border border-white/20"
               >
                 <X className="w-5 h-5" />
               </button>
