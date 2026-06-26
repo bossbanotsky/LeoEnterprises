@@ -932,359 +932,357 @@ export default function EmployeeDashboard() {
           {selectedPayslip && (
             <div 
               ref={payslipRef}
-              className="p-4 max-h-[90vh] overflow-y-auto payslip-mockup bg-black font-sans text-xs" 
+              className="p-8 payslip-mockup bg-white font-sans text-xs text-slate-900 border border-slate-200 rounded-xl select-none" 
             >
-              <div className="flex justify-between border-b border-slate-800 pb-3 mb-3">
-                <div>
-                  <div className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-blue-600 text-white text-[9px] font-black uppercase tracking-[0.1em] rounded mb-1">
-                    Official
+              {/* Header */}
+              <div className="flex justify-between items-start mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-14 h-14 bg-white border border-slate-200 rounded-full flex items-center justify-center overflow-hidden shrink-0">
+                    <img 
+                      src="/src/assets/images/lp_logo_final_1781661072015.jpg" 
+                      alt="L&P Logo" 
+                      className="w-full h-full object-cover" 
+                      referrerPolicy="no-referrer" 
+                    />
                   </div>
-                  <h2 className="text-2xl font-black text-white leading-none italic uppercase">PAYSLIP</h2>
-                  <div className="text-[11px] font-bold text-zinc-300 mt-1 uppercase tracking-tight">
-                    Pay Period: <span className="text-white">{format(parseISO(selectedPayslip.startDate), 'MMMM dd, yyyy')} - {format(parseISO(selectedPayslip.endDate), 'MMMM dd, yyyy')}</span>
-                  </div>
-                  <div className="flex items-center gap-2 mt-3">
-                    <div className="w-12 h-12 bg-black rounded-lg flex items-center justify-center font-bold text-xl overflow-hidden shrink-0 border border-white/30">
-                      {selectedPayslip.employee.photoURL ? (
-                        <img src={selectedPayslip.employee.photoURL} alt={selectedPayslip.employee.fullName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                      ) : (
-                        selectedPayslip.employee.fullName.charAt(0).toUpperCase()
-                      )}
-                    </div>
-                    <div>
-                      <div className="text-xl font-black text-white uppercase tracking-tight leading-none italic">{selectedPayslip.employee.fullName}</div>
-                      <div className="text-[10px] font-bold text-blue-400 mt-1 uppercase tracking-wider flex items-center gap-1">
-                        {selectedPayslip.employee.customId && <span>#{selectedPayslip.employee.customId}</span>}
-                        <span>{selectedPayslip.employee.position || 'Staff'}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="text-right flex flex-col justify-between items-end">
-                  <div className="text-right">
-                    <div className="text-[10px] font-black text-white mb-0.5 uppercase tracking-widest flex items-center justify-end gap-1">
-                      {calculatePaidAmount(selectedPayslip) >= selectedPayslip.totalPay ? (
-                        <>
-                          <CheckCircle className="w-3 h-3 text-emerald-400 fill-emerald-400/20" />
-                          <span className="text-emerald-400">Fully Paid</span>
-                        </>
-                      ) : (
-                        <span>Balance Due</span>
-                      )}
-                    </div>
-                    <div className={`text-2xl font-black italic tracking-tighter leading-none ${(selectedPayslip.totalPay - (selectedPayslip.carryOverToNext || 0) - calculatePaidAmount(selectedPayslip)) <= 0 ? 'text-emerald-400' : (selectedPayslip.totalPay - (selectedPayslip.carryOverToNext || 0) < 0 ? 'text-red-500' : 'text-blue-400')}`}>
-                      ₱{(selectedPayslip.totalPay - (selectedPayslip.carryOverToNext || 0) - calculatePaidAmount(selectedPayslip) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </div>
-                    {calculatePaidAmount(selectedPayslip) > 0 && calculatePaidAmount(selectedPayslip) < selectedPayslip.totalPay && (
-                      <div className="text-[10px] font-black text-zinc-400 mt-1 uppercase tracking-tight">
-                        Payroll Total: ₱{(selectedPayslip.totalPay || 0).toLocaleString()}
-                      </div>
-                    )}
-                  </div>
-                  <div className="text-right mt-auto">
-                    <div className="text-xs font-black text-white uppercase italic leading-none">{companyInfo.name}</div>
-                    {companyInfo.address && <div className="text-[9px] text-zinc-400 mt-0.5 font-medium max-w-[150px] leading-tight ml-auto truncate">{companyInfo.address}</div>}
-                  </div>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-3 gap-2 mb-3 p-2 bg-slate-900/55 border border-white/10 rounded-xl">
-                <div className="flex flex-col">
-                  <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-tight">Daily Rate</span>
-                  <span className="text-xs font-black text-white mt-0.5">₱{(selectedPayslip.employee.dailySalary || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-tight">Hourly Rate</span>
-                  <span className="text-xs font-black text-white mt-0.5">₱{((selectedPayslip.employee.dailySalary || 0) / 8).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[9px] font-bold text-emerald-400 uppercase tracking-tight">OT Hr Rate</span>
-                  <span className="text-xs font-black text-emerald-400 mt-0.5">₱{((selectedPayslip.employee.dailySalary || 0) / 8).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 min-[480px]:grid-cols-2 gap-4 font-sans">
-                <div className="space-y-3">
                   <div>
-                    <h3 className="text-xs font-black text-white border-b border-slate-800 pb-1 mb-2.5 uppercase flex justify-between items-center group">
-                      Earnings Breakdown
-                    </h3>
-                    
-                    <div className="space-y-1.5">
-                      <div className="flex justify-between text-[8px] font-black text-zinc-400 uppercase tracking-widest px-1 mb-1">
-                        <span>Classification / Rate Math</span>
+                    <h2 className="text-[17px] font-extrabold text-slate-900 tracking-tight leading-none uppercase">
+                      L&P TRADING AND SERVICES
+                    </h2>
+                    <div className="text-[11px] font-semibold text-slate-500 mt-1">
+                      Santa Maria, Bauan, Batangas.
+                    </div>
+                    <div className="text-[9px] font-medium text-slate-400 mt-0.5">
+                      Phone: +639946064463 &nbsp;&nbsp; TIN: 000-000-000-000
+                    </div>
+                  </div>
+                </div>
+                <div className="text-right flex flex-col items-end">
+                  <div className="px-3.5 py-1.5 border border-slate-300 rounded-lg text-slate-800 font-extrabold text-[10px] uppercase tracking-wider">
+                    OFFICIAL PAYSLIP
+                  </div>
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-tight mt-2.5">
+                    {format(parseISO(selectedPayslip.generatedAt || selectedPayslip.createdAt || new Date().toISOString()), 'MMMM dd, yyyy')}
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-b border-slate-200 my-4" />
+
+              {/* Employee and Payroll Period */}
+              <div className="grid grid-cols-3 gap-4 mb-4 text-left">
+                <div>
+                  <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">EMPLOYEE NAME</div>
+                  <div className="text-[15px] font-extrabold text-slate-950 mt-1 tracking-tight">
+                    {selectedPayslip.employee?.fullName || selectedPayslip.employeeName}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">PAYROLL PERIOD</div>
+                  <div className="text-[15px] font-extrabold text-slate-950 mt-1 tracking-tight">
+                    {format(parseISO(selectedPayslip.startDate), 'yyyy-MM-dd')} to {format(parseISO(selectedPayslip.endDate), 'yyyy-MM-dd')}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">PERIOD DAYS</div>
+                  <div className="text-[15px] font-extrabold text-slate-950 mt-1 tracking-tight">
+                    {Math.round((parseISO(selectedPayslip.endDate).getTime() - parseISO(selectedPayslip.startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1} Days
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-b border-slate-200 my-4" />
+
+              {/* Metrics Card Row */}
+              <div className="grid grid-cols-6 border border-slate-200 rounded-xl bg-slate-50/50 py-3 px-1 mb-5 text-center items-center">
+                <div>
+                  <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">PRESENT (P)</div>
+                  <div className="text-[18px] font-extrabold text-slate-900 mt-1">{selectedPayslip.totalPresent || 0}</div>
+                </div>
+                <div className="border-l border-slate-200">
+                  <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">ABSENT (A)</div>
+                  <div className="text-[18px] font-extrabold text-red-500 mt-1">{selectedPayslip.totalAbsent || 0}</div>
+                </div>
+                <div className="border-l border-slate-200">
+                  <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">HALFDAY (HD)</div>
+                  <div className="text-[18px] font-extrabold text-amber-500 mt-1">{selectedPayslip.totalHalfDays || 0}</div>
+                </div>
+                <div className="border-l border-slate-200">
+                  <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">UNDERTIME (UT)</div>
+                  <div className="text-[18px] font-extrabold text-amber-500 mt-1">{selectedPayslip.totalUndertimeDays || 0}</div>
+                </div>
+                <div className="border-l border-slate-200">
+                  <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">OVERTIME (OT)</div>
+                  <div className="text-[18px] font-extrabold text-emerald-600 mt-1 font-mono">
+                    {selectedPayslip.totalOtHours ? `${selectedPayslip.totalOtHours}h` : '0h'}
+                  </div>
+                </div>
+                <div className="border-l border-slate-200">
+                  <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">BASIC DAILY RATE</div>
+                  <div className="text-[18px] font-extrabold text-slate-900 mt-1">
+                    ₱{(selectedPayslip.employee?.dailySalary || selectedPayslip.baseRate || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Main 2 Column Details */}
+              <div className="grid grid-cols-2 gap-8 text-left">
+                {/* Left Column: Earnings */}
+                <div>
+                  <div className="flex justify-between items-center font-bold text-[10px] text-slate-900 uppercase tracking-wider border-b border-slate-300 pb-1.5 mb-2.5">
+                    <span>EARNINGS BREAKDOWN</span>
+                    <span className="font-bold text-slate-950">VALUE</span>
+                  </div>
+
+                  <div className="space-y-2 text-[11px] font-medium text-slate-700">
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-2">
+                        <div className={`h-5 w-5 rounded-md shrink-0 flex items-center justify-center transition-all ${selectedPayslip.isAttendancePaid ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-700 border border-slate-200'}`}>
+                          <CheckCircle className="w-3 h-3" />
+                        </div>
+                        <span>Present: {selectedPayslip.totalPresent || 0} Day(s) x ₱{(selectedPayslip.baseRate || 0).toLocaleString()}</span>
                       </div>
-                      
-                      {/* Regular Days Row */}
-                      <div className="bg-slate-900/40 p-2.5 rounded-xl border border-white/10 space-y-2">
-                        <div className="flex items-center justify-between">
-                           <div className="flex items-center gap-2">
-                              <div className={`h-6 w-6 rounded-md shrink-0 flex items-center justify-center transition-all ${selectedPayslip.isAttendancePaid ? 'bg-emerald-500 text-white' : 'bg-black text-white border border-white/30'}`}>
-                                <CheckCircle className="w-3.5 h-3.5" />
-                              </div>
-                              <span className="text-white font-bold text-[10px] uppercase">Attendance Pay</span>
-                           </div>
-                           <span className="font-black text-white text-xs">₱{(selectedPayslip.regularPay || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                        </div>
-                        
-                        <div className="space-y-2 pl-8 pt-2 border-t border-white/5">
-                           {selectedPayslip.totalPresent > 0 && (
-                             <div className="flex justify-between items-center text-[10px]">
-                               <div className="flex flex-col">
-                                 <span className="font-bold text-white uppercase">Present</span>
-                                 <span className="text-[9px] text-zinc-400 mt-0.5">{selectedPayslip.totalPresent}d × ₱{(selectedPayslip.baseRate || 0).toFixed(0)}</span>
-                               </div>
-                               <span className="font-bold text-white">₱{(selectedPayslip.presentEarnings || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                             </div>
-                           )}
-                           {selectedPayslip.totalHalfDays > 0 && (
-                             <div className="flex justify-between items-center text-[10px]">
-                               <div className="flex flex-col">
-                                 <span className="font-bold text-indigo-400 uppercase">Half-Day</span>
-                                 <span className="text-[9px] text-zinc-400 mt-0.5">{selectedPayslip.totalHalfDays}d × ₱{((selectedPayslip.baseRate || 0) / 2).toFixed(0)}</span>
-                               </div>
-                               <span className="font-bold text-white">₱{(selectedPayslip.hdEarnings || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                             </div>
-                           )}
-                           {selectedPayslip.totalUndertimeDays > 0 && (
-                             <div className="flex justify-between items-center text-[10px]">
-                               <div className="flex flex-col">
-                                 <span className="font-bold text-white uppercase">Undertime</span>
-                                 <span className="text-[9px] text-zinc-400 mt-0.5">
-                                   {((selectedPayslip.totalUndertimeDays * 8) - selectedPayslip.totalUndertimeHours).toFixed(1)}h worked × ₱{((selectedPayslip.baseRate || 0) / 8).toFixed(2)}
-                                 </span>
-                               </div>
-                               <span className="font-bold text-white">₱{(selectedPayslip.utEarnings || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                             </div>
-                           )}
-                           {selectedPayslip.totalAbsent > 0 && (
-                             <div className="flex justify-between items-center text-[10px]">
-                               <div className="flex flex-col">
-                                 <span className="font-bold text-rose-400 uppercase">Absent</span>
-                                 <span className="text-[9px] text-zinc-400 mt-0.5">{selectedPayslip.totalAbsent}d × ₱0</span>
-                               </div>
-                               <span className="font-bold text-zinc-400">₱0.00</span>
-                             </div>
-                           )}
-  
-                           <div className="pt-2 mt-1 border-t border-white/5 flex justify-between items-center text-[10px]">
-                             <span className="font-bold text-zinc-400 uppercase">Attendance Subtotal</span>
-                             <span className="font-black text-white">₱{(selectedPayslip.regularPay || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                           </div>
-                        </div>
-                      </div>
-  
-                      {/* Overtime Row */}
-                      {selectedPayslip.totalOtHours > 0 && (
-                        <div className="flex justify-between items-center bg-emerald-500/10 p-2.5 rounded-xl border border-emerald-500/25">
-                          <div className="flex flex-col">
-                            <span className="text-emerald-400 font-bold uppercase text-[10px]">Overtime Pay</span>
-                            <span className="text-[9px] text-emerald-300/80 font-medium mt-0.5">{selectedPayslip.totalOtHours.toFixed(1)} hrs × ₱{((selectedPayslip.baseRate || 0) / 8).toFixed(2)}/hr</span>
-                          </div>
-                          <span className="font-black text-emerald-400 text-xs">₱{(selectedPayslip.otPay || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                        </div>
-                      )}
-  
-                      {/* Pakyaw Row */}
-                      {selectedPayslip.totalPakyawPay > 0 && (
-                        <div className="flex justify-between items-center bg-violet-500/10 p-2.5 rounded-xl border border-violet-500/25">
-                          <div className="flex flex-col">
-                            <span className="text-violet-400 font-bold uppercase text-[10px]">Pakyaw Earnings</span>
-                            <span className="text-[9px] text-violet-300/80 font-medium mt-0.5">Sum of completed job shares</span>
-                          </div>
-                          <span className="font-black text-violet-400 text-xs">₱{(selectedPayslip.totalPakyawPay || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                        </div>
-                      )}
-  
-                      {/* Manual Adjustments Row */}
-                      {selectedPayslip.totalAdjustments !== 0 && (
-                        <div className="flex justify-between items-center bg-blue-500/10 p-2.5 rounded-xl border border-blue-500/25">
-                          <div className="flex flex-col">
-                            <span className="text-blue-400 font-bold uppercase text-[10px]">Manual Adjustments</span>
-                            <div className="space-y-1 mt-1">
-                              {selectedPayslip.adjustments?.map((adj: any, i: number) => (
-                                <div key={i} className="text-[9px] text-blue-300 font-medium flex items-center gap-1.5">
-                                  <span className="opacity-60">●</span>
-                                  <span>{adj.description}: {adj.type === 'deduction' ? '-' : '+'}₱{adj.amount.toLocaleString()}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                          <span className={`font-black text-xs ${selectedPayslip.totalAdjustments > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                            {selectedPayslip.totalAdjustments > 0 ? '+' : ''}₱{(selectedPayslip.totalAdjustments || 0).toFixed(2)}
-                          </span>
-                        </div>
-                      )}
+                      <span className="font-bold text-slate-900">₱{(selectedPayslip.presentEarnings || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
 
-                    {selectedPayslip.carryOverFromPrevious > 0 && (
-                      <div className="flex justify-between items-center bg-amber-500/5 p-2.5 rounded-xl border border-amber-500/25 mt-2">
-                         <span className="text-white font-bold text-[10px] uppercase tracking-wider">Debt Carry-over (Prev)</span>
-                         <span className="font-black text-xs text-white">₱{(selectedPayslip.carryOverFromPrevious || 0).toFixed(2)}</span>
+                    {selectedPayslip.totalHalfDays > 0 && (
+                      <div className="flex justify-between">
+                        <span>Half-Day: {selectedPayslip.totalHalfDays} Day(s) x ₱{((selectedPayslip.baseRate || 0) / 2).toLocaleString()}</span>
+                        <span className="font-bold text-slate-900">₱{(selectedPayslip.hdEarnings || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                       </div>
                     )}
 
-                    {(selectedPayslip.totalPakyawPay > 0 || (selectedPayslip.pakyawItems && selectedPayslip.pakyawItems.length > 0) || (selectedPayslip.pakyawDetails && selectedPayslip.pakyawDetails.length > 0)) && (
-                      <div className="space-y-2 mt-2 pt-2 border-t border-slate-800">
-                        <div className="flex justify-between items-center">
-                          <h3 className="text-indigo-400 font-black text-[10px] uppercase tracking-wider">Pakyaw Jobs Breakdown</h3>
-                          <span className="font-black text-indigo-400 text-xs">₱{(selectedPayslip.totalPakyawPay || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                        </div>
+                    {selectedPayslip.totalUndertimeDays > 0 && (
+                      <div className="flex justify-between">
+                        <span>Undertime: {selectedPayslip.totalUndertimeDays} Day(s) ({((selectedPayslip.totalUndertimeDays * 8) - selectedPayslip.totalUndertimeHours).toFixed(1)} hrs total)</span>
+                        <span className="font-bold text-slate-900">₱{(selectedPayslip.utEarnings || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      </div>
+                    )}
 
-                        {selectedPayslip.pakyawItems && selectedPayslip.pakyawItems.length > 0 ? (
-                          <div className="space-y-1.5">
+                    {selectedPayslip.totalOtHours > 0 && (
+                      <div className="bg-emerald-50 text-emerald-800 rounded-lg px-2 py-1.5 mt-2">
+                        <div className="flex justify-between items-center text-[11px] font-bold">
+                          <span>Total Overtime: {selectedPayslip.totalOtHours} hrs</span>
+                          <span>₱{(selectedPayslip.otPay || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        </div>
+                        <div className="text-[9px] text-emerald-600 mt-0.5">Applied rate: 1x</div>
+                      </div>
+                    )}
+
+                    {selectedPayslip.totalPakyawPay > 0 && (
+                      <div className="bg-purple-50 text-purple-800 rounded-lg px-2 py-1.5 mt-2 flex flex-col gap-1">
+                        <div className="flex justify-between items-center text-[11px] font-bold">
+                          <span>Pakyaw Earnings</span>
+                          <span>₱{(selectedPayslip.totalPakyawPay || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        </div>
+                        {selectedPayslip.pakyawItems && selectedPayslip.pakyawItems.length > 0 && (
+                          <div className="space-y-1 mt-1">
                             {selectedPayslip.pakyawItems.map((item: any, dIdx: number) => (
-                              <div key={dIdx} className={`flex justify-between items-center p-2 rounded-xl border transition-all ${item.isPaid ? 'bg-indigo-500/10 border-indigo-500/30' : 'bg-black border-white/10 shadow-sm'}`}>
-                                <div className="flex items-center gap-2.5 min-w-0">
-                                  <div className={`h-7 w-7 rounded-lg flex items-center justify-center shrink-0 shadow-sm ${item.isPaid ? 'bg-indigo-600 text-white shadow-indigo-500/20' : 'bg-black text-white border border-white/20'}`}>
-                                    <CheckCircle className={`w-4 h-4 ${item.isPaid ? 'fill-indigo-600 text-white' : ''}`} />
+                              <div key={dIdx} className="flex justify-between items-center text-[10px] pl-2 border-l border-purple-200">
+                                <div className="flex items-center gap-1.5">
+                                  <div className={`h-4.5 w-4.5 rounded-sm shrink-0 flex items-center justify-center transition-all ${item.isPaid ? 'bg-purple-600 text-white' : 'bg-slate-100 border border-slate-200'}`}>
+                                    <CheckCircle className="w-2.5 h-2.5" />
                                   </div>
-                                  <div className="flex flex-col min-w-0">
-                                    <span className={`text-[10px] font-black leading-none truncate uppercase ${item.status === 'completed' ? 'text-indigo-300' : 'text-white'}`}>
-                                      {item.description}
-                                    </span>
-                                    <span className={`text-[8px] font-black uppercase tracking-tighter mt-1.5 ${item.isPaid ? 'text-indigo-400' : 'text-white/60'}`}>
-                                      {item.isPaid ? 'Payment Received' : 'Payment Pending'}
-                                    </span>
-                                  </div>
+                                  <span className="truncate max-w-[120px] font-medium text-purple-900">{item.description}</span>
                                 </div>
-                                <div className="text-right">
-                                  <span className={`text-[11px] font-black ${item.status === 'completed' ? 'text-indigo-400' : 'text-white'}`}>
-                                    ₱{(item.amount || 0).toLocaleString(undefined, { minimumFractionDigits: 0 })}
-                                  </span>
-                                </div>
+                                <span className="font-bold text-purple-900">₱{(item.amount || 0).toLocaleString()}</span>
                               </div>
                             ))}
                           </div>
-                        ) : (
-                          selectedPayslip.pakyawDetails && selectedPayslip.pakyawDetails.length > 0 && (
-                            <div className="pl-2 border-l-2 border-indigo-100 space-y-1">
-                              {selectedPayslip.pakyawDetails.map((detail: string, dIdx: number) => (
-                                <div key={dIdx} className="text-[9px] text-indigo-400 font-bold leading-tight flex items-start gap-1.5">
-                                  <span className="text-indigo-300 mt-0.5">●</span>
-                                  {detail}
-                                </div>
-                              ))}
-                              <div className="bg-slate-900/50 p-2 rounded-lg text-[8px] text-zinc-400 font-medium italic mt-1.5">
-                                Note: Legacy record.
-                              </div>
-                            </div>
-                          )
                         )}
                       </div>
                     )}
-                    
-                    <div className="flex justify-between items-center border-t-2 border-slate-900 pt-2.5 mt-2.5">
-                      <span className="text-white font-black uppercase text-[10px] italic">Gross Earnings Total</span>
-                      <span className="text-white font-black text-xs italic">₱{(selectedPayslip.totalEarnings || selectedPayslip.totalGrossPay || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+
+                    {selectedPayslip.totalAdjustments !== 0 && (
+                      <div className="bg-blue-50 text-blue-800 rounded-lg px-2 py-1.5 mt-2">
+                        <div className="flex justify-between items-center text-[11px] font-bold">
+                          <span>Manual Adjustments</span>
+                          <span className={selectedPayslip.totalAdjustments > 0 ? 'text-emerald-700' : 'text-red-700'}>
+                            {selectedPayslip.totalAdjustments > 0 ? '+' : ''}₱{(selectedPayslip.totalAdjustments || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </span>
+                        </div>
+                        {selectedPayslip.adjustments && selectedPayslip.adjustments.map((adj: any, i: number) => (
+                          <div key={i} className="text-[9px] text-blue-600 mt-0.5 ml-2">
+                            ● {adj.description}: {adj.type === 'deduction' ? '-' : '+'}₱{adj.amount.toLocaleString()}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {selectedPayslip.carryOverFromPrevious > 0 && (
+                      <div className="bg-amber-50 text-amber-800 rounded-lg px-2 py-1.5 mt-2 flex justify-between items-center text-[11px] font-bold">
+                        <span>Debt Carry-Over (Prev)</span>
+                        <span>₱{(selectedPayslip.carryOverFromPrevious || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      </div>
+                    )}
+
+                    {selectedPayslip.cashAdvanceDeduction > 0 && (
+                      <div className="bg-red-50 text-red-800 rounded-lg px-2 py-1.5 mt-2 flex justify-between items-center text-[11px] font-bold">
+                        <span>Cash Advance Deduction</span>
+                        <span>-₱{(selectedPayslip.cashAdvanceDeduction || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      </div>
+                    )}
+
+                    {selectedPayslip.isAttendancePaid && (
+                      <div className="bg-slate-50 text-slate-800 rounded-lg px-2 py-1.5 mt-2 flex justify-between items-center text-[11px] font-bold">
+                        <span>Daily Paid (Attendance)</span>
+                        <span>-₱{((selectedPayslip.regularPay || 0) + (selectedPayslip.otPay || 0)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      </div>
+                    )}
+
+                    {selectedPayslip.pakyawItems?.some((i: any) => i.isPaid) && (
+                      <div className="bg-indigo-50 text-indigo-800 rounded-lg px-2 py-1.5 mt-2 flex justify-between items-center text-[11px] font-bold">
+                        <span>Paid Pakyaw</span>
+                        <span>-₱{selectedPayslip.pakyawItems.filter((i: any) => i.isPaid).reduce((sum: number, i: any) => sum + (i.amount || 0), 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="border-t-2 border-slate-900 my-4" />
+
+                  <div className="flex justify-between items-center">
+                    <span className="text-[12px] font-extrabold text-slate-950 uppercase tracking-wider">NET TAKE HOME PAY</span>
+                    <span className="text-[22px] font-black text-slate-950 tracking-tight">
+                      ₱{Math.max(0, (Number(selectedPayslip.totalEarnings || selectedPayslip.totalGrossPay || 0)) - 
+                        (selectedPayslip.carryOverFromPrevious || 0) - 
+                        (selectedPayslip.cashAdvanceDeduction || 0) - 
+                        (selectedPayslip.isAttendancePaid ? (Number(selectedPayslip.regularPay || 0) + (selectedPayslip.otPay || 0)) : 0) -
+                        (selectedPayslip.pakyawItems?.filter((i: any) => i.isPaid).reduce((sum: number, i: any) => sum + (i.amount || 0), 0) || 0)
+                      ).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+
+                  <div className="mt-8 flex flex-col justify-start items-start w-3/4">
+                    <div className="font-serif text-[12px] italic text-slate-400 select-none tracking-wider mb-1 pl-4 h-5">
+                      digital_sign_valid
                     </div>
+                    <div className="w-full border-t border-slate-300 my-1" />
+                    <span className="text-[9px] font-extrabold text-slate-900 uppercase tracking-wider leading-none">AUTHORIZED SIGNATURE</span>
+                    <span className="text-[8px] text-slate-500 font-medium mt-0.5 leading-none">FINANCE DEPARTMENT</span>
                   </div>
                 </div>
-                
-                <div className="space-y-4">
-                  <div className="bg-slate-900/40 p-3 rounded-2xl border border-white/10">
-                    <h3 className="text-[10px] font-black text-white pb-1.5 mb-2 uppercase border-b border-white/20">
-                      Summary
-                    </h3>
-                    <div className="space-y-2 font-mono">
-                      <div className="flex justify-between items-center text-[11px]">
-                        <span className="text-zinc-300 font-bold uppercase">Earnings</span>
-                        <span className="font-bold text-white">₱{(selectedPayslip.totalEarnings || selectedPayslip.totalGrossPay || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+
+                {/* Right Column: Logs */}
+                <div>
+                  <div className="font-bold text-[10px] text-slate-900 uppercase tracking-wider border-b border-slate-300 pb-1.5 mb-2.5">
+                    CHRONOLOGICAL AUDIT LOG
+                  </div>
+
+                  {/* Dates Present */}
+                  <div className="space-y-1.5 mb-3.5">
+                    <span className="text-[9px] font-bold text-emerald-600 uppercase tracking-wider">DATES PRESENT:</span>
+                    <div className="bg-emerald-50/70 border border-emerald-100 rounded-xl px-3 py-2 text-[11px] text-slate-700 font-semibold tracking-wide flex flex-wrap gap-x-2 gap-y-1">
+                      {selectedPayslip.dailyAttendanceLog && selectedPayslip.dailyAttendanceLog.filter((log: any) => log.status === 'present').length > 0 ? (
+                        selectedPayslip.dailyAttendanceLog
+                          .filter((log: any) => log.status === 'present')
+                          .sort((a: any, b: any) => a.date.localeCompare(b.date))
+                          .map((log: any, i: number, arr: any[]) => (
+                            <span key={i} className="flex items-center">
+                              {format(parseISO(log.date), 'MM-dd')}
+                              {i < arr.length - 1 && <span className="text-emerald-300 ml-2">•</span>}
+                            </span>
+                          ))
+                      ) : (
+                        <span className="text-slate-400 italic font-medium">No days present</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Undertime Records */}
+                  <div className="space-y-1.5 mb-3.5">
+                    <span className="text-[9px] font-bold text-amber-600 uppercase tracking-wider">UNDERTIME RECORDS:</span>
+                    <div className="bg-amber-50/70 border border-amber-100 rounded-xl px-3 py-2 text-[11px] text-slate-700 font-semibold tracking-wide flex flex-wrap gap-x-2 gap-y-1">
+                      {selectedPayslip.dailyAttendanceLog && selectedPayslip.dailyAttendanceLog.filter((log: any) => log.status === 'undertime').length > 0 ? (
+                        selectedPayslip.dailyAttendanceLog
+                          .filter((log: any) => log.status === 'undertime')
+                          .sort((a: any, b: any) => a.date.localeCompare(b.date))
+                          .map((log: any, i: number, arr: any[]) => {
+                            const undertimeHrs = 8 - log.regHrs;
+                            return (
+                              <span key={i} className="flex items-center">
+                                {format(parseISO(log.date), 'MM-dd')}({undertimeHrs.toFixed(undertimeHrs % 1 === 0 ? 0 : 1)}h)
+                                {i < arr.length - 1 && <span className="text-amber-300 ml-2">•</span>}
+                              </span>
+                            );
+                          })
+                      ) : (
+                        <span className="text-slate-400 italic font-medium">No undertime records</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Overtime Sessions */}
+                  <div className="space-y-1.5 mb-3.5">
+                    <span className="text-[9px] font-bold text-emerald-600 uppercase tracking-wider">OVERTIME SESSIONS:</span>
+                    <div className="bg-emerald-50/70 border border-emerald-100 rounded-xl px-3 py-2 text-[11px] text-slate-700 font-semibold tracking-wide flex flex-wrap gap-x-2 gap-y-1">
+                      {selectedPayslip.dailyAttendanceLog && selectedPayslip.dailyAttendanceLog.filter((log: any) => log.otHrs > 0).length > 0 ? (
+                        selectedPayslip.dailyAttendanceLog
+                          .filter((log: any) => log.otHrs > 0)
+                          .sort((a: any, b: any) => a.date.localeCompare(b.date))
+                          .map((log: any, i: number, arr: any[]) => (
+                            <span key={i} className="flex items-center">
+                              {format(parseISO(log.date), 'MM-dd')}({log.otHrs.toFixed(log.otHrs % 1 === 0 ? 0 : 1)}h)
+                              {i < arr.length - 1 && <span className="text-emerald-300 ml-2">•</span>}
+                            </span>
+                          ))
+                      ) : (
+                        <span className="text-slate-400 italic font-medium">No overtime sessions</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Absenteeism Record */}
+                  <div className="space-y-1.5 mb-3.5">
+                    <span className="text-[9px] font-bold text-rose-600 uppercase tracking-wider">ABSENTEEISM RECORD:</span>
+                    <div className="bg-rose-50/70 border border-rose-100 rounded-xl px-3 py-2 text-[11px] text-slate-700 font-semibold tracking-wide flex flex-wrap gap-x-2 gap-y-1">
+                      {selectedPayslip.dailyAttendanceLog && selectedPayslip.dailyAttendanceLog.filter((log: any) => log.status === 'absent').length > 0 ? (
+                        selectedPayslip.dailyAttendanceLog
+                          .filter((log: any) => log.status === 'absent')
+                          .sort((a: any, b: any) => a.date.localeCompare(b.date))
+                          .map((log: any, i: number, arr: any[]) => (
+                            <span key={i} className="flex items-center">
+                              {format(parseISO(log.date), 'MM-dd')}
+                              {i < arr.length - 1 && <span className="text-rose-300 ml-2">•</span>}
+                            </span>
+                          ))
+                      ) : (
+                        <span className="text-slate-400 italic font-medium">No absences</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Half-day Records */}
+                  {selectedPayslip.dailyAttendanceLog && selectedPayslip.dailyAttendanceLog.some((log: any) => log.status === 'halfday') && (
+                    <div className="space-y-1.5 mb-3.5">
+                      <span className="text-[9px] font-bold text-indigo-600 uppercase tracking-wider">HALFDAY RECORDS:</span>
+                      <div className="bg-indigo-50/70 border border-indigo-100 rounded-xl px-3 py-2 text-[11px] text-slate-700 font-semibold tracking-wide flex flex-wrap gap-x-2 gap-y-1">
+                        {selectedPayslip.dailyAttendanceLog
+                          .filter((log: any) => log.status === 'halfday')
+                          .sort((a: any, b: any) => a.date.localeCompare(b.date))
+                          .map((log: any, i: number, arr: any[]) => (
+                            <span key={i} className="flex items-center">
+                              {format(parseISO(log.date), 'MM-dd')}
+                              {i < arr.length - 1 && <span className="text-indigo-300 ml-2">•</span>}
+                            </span>
+                          ))}
                       </div>
+                    </div>
+                  )}
 
-                      {selectedPayslip.totalAdjustments !== 0 && (
-                        <div className="flex justify-between items-center text-[11px]">
-                          <span className={`font-bold uppercase ${selectedPayslip.totalAdjustments > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                            {selectedPayslip.totalAdjustments > 0 ? 'Bonus/Adj' : 'Manual Ded'}
-                          </span>
-                          <span className={`font-bold ${selectedPayslip.totalAdjustments > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                            {selectedPayslip.totalAdjustments > 0 ? '+' : ''}₱{(selectedPayslip.totalAdjustments || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                          </span>
-                        </div>
-                      )}
-                      
-                      {selectedPayslip.carryOverFromPrevious > 0 && (
-                        <div className="flex justify-between items-center text-[11px]">
-                          <span className="text-zinc-300 font-bold uppercase">Prev Debt</span>
-                          <span className="font-bold text-white">-₱{(selectedPayslip.carryOverFromPrevious || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                        </div>
-                      )}
-
-                      {selectedPayslip.cashAdvanceDeduction > 0 && (
-                        <div className="flex justify-between items-center text-[11px]">
-                          <span className="text-red-400 font-bold uppercase">Cash Adv</span>
-                          <span className="font-bold text-red-400">-₱{(selectedPayslip.cashAdvanceDeduction || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                        </div>
-                      )}
-
-                      {selectedPayslip.isAttendancePaid && (
-                        <div className="flex justify-between items-center text-[11px]">
-                          <span className="text-emerald-400 font-bold uppercase">Daily Paid</span>
-                          <span className="font-bold text-emerald-400">-₱{((selectedPayslip.regularPay || 0) + (selectedPayslip.otPay || 0)).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                        </div>
-                      )}
-
-                      {selectedPayslip.pakyawItems?.some((i: any) => i.isPaid) && (
-                        <div className="flex justify-between items-center text-[11px]">
-                          <span className="text-indigo-400 font-bold uppercase">Paid Pakyaw</span>
-                          <span className="font-bold text-indigo-400">-₱{selectedPayslip.pakyawItems.filter((i: any) => i.isPaid).reduce((sum: number, i: any) => sum + (i.amount || 0), 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
-                        </div>
-                      )}
-
-                      <div className="flex justify-between items-center border-t-2 border-dashed border-white/20 pt-2.5 mt-2">
-                        <span className="text-white font-black uppercase text-sm tracking-tight italic">Net Take Home</span>
-                        <span className="text-white font-black text-lg italic">
-                          ₱{Math.max(0, (Number(selectedPayslip.totalEarnings || selectedPayslip.totalGrossPay || 0)) - 
-                    (selectedPayslip.carryOverFromPrevious || 0) - 
-                    (selectedPayslip.cashAdvanceDeduction || 0) - 
-                    (selectedPayslip.isAttendancePaid ? (Number(selectedPayslip.regularPay || 0) + (selectedPayslip.otPay || 0)) : 0) -
-                    (selectedPayslip.pakyawItems?.filter((i: any) => i.isPaid).reduce((sum: number, i: any) => sum + (i.amount || 0), 0) || 0)
-                  ).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </span>
-                      </div>
+                  {/* Employee Signature */}
+                  <div className="mt-8 flex flex-col justify-end items-end w-full">
+                    <div className="w-2/3 border-t border-slate-300 my-1" />
+                    <div className="flex flex-col items-center w-2/3 text-center">
+                      <span className="text-[9px] font-extrabold text-slate-900 uppercase tracking-wider leading-none">EMPLOYEE SIGNATURE</span>
+                      <span className="text-[8px] text-slate-500 font-medium mt-1 leading-none">DATE RECEIVED: ________________</span>
                     </div>
                   </div>
                 </div>
               </div>
-              
-              {/* Compact Attendance Logs */}
-              {selectedPayslip.dailyAttendanceLog && (
-                <div className="mt-3 pt-2 border-t border-white/20 font-sans">
-                  <div className="grid grid-cols-4 min-[400px]:grid-cols-5 min-[500px]:grid-cols-6 md:grid-cols-8 gap-1">
-                    {selectedPayslip.dailyAttendanceLog.map((log: any, i: number) => (
-                      <div key={i} className={`py-1 rounded border flex flex-col items-center justify-center text-center ${
-                        log.status === 'present' ? 'bg-emerald-500/10 border-emerald-500/30' :
-                        log.status === 'absent' ? 'bg-rose-500/10 border-rose-500/30' :
-                        log.status === 'halfday' ? 'bg-indigo-500/10 border-indigo-500/30' :
-                        log.status === 'undertime' ? 'bg-amber-500/10 border-amber-500/30' :
-                        'bg-black border-white/10'
-                      }`}>
-                        <div className="text-[9px] font-bold text-white uppercase tracking-tighter">
-                          {format(parseISO(log.date), 'MM/dd')}
-                        </div>
-                        <div className={`text-[9px] font-black uppercase mt-0.5 ${
-                          log.status === 'present' ? 'text-emerald-400' :
-                          log.status === 'absent' ? 'text-rose-400' :
-                          log.status === 'halfday' ? 'text-indigo-400' :
-                          log.status === 'undertime' ? 'text-amber-400' :
-                          'text-white'
-                        }`}>
-                          {log.status === 'pakyaw' ? 'PK' : log.status.charAt(0).toUpperCase()}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
 
-              <div className="mt-4 pt-3 border-t border-white/20 flex justify-between items-end">
-                <div className="text-[9px] text-zinc-400 font-mono">
-                  ID: {selectedPayslip.id.substring(0, 8)}
-                </div>
-                <div className="flex flex-col items-end">
-                  <div className="w-24 h-px bg-slate-400 mb-1.5"></div>
-                  <div className="text-[9px] font-black text-white uppercase tracking-wider">Received By</div>
-                </div>
+              <div className="mt-4 pt-3 border-t border-slate-200 flex justify-between items-center text-[9px] text-slate-400 font-mono">
+                <span>ID: {selectedPayslip.id}</span>
+                <span>Generated via L&P Payroll System</span>
               </div>
             </div>
             )}
