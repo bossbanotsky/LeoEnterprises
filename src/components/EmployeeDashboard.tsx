@@ -935,7 +935,7 @@ export default function EmployeeDashboard() {
             <div className="overflow-x-auto w-full p-2 sm:p-4">
               <div 
                 ref={payslipRef}
-                className="w-full min-w-[600px] p-4 sm:p-8 payslip-mockup bg-white font-sans text-[10px] sm:text-xs text-slate-900 border border-slate-200 rounded-xl select-none" 
+                className="w-full min-w-[600px] p-3 sm:p-6 payslip-mockup bg-white font-sans text-[9px] sm:text-[10px] text-slate-900 border border-slate-200 rounded-xl select-none aspect-[2/1] max-h-[70vh]" 
               >
               {/* Header */}
               <div className="flex justify-between items-start mb-3">
