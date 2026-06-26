@@ -13,8 +13,8 @@ export default function Logs() {
     if (!user) return;
     const fetchData = async () => {
       try {
-        const { getDocs, collection, query, orderBy } = await import('firebase/firestore');
-        const q = query(collection(db, 'logs'), orderBy('createdAt', 'desc'));
+        const { getDocs, collection, query, orderBy, limit } = await import('firebase/firestore');
+        const q = query(collection(db, 'logs'), orderBy('createdAt', 'desc'), limit(200));
         const snapshot = await getDocs(q);
         const fetchedLogs: any[] = [];
         snapshot.forEach(doc => fetchedLogs.push({ id: doc.id, ...doc.data() }));

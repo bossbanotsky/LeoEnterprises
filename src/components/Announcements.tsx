@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
+import React, { useState } from 'react';
+import { collection, addDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
-import { Announcement, Employee } from '../types';
+import { useData } from '../contexts/DataContext';
+import { Announcement } from '../types';
 import { Megaphone, Plus, Trash2, Clock, Eye, Send, AlertCircle, CheckCircle2, History } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 import { Button } from './ui/button';
@@ -13,12 +14,10 @@ import { format, addDays, isPast, parseISO } from 'date-fns';
 
 export default function Announcements() {
   const { user, userData } = useAuth();
-  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-  const [employees, setEmployees] = useState<Employee[]>([]);
+  const { employees, announcements, loading, refreshData } = useData();
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null);
-  const [loading, setLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const [form, setForm] = useState({
@@ -27,43 +26,6 @@ export default function Announcements() {
     durationDays: '7',
     priority: 'medium' as 'low' | 'medium' | 'high'
   });
-
-  useEffect(() => {
-    if (!user) return;
-
-    const fetchAnnouncements = async () => {
-      try {
-        const q = query(collection(db, 'announcements'), orderBy('createdAt', 'desc'));
-        const { getDocs } = await import('firebase/firestore');
-        const snapshot = await getDocs(q);
-        const data: Announcement[] = [];
-        snapshot.forEach(doc => data.push({ id: doc.id, ...doc.data() } as Announcement));
-        setAnnouncements(data);
-        setLoading(false);
-      } catch (err: any) {
-        // Silently handle quota errors
-        if (!err?.message?.toLowerCase().includes('quota')) {
-          handleFirestoreError(err, OperationType.LIST, 'announcements');
-        }
-        setLoading(false);
-      }
-    };
-
-    const fetchEmployees = async () => {
-      try {
-        const { getDocs } = await import('firebase/firestore');
-        const snapshot = await getDocs(collection(db, 'employees'));
-        const emps: Employee[] = [];
-        snapshot.forEach(doc => emps.push({ id: doc.id, ...doc.data() } as Employee));
-        setEmployees(emps);
-      } catch (err) {
-        // Ignore employee fetch errors in announcements to keep board functional
-      }
-    };
-
-    fetchAnnouncements();
-    fetchEmployees();
-  }, [user]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,6 +46,7 @@ export default function Announcements() {
         priority: form.priority
       });
 
+      await refreshData();
       setIsAddOpen(false);
       setForm({ title: '', message: '', durationDays: '7', priority: 'medium' });
     } catch (err) {
@@ -94,6 +57,7 @@ export default function Announcements() {
   const handleDelete = async (id: string) => {
     try {
       await deleteDoc(doc(db, 'announcements', id));
+      await refreshData();
       setDeleteId(null);
     } catch (err) {
       handleFirestoreError(err, OperationType.DELETE, 'announcements');

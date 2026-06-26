@@ -33,7 +33,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [cashAdvances, setCashAdvances] = useState<CashAdvance[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchCollections = useCallback(async () => {
+  const fetchCollections = useCallback(async (force = false) => {
     if (!user) return;
     
     // Load from cache first for instant feedback if available
@@ -48,6 +48,17 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (cachedJobs) setPakyawJobs(JSON.parse(cachedJobs));
     if (cachedAnn) setAnnouncements(JSON.parse(cachedAnn));
     if (cachedCA) setCashAdvances(JSON.parse(cachedCA));
+
+    // Throttling: If not forced, and last fetch was less than 5 minutes ago, use cached data to preserve Firestore quota.
+    const lastFetch = localStorage.getItem('last_fetch_time');
+    const now = Date.now();
+    const CACHE_EXPIRY = 5 * 60 * 1000; // 5 minutes cache expiry
+
+    if (!force && lastFetch && (now - Number(lastFetch)) < CACHE_EXPIRY) {
+      console.log("Preserving Firebase read quota: Loading from local cache. Time since last fetch:", (now - Number(lastFetch)) / 1000, "seconds");
+      setLoading(false);
+      return;
+    }
 
     try {
       // Parallel fetch to save time and reduce overhead
@@ -102,6 +113,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem('cache_pakyawJobs', JSON.stringify(uniqueJobs));
       localStorage.setItem('cache_announcements', JSON.stringify(uniqueAnn));
       localStorage.setItem('cache_cashAdvances', JSON.stringify(uniqueCA));
+      localStorage.setItem('last_fetch_time', String(now));
       
       setLoading(false);
       setQuotaLimited(false);
@@ -124,11 +136,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
       return;
     }
-    fetchCollections();
+    fetchCollections(false);
   }, [user, fetchCollections]);
 
   const refreshData = async (collectionName?: string) => {
-    await fetchCollections();
+    await fetchCollections(true);
   };
 
   return (

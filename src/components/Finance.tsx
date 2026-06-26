@@ -48,7 +48,7 @@ export default function Finance() {
       const accs = snap.docs.map(d => ({ id: d.id, ...d.data() } as Account));
       setAccounts(accs);
     });
-    const unsubTrans = onSnapshot(query(collection(db, 'transactions'), orderBy('createdAt', 'desc')), (snap) => {
+    const unsubTrans = onSnapshot(query(collection(db, 'transactions'), orderBy('createdAt', 'desc'), limit(300)), (snap) => {
       setTransactions(snap.docs.map(d => ({ id: d.id, ...d.data() } as Transaction)));
     });
     return () => { unsub(); unsubTrans(); };
