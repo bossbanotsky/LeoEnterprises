@@ -44,6 +44,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Skeleton } from './ui/Skeleton';
+import { EmptyState } from './ui/EmptyState';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
@@ -155,6 +156,18 @@ export default function Payroll() {
     const totalEarnings = reg + ot + pakyaw + adj;
     const totalGrossPay = totalEarnings - cop;
     const totalPay = totalGrossPay - ca;
+
+    const currentAdjustmentsSum = (item.adjustments || []).reduce((sum: number, a: any) => sum + (a.type === 'deduction' ? -a.amount : a.amount), 0);
+    if (adj !== currentAdjustmentsSum) {
+      item.adjustments = [{
+        id: 'override-' + Date.now(),
+        employeeId: item.employee.id,
+        type: adj >= 0 ? 'bonus' : 'deduction',
+        amount: Math.abs(adj),
+        description: 'Manual System Override',
+        date: new Date().toISOString()
+      }];
+    }
 
     item.regularPay = reg;
     item.otPay = ot;
@@ -585,11 +598,25 @@ export default function Payroll() {
       const totalGrossPay = totalEarnings - cop;
       const totalPay = totalGrossPay - ca;
 
+      const currentAdjustmentsSum = (selectedPayslip.adjustments || []).reduce((sum: number, a: any) => sum + (a.type === 'deduction' ? -a.amount : a.amount), 0);
+      let newAdjustments = selectedPayslip.adjustments || [];
+      if (adj !== currentAdjustmentsSum) {
+        newAdjustments = [{
+          id: 'override-' + Date.now(),
+          employeeId: selectedPayslip.employee.id,
+          type: adj >= 0 ? 'bonus' : 'deduction',
+          amount: Math.abs(adj),
+          description: 'Manual System Override',
+          date: new Date().toISOString()
+        }];
+      }
+
       const updatedFields = {
         regularPay: reg,
         otPay: ot,
         totalPakyawPay: pakyaw,
         totalAdjustments: adj,
+        adjustments: newAdjustments,
         cashAdvanceDeduction: ca,
         carryOverFromPrevious: cop,
         totalEarnings,
@@ -637,6 +664,29 @@ export default function Payroll() {
       htmlEl.style.animation = 'none';
       htmlEl.style.transform = 'none';
       
+      // Force white background for PDF on main mockup container
+      if (htmlEl.classList.contains('payslip-mockup')) {
+        htmlEl.classList.remove('bg-black');
+        htmlEl.classList.add('bg-white');
+      }
+
+      // Convert dark mode text to light mode text for PDF
+      const classesToReplace = Array.from(htmlEl.classList).filter(c => c.includes('white') || c.includes('black') || c.includes('slate-800') || c.includes('slate-900'));
+      classesToReplace.forEach(c => {
+        if (c === 'text-white' || c.startsWith('text-white/')) {
+          htmlEl.classList.replace(c, c.replace('white', 'slate-900'));
+        }
+        if (c === 'border-white/20' || c === 'border-white/30' || c === 'border-white/10' || c.startsWith('border-slate-900')) {
+          htmlEl.classList.replace(c, 'border-slate-200');
+        }
+        if (c === 'bg-black' || c.startsWith('bg-black/')) {
+          htmlEl.classList.replace(c, c.replace('black', 'white'));
+        }
+        if (c === 'bg-slate-800/50') {
+          htmlEl.classList.replace(c, 'bg-slate-100');
+        }
+      });
+
       // Only remove overflow constraints from the root element or containers that have overflow-y scrollable properties
       if (htmlEl === payslipEl || htmlEl.classList.contains('payslip-mockup')) {
         htmlEl.style.overflow = 'visible';
@@ -982,8 +1032,6 @@ export default function Payroll() {
             htmlPayslip.style.maxHeight = 'none';
             htmlPayslip.style.overflow = 'visible';
             htmlPayslip.style.height = htmlPayslip.scrollHeight + 'px';
-            htmlPayslip.style.color = '#000000';
-            htmlPayslip.style.backgroundColor = '#ffffff';
             htmlPayslip.style.padding = '40px';
             
             sanitizeStyles(htmlPayslip);
@@ -1764,9 +1812,13 @@ export default function Payroll() {
     }
   };
 
-  const handleDeletePayroll = async (id: string) => {
+  const handleDeletePayroll = async (id: string, isBulk: boolean = false) => {
     if (!user) return;
     try {
+      if (!isBulk) {
+        setIsLoading(true);
+        setItemToDelete(null);
+      }
       let payrollItem = payrollData.find(p => p.id === id);
       
       // If not in local state, fetch from server
@@ -1841,11 +1893,18 @@ export default function Payroll() {
 
       await deleteDoc(doc(db, 'payrolls', id));
       await addAuditLog('Deleted Payroll Record', 'Payroll', `Deleted payslip for ${empName}.`);
-      setPayrollData(prev => prev.filter(p => p.id !== id));
-      setSelectedPayslip(null);
-      setItemToDelete(null);
+      
+      if (!isBulk) {
+        setPayrollData(prev => prev.filter(p => p.id !== id));
+        setSelectedPayslip(null);
+        showToast(`Payroll for ${empName} has been deleted`, 'success');
+      }
     } catch (error) {
       handleFirestoreError(error, OperationType.DELETE, 'payrolls');
+    } finally {
+      if (!isBulk) {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -1865,18 +1924,21 @@ export default function Payroll() {
       
       const bulkRef = doc(db, 'bulkPayrolls', bulkId);
       const bulkSnap = await getDoc(bulkRef);
-      if (!bulkSnap.exists()) return;
+      if (!bulkSnap.exists()) {
+        showToast('Payroll batch not found', 'error');
+        return;
+      }
 
       const payrollsQ = query(collection(db, 'payrolls'), where('bulkId', '==', bulkId));
       const payrollsSnap = await getDocs(payrollsQ);
       
-      // Use the individual deletion logic for each payroll to ensure full sync/traceability
-      for (const pDoc of payrollsSnap.docs) {
-        await handleDeletePayroll(pDoc.id);
-      }
+      // Parallelize individual payroll deletions for maximum speed and responsiveness
+      await Promise.all(payrollsSnap.docs.map(pDoc => handleDeletePayroll(pDoc.id, true)));
 
       await deleteDoc(bulkRef);
       if (selectedBulkId === bulkId) setSelectedBulkId(null);
+      setSelectedPayslip(null);
+      showToast('Entire payroll batch deleted successfully', 'success');
     } catch (error) {
       handleFirestoreError(error, OperationType.DELETE, 'bulkPayrolls');
     } finally {
@@ -2122,22 +2184,22 @@ export default function Payroll() {
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3 pt-4 sm:pt-0">
         <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight uppercase italic shrink-0">Payroll</h1>
-        <div className="flex bg-transparent p-1 rounded-xl border border-white/10">
+        <div className="flex bg-transparent p-1 rounded-xl border border-white/30 overflow-x-auto w-full sm:w-auto">
           <Button 
             variant={viewMode === 'process' ? 'secondary' : 'ghost'} 
-            className={`h-8 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${viewMode === 'process' ? 'bg-white text-blue-600' : 'text-slate-400 hover:text-white'}`}
+            className={`h-8 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all whitespace-nowrap ${viewMode === 'process' ? 'bg-black text-blue-600' : 'text-white hover:text-white'}`}
             onClick={() => { setViewMode('process'); setSelectedBulkId(null); }}
           >Process</Button>
           <Button 
             variant={viewMode === 'archives' ? 'secondary' : 'ghost'} 
-            className={`h-8 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${viewMode === 'archives' ? 'bg-white text-blue-600' : 'text-slate-400 hover:text-white'}`}
+            className={`h-8 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all whitespace-nowrap ${viewMode === 'archives' ? 'bg-black text-blue-600' : 'text-white hover:text-white'}`}
             onClick={() => { setViewMode('archives'); setSelectedBulkId(null); }}
           >Archives</Button>
           <Button 
             variant={viewMode === 'carryover' ? 'secondary' : 'ghost'} 
-            className={`h-8 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${viewMode === 'carryover' ? 'bg-white text-blue-600' : 'text-slate-400 hover:text-white'}`}
+            className={`h-8 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all whitespace-nowrap ${viewMode === 'carryover' ? 'bg-black text-blue-600' : 'text-white hover:text-white'}`}
             onClick={() => { setViewMode('carryover'); setSelectedBulkId(null); }}
           >Carry-Over</Button>
         </div>
@@ -2145,14 +2207,14 @@ export default function Payroll() {
       
       {viewMode === 'carryover' && (
         <div className="flex-1 overflow-y-auto space-y-4 pr-1">
-          <div className="bento-card flex-col bg-slate-900/40 p-6 border border-white/10 shadow-2xl overflow-hidden mb-4 rounded-3xl">
+          <div className="bento-card flex-col bg-black/40 p-6 border border-white/30 shadow-2xl overflow-hidden mb-4 rounded-3xl">
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 bg-amber-500/10 text-amber-500 rounded-xl flex items-center justify-center">
+              <div className="w-10 h-10 bg-black0/10 text-white rounded-xl flex items-center justify-center">
                 <CreditCard className="w-5 h-5" />
               </div>
               <div>
                 <h2 className="text-lg font-bold text-white uppercase tracking-tight leading-none mb-1 italic">Carry-Over Balances</h2>
-                <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">Active Debts & Forwarded Balances</p>
+                <p className="text-xs text-white font-bold uppercase tracking-widest">Active Debts & Forwarded Balances</p>
               </div>
             </div>
 
@@ -2164,24 +2226,24 @@ export default function Payroll() {
                   <div 
                     key={emp.id} 
                     onClick={() => handleViewCarryOverDetail(emp)}
-                    className="flex items-center justify-between p-4 bg-white/5 border border-white/5 rounded-2xl group hover:bg-white/10 transition-all cursor-pointer"
+                    className="flex items-center justify-between p-4 bg-white/5 border border-white/20 rounded-2xl group hover:bg-black/10 transition-all cursor-pointer"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-slate-800 border border-white/10 overflow-hidden flex items-center justify-center shrink-0">
+                      <div className="w-10 h-10 rounded-xl bg-slate-800 border border-white/30 overflow-hidden flex items-center justify-center shrink-0">
                         {emp.photoURL ? (
                           <img src={emp.photoURL} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                         ) : (
-                          <Users className="w-5 h-5 text-slate-500" />
+                          <Users className="w-5 h-5 text-white" />
                         )}
                       </div>
                       <div className="min-w-0">
                         <div className="text-sm font-bold text-white uppercase tracking-tight truncate">{emp.fullName}</div>
-                        <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-0.5 truncate">{emp.position || 'Staff'}</div>
+                        <div className="text-[10px] font-bold text-white uppercase tracking-widest mt-0.5 truncate">{emp.position || 'Staff'}</div>
                       </div>
                     </div>
                     <div className="text-right shrink-0">
-                      <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 leading-none">Balance</div>
-                      <div className={`text-base font-black italic tracking-tighter leading-none ${(emp.carryOverBalance || 0) > 0 ? 'text-amber-500' : 'text-emerald-500'}`}>
+                      <div className="text-[10px] font-bold text-white uppercase tracking-widest mb-1 leading-none">Balance</div>
+                      <div className={`text-base font-black italic tracking-tighter leading-none ${(emp.carryOverBalance || 0) > 0 ? 'text-white' : 'text-emerald-500'}`}>
                         ₱{(emp.carryOverBalance || 0).toLocaleString(undefined, { minimumFractionDigits: 0 })}
                       </div>
                     </div>
@@ -2189,15 +2251,18 @@ export default function Payroll() {
                 ))}
               
               {employees.filter(emp => (emp.carryOverBalance || 0) !== 0).length === 0 && (
-                <div className="col-span-full text-center py-12 bg-white/5 rounded-3xl border border-dashed border-white/10 text-slate-500 uppercase font-bold text-xs tracking-widest">
-                  No active carry-over balances found
-                </div>
+                <EmptyState 
+                  icon={History}
+                  title="No Active Carry-Over Balances"
+                  description="All employees have settled their carry-over balances."
+                  className="col-span-full mt-4"
+                />
               )}
             </div>
           </div>
           
-          <div className="bg-amber-500/5 border border-amber-500/10 p-4 rounded-2xl">
-            <p className="text-[10px] text-amber-500/80 font-bold uppercase tracking-widest leading-relaxed">
+          <div className="bg-black0/5 border border-amber-500/10 p-4 rounded-2xl">
+            <p className="text-[10px] text-white/80 font-bold uppercase tracking-widest leading-relaxed">
               * Carry-over balances are automatically adjusted during payroll runs. 
               Positive values represent debt carried forward from previous periods, 
               which will be deducted from their next gross pay. Click an employee to view audit trail.
@@ -2208,30 +2273,30 @@ export default function Payroll() {
 
       {/* Carry-Over Detail Dialog */}
       <Dialog open={!!selectedCarryOverEmployee} onOpenChange={(open) => !open && setSelectedCarryOverEmployee(null)}>
-        <DialogContent className="sm:max-w-[500px] bg-slate-900 border-white/10 text-white rounded-3xl overflow-hidden">
+        <DialogContent className="sm:max-w-[500px] bg-black border-white/30 text-white rounded-3xl overflow-hidden">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-black0/10 text-white flex items-center justify-center">
                 <FileText className="w-5 h-5" />
               </div>
               <div className="text-left">
-                <div className="text-[10px] font-black text-amber-500 uppercase tracking-widest leading-none mb-1">Carry-Over Detail</div>
+                <div className="text-[10px] font-black text-white uppercase tracking-widest leading-none mb-1">Carry-Over Detail</div>
                 <div className="text-lg font-black uppercase tracking-tight italic">{selectedCarryOverEmployee?.fullName}</div>
               </div>
             </DialogTitle>
           </DialogHeader>
           
           <div className="mt-4 space-y-4">
-            <div className="p-4 bg-white/5 rounded-2xl border border-white/5 flex justify-between items-center">
-              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Current Balance</span>
-              <span className="text-2xl font-black italic text-amber-500">₱{(selectedCarryOverEmployee?.carryOverBalance || 0).toLocaleString()}</span>
+            <div className="p-4 bg-white/5 rounded-2xl border border-white/20 flex justify-between items-center">
+              <span className="text-[10px] font-black text-white uppercase tracking-widest">Current Balance</span>
+              <span className="text-2xl font-black italic text-white">₱{(selectedCarryOverEmployee?.carryOverBalance || 0).toLocaleString()}</span>
             </div>
 
             <div className="space-y-2">
-              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Audit Trail (Recent Effects)</h3>
+              <h3 className="text-[10px] font-black text-white uppercase tracking-widest px-1">Audit Trail (Recent Effects)</h3>
               <div className="max-h-[300px] overflow-y-auto space-y-2 pr-1 custom-scrollbar">
                 {isLoading ? (
-                  <div className="py-10 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-slate-600" /></div>
+                  <div className="py-10 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-white" /></div>
                 ) : carryOverHistory.length > 0 ? (
                   carryOverHistory.map((p, i) => (
                     <div 
@@ -2243,7 +2308,7 @@ export default function Payroll() {
                           setSelectedCarryOverEmployee(null);
                         }
                       }}
-                      className={`p-3 bg-white/5 rounded-xl border border-white/5 flex justify-between items-center group hover:bg-white/10 transition-all ${p.bulkId ? 'cursor-pointer hover:border-blue-500/30' : ''}`}
+                      className={`p-3 bg-white/5 rounded-xl border border-white/20 flex justify-between items-center group hover:bg-black/10 transition-all ${p.bulkId ? 'cursor-pointer hover:border-blue-500/30' : ''}`}
                     >
                       <div className="min-w-0">
                         <div className="text-[10px] font-black text-white/40 uppercase tracking-widest leading-none mb-1">
@@ -2253,14 +2318,14 @@ export default function Payroll() {
                           {p.carryOverToNext > 0 ? 'Balance Forwarded' : 'Balance Settled'}
                           {p.bulkId && <ExternalLink className="w-3 h-3 text-blue-400 opacity-0 group-hover:opacity-100 transition-all" />}
                         </div>
-                        <div className="text-[9px] text-slate-500 font-bold uppercase tracking-widest mt-1">
+                        <div className="text-[9px] text-white font-bold uppercase tracking-widest mt-1">
                            Period: {p.startDate} to {p.endDate}
                         </div>
                       </div>
                       <div className="text-right shrink-0">
-                        <div className="text-[9px] font-bold text-slate-600 uppercase tracking-widest mb-1">Impact</div>
+                        <div className="text-[9px] font-bold text-white uppercase tracking-widest mb-1">Impact</div>
                         {p.carryOverToNext !== 0 && typeof p.carryOverToNext === 'number' && (
-                          <div className="text-amber-500 font-black italic tracking-tighter text-sm">+₱{(p.carryOverToNext || 0).toLocaleString()}</div>
+                          <div className="text-white font-black italic tracking-tighter text-sm">+₱{(p.carryOverToNext || 0).toLocaleString()}</div>
                         )}
                         {p.carryOverFromPrevious !== 0 && typeof p.carryOverFromPrevious === 'number' && (
                           <div className="text-emerald-500 font-black italic tracking-tighter text-sm">-₱{(p.carryOverFromPrevious || 0).toLocaleString()}</div>
@@ -2269,7 +2334,7 @@ export default function Payroll() {
                     </div>
                   ))
                 ) : (
-                  <div className="py-10 text-center text-slate-600 text-[10px] font-bold uppercase tracking-widest border border-dashed border-white/5 rounded-2xl">
+                  <div className="py-10 text-center text-white text-[10px] font-bold uppercase tracking-widest border border-dashed border-white/20 rounded-2xl">
                     No history found for this employee
                   </div>
                 )}
@@ -2278,7 +2343,7 @@ export default function Payroll() {
             
             <Button 
               onClick={() => setSelectedCarryOverEmployee(null)}
-              className="w-full bg-white/10 hover:bg-white/20 text-white rounded-2xl h-12 font-black uppercase tracking-widest text-[10px]"
+              className="w-full bg-black/10 hover:bg-black/20 text-white rounded-2xl h-12 font-black uppercase tracking-widest text-[10px]"
             >
               Close Record
             </Button>
@@ -2287,37 +2352,37 @@ export default function Payroll() {
       </Dialog>
 
       {viewMode === 'process' && (
-        <div className="bento-card flex-col bg-slate-900/40 p-6 border border-white/10 mb-4 shrink-0 shadow-2xl relative overflow-hidden">
+        <div className="bento-card flex-col bg-black/40 p-6 border border-white/30 mb-4 shrink-0 shadow-2xl relative overflow-hidden">
           <div className="flex items-center gap-2 mb-4">
             <Calendar className="w-5 h-5 text-blue-400" />
             <h2 className="font-bold text-white uppercase tracking-tight">Pay Period</h2>
           </div>
           <div className="grid grid-cols-2 gap-3 mb-4">
             <div className="space-y-1">
-              <Label className="text-[9px] font-black text-slate-500 uppercase tracking-widest leading-none">Start Date</Label>
-              <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="rounded-xl h-10 border-white/10 bg-slate-950/50 text-white font-bold" />
+              <Label className="text-[9px] font-black text-white uppercase tracking-widest leading-none">Start Date</Label>
+              <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="rounded-xl h-10 border-white/30 bg-black/50 text-white font-bold" />
             </div>
             <div className="space-y-1">
-              <Label className="text-[9px] font-black text-slate-500 uppercase tracking-widest leading-none">End Date</Label>
-              <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="rounded-xl h-10 border-white/10 bg-slate-950/50 text-white font-bold" />
+              <Label className="text-[9px] font-black text-white uppercase tracking-widest leading-none">End Date</Label>
+              <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="rounded-xl h-10 border-white/30 bg-black/50 text-white font-bold" />
             </div>
           </div>
           <div className="space-y-1 mb-4">
-            <Label className="text-[9px] font-black text-slate-500 uppercase tracking-widest leading-none">Employee Selection</Label>
+            <Label className="text-[9px] font-black text-white uppercase tracking-widest leading-none">Employee Selection</Label>
             <select 
               value={selectedEmployeeId} 
               onChange={e => {
                 setSelectedEmployeeId(e.target.value);
                 setSelectedBulkId(null);
               }}
-              className="flex h-10 w-full rounded-xl border border-white/10 bg-slate-950/50 px-3 py-2 text-sm text-white font-bold tracking-tight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-all"
+              className="flex h-10 w-full rounded-xl border border-white/30 bg-black/50 px-3 py-2 text-sm text-white font-bold tracking-tight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-all"
             >
               <option value="all">Bulk Payroll (All Employees)</option>
               {employees
                 .filter(e => e.status === 'active' || !e.status)
                 .sort((a, b) => a.fullName.localeCompare(b.fullName))
                 .map(emp => (
-                  <option key={emp.id} value={emp.id} className="bg-slate-950">{emp.fullName}</option>
+                  <option key={emp.id} value={emp.id} className="bg-black">{emp.fullName}</option>
                 ))}
             </select>
           </div>
@@ -2329,11 +2394,11 @@ export default function Payroll() {
             {isLoading ? 'Generating...' : (selectedEmployeeId === 'all' ? 'Preview Bulk Payroll' : 'Preview Individual')}
           </Button>
 
-          <div className="mt-4 pt-4 border-t border-white/10">
+          <div className="mt-4 pt-4 border-t border-white/30">
             <Button 
               onClick={() => setIsAdjustmentDialogOpen(true)}
               variant="outline"
-              className="w-full h-10 gap-2 border-white/10 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white rounded-xl text-[10px] uppercase font-black tracking-widest"
+              className="w-full h-10 gap-2 border-white/30 bg-white/5 text-white/70 hover:bg-black/10 hover:text-white rounded-xl text-[10px] uppercase font-black tracking-widest"
             >
               <Plus className="w-4 h-4" />
               Add Manual Adjustment
@@ -2342,16 +2407,16 @@ export default function Payroll() {
             {pendingAdjustments.length > 0 && (
               <div className="mt-3 space-y-2">
                 <div className="flex items-center justify-between px-1">
-                  <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Pending Adjustments ({pendingAdjustments.length})</span>
+                  <span className="text-[9px] font-black text-white uppercase tracking-widest">Pending Adjustments ({pendingAdjustments.length})</span>
                 </div>
                 <div className="max-h-40 overflow-y-auto space-y-1.5 pr-1 custom-scrollbar">
                   {pendingAdjustments.map((adj) => {
                     const emp = employees.find(e => e.id === adj.employeeId);
                     return (
-                      <div key={adj.id} className="bg-white/5 border border-white/5 p-2 rounded-lg flex items-center justify-between group">
+                      <div key={adj.id} className="bg-white/5 border border-white/20 p-2 rounded-lg flex items-center justify-between group">
                         <div className="min-w-0">
                           <div className="text-[10px] font-bold text-white truncate">{emp?.fullName || 'Unknown'}</div>
-                          <div className="text-[8px] text-slate-500 truncate italic">{adj.description}</div>
+                          <div className="text-[8px] text-white truncate italic">{adj.description}</div>
                         </div>
                         <div className="flex items-center gap-2">
                           <div className={`text-[10px] font-black italic ${adj.type === 'deduction' ? 'text-red-400' : 'text-emerald-400'}`}>
@@ -2359,7 +2424,7 @@ export default function Payroll() {
                           </div>
                           <button 
                             onClick={() => setItemToDelete({ id: adj.id, type: 'adjustment', name: `${emp?.fullName}'s adjustment` })}
-                            className="text-white/20 hover:text-rose-500 transition-colors opacity-0 group-hover:opacity-100"
+                            className="text-white hover:text-rose-500 bg-rose-500/20 hover:bg-rose-500/40 p-1.5 rounded-md transition-colors flex items-center justify-center"
                           >
                             <Trash2 className="w-3 h-3" />
                           </button>
@@ -2375,12 +2440,12 @@ export default function Payroll() {
       )}
 
       {viewMode === 'archives' && !selectedBulkId && (
-        <div className="bento-card flex-col bg-white dark:bg-slate-800 p-4 mb-4 shrink-0 border-blue-100">
+        <div className="bento-card flex-col bg-black dark:bg-slate-800 p-4 mb-4 shrink-0 border-blue-100">
           <div className="flex items-center gap-2 mb-2">
             <Search className="w-5 h-5 text-blue-600" />
-            <h2 className="font-bold text-slate-900 dark:text-white">Archived Records</h2>
+            <h2 className="font-bold text-white dark:text-white">Archived Records</h2>
           </div>
-          <p className="text-xs text-slate-500">View previously processed and paid bulk payrolls.</p>
+          <p className="text-xs text-white">View previously processed and paid bulk payrolls.</p>
         </div>
       )}
 
@@ -2391,14 +2456,14 @@ export default function Payroll() {
           </div>
         ) : (selectedEmployeeId === 'all' && !selectedBulkId && viewMode !== 'carryover') && (
           <div className="space-y-3">
-            <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider px-1">
+            <h3 className="text-sm font-bold text-white uppercase tracking-wider px-1">
               {viewMode === 'process' ? 'Pending Runs' : 'Paid Runs'}
             </h3>
             {currentBulkRuns.map(bulk => (
                 <div 
                   key={bulk.id} 
                   onClick={() => setSelectedBulkId(bulk.id)}
-                  className="bento-card flex-row items-center justify-between bg-white/5 p-4 border border-white/10 cursor-pointer shadow-xl relative overflow-hidden group hover:bg-white/10 transition-all duration-300"
+                  className="bento-card flex-row items-center justify-between bg-white/5 p-4 border border-white/30 cursor-pointer shadow-xl relative overflow-hidden group hover:bg-black/10 transition-all duration-300"
                 >
                   <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl -mr-12 -mt-12 transition-all group-hover:bg-blue-500/10"></div>
                   <div className="flex items-center gap-3 relative z-10">
@@ -2457,9 +2522,12 @@ export default function Payroll() {
                 </div>
             ))}
             {currentBulkRuns.length === 0 && !isLoading && (
-              <div className="text-center py-10 text-slate-500 dark:text-slate-400">
-                {viewMode === 'process' ? 'No pending bulk payroll runs found for this period.' : 'No archived payroll runs found.'}
-              </div>
+              <EmptyState 
+                icon={FileText}
+                title="No Payroll Runs Found"
+                description={viewMode === 'process' ? 'No pending bulk payroll runs found for this period.' : 'No archived payroll runs found.'}
+                className="mt-4"
+              />
             )}
           </div>
         )}
@@ -2478,7 +2546,7 @@ export default function Payroll() {
                     ← Back to {viewMode === 'process' ? 'Pending Runs' : 'Archives'}
                   </Button>
                   <div className="flex items-center gap-2">
-                    <div className="text-xs font-bold text-slate-400">
+                    <div className="text-xs font-bold text-white">
                       {currentBulkRuns.find(b => b.id === selectedBulkId) && 
                         format(parseISO(currentBulkRuns.find(b => b.id === selectedBulkId).generatedAt), 'MMM dd, yyyy')}
                     </div>
@@ -2486,11 +2554,11 @@ export default function Payroll() {
                 </div>
 
                 {/* Grand Total Summary Card */}
-                <div className="bg-slate-900 dark:bg-slate-800 rounded-2xl p-6 text-white shadow-2xl border border-slate-700 relative overflow-hidden group">
+                <div className="bg-black dark:bg-slate-800 rounded-2xl p-6 text-white shadow-2xl border border-white/50 relative overflow-hidden group">
                   <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full -mr-16 -mt-16 transition-transform group-hover:scale-150 duration-700"></div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6 relative z-10">
                     <div>
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Grand Payroll</p>
+                      <p className="text-[10px] font-black text-white uppercase tracking-widest mb-1">Grand Payroll</p>
                       <h2 className="text-2xl font-black italic">₱{(totalGrandTotal || 0).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</h2>
                     </div>
                     <div>
@@ -2504,7 +2572,7 @@ export default function Payroll() {
                   </div>
                   {/* Paper Saving Option Toggle */}
                   <div 
-                    className="flex items-center gap-2 mb-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl p-3 self-start text-xs font-medium text-slate-200 transition-all cursor-pointer relative z-10 select-none" 
+                    className="flex items-center gap-2 mb-4 bg-white/5 hover:bg-black/10 border border-white/30 rounded-xl p-3 self-start text-xs font-medium text-white transition-all cursor-pointer relative z-10 select-none" 
                     onClick={() => setFitTwoPerA4(!fitTwoPerA4)}
                   >
                     <input
@@ -2519,12 +2587,12 @@ export default function Payroll() {
                       Fit 2 Employees per A4 Page (Minimize Print Costs)
                     </label>
                   </div>
-                  <div className="flex flex-col sm:flex-row gap-3 relative z-10 w-full mb-4 bg-slate-900 dark:bg-slate-800 rounded-2xl p-2 sm:p-4">
+                  <div className="flex flex-col sm:flex-row gap-3 relative z-10 w-full mb-4 bg-black dark:bg-slate-800 rounded-2xl p-2 sm:p-4">
                     <div className="grid grid-cols-2 sm:flex gap-3 w-full">
                       <Button 
                         size="sm" 
                         variant="secondary" 
-                        className="h-12 sm:h-10 gap-3 bg-white/10 hover:bg-white/20 text-white border border-white/10 font-bold uppercase tracking-widest text-[10px] px-6 shadow-xl" 
+                        className="h-12 sm:h-10 gap-3 bg-black/10 hover:bg-black/20 text-white border border-white/30 font-bold uppercase tracking-widest text-[10px] px-6 shadow-xl" 
                         onClick={handleBulkExportPDF}
                         disabled={isExporting}
                       >
@@ -2558,9 +2626,9 @@ export default function Payroll() {
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-white/50 border-t border-white/10 pt-4 relative z-10">
+                  <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-white/50 border-t border-white/30 pt-4 relative z-10">
                     <span>{totalEmployeesCount} Employees</span>
-                    <span className="w-1 h-1 rounded-full bg-white/20"></span>
+                    <span className="w-1 h-1 rounded-full bg-black/20"></span>
                     <span>Average ₱{(totalGrandTotal / (totalEmployeesCount || 1) || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}/person</span>
                   </div>
                 </div>
@@ -2570,7 +2638,7 @@ export default function Payroll() {
               <div 
                 key={idx} 
                 onClick={() => setSelectedPayslip(data)}
-                className={`bento-card flex-col p-4 cursor-pointer hover:border-blue-300 transition-colors ${data.status === 'paid' ? 'bg-emerald-50/5 border-emerald-500/20 shadow-inner' : 'bg-white dark:bg-slate-800'}`}
+                className={`bento-card flex-col p-4 cursor-pointer hover:border-blue-300 transition-colors ${data.status === 'paid' ? 'bg-emerald-50/5 border-emerald-500/20 shadow-inner' : 'bg-black dark:bg-slate-800'}`}
               >
                 <div className="flex flex-wrap sm:flex-nowrap justify-between items-center gap-2 mb-3">
                   <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -2583,7 +2651,7 @@ export default function Payroll() {
                     </div>
                     <div className="flex flex-col min-w-0">
                       <div className="flex items-center gap-2">
-                        <div className="font-bold text-slate-900 dark:text-white truncate text-sm">{data.employee.fullName}</div>
+                        <div className="font-bold text-white dark:text-white truncate text-sm">{data.employee.fullName}</div>
                         {data.totalPay < 0 && (
                           <span className="text-[7px] bg-red-500/10 text-red-500 px-1 py-0.5 rounded uppercase font-black tracking-widest border border-red-500/20 leading-none">Deficit</span>
                         )}
@@ -2592,11 +2660,11 @@ export default function Payroll() {
                         )}
                       </div>
                       <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
-                        <div className={`flex items-center gap-0.5 px-1 py-0.5 rounded-[3px] text-[6px] font-black uppercase tracking-tighter ${data.isAttendancePaid ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                        <div className={`flex items-center gap-0.5 px-1 py-0.5 rounded-[3px] text-[6px] font-black uppercase tracking-tighter ${data.isAttendancePaid ? 'bg-emerald-500 text-white' : 'bg-black text-white'}`}>
                           {data.isAttendancePaid ? 'Daily Paid' : 'Daily Unpaid'}
                         </div>
                         {data.pakyawItems && data.pakyawItems.length > 0 && (
-                          <div className={`flex items-center gap-0.5 px-1 py-0.5 rounded-[3px] text-[6px] font-black uppercase tracking-tighter ${data.pakyawItems.every((i: any) => i.isPaid) ? 'bg-indigo-500 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                          <div className={`flex items-center gap-0.5 px-1 py-0.5 rounded-[3px] text-[6px] font-black uppercase tracking-tighter ${data.pakyawItems.every((i: any) => i.isPaid) ? 'bg-indigo-500 text-white' : 'bg-black text-white'}`}>
                             {data.pakyawItems.every((i: any) => i.isPaid) ? 'Pakyaw Paid' : 'Pakyaw Pending'}
                           </div>
                         )}
@@ -2607,7 +2675,7 @@ export default function Payroll() {
                     <Button 
                       size="sm" 
                       variant="ghost" 
-                      className={`h-8 px-2 flex items-center gap-2 rounded-lg transition-all ${data.status === 'paid' ? 'text-emerald-500 bg-emerald-500/10' : 'text-slate-400 hover:text-emerald-600 hover:bg-emerald-50'}`}
+                      className={`h-8 px-2 flex items-center gap-2 rounded-lg transition-all ${data.status === 'paid' ? 'text-emerald-500 bg-emerald-500/10' : 'text-white hover:text-emerald-600 hover:bg-emerald-50'}`}
                       onClick={(e) => {
                         e.stopPropagation();
                         handleMarkIndividualAsPaid(data.id, data.status);
@@ -2619,7 +2687,7 @@ export default function Payroll() {
                     <Button 
                       size="sm" 
                       variant="ghost" 
-                      className="h-8 w-8 p-0 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg"
+                      className="h-8 w-8 p-0 text-white hover:text-red-500 hover:bg-red-50 rounded-lg"
                       onClick={(e) => {
                         e.stopPropagation();
                         setItemToDelete({ id: data.id, type: 'payroll', name: data.employee.fullName });
@@ -2627,23 +2695,23 @@ export default function Payroll() {
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </Button>
-                    <ChevronRight className="w-5 h-5 text-slate-400" />
+                    <ChevronRight className="w-5 h-5 text-white" />
                   </div>
                 </div>
                 <div className="grid grid-cols-5 gap-2 text-sm">
                   <div>
-                    <div className="text-[9px] text-slate-500 uppercase font-semibold text-center">F/HD/UT</div>
+                    <div className="text-[9px] text-white uppercase font-semibold text-center">F/HD/UT</div>
                     <div className="font-medium text-[10px] text-center">{data.totalPresent}d / {data.totalHalfDays || 0}d / {data.totalUndertimeDays || 0}d</div>
                   </div>
                   <div>
-                    <div className="text-[9px] text-slate-500 uppercase font-semibold text-center">Regular</div>
+                    <div className="text-[9px] text-white uppercase font-semibold text-center">Regular</div>
                     <div className="font-medium text-[10px] text-center">₱{(data.regularPay || 0).toFixed(0)}</div>
                   </div>
-                  <div className="border-x border-slate-100 dark:border-slate-700">
+                  <div className="border-x border-white/20 dark:border-white/50">
                     <div className="text-[9px] text-green-600 uppercase font-semibold text-center">OT Pay</div>
                     <div className="font-medium text-[10px] text-center text-green-600">₱{(data.otPay || 0).toFixed(0)}</div>
                   </div>
-                  <div className="border-r border-slate-100 dark:border-slate-700">
+                  <div className="border-r border-white/20 dark:border-white/50">
                     <div className="text-[9px] text-indigo-600 uppercase font-semibold text-center">Pakyaw</div>
                     <div className="font-medium text-[10px] text-center text-indigo-600">₱{(data.totalPakyawPay || 0).toFixed(0)}</div>
                   </div>
@@ -2655,14 +2723,14 @@ export default function Payroll() {
                       ₱{(data.totalPay - calculatePaidAmount(data) || 0).toLocaleString(undefined, { minimumFractionDigits: 0 })}
                     </div>
                     {calculatePaidAmount(data) > 0 && calculatePaidAmount(data) < data.totalPay && (
-                      <div className="text-[7px] text-slate-400 font-bold mt-1">Total ₱{(data.totalPay || 0).toLocaleString()}</div>
+                      <div className="text-[7px] text-white font-bold mt-1">Total ₱{(data.totalPay || 0).toLocaleString()}</div>
                     )}
                   </div>
                 </div>
               </div>
             ))}
             {displayedPayrolls.length === 0 && !isLoading && (
-              <div className="text-center py-10 text-slate-500 dark:text-slate-400">
+              <div className="text-center py-10 text-white dark:text-white">
                 Select dates and generate payroll to see results.
               </div>
             )}
@@ -2671,9 +2739,9 @@ export default function Payroll() {
       </div>
 
       <Dialog open={!!selectedPayslip} onOpenChange={(open) => { if (!open) { setSelectedPayslip(null); setIsEditingSavedPayslip(false); } }}>
-        <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden bg-white rounded-2xl w-[95vw] max-w-lg mx-auto border-none shadow-2xl">
-          <div className="p-3 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-stretch sm:items-center bg-slate-50/50 sticky top-0 z-10 font-sans gap-2.5">
-            <DialogTitle className="flex items-center gap-2 text-slate-900 font-black uppercase italic tracking-tight text-sm shrink-0">
+        <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden bg-black rounded-2xl w-[95vw] max-w-lg mx-auto border-none shadow-2xl">
+          <div className="p-3 border-b border-white/20 flex flex-col sm:flex-row justify-between items-stretch sm:items-center bg-black/50 sticky top-0 z-10 font-sans gap-2.5">
+            <DialogTitle className="flex items-center gap-2 text-white font-black uppercase italic tracking-tight text-sm shrink-0">
               <FileText className="w-3.5 h-3.5 text-blue-600" />
               Payslip
             </DialogTitle>
@@ -2683,11 +2751,11 @@ export default function Payroll() {
                   <Button 
                     size="sm" 
                     variant="outline" 
-                    className="h-7 sm:h-8 gap-1 rounded-xl border-slate-205 text-amber-600 hover:bg-amber-50 hover:text-amber-700 transition-all font-bold text-[9px] uppercase tracking-wider px-2 sm:px-2.5"
+                    className="h-7 sm:h-8 gap-1 rounded-xl border-slate-205 text-white hover:bg-black hover:text-white transition-all font-bold text-[9px] uppercase tracking-wider px-2 sm:px-2.5"
                     onClick={() => handleSyncPayslip(selectedPayslip.id)}
                     disabled={isLoading}
                   >
-                    {isLoading ? <Loader2 className="w-2.5 h-2.5 sm:w-3 sm:h-3 animate-spin text-amber-500" /> : <RefreshCw className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-amber-500" />}
+                    {isLoading ? <Loader2 className="w-2.5 h-2.5 sm:w-3 sm:h-3 animate-spin text-white" /> : <RefreshCw className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white" />}
                     <span className="hidden min-[480px]:inline">Sync Live</span>
                     <span className="min-[480px]:hidden">Sync</span>
                   </Button>
@@ -2714,7 +2782,7 @@ export default function Payroll() {
               <Button 
                 size="sm" 
                 variant="outline" 
-                className="h-7 sm:h-8 gap-1 rounded-xl border-slate-205 text-slate-600 hover:bg-green-50 hover:text-green-600 hover:border-green-200 transition-all font-bold text-[9px] uppercase tracking-wider px-2 sm:px-2.5"
+                className="h-7 sm:h-8 gap-1 rounded-xl border-slate-205 text-white hover:bg-green-50 hover:text-green-600 hover:border-green-200 transition-all font-bold text-[9px] uppercase tracking-wider px-2 sm:px-2.5"
                 onClick={handlePrint}
                 disabled={isExporting}
               >
@@ -2727,7 +2795,7 @@ export default function Payroll() {
                   size="sm" 
                   variant="ghost" 
                   className="h-7 sm:h-8 gap-1 text-red-500 hover:text-red-600 hover:bg-red-50 font-bold text-[9px] uppercase tracking-wider px-2"
-                  onClick={() => handleDeletePayroll(selectedPayslip.id)}
+                  onClick={() => setItemToDelete({ id: selectedPayslip.id, type: 'payroll', name: selectedPayslip.employee?.fullName || 'this record' })}
                 >
                   <Trash2 className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                   <span className="hidden min-[480px]:inline">Delete</span>
@@ -2737,7 +2805,7 @@ export default function Payroll() {
               <Button 
                 size="sm" 
                 variant="outline" 
-                className="h-7 sm:h-8 gap-1 rounded-xl border-slate-205 text-slate-600 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-all font-bold text-[9px] uppercase tracking-wider px-2 sm:px-2.5"
+                className="h-7 sm:h-8 gap-1 rounded-xl border-slate-205 text-white hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-all font-bold text-[9px] uppercase tracking-wider px-2 sm:px-2.5"
                 onClick={handleExportPDF}
                 disabled={isExporting}
               >
@@ -2750,78 +2818,78 @@ export default function Payroll() {
           
           {selectedPayslip && (
             isEditingSavedPayslip ? (
-              <div className="p-6 space-y-4 font-sans bg-white text-slate-900 max-h-[85vh] overflow-y-auto">
-                <div className="border-b border-slate-200 pb-3">
+              <div className="p-6 space-y-4 font-sans bg-black text-white max-h-[85vh] overflow-y-auto">
+                <div className="border-b border-white/30 pb-3">
                   <h3 className="text-sm font-black uppercase text-blue-600 leading-none">Manual Override Payslip</h3>
-                  <p className="text-[10px] text-slate-400 mt-1.5 leading-tight">Directly modify computed numbers for {selectedPayslip.employeeName || selectedPayslip.employee?.fullName}.</p>
+                  <p className="text-[10px] text-white mt-1.5 leading-tight">Directly modify computed numbers for {selectedPayslip.employeeName || selectedPayslip.employee?.fullName}.</p>
                 </div>
                 
                 <div className="space-y-3.5 pt-2">
                   <div className="grid grid-cols-2 gap-3.5">
                     <div className="space-y-1">
-                      <Label className="text-[10px] font-black uppercase tracking-wider text-slate-500">Regular Pay (₱)</Label>
+                      <Label className="text-[10px] font-black uppercase tracking-wider text-white">Regular Pay (₱)</Label>
                       <Input 
                         type="number"
                         value={savedRegPay}
                         onChange={(e) => setSavedRegPay(e.target.value)}
-                        className="h-10 text-xs font-bold text-slate-950 border-slate-200 bg-white"
+                        className="h-10 text-xs font-bold text-white border-white/30 bg-black"
                       />
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-[10px] font-black uppercase tracking-wider text-slate-500">Overtime Pay (₱)</Label>
+                      <Label className="text-[10px] font-black uppercase tracking-wider text-white">Overtime Pay (₱)</Label>
                       <Input 
                         type="number"
                         value={savedOtPay}
                         onChange={(e) => setSavedOtPay(e.target.value)}
-                        className="h-10 text-xs font-bold text-slate-950 border-slate-200 bg-white"
+                        className="h-10 text-xs font-bold text-white border-white/30 bg-black"
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3.5">
                     <div className="space-y-1">
-                      <Label className="text-[10px] font-black uppercase tracking-wider text-slate-500">Pakyaw Paid (₱)</Label>
+                      <Label className="text-[10px] font-black uppercase tracking-wider text-white">Pakyaw Paid (₱)</Label>
                       <Input 
                         type="number"
                         value={savedPakyawPay}
                         onChange={(e) => setSavedPakyawPay(e.target.value)}
-                        className="h-10 text-xs font-bold text-slate-950 border-slate-200 bg-white"
+                        className="h-10 text-xs font-bold text-white border-white/30 bg-black"
                       />
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-[10px] font-black uppercase tracking-wider text-slate-500">Bonus/Adjustment (₱)</Label>
+                      <Label className="text-[10px] font-black uppercase tracking-wider text-white">Bonus/Adjustment (₱)</Label>
                       <Input 
                         type="number"
                         value={savedAdjustments}
                         onChange={(e) => setSavedAdjustments(e.target.value)}
-                        className="h-10 text-xs font-bold text-slate-950 border-slate-200 bg-white"
+                        className="h-10 text-xs font-bold text-white border-white/30 bg-black"
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3.5">
                     <div className="space-y-1">
-                      <Label className="text-[10px] font-black uppercase tracking-wider text-slate-500">CA Deduction (₱)</Label>
+                      <Label className="text-[10px] font-black uppercase tracking-wider text-white">CA Deduction (₱)</Label>
                       <Input 
                         type="number"
                         value={savedCashAdvanceDeduction}
                         onChange={(e) => setSavedCashAdvanceDeduction(e.target.value)}
-                        className="h-10 text-xs font-bold text-slate-950 border-slate-200 bg-white"
+                        className="h-10 text-xs font-bold text-white border-white/30 bg-black"
                       />
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-[10px] font-black uppercase tracking-wider text-slate-500">Debt Carry-Over (₱)</Label>
+                      <Label className="text-[10px] font-black uppercase tracking-wider text-white">Debt Carry-Over (₱)</Label>
                       <Input 
                         type="number"
                         value={savedCarryOverFromPrevious}
                         onChange={(e) => setSavedCarryOverFromPrevious(e.target.value)}
-                        className="h-10 text-xs font-bold text-slate-950 border-slate-200 bg-white"
+                        className="h-10 text-xs font-bold text-white border-white/30 bg-black"
                       />
                     </div>
                   </div>
                 </div>
 
-                <div className="flex gap-2.5 pt-6 justify-end border-t border-slate-100">
+                <div className="flex gap-2.5 pt-6 justify-end border-t border-white/20">
                   <Button 
                     variant="ghost" 
                     className="rounded-xl font-bold text-xs"
@@ -2841,8 +2909,8 @@ export default function Payroll() {
               </div>
             ) : (
               <>
-                <div className="bg-slate-50 px-4 py-2.5 border-b border-slate-100 flex items-center justify-between font-sans text-[10px] shrink-0">
-                  <span className="font-black text-slate-500 uppercase tracking-widest text-[8px]">Layout Options:</span>
+                <div className="bg-black px-4 py-2.5 border-b border-white/20 flex items-center justify-between font-sans text-[10px] shrink-0">
+                  <span className="font-black text-white uppercase tracking-widest text-[8px]">Layout Options:</span>
                   <div className="flex items-center gap-1.5 cursor-pointer" onClick={() => setDupSingleOnA4(!dupSingleOnA4)}>
                     <input
                       type="checkbox"
@@ -2850,29 +2918,28 @@ export default function Payroll() {
                       checked={dupSingleOnA4}
                       onChange={(e) => setDupSingleOnA4(e.target.checked)}
                       onClick={(e) => e.stopPropagation()}
-                      className="w-3.5 h-3.5 text-blue-600 bg-white border-slate-300 rounded focus:ring-blue-500 cursor-pointer"
+                      className="w-3.5 h-3.5 text-blue-600 bg-black border-slate-300 rounded focus:ring-blue-500 cursor-pointer"
                     />
-                    <label htmlFor="dupSingleOnA4" className="text-slate-650 font-bold cursor-pointer select-none">
+                    <label htmlFor="dupSingleOnA4" className="text-white font-bold cursor-pointer select-none">
                       Duplicate copy onto 1 A4 page (Saves Paper)
                     </label>
                   </div>
                 </div>
                 <div 
                   ref={payslipRef}
-                  className="p-3 max-h-[90vh] overflow-y-auto payslip-mockup bg-white font-sans text-[10px]" 
-                  style={{ backgroundColor: '#ffffff' }}
+                  className="p-3 max-h-[90vh] overflow-y-auto payslip-mockup bg-black font-sans text-[10px]" 
                 >
               <div className="flex justify-between border-b border-slate-900 pb-2 mb-2">
                 <div>
                   <div className="inline-flex items-center gap-1 px-1 py-0.5 bg-blue-600 text-white text-[7px] font-black uppercase tracking-[0.1em] rounded mb-1">
                     Official
                   </div>
-                  <h2 className="text-xl font-black text-slate-900 leading-none italic uppercase">PAYSLIP</h2>
-                  <div className="text-[9px] font-bold text-slate-400 mt-1 uppercase tracking-tight">
-                    Pay Period: <span className="text-slate-900">{format(parseISO(selectedPayslip.startDate), 'MMMM dd, yyyy')} - {format(parseISO(selectedPayslip.endDate), 'MMMM dd, yyyy')}</span>
+                  <h2 className="text-xl font-black text-white leading-none italic uppercase">PAYSLIP</h2>
+                  <div className="text-[9px] font-bold text-white mt-1 uppercase tracking-tight">
+                    Pay Period: <span className="text-white">{format(parseISO(selectedPayslip.startDate), 'MMMM dd, yyyy')} - {format(parseISO(selectedPayslip.endDate), 'MMMM dd, yyyy')}</span>
                   </div>
                   <div className="flex items-center gap-2 mt-2">
-                    <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center font-bold text-lg overflow-hidden shrink-0 border border-slate-200">
+                    <div className="w-10 h-10 bg-black rounded-lg flex items-center justify-center font-bold text-lg overflow-hidden shrink-0 border border-white/30">
                       {selectedPayslip.employee.photoURL ? (
                         <img src={selectedPayslip.employee.photoURL} alt={selectedPayslip.employee.fullName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                       ) : (
@@ -2880,8 +2947,8 @@ export default function Payroll() {
                       )}
                     </div>
                     <div>
-                      <div className="text-lg font-black text-slate-900 uppercase tracking-tight leading-none italic">{selectedPayslip.employee.fullName}</div>
-                      <div className="text-[8px] font-bold text-blue-600 mt-0.5 uppercase tracking-wider flex items-center gap-1">
+                      <div className="text-lg font-black text-white uppercase tracking-tight leading-none italic">{selectedPayslip.employee.fullName}</div>
+                      <div className="text-[8px] font-bold text-blue-400 mt-0.5 uppercase tracking-wider flex items-center gap-1">
                         {selectedPayslip.employee.customId && <span>#{selectedPayslip.employee.customId}</span>}
                         <span>{selectedPayslip.employee.position || 'Staff'}</span>
                       </div>
@@ -2890,7 +2957,7 @@ export default function Payroll() {
                 </div>
                 <div className="text-right flex flex-col justify-between items-end">
                   <div className="text-right">
-                    <div className="text-[8px] font-black text-slate-400 mb-0.5 uppercase tracking-widest flex items-center justify-end gap-1">
+                    <div className="text-[8px] font-black text-white mb-0.5 uppercase tracking-widest flex items-center justify-end gap-1">
                       {calculatePaidAmount(selectedPayslip) >= selectedPayslip.totalPay ? (
                         <>
                           <CheckCircle className="w-2.5 h-2.5 text-emerald-500 fill-emerald-500/20" />
@@ -2900,33 +2967,33 @@ export default function Payroll() {
                         <span>Balance Due</span>
                       )}
                     </div>
-                    <div className={`text-2xl font-black italic tracking-tighter leading-none ${(selectedPayslip.totalPay - (selectedPayslip.carryOverToNext || 0) - calculatePaidAmount(selectedPayslip)) <= 0 ? 'text-emerald-500' : (selectedPayslip.totalPay - (selectedPayslip.carryOverToNext || 0) < 0 ? 'text-red-600' : 'text-blue-600')}`}>
+                    <div className={`text-2xl font-black italic tracking-tighter leading-none ${(selectedPayslip.totalPay - (selectedPayslip.carryOverToNext || 0) - calculatePaidAmount(selectedPayslip)) <= 0 ? 'text-emerald-500' : (selectedPayslip.totalPay - (selectedPayslip.carryOverToNext || 0) < 0 ? 'text-red-600' : 'text-blue-400')}`}>
                       ₱{(selectedPayslip.totalPay - (selectedPayslip.carryOverToNext || 0) - calculatePaidAmount(selectedPayslip) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </div>
                     {calculatePaidAmount(selectedPayslip) > 0 && calculatePaidAmount(selectedPayslip) < selectedPayslip.totalPay && (
-                      <div className="text-[8px] font-black text-slate-400 mt-1 uppercase tracking-tight">
+                      <div className="text-[8px] font-black text-white mt-1 uppercase tracking-tight">
                         Payroll Total: ₱{(selectedPayslip.totalPay || 0).toLocaleString()}
                       </div>
                     )}
                   </div>
                   <div className="text-right mt-auto">
-                    <div className="text-[9px] font-black text-slate-900 uppercase italic leading-none">{companyInfo.name}</div>
-                    {companyInfo.address && <div className="text-[7px] text-slate-400 mt-0.5 font-medium max-w-[100px] leading-tight ml-auto truncate">{companyInfo.address}</div>}
+                    <div className="text-[9px] font-black text-white uppercase italic leading-none">{companyInfo.name}</div>
+                    {companyInfo.address && <div className="text-[7px] text-white mt-0.5 font-medium max-w-[100px] leading-tight ml-auto truncate">{companyInfo.address}</div>}
                   </div>
                 </div>
               </div>
               
-              <div className="grid grid-cols-3 gap-1 mb-2 p-1.5 bg-slate-50 border border-slate-100 rounded-lg">
+              <div className="grid grid-cols-3 gap-1 mb-2 p-1.5 bg-black border border-white/20 rounded-lg">
                 <div className="flex flex-col">
-                  <span className="text-[6px] font-black text-slate-400 uppercase">Daily</span>
-                  <span className="text-[9px] font-black text-slate-900">₱{(selectedPayslip.employee.dailySalary || 0).toFixed(2)}</span>
+                  <span className="text-[6px] font-black text-white uppercase">Daily</span>
+                  <span className="text-[9px] font-black text-white">₱{(selectedPayslip.employee.dailySalary || 0).toFixed(2)}</span>
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-[6px] font-black text-slate-400 uppercase">Hourly</span>
-                  <span className="text-[9px] font-black text-slate-900">₱{((selectedPayslip.employee.dailySalary || 0) / 8).toFixed(2)}</span>
+                  <span className="text-[6px] font-black text-white uppercase">Hourly</span>
+                  <span className="text-[9px] font-black text-white">₱{((selectedPayslip.employee.dailySalary || 0) / 8).toFixed(2)}</span>
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-[6px] font-black text-slate-400 uppercase">OT Hr</span>
+                  <span className="text-[6px] font-black text-white uppercase">OT Hr</span>
                   <span className="text-[9px] font-black text-emerald-600">₱{((selectedPayslip.employee.dailySalary || 0) / 8).toFixed(2)}</span>
                 </div>
               </div>
@@ -2934,13 +3001,13 @@ export default function Payroll() {
               <div className="grid grid-cols-1 min-[480px]:grid-cols-2 gap-3 font-sans">
                 <div className="space-y-2">
                   <div>
-                    <h3 className="text-[9px] font-black text-slate-900 border-b border-slate-900 pb-1 mb-2 uppercase flex justify-between items-center group">
+                    <h3 className="text-[9px] font-black text-white border-b border-slate-900 pb-1 mb-2 uppercase flex justify-between items-center group">
                       Earnings Breakdown
                       <Button 
                         variant="ghost" 
                         size="sm" 
                         onClick={() => handleMarkIndividualAsPaid(selectedPayslip.id, selectedPayslip.status)}
-                        className="h-5 px-2 text-[7px] font-black uppercase tracking-widest bg-slate-100 hover:bg-emerald-500 hover:text-white border border-slate-200 transition-all rounded-md opacity-0 group-hover:opacity-100"
+                        className="h-5 px-2 text-[7px] font-black uppercase tracking-widest bg-black hover:bg-emerald-500 hover:text-white border border-white/30 transition-all rounded-md flex"
                       >
                         {selectedPayslip.status === 'paid' ? 'Paid' : 'Set Paid'}
                       </Button>
@@ -2948,112 +3015,112 @@ export default function Payroll() {
                     
                     <div className="space-y-1">
                       {/* Detailed Breakdown Header */}
-                      <div className="flex justify-between text-[7px] font-black text-slate-400 uppercase tracking-widest px-1 mb-1">
+                      <div className="flex justify-between text-[7px] font-black text-white uppercase tracking-widest px-1 mb-1">
                         <span>Classification / Rate Math</span>
                         <span>Total (₱)</span>
                       </div>
 
                       {/* Regular Days Row */}
-                      <div className="bg-slate-50 p-2 rounded-lg border border-slate-100 space-y-1.5">
+                      <div className="bg-black p-2 rounded-lg border border-white/20 space-y-1.5">
                         <div className="flex items-center justify-between">
                            <div className="flex items-center gap-1.5">
                               <Button 
                                 variant="ghost" 
                                 size="icon" 
                                 onClick={() => handleToggleAttendancePaid(selectedPayslip)}
-                                className={`h-5 w-5 p-0 rounded-md shrink-0 transition-all ${selectedPayslip.isAttendancePaid ? 'bg-emerald-500 text-white' : 'bg-white text-slate-300 border border-slate-200'}`}
+                                className={`h-5 w-5 p-0 rounded-md shrink-0 transition-all ${selectedPayslip.isAttendancePaid ? 'bg-emerald-500 text-white' : 'bg-black text-white border border-white/30'}`}
                               >
                                 <CheckCircle className="w-3 h-3" />
                               </Button>
-                              <span className="text-slate-900 font-black text-[8px] uppercase">Attendance Pay</span>
+                              <span className="text-white font-black text-[8px] uppercase">Attendance Pay</span>
                            </div>
-                           <span className="font-black text-slate-900">₱{(selectedPayslip.regularPay || 0).toFixed(2)}</span>
+                           <span className="font-black text-white">₱{(selectedPayslip.regularPay || 0).toFixed(2)}</span>
                         </div>
                         
-                        <div className="space-y-1.5 pl-6 pt-1 border-t border-slate-200/50">
+                        <div className="space-y-1.5 pl-6 pt-1 border-t border-white/10">
                            {selectedPayslip.totalPresent > 0 && (
                              <div className="flex justify-between items-center">
                                <div className="flex flex-col">
-                                 <span className="text-[7px] font-bold text-slate-600 uppercase">Present</span>
-                                 <span className="text-[6px] text-slate-400">{selectedPayslip.totalPresent}d × ₱{(selectedPayslip.baseRate || 0).toFixed(0)}</span>
+                                 <span className="text-[7px] font-bold text-white uppercase">Present</span>
+                                 <span className="text-[6px] text-white">{selectedPayslip.totalPresent}d × ₱{(selectedPayslip.baseRate || 0).toFixed(0)}</span>
                                </div>
-                               <span className="text-[7px] font-bold text-slate-900">₱{(selectedPayslip.presentEarnings || 0).toFixed(2)}</span>
+                               <span className="text-[7px] font-bold text-white">₱{(selectedPayslip.presentEarnings || 0).toFixed(2)}</span>
                              </div>
                            )}
                            {selectedPayslip.totalHalfDays > 0 && (
                              <div className="flex justify-between items-center">
                                <div className="flex flex-col">
                                  <span className="text-[7px] font-bold text-indigo-600 uppercase">Half-Day</span>
-                                 <span className="text-[6px] text-slate-400">{selectedPayslip.totalHalfDays}d × ₱{((selectedPayslip.baseRate || 0) / 2).toFixed(0)}</span>
+                                 <span className="text-[6px] text-white">{selectedPayslip.totalHalfDays}d × ₱{((selectedPayslip.baseRate || 0) / 2).toFixed(0)}</span>
                                </div>
-                               <span className="text-[7px] font-bold text-slate-900">₱{(selectedPayslip.hdEarnings || 0).toFixed(2)}</span>
+                               <span className="text-[7px] font-bold text-white">₱{(selectedPayslip.hdEarnings || 0).toFixed(2)}</span>
                              </div>
                            )}
                            {selectedPayslip.totalUndertimeDays > 0 && (
                              <div className="flex justify-between items-center">
                                <div className="flex flex-col">
-                                 <span className="text-[7px] font-bold text-amber-600 uppercase">Undertime</span>
-                                 <span className="text-[6px] text-slate-400">
+                                 <span className="text-[7px] font-bold text-white uppercase">Undertime</span>
+                                 <span className="text-[6px] text-white">
                                    {((selectedPayslip.totalUndertimeDays * 8) - selectedPayslip.totalUndertimeHours).toFixed(1)}h worked × ₱{((selectedPayslip.baseRate || 0) / 8).toFixed(2)}
                                  </span>
                                </div>
-                               <span className="text-[7px] font-bold text-slate-900">₱{(selectedPayslip.utEarnings || 0).toFixed(2)}</span>
+                               <span className="text-[7px] font-bold text-white">₱{(selectedPayslip.utEarnings || 0).toFixed(2)}</span>
                              </div>
                            )}
                            {selectedPayslip.totalAbsent > 0 && (
                              <div className="flex justify-between items-center">
                                <div className="flex flex-col">
                                  <span className="text-[7px] font-bold text-rose-500 uppercase">Absent</span>
-                                 <span className="text-[6px] text-slate-400">{selectedPayslip.totalAbsent}d × ₱0</span>
+                                 <span className="text-[6px] text-white">{selectedPayslip.totalAbsent}d × ₱0</span>
                                </div>
-                               <span className="text-[7px] font-bold text-slate-900">₱0.00</span>
+                               <span className="text-[7px] font-bold text-white">₱0.00</span>
                              </div>
                            )}
 
-                           <div className="pt-1 mt-1 border-t border-slate-200/50 flex justify-between items-center">
-                             <span className="text-[7px] font-black text-slate-500 uppercase">Attendance Subtotal</span>
-                             <span className="text-[8px] font-black text-slate-900">₱{(selectedPayslip.regularPay || 0).toFixed(2)}</span>
+                           <div className="pt-1 mt-1 border-t border-white/10 flex justify-between items-center">
+                             <span className="text-[7px] font-black text-white uppercase">Attendance Subtotal</span>
+                             <span className="text-[8px] font-black text-white">₱{(selectedPayslip.regularPay || 0).toFixed(2)}</span>
                            </div>
                         </div>
                       </div>
 
                       {/* Overtime Row */}
                       {selectedPayslip.totalOtHours > 0 && (
-                        <div className="flex justify-between items-center bg-emerald-50/30 p-2 rounded-lg border border-emerald-100/50">
+                        <div className="flex justify-between items-center bg-emerald-500/10 p-2 rounded-lg border border-emerald-500/20">
                           <div className="flex flex-col">
-                            <span className="text-emerald-900 font-bold uppercase text-[8px]">Overtime Pay</span>
-                            <span className="text-[6px] text-emerald-500 font-medium">{selectedPayslip.totalOtHours.toFixed(1)} hrs × ₱{((selectedPayslip.baseRate || 0) / 8).toFixed(2)}/hr</span>
+                            <span className="text-emerald-400 font-bold uppercase text-[8px]">Overtime Pay</span>
+                            <span className="text-[6px] text-emerald-500/80 font-medium">{selectedPayslip.totalOtHours.toFixed(1)} hrs × ₱{((selectedPayslip.baseRate || 0) / 8).toFixed(2)}/hr</span>
                           </div>
-                          <span className="font-black text-emerald-900">{(selectedPayslip.otPay || 0).toFixed(2)}</span>
+                          <span className="font-black text-emerald-400">{(selectedPayslip.otPay || 0).toFixed(2)}</span>
                         </div>
                       )}
 
                       {/* Pakyaw Row */}
                       {selectedPayslip.totalPakyawPay > 0 && (
-                        <div className="flex justify-between items-center bg-violet-50/30 p-2 rounded-lg border border-violet-100/50">
+                        <div className="flex justify-between items-center bg-violet-500/10 p-2 rounded-lg border border-violet-500/20">
                           <div className="flex flex-col">
-                            <span className="text-violet-900 font-bold uppercase text-[8px]">Pakyaw Earnings</span>
-                            <span className="text-[6px] text-violet-400 font-medium">Sum of completed job shares</span>
+                            <span className="text-violet-400 font-bold uppercase text-[8px]">Pakyaw Earnings</span>
+                            <span className="text-[6px] text-violet-400/80 font-medium">Sum of completed job shares</span>
                           </div>
-                          <span className="font-black text-violet-900">₱{(selectedPayslip.totalPakyawPay || 0).toFixed(2)}</span>
+                          <span className="font-black text-violet-400">₱{(selectedPayslip.totalPakyawPay || 0).toFixed(2)}</span>
                         </div>
                       )}
 
                       {/* Manual Adjustments Row */}
                       {selectedPayslip.totalAdjustments !== 0 && (
-                        <div className="flex justify-between items-center bg-blue-50/30 p-2 rounded-lg border border-blue-100/50">
+                        <div className="flex justify-between items-center bg-blue-500/10 p-2 rounded-lg border border-blue-500/20">
                           <div className="flex flex-col">
-                            <span className="text-blue-900 font-bold uppercase text-[8px]">Manual Adjustments</span>
+                            <span className="text-blue-400 font-bold uppercase text-[8px]">Manual Adjustments</span>
                             <div className="space-y-0.5">
                               {selectedPayslip.adjustments?.map((adj: any, i: number) => (
-                                <div key={i} className="text-[6px] text-blue-500 font-medium flex items-center gap-1">
+                                <div key={i} className="text-[6px] text-blue-400/80 font-medium flex items-center gap-1">
                                   <span className="opacity-50">●</span>
                                   <span>{adj.description}: {adj.type === 'deduction' ? '-' : '+'}₱{adj.amount.toLocaleString()}</span>
                                 </div>
                               ))}
                             </div>
                           </div>
-                          <span className={`font-black ${selectedPayslip.totalAdjustments > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                          <span className={`font-black ${selectedPayslip.totalAdjustments > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                             {selectedPayslip.totalAdjustments > 0 ? '+' : ''}₱{(selectedPayslip.totalAdjustments || 0).toFixed(2)}
                           </span>
                         </div>
@@ -3061,43 +3128,43 @@ export default function Payroll() {
                     </div>
 
                       {selectedPayslip.carryOverFromPrevious > 0 && (
-                        <div className="flex justify-between items-center bg-amber-50 p-1.5 rounded-lg border border-amber-100">
-                           <span className="text-amber-700 font-black text-[7px] uppercase tracking-wider">Debt Carry-over (Prev)</span>
-                           <span className="font-black text-amber-700">₱{(selectedPayslip.carryOverFromPrevious || 0).toFixed(2)}</span>
+                        <div className="flex justify-between items-center bg-black p-1.5 rounded-lg border border-amber-100">
+                           <span className="text-white font-black text-[7px] uppercase tracking-wider">Debt Carry-over (Prev)</span>
+                           <span className="font-black text-white">₱{(selectedPayslip.carryOverFromPrevious || 0).toFixed(2)}</span>
                         </div>
                       )}
 
                       {(selectedPayslip.totalPakyawPay > 0 || (selectedPayslip.pakyawItems && selectedPayslip.pakyawItems.length > 0) || (selectedPayslip.pakyawDetails && selectedPayslip.pakyawDetails.length > 0)) && (
-                        <div className="space-y-2 mt-2 pt-2 border-t border-slate-50">
+                        <div className="space-y-2 mt-2 pt-2 border-t border-slate-800">
                           <div className="flex justify-between items-center">
-                            <h3 className="text-indigo-600 font-black text-[8px] uppercase tracking-wider">Pakyaw Jobs Breakdown</h3>
-                            <span className="font-black text-indigo-600">₱{(selectedPayslip.totalPakyawPay || 0).toFixed(2)}</span>
+                            <h3 className="text-indigo-400 font-black text-[8px] uppercase tracking-wider">Pakyaw Jobs Breakdown</h3>
+                            <span className="font-black text-indigo-400">₱{(selectedPayslip.totalPakyawPay || 0).toFixed(2)}</span>
                           </div>
 
                           {selectedPayslip.pakyawItems && selectedPayslip.pakyawItems.length > 0 ? (
                             <div className="space-y-1.5">
                               {selectedPayslip.pakyawItems.map((item: any, dIdx: number) => (
-                                <div key={dIdx} className={`flex justify-between items-center p-2 rounded-xl border transition-all ${item.isPaid ? 'bg-indigo-50 border-indigo-200' : 'bg-white border-slate-100 shadow-sm'}`}>
+                                <div key={dIdx} className={`flex justify-between items-center p-2 rounded-xl border transition-all ${item.isPaid ? 'bg-indigo-500/10 border-indigo-500/30' : 'bg-black border-white/20 shadow-sm'}`}>
                                   <div className="flex items-center gap-2.5 min-w-0">
                                     <Button 
                                       variant="ghost" 
                                       size="icon" 
                                       onClick={() => handleTogglePakyawItemPaid(selectedPayslip, dIdx)}
-                                      className={`h-7 w-7 p-0 rounded-lg flex items-center justify-center transition-all shrink-0 shadow-sm ${item.isPaid ? 'bg-indigo-600 text-white shadow-indigo-200' : 'bg-slate-50 text-slate-300 border border-slate-200 hover:border-indigo-500 hover:text-indigo-600'}`}
+                                      className={`h-7 w-7 p-0 rounded-lg flex items-center justify-center transition-all shrink-0 shadow-sm ${item.isPaid ? 'bg-indigo-600 text-white shadow-indigo-500/20' : 'bg-black text-white border border-white/30 hover:border-indigo-500 hover:text-indigo-400'}`}
                                     >
                                       <CheckCircle className={`w-4 h-4 ${item.isPaid ? 'fill-indigo-600 text-white' : ''}`} />
                                     </Button>
                                     <div className="flex flex-col min-w-0">
-                                      <span className={`text-[8px] font-black leading-none truncate uppercase ${item.status === 'completed' ? 'text-indigo-950' : 'text-slate-400'}`}>
+                                      <span className={`text-[8px] font-black leading-none truncate uppercase ${item.status === 'completed' ? 'text-indigo-300' : 'text-white'}`}>
                                         {item.description}
                                       </span>
-                                      <span className={`text-[6px] font-black uppercase tracking-tighter mt-0.5 ${item.isPaid ? 'text-indigo-600' : 'text-slate-400'}`}>
+                                      <span className={`text-[6px] font-black uppercase tracking-tighter mt-0.5 ${item.isPaid ? 'text-indigo-400' : 'text-white/60'}`}>
                                         {item.isPaid ? 'Payment Received' : 'Payment Pending'}
                                       </span>
                                     </div>
                                   </div>
                                   <div className="text-right">
-                                    <span className={`text-[9px] font-black ${item.status === 'completed' ? 'text-indigo-600' : 'text-slate-400'}`}>
+                                    <span className={`text-[9px] font-black ${item.status === 'completed' ? 'text-indigo-400' : 'text-white'}`}>
                                       ₱{(item.amount || 0).toLocaleString(undefined, { minimumFractionDigits: 0 })}
                                     </span>
                                   </div>
@@ -3113,7 +3180,7 @@ export default function Payroll() {
                                     {detail}
                                   </div>
                                 ))}
-                                <div className="bg-slate-50 p-1.5 rounded-md text-[6px] text-slate-400 font-medium italic mt-1">
+                                <div className="bg-black p-1.5 rounded-md text-[6px] text-white font-medium italic mt-1">
                                   Note: Legacy record. Individual marking not available for old payrolls.
                                 </div>
                               </div>
@@ -3123,22 +3190,22 @@ export default function Payroll() {
                       )}
                       
                       <div className="flex justify-between items-center border-t-2 border-slate-900 pt-1.5 mt-1.5">
-                        <span className="text-slate-900 font-black uppercase text-[9px] italic">Gross Earnings Total</span>
-                        <span className="text-slate-900 font-black text-[11px] italic">₱{(selectedPayslip.totalEarnings || selectedPayslip.totalGrossPay || 0).toFixed(2)}</span>
+                        <span className="text-white font-black uppercase text-[9px] italic">Gross Earnings Total</span>
+                        <span className="text-white font-black text-[11px] italic">₱{(selectedPayslip.totalEarnings || selectedPayslip.totalGrossPay || 0).toFixed(2)}</span>
                       </div>
                     </div>
                   </div>
                 </div>
                 
                 <div className="space-y-4">
-                  <div className="bg-slate-50/50 p-2 rounded-xl border border-slate-100">
-                    <h3 className="text-[9px] font-black text-slate-400 pb-1 mb-1.5 uppercase border-b border-slate-200">
+                  <div className="bg-black/50 p-2 rounded-xl border border-white/20">
+                    <h3 className="text-[9px] font-black text-white pb-1 mb-1.5 uppercase border-b border-white/30">
                       Summary
                     </h3>
                     <div className="space-y-1.5 font-mono">
                       <div className="flex justify-between items-center text-[10px]">
-                        <span className="text-slate-500 font-bold uppercase">Earnings</span>
-                        <span className="font-bold text-slate-700">₱{(selectedPayslip.totalEarnings || selectedPayslip.totalGrossPay || 0).toFixed(2)}</span>
+                        <span className="text-white font-bold uppercase">Earnings</span>
+                        <span className="font-bold text-white">₱{(selectedPayslip.totalEarnings || selectedPayslip.totalGrossPay || 0).toFixed(2)}</span>
                       </div>
 
                       {selectedPayslip.totalAdjustments !== 0 && (
@@ -3154,8 +3221,8 @@ export default function Payroll() {
                       
                       {selectedPayslip.carryOverFromPrevious > 0 && (
                         <div className="flex justify-between items-center text-[10px]">
-                          <span className="text-amber-600 font-bold uppercase">Prev Debt</span>
-                          <span className="font-bold text-amber-600">-₱{(selectedPayslip.carryOverFromPrevious || 0).toFixed(2)}</span>
+                          <span className="text-white font-bold uppercase">Prev Debt</span>
+                          <span className="font-bold text-white">-₱{(selectedPayslip.carryOverFromPrevious || 0).toFixed(2)}</span>
                         </div>
                       )}
 
@@ -3180,9 +3247,9 @@ export default function Payroll() {
                         </div>
                       )}
 
-                      <div className="flex justify-between items-center border-t-2 border-dashed border-slate-200 pt-2 mt-1">
-                        <span className="text-slate-900 font-black uppercase text-[12px] tracking-tight italic">Net Take Home</span>
-                        <span className="text-slate-900 font-black text-[15px] italic">
+                      <div className="flex justify-between items-center border-t-2 border-dashed border-white/30 pt-2 mt-1">
+                        <span className="text-white font-black uppercase text-[12px] tracking-tight italic">Net Take Home</span>
+                        <span className="text-white font-black text-[15px] italic">
                           ₱{Math.max(0, (Number(selectedPayslip.totalEarnings || selectedPayslip.totalGrossPay || 0)) - 
                     (selectedPayslip.carryOverFromPrevious || 0) - 
                     (selectedPayslip.cashAdvanceDeduction || 0) - 
@@ -3197,23 +3264,25 @@ export default function Payroll() {
               
               {/* Compact Attendance Logs */}
               {selectedPayslip.dailyAttendanceLog && (
-                <div className="mt-3 pt-2 border-t border-slate-100 font-sans">
+                <div className="mt-3 pt-2 border-t border-white/20 font-sans">
                   <div className="grid grid-cols-4 min-[400px]:grid-cols-5 min-[500px]:grid-cols-6 md:grid-cols-8 gap-1">
                     {selectedPayslip.dailyAttendanceLog.map((log: any, i: number) => (
                       <div key={i} className={`py-1 rounded border flex flex-col items-center justify-center text-center ${
-                        log.status === 'present' ? 'bg-emerald-50/30 border-emerald-100/50' :
-                        log.status === 'absent' ? 'bg-rose-50/30 border-rose-100/50' :
-                        log.status === 'halfday' ? 'bg-indigo-50/30 border-indigo-100/50' :
-                        log.status === 'undertime' ? 'bg-amber-50/30 border-amber-100/50' :
-                        'bg-slate-50/30 border-slate-100/50'
+                        log.status === 'present' ? 'bg-emerald-500/10 border-emerald-500/30' :
+                        log.status === 'absent' ? 'bg-rose-500/10 border-rose-500/30' :
+                        log.status === 'halfday' ? 'bg-indigo-500/10 border-indigo-500/30' :
+                        log.status === 'undertime' ? 'bg-amber-500/10 border-amber-500/30' :
+                        'bg-black border-white/10'
                       }`}>
-                        <div className="text-[7px] font-bold text-slate-400 uppercase tracking-tighter">
+                        <div className="text-[7px] font-bold text-white uppercase tracking-tighter">
                           {format(parseISO(log.date), 'MM/dd/yyyy')}
                         </div>
                         <div className={`text-[7px] font-black uppercase ${
-                          log.status === 'present' ? 'text-emerald-600' :
-                          log.status === 'absent' ? 'text-rose-600' :
-                          'text-slate-400'
+                          log.status === 'present' ? 'text-emerald-400' :
+                          log.status === 'absent' ? 'text-rose-400' :
+                          log.status === 'halfday' ? 'text-indigo-400' :
+                          log.status === 'undertime' ? 'text-amber-400' :
+                          'text-white'
                         }`}>
                           {log.status === 'pakyaw' ? 'PK' : log.status.charAt(0).toUpperCase()}
                         </div>
@@ -3223,13 +3292,13 @@ export default function Payroll() {
                 </div>
               )}
 
-              <div className="mt-3 pt-2 border-t border-slate-100 flex justify-between items-end">
-                <div className="text-[8px] text-slate-400">
+              <div className="mt-3 pt-2 border-t border-white/20 flex justify-between items-end">
+                <div className="text-[8px] text-white">
                   ID: {selectedPayslip.id.substring(0, 8)}
                 </div>
                 <div className="flex flex-col items-end">
                   <div className="w-20 h-px bg-slate-300 mb-1"></div>
-                  <div className="text-[7px] font-black text-slate-400 uppercase">Received By</div>
+                  <div className="text-[7px] font-black text-white uppercase">Received By</div>
                 </div>
               </div>
             </div>
@@ -3239,28 +3308,28 @@ export default function Payroll() {
         </DialogContent>
       </Dialog>
       <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-        <DialogContent className="sm:max-w-4xl bg-white dark:bg-slate-900 border-none rounded-3xl p-0 overflow-hidden shadow-2xl payroll-preview-dialog">
-          <div className="bg-slate-50 dark:bg-slate-800 p-6 flex flex-col items-center justify-center border-b border-slate-100 dark:border-slate-800">
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Payroll Preview</h2>
-            <div className="text-sm text-slate-500 dark:text-slate-400">
+        <DialogContent className="sm:max-w-4xl bg-black dark:bg-black border-none rounded-3xl p-0 overflow-hidden shadow-2xl payroll-preview-dialog">
+          <div className="bg-black dark:bg-slate-800 p-6 flex flex-col items-center justify-center border-b border-white/20 dark:border-slate-800">
+            <h2 className="text-xl font-bold text-white dark:text-white mb-2">Payroll Preview</h2>
+            <div className="text-sm text-white dark:text-white">
               {format(parseISO(startDate), 'MMM dd, yyyy')} - {format(parseISO(endDate), 'MMM dd, yyyy')}
             </div>
             
-            <div className="mt-6 bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 w-full flex items-center justify-between">
+            <div className="mt-6 bg-black dark:bg-black rounded-2xl p-6 shadow-sm border border-white/20 dark:border-slate-800 w-full flex items-center justify-between">
               <div>
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Total Payout</p>
+                <p className="text-xs font-bold text-white uppercase tracking-widest mb-1">Total Payout</p>
                 <p className="text-3xl font-black text-blue-600">₱{(previewData?.bulkTotalPay || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
               </div>
               <div className="text-right">
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Employees</p>
-                <p className="text-xl font-bold text-slate-700 dark:text-slate-300">{previewData?.targetEmployees.length || 0}</p>
+                <p className="text-xs font-bold text-white uppercase tracking-widest mb-1">Employees</p>
+                <p className="text-xl font-bold text-white dark:text-white">{previewData?.targetEmployees.length || 0}</p>
               </div>
             </div>
           </div>
           
           <div className="p-0 max-h-[50vh] overflow-y-auto overflow-x-auto">
             <table className="w-full text-sm text-left">
-              <thead className="text-[10px] text-slate-400 uppercase bg-slate-50/50 dark:bg-slate-800/50 sticky top-0 z-10 font-bold tracking-wider">
+              <thead className="text-[10px] text-white uppercase bg-black/50 sticky top-0 z-10 font-bold tracking-wider">
                 <tr>
                   <th className="px-6 py-3">Employee</th>
                   <th className="px-6 py-3 text-center">Gross Pay</th>
@@ -3278,62 +3347,62 @@ export default function Payroll() {
                       <td colSpan={5} className="px-6 py-6 font-sans">
                         <div className="font-black text-xs text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-3 flex justify-between items-center">
                           <span>Manual Pay Override: {emp?.fullName}</span>
-                          <span className="text-[9px] text-slate-400 dark:text-slate-500 lowercase italic font-normal">Recalculates instantly</span>
+                          <span className="text-[9px] text-white dark:text-white lowercase italic font-normal">Recalculates instantly</span>
                         </div>
                         
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3.5 mb-4">
                           <div className="space-y-1">
-                            <label className="text-[9px] font-black uppercase text-slate-450 dark:text-slate-400">Regular Pay (₱)</label>
+                            <label className="text-[9px] font-black uppercase text-white dark:text-white">Regular Pay (₱)</label>
                             <Input 
                               type="number"
                               value={editRegularPay}
                               onChange={(e) => setEditRegularPay(e.target.value)}
-                              className="h-8 max-h-8 text-xs font-bold bg-white dark:bg-slate-950 border-slate-205 text-slate-950 dark:text-white"
+                              className="h-8 max-h-8 text-xs font-bold bg-black dark:bg-black border-slate-205 text-white dark:text-white"
                             />
                           </div>
                           <div className="space-y-1">
-                            <label className="text-[9px] font-black uppercase text-slate-450 dark:text-slate-400">Overtime Pay (₱)</label>
+                            <label className="text-[9px] font-black uppercase text-white dark:text-white">Overtime Pay (₱)</label>
                             <Input 
                               type="number"
                               value={editOtPay}
                               onChange={(e) => setEditOtPay(e.target.value)}
-                              className="h-8 max-h-8 text-xs font-bold bg-white dark:bg-slate-950 border-slate-205 text-slate-950 dark:text-white"
+                              className="h-8 max-h-8 text-xs font-bold bg-black dark:bg-black border-slate-205 text-white dark:text-white"
                             />
                           </div>
                           <div className="space-y-1">
-                            <label className="text-[9px] font-black uppercase text-slate-450 dark:text-slate-400">Pakyaw Paid (₱)</label>
+                            <label className="text-[9px] font-black uppercase text-white dark:text-white">Pakyaw Paid (₱)</label>
                             <Input 
                               type="number"
                               value={editPakyawPay}
                               onChange={(e) => setEditPakyawPay(e.target.value)}
-                              className="h-8 max-h-8 text-xs font-bold bg-white dark:bg-slate-950 border-slate-205 text-slate-950 dark:text-white"
+                              className="h-8 max-h-8 text-xs font-bold bg-black dark:bg-black border-slate-205 text-white dark:text-white"
                             />
                           </div>
                           <div className="space-y-1">
-                            <label className="text-[9px] font-black uppercase text-slate-450 dark:text-slate-400">Adjustment/Bonus (₱)</label>
+                            <label className="text-[9px] font-black uppercase text-white dark:text-white">Adjustment/Bonus (₱)</label>
                             <Input 
                               type="number"
                               value={editAdjustments}
                               onChange={(e) => setEditAdjustments(e.target.value)}
-                              className="h-8 max-h-8 text-xs font-bold bg-white dark:bg-slate-950 border-slate-205 text-slate-950 dark:text-white"
+                              className="h-8 max-h-8 text-xs font-bold bg-black dark:bg-black border-slate-205 text-white dark:text-white"
                             />
                           </div>
                           <div className="space-y-1">
-                            <label className="text-[9px] font-black uppercase text-slate-450 dark:text-slate-400">CA Deduction (₱)</label>
+                            <label className="text-[9px] font-black uppercase text-white dark:text-white">CA Deduction (₱)</label>
                             <Input 
                               type="number"
                               value={editCashAdvanceDeduction}
                               onChange={(e) => setEditCashAdvanceDeduction(e.target.value)}
-                              className="h-8 max-h-8 text-xs font-bold bg-white dark:bg-slate-950 border-slate-205 text-slate-950 dark:text-white"
+                              className="h-8 max-h-8 text-xs font-bold bg-black dark:bg-black border-slate-205 text-white dark:text-white"
                             />
                           </div>
                           <div className="space-y-1">
-                            <label className="text-[9px] font-black uppercase text-slate-450 dark:text-slate-400">Debt Carry-Over (₱)</label>
+                            <label className="text-[9px] font-black uppercase text-white dark:text-white">Debt Carry-Over (₱)</label>
                             <Input 
                               type="number"
                               value={editCarryOverFromPrevious}
                               onChange={(e) => setEditCarryOverFromPrevious(e.target.value)}
-                              className="h-8 max-h-8 text-xs font-bold bg-white dark:bg-slate-950 border-slate-205 text-slate-950 dark:text-white"
+                              className="h-8 max-h-8 text-xs font-bold bg-black dark:bg-black border-slate-205 text-white dark:text-white"
                             />
                           </div>
                         </div>
@@ -3341,7 +3410,7 @@ export default function Payroll() {
                         <div className="flex gap-2 justify-end">
                           <Button 
                             variant="ghost" 
-                            className="h-7 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 font-bold text-[10px] px-3 py-1 rounded-lg"
+                            className="h-7 text-white hover:bg-black dark:hover:bg-slate-800 font-bold text-[10px] px-3 py-1 rounded-lg"
                             onClick={() => setEditingPreviewIdx(null)}
                           >
                             Cancel
@@ -3356,15 +3425,15 @@ export default function Payroll() {
                       </td>
                     </tr>
                   ) : (
-                    <tr key={idx} className={`transition-colors ${isCarriedOver ? 'bg-amber-50/30' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}>
-                      <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">
+                    <tr key={idx} className={`transition-colors ${isCarriedOver ? 'bg-black/30' : 'hover:bg-black dark:hover:bg-slate-800/50'}`}>
+                      <td className="px-6 py-4 font-medium text-white dark:text-white">
                         <div className="flex items-center gap-1.5 font-bold">
                           {emp?.fullName}
                           {p.isManualOverride && (
                             <span className="text-[8px] bg-blue-600 text-white rounded px-1 font-black uppercase tracking-widest scale-90">Custom</span>
                           )}
                         </div>
-                        <div className="text-[10px] text-slate-400 font-normal">
+                        <div className="text-[10px] text-white font-normal">
                           {p.carryOverFromPrevious > 0 && <div className="text-emerald-500 font-bold">+₱{(p.carryOverFromPrevious || 0).toLocaleString()} Carry-over from previous</div>}
                           {!p.isManualOverride ? (
                             <span>{p.totalPresent}d present, {p.totalHalfDays || 0}d half, {p.totalAbsent}d absent</span>
@@ -3383,18 +3452,18 @@ export default function Payroll() {
                           )}
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-center font-medium text-slate-700 dark:text-slate-300">
+                      <td className="px-6 py-4 text-center font-medium text-white dark:text-white">
                         ₱{(p.totalGrossPay || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                       </td>
                       <td className="px-6 py-4 text-center font-medium text-red-600 dark:text-red-400">
                         ₱{(p.cashAdvanceDeduction || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <div className={`font-black ${isCarriedOver ? 'text-amber-500 line-through opacity-50' : 'text-blue-600 dark:text-blue-400'}`}>
+                        <div className={`font-black ${isCarriedOver ? 'text-white line-through opacity-50' : 'text-blue-600 dark:text-blue-400'}`}>
                           ₱{(p.totalPay || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                         </div>
                         {isCarriedOver && (
-                          <div className="text-[10px] font-bold text-amber-600">CARRIED OVER</div>
+                          <div className="text-[10px] font-bold text-white">CARRIED OVER</div>
                         )}
                       </td>
                       <td className="px-6 py-4 text-center uppercase">
@@ -3403,8 +3472,8 @@ export default function Payroll() {
                             onClick={() => toggleCarryOver(idx)}
                             className={`text-[9px] font-black px-2 py-0.5 rounded-full border transition-all w-24 text-center ${
                               isCarriedOver 
-                                ? 'bg-amber-500 text-white border-amber-500' 
-                                : 'text-slate-400 border-slate-200 dark:border-slate-800 hover:border-amber-400 hover:text-amber-500'
+                                ? 'bg-black0 text-white border-amber-500' 
+                                : 'text-white border-white/30 dark:border-slate-800 hover:border-amber-400 hover:text-white'
                             }`}
                           >
                             {isCarriedOver ? 'Undo' : 'Carry Over'}
@@ -3419,7 +3488,7 @@ export default function Payroll() {
                               setEditCashAdvanceDeduction((p.cashAdvanceDeduction || 0).toString());
                               setEditCarryOverFromPrevious((p.carryOverFromPrevious || 0).toString());
                             }}
-                            className="text-[9px] font-black px-2 py-0.5 rounded-full border text-slate-450 border-slate-200 dark:border-slate-850 hover:border-blue-400 hover:text-blue-500 transition-all w-24 text-center"
+                            className="text-[9px] font-black px-2 py-0.5 rounded-full border text-white border-white/30 dark:border-slate-850 hover:border-blue-400 hover:text-blue-500 transition-all w-24 text-center"
                           >
                             Override
                           </button>
@@ -3432,7 +3501,7 @@ export default function Payroll() {
             </table>
           </div>
 
-          <div className="p-6 bg-slate-50 dark:bg-slate-800 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-3">
+          <div className="p-6 bg-black dark:bg-slate-800 border-t border-white/20 dark:border-slate-800 flex justify-end gap-3">
             <Button
               variant="ghost"
               className="px-6 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700"
@@ -3454,7 +3523,7 @@ export default function Payroll() {
 
       {/* Adjustment Dialog */}
       <Dialog open={isAdjustmentDialogOpen} onOpenChange={setIsAdjustmentDialogOpen}>
-        <DialogContent className="sm:max-w-[400px] bg-slate-900 border-white/10 text-white rounded-3xl p-6">
+        <DialogContent className="sm:max-w-[400px] bg-black border-white/30 text-white rounded-3xl p-6">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 italic uppercase font-black text-blue-400">
               <Plus className="w-5 h-5" />
@@ -3463,11 +3532,11 @@ export default function Payroll() {
           </DialogHeader>
           <div className="space-y-4 mt-4">
             <div className="space-y-1">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Target Staff</Label>
+              <Label className="text-[10px] font-black uppercase tracking-widest text-white">Target Staff</Label>
               <select 
                 value={selectedAdjustmentEmployee}
                 onChange={(e) => setSelectedAdjustmentEmployee(e.target.value)}
-                className="w-full h-10 rounded-xl border border-white/10 bg-slate-950 p-2 text-sm text-white font-bold"
+                className="w-full h-10 rounded-xl border border-white/30 bg-black p-2 text-sm text-white font-bold"
               >
                 <option value="">Select Employee</option>
                 {employees.sort((a,b) => a.fullName.localeCompare(b.fullName)).map(emp => (
@@ -3477,11 +3546,11 @@ export default function Payroll() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Type</Label>
+                <Label className="text-[10px] font-black uppercase tracking-widest text-white">Type</Label>
                 <select 
                   value={adjustmentType}
                   onChange={(e) => setAdjustmentType(e.target.value as any)}
-                  className="w-full h-10 rounded-xl border border-white/10 bg-slate-950 p-2 text-sm text-white font-bold"
+                  className="w-full h-10 rounded-xl border border-white/30 bg-black p-2 text-sm text-white font-bold"
                 >
                   <option value="bonus">Bonus</option>
                   <option value="missed_ot">Missed OT</option>
@@ -3492,22 +3561,22 @@ export default function Payroll() {
                 </select>
               </div>
               <div className="space-y-1">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Amount (₱)</Label>
+                <Label className="text-[10px] font-black uppercase tracking-widest text-white">Amount (₱)</Label>
                 <Input 
                   type="number" 
                   value={adjustmentAmount}
                   onChange={(e) => setAdjustmentAmount(e.target.value)}
-                  className="h-10 rounded-xl bg-slate-950 border-white/10 text-white font-black"
+                  className="h-10 rounded-xl bg-black border-white/30 text-white font-black"
                   placeholder="0.00"
                 />
               </div>
             </div>
             <div className="space-y-1">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Description / Note</Label>
+              <Label className="text-[10px] font-black uppercase tracking-widest text-white">Description / Note</Label>
               <Input 
                 value={adjustmentDescription}
                 onChange={(e) => setAdjustmentDescription(e.target.value)}
-                className="h-10 rounded-xl bg-slate-950 border-white/10 text-white font-bold"
+                className="h-10 rounded-xl bg-black border-white/30 text-white font-bold"
                 placeholder="e.g. Forgot to add overtime last week"
               />
             </div>
@@ -3535,12 +3604,12 @@ export default function Payroll() {
       {/* Custom Confirmation Modal for Deletions */}
       {itemToDelete && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-[9999]">
-          <div className="bg-slate-900 border border-white/10 p-8 rounded-3xl w-full max-w-sm shadow-2xl text-center">
+          <div className="bg-black border border-white/30 p-8 rounded-3xl w-full max-w-sm shadow-2xl text-center">
             <div className="w-16 h-16 bg-rose-500/10 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-4">
               <Trash2 className="w-8 h-8" />
             </div>
             <h2 className="text-xl font-bold text-white mb-2 tracking-tight">Confirm Deletion</h2>
-            <p className="text-slate-400 text-sm mb-8 leading-relaxed">
+            <p className="text-white text-sm mb-8 leading-relaxed">
               {itemToDelete.type === 'bulk' 
                 ? 'Are you sure you want to delete this entire payroll batch? All associated payslips will be permanently removed. This action cannot be undone.'
                 : itemToDelete.type === 'adjustment'

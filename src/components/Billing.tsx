@@ -75,17 +75,17 @@ export default function Billing({ mode = 'invoices' }: BillingProps) {
       htmlEl.style.boxShadow = 'none'; 
 
       // Manually remap colors using hex for html2canvas compatibility
-      if (htmlEl.classList.contains('bg-slate-900')) htmlEl.style.backgroundColor = '#0f172a';
+      if (htmlEl.classList.contains('bg-black')) htmlEl.style.backgroundColor = '#0f172a';
       if (htmlEl.classList.contains('bg-indigo-600')) htmlEl.style.backgroundColor = '#000000';
       if (htmlEl.classList.contains('text-indigo-600')) htmlEl.style.color = '#000000';
       if (htmlEl.classList.contains('text-white')) htmlEl.style.color = '#ffffff';
-      if (htmlEl.classList.contains('text-slate-900')) htmlEl.style.color = '#0f172a';
-      if (htmlEl.classList.contains('text-slate-600')) htmlEl.style.color = '#475569';
-      if (htmlEl.classList.contains('text-slate-500')) htmlEl.style.color = '#64748b';
-      if (htmlEl.classList.contains('text-slate-400')) htmlEl.style.color = '#94a3b8';
+      if (htmlEl.classList.contains('text-white')) htmlEl.style.color = '#0f172a';
+      if (htmlEl.classList.contains('text-white')) htmlEl.style.color = '#475569';
+      if (htmlEl.classList.contains('text-white')) htmlEl.style.color = '#64748b';
+      if (htmlEl.classList.contains('text-white')) htmlEl.style.color = '#94a3b8';
       if (htmlEl.classList.contains('border-slate-900')) htmlEl.style.borderColor = '#0f172a';
-      if (htmlEl.classList.contains('border-slate-100')) htmlEl.style.borderColor = '#f1f5f9';
-      if (htmlEl.classList.contains('border-slate-200')) htmlEl.style.borderColor = '#e2e8f0';
+      if (htmlEl.classList.contains('border-white/20')) htmlEl.style.borderColor = '#f1f5f9';
+      if (htmlEl.classList.contains('border-white/30')) htmlEl.style.borderColor = '#e2e8f0';
       if (htmlEl.classList.contains('underline')) htmlEl.style.textDecoration = 'underline';
     });
   };
@@ -492,7 +492,7 @@ export default function Billing({ mode = 'invoices' }: BillingProps) {
     <div className="h-full flex flex-col relative w-full pt-2">
       <div className="px-4 mb-4 flex-shrink-0">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+          <h1 className="text-2xl font-bold text-white dark:text-white">
             {mode === 'invoices' ? 'Invoices Management' : 'Billing & Paid History'}
           </h1>
           {mode === 'invoices' && (
@@ -525,63 +525,63 @@ export default function Billing({ mode = 'invoices' }: BillingProps) {
             <DialogTrigger render={<Button className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl flex items-center justify-center gap-2" />}>
               <Plus className="w-5 h-5" /> Create Invoice
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white">
+            <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto bg-black dark:bg-black border-white/30 dark:border-slate-800 text-white dark:text-white">
               <DialogHeader>
-                <DialogTitle className="text-slate-900 dark:text-white">{editingId ? 'Edit Invoice' : 'Create New Invoice'}</DialogTitle>
+                <DialogTitle className="text-white dark:text-white">{editingId ? 'Edit Invoice' : 'Create New Invoice'}</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSaveInvoice} className="space-y-4 pt-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Invoice #</Label>
+                    <Label className="text-xs font-bold text-white dark:text-white uppercase tracking-widest">Invoice #</Label>
                     <Input 
                       required
                       placeholder="INV-001"
                       value={form.invoiceNumber}
                       onChange={e => setForm({...form, invoiceNumber: e.target.value})}
-                      className="rounded-xl border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600"
+                      className="rounded-xl border-white/30 dark:border-slate-800 text-white dark:text-white placeholder:text-white dark:placeholder:text-white"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Date</Label>
+                    <Label className="text-xs font-bold text-white dark:text-white uppercase tracking-widest">Date</Label>
                     <Input 
                       type="date"
                       value={form.date}
                       onChange={e => setForm({...form, date: e.target.value})}
-                      className="rounded-xl border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white [color-scheme:light] dark:[color-scheme:dark]"
+                      className="rounded-xl border-white/30 dark:border-slate-800 text-white dark:text-white [color-scheme:light] dark:[color-scheme:dark]"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Customer / Name</Label>
+                  <Label className="text-xs font-bold text-white dark:text-white uppercase tracking-widest">Customer / Name</Label>
                   <Input 
                     placeholder="Customer Name"
                     value={form.customerName}
                     onChange={e => setForm({...form, customerName: e.target.value})}
-                    className="rounded-xl border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600"
+                    className="rounded-xl border-white/30 dark:border-slate-800 text-white dark:text-white placeholder:text-white dark:placeholder:text-white"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Status</Label>
+                  <Label className="text-xs font-bold text-white dark:text-white uppercase tracking-widest">Status</Label>
                   <select 
                     value={form.status}
                     onChange={e => {
                       const newStatus = e.target.value as any;
                       setForm({...form, status: newStatus});
                     }}
-                    className="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 [color-scheme:light] dark:[color-scheme:dark]"
+                    className="w-full h-10 px-3 rounded-xl border border-white/30 dark:border-slate-800 bg-black dark:bg-black text-white dark:text-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 [color-scheme:light] dark:[color-scheme:dark]"
                   >
-                    <option value="pending" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Pending</option>
-                    <option value="billing" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Billing</option>
-                    <option value="paid" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Paid</option>
-                    <option value="cancelled" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Cancelled</option>
+                    <option value="pending" className="bg-black dark:bg-black text-white dark:text-white">Pending</option>
+                    <option value="billing" className="bg-black dark:bg-black text-white dark:text-white">Billing</option>
+                    <option value="paid" className="bg-black dark:bg-black text-white dark:text-white">Paid</option>
+                    <option value="cancelled" className="bg-black dark:bg-black text-white dark:text-white">Cancelled</option>
                   </select>
                 </div>
 
-                <div className="border-t border-slate-100 pt-4 mt-2">
+                <div className="border-t border-white/20 pt-4 mt-2">
                   <div className="flex items-center justify-between mt-2 mb-2">
-                    <Label className="text-sm font-bold text-slate-700 dark:text-slate-300">Container Codes</Label>
+                    <Label className="text-sm font-bold text-white dark:text-white">Container Codes</Label>
                     {repairedContainers.length > 0 && (
                       <Button
                         type="button"
@@ -619,21 +619,21 @@ export default function Billing({ mode = 'invoices' }: BillingProps) {
                     {[...form.containers]
                       .sort((a, b) => (b.price || 0) - (a.price || 0))
                       .map((item, idx) => (
-                      <div key={idx} className="flex items-center gap-2 bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg border border-slate-100 dark:border-slate-800">
+                      <div key={idx} className="flex items-center gap-2 bg-black dark:bg-white/50 p-2 rounded-lg border border-white/20 dark:border-slate-800">
                         <div className="flex-1 min-w-0">
                           <div className="flex justify-between">
                             <div className="flex items-center gap-2 min-w-0">
                               <button
                                 type="button"
                                 onClick={() => setViewHistoryCode(item.code)}
-                                className="text-xs font-bold text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline flex items-center gap-1 text-left min-w-0 flex-1"
+                                className="text-xs font-bold text-white dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline flex items-center gap-1 text-left min-w-0 flex-1"
                               >
                                 <History className="w-3 h-3 shrink-0" />
                                 <span className="whitespace-nowrap">{idx + 1}. {item.code}</span>
                               </button>
                                {item.type && (
                                  <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider shrink-0 ${
-                                   item.type === 'foreign' ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'
+                                   item.type === 'foreign' ? 'bg-black text-white dark:bg-black0/10 dark:text-white' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'
                                  }`}>
                                    {item.type === 'foreign' ? 'F' : 'L'}
                                  </span>
@@ -648,23 +648,23 @@ export default function Billing({ mode = 'invoices' }: BillingProps) {
                                 <span className="text-[8px] bg-emerald-500/10 text-emerald-500 font-bold uppercase px-1 rounded">Fully Repaired</span>
                               )}
                               {item.price === 15000 && (
-                                <span className="text-[8px] bg-amber-500/10 text-amber-500 font-bold uppercase px-1 rounded">No Top Board</span>
+                                <span className="text-[8px] bg-black0/10 text-white font-bold uppercase px-1 rounded">No Top Board</span>
                               )}
-                              {item.note && <div className="text-[10px] text-slate-500 truncate">{item.note}</div>}
+                              {item.note && <div className="text-[10px] text-white truncate">{item.note}</div>}
                             </div>
                         </div>
                         <div className="flex items-center gap-1 shrink-0">
                           <button 
                             type="button" 
                             onClick={() => editContainerItem(idx)}
-                            className="text-slate-400 hover:text-indigo-600 p-1"
+                            className="text-white hover:text-indigo-600 p-1"
                           >
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
                           <button 
                             type="button" 
                             onClick={() => removeContainerItem(idx)}
-                            className="text-slate-400 hover:text-red-600 p-1"
+                            className="text-white hover:text-red-600 p-1"
                           >
                             <Trash className="w-3.5 h-3.5" />
                           </button>
@@ -672,11 +672,11 @@ export default function Billing({ mode = 'invoices' }: BillingProps) {
                       </div>
                     ))}
                     {form.containers.length === 0 && (
-                      <div className="text-center py-2 text-xs text-slate-400 italic">No containers added yet.</div>
+                      <div className="text-center py-2 text-xs text-white italic">No containers added yet.</div>
                     )}
                   </div>
 
-                  <div className="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl space-y-3">
+                  <div className="bg-black dark:bg-white/50 p-3 rounded-xl space-y-3">
                     {repairedContainers.length > 0 && (
                       <select
                         value=""
@@ -692,9 +692,9 @@ export default function Billing({ mode = 'invoices' }: BillingProps) {
                             });
                           }
                         }}
-                        className="w-full text-xs h-8 px-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 [color-scheme:light] dark:[color-scheme:dark]"
+                        className="w-full text-xs h-8 px-2 rounded-lg border border-white/30 dark:border-white/50 bg-black dark:bg-slate-800 text-white dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 [color-scheme:light] dark:[color-scheme:dark]"
                       >
-                        <option value="" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Select Repaired Container...</option>
+                        <option value="" className="bg-black dark:bg-black text-white dark:text-white">Select Repaired Container...</option>
                         {repairedContainers
                           .filter(c => {
                             const codeDisplay = c.type === 'foreign' ? `${c.localCode} - ${c.foreignCode}` : `${c.localCode} - ${c.localCode}`;
@@ -704,7 +704,7 @@ export default function Billing({ mode = 'invoices' }: BillingProps) {
                           .map(c => {
                             const codeDisplay = c.type === 'foreign' ? `${c.localCode} - ${c.foreignCode}` : `${c.localCode} - ${c.localCode}`;
                             return (
-                              <option key={c.id} value={codeDisplay || ''} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">
+                              <option key={c.id} value={codeDisplay || ''} className="bg-black dark:bg-black text-white dark:text-white">
                                 {codeDisplay} ({c.type}) {c.platform ? `[${c.platform}]` : ''} {c.hasBV ? 'BV ' : ''}{c.hasAV ? 'AV ' : ''}{c.note ? `- ${c.note}` : ''}
                               </option>
                             );
@@ -716,12 +716,12 @@ export default function Billing({ mode = 'invoices' }: BillingProps) {
                         placeholder="Code (e.g. C-123)"
                         value={newContainer.code}
                         onChange={e => setNewContainer({...newContainer, code: e.target.value.toUpperCase()})}
-                        className="text-xs h-8 text-slate-900 dark:text-white"
+                        className="text-xs h-8 text-white dark:text-white"
                       />
                       <select
                         value={newContainer.price}
                         onChange={e => setNewContainer({...newContainer, price: e.target.value})}
-                        className="w-full text-xs h-8 px-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 [color-scheme:light] dark:[color-scheme:dark]"
+                        className="w-full text-xs h-8 px-2 rounded-lg border border-white/30 dark:border-white/50 bg-black dark:bg-slate-800 text-white dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 [color-scheme:light] dark:[color-scheme:dark]"
                       >
                         <option value="">Select Price</option>
                         <option value="15000">₱15,000 - No Top Board</option>
@@ -732,7 +732,7 @@ export default function Billing({ mode = 'invoices' }: BillingProps) {
                       placeholder="Note (optional)"
                       value={newContainer.note}
                       onChange={e => setNewContainer({...newContainer, note: e.target.value})}
-                      className="text-xs h-8 text-slate-900 dark:text-white"
+                      className="text-xs h-8 text-white dark:text-white"
                     />
                     <Button 
                       type="button" 
@@ -769,8 +769,8 @@ export default function Billing({ mode = 'invoices' }: BillingProps) {
                     )}
                   </div>
 
-                  <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center">
-                    <span className="text-sm font-bold text-slate-700 dark:text-slate-300">Total Sum:</span>
+                  <div className="mt-4 pt-4 border-t border-white/20 dark:border-slate-800 flex justify-between items-center">
+                    <span className="text-sm font-bold text-white dark:text-white">Total Sum:</span>
                     <span className="text-lg font-black text-indigo-600 dark:text-indigo-400">₱{totalSum.toLocaleString()}</span>
                   </div>
                 </div>
@@ -788,12 +788,12 @@ export default function Billing({ mode = 'invoices' }: BillingProps) {
         </div>
 
         <div className="relative group">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5 transition-colors group-focus-within:text-indigo-500" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-white w-5 h-5 transition-colors group-focus-within:text-indigo-500" />
           <Input 
             placeholder="Search invoice number, customer or container..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            className="pl-10 h-12 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm focus:ring-2 focus:ring-indigo-500/20 transition-all text-sm"
+            className="pl-10 h-12 bg-black dark:bg-slate-800 border-white/30 dark:border-slate-800 rounded-2xl shadow-sm focus:ring-2 focus:ring-indigo-500/20 transition-all text-sm"
           />
         </div>
       </div>
@@ -805,29 +805,29 @@ export default function Billing({ mode = 'invoices' }: BillingProps) {
             <motion.div 
               layout
               key={invoice.id} 
-              className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm hover:shadow-md transition-shadow group"
+              className="bg-black dark:bg-slate-800 rounded-2xl border border-white/30 dark:border-slate-800 overflow-hidden shadow-sm hover:shadow-md transition-shadow group"
             >
               <div 
                 onClick={() => toggleInvoice(invoice.id)}
-                className="p-4 border-b border-slate-100 dark:border-slate-800/50 flex flex-wrap items-center justify-between cursor-pointer select-none gap-4"
+                className="p-4 border-b border-white/20 dark:border-slate-800/50 flex flex-wrap items-center justify-between cursor-pointer select-none gap-4"
               >
                 <div className="flex items-center gap-3 min-w-0 flex-1">
-                  <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-900 flex items-center justify-center text-slate-500 border border-slate-200 dark:border-slate-700 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-500/10 transition-colors shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-black dark:bg-black flex items-center justify-center text-white border border-white/30 dark:border-white/50 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-500/10 transition-colors shrink-0">
                     <FileText className="w-5 h-5" />
                   </div>
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                      <h3 className="font-bold text-slate-900 dark:text-white whitespace-nowrap overflow-hidden text-ellipsis">#{invoice.invoiceNumber}</h3>
+                      <h3 className="font-bold text-white dark:text-white whitespace-nowrap overflow-hidden text-ellipsis">#{invoice.invoiceNumber}</h3>
                       <span className={`text-[10px] uppercase font-black px-1.5 py-0.5 rounded whitespace-nowrap shrink-0 ${
                         invoice.status === 'paid' ? 'bg-green-100 text-green-700' : 
                         invoice.status === 'billing' ? 'bg-indigo-100 text-indigo-700' :
                         invoice.status === 'cancelled' ? 'bg-red-100 text-red-700' : 
-                        'bg-amber-100 text-amber-700'
+                        'bg-black text-white'
                       }`}>
                         {invoice.status}
                       </span>
                     </div>
-                    <div className="text-xs text-slate-500 whitespace-nowrap">{format(parseISO(invoice.date), 'MMMM dd, yyyy')}</div>
+                    <div className="text-xs text-white whitespace-nowrap">{format(parseISO(invoice.date), 'MMMM dd, yyyy')}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 sm:gap-6 ml-auto shrink-0">
@@ -839,20 +839,20 @@ export default function Billing({ mode = 'invoices' }: BillingProps) {
                         size="icon" 
                         onClick={(e) => { e.stopPropagation(); handleExportPDF(invoice); }} 
                         disabled={isExporting}
-                        className="h-8 w-8 text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-500/10"
+                        className="h-8 w-8 text-white hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-500/10"
                         title="Export PDF"
                       >
                         {isExporting && invoiceToExport?.id === invoice.id ? <Loader2 className="w-4 h-4 animate-spin text-emerald-500" /> : <Download className="w-4 h-4" />}
                       </Button>
-                      <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); openEdit(invoice); }} className="h-8 w-8 text-slate-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10">
+                      <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); openEdit(invoice); }} className="h-8 w-8 text-white hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10">
                         <Edit2 className="w-4 h-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(invoice.id); }} className="h-8 w-8 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10">
+                      <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(invoice.id); }} className="h-8 w-8 text-white hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10">
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
                   </div>
-                  <div className="text-slate-300 dark:text-slate-600 group-hover:text-indigo-500 transition-colors px-1">
+                  <div className="text-white dark:text-white group-hover:text-indigo-500 transition-colors px-1">
                     {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
                   </div>
                 </div>
@@ -866,19 +866,19 @@ export default function Billing({ mode = 'invoices' }: BillingProps) {
                     exit={{ height: 0, opacity: 0 }}
                     transition={{ duration: 0.2, ease: "easeOut" }}
                   >
-                    <div className="p-4 bg-slate-50/50 dark:bg-slate-900/20">
+                    <div className="p-4 bg-white/50 dark:bg-black/20">
                       <div className="mb-4 relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-3.5 h-3.5" />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-white w-3.5 h-3.5" />
                         <Input 
                           placeholder="Search containers in this invoice..."
                           value={containerSearchQueries[invoice.id] || ''}
                           onChange={e => setContainerSearchQueries(prev => ({ ...prev, [invoice.id]: e.target.value }))}
-                          className="pl-9 h-8 bg-white dark:bg-slate-800 text-xs rounded-lg border-slate-200 dark:border-slate-800 focus:ring-1 focus:ring-indigo-500/30 transition-all"
+                          className="pl-9 h-8 bg-black dark:bg-slate-800 text-xs rounded-lg border-white/30 dark:border-slate-800 focus:ring-1 focus:ring-indigo-500/30 transition-all"
                         />
                         {containerSearchQueries[invoice.id] && (
                           <button 
                             onClick={() => setContainerSearchQueries(prev => ({ ...prev, [invoice.id]: '' }))}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-white hover:text-white p-1"
                           >
                             <X className="w-3 h-3" />
                           </button>
@@ -896,14 +896,14 @@ export default function Billing({ mode = 'invoices' }: BillingProps) {
 
                       {invoice.customerName && (
                         <div className="mb-3">
-                            <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Customer</span>
-                            <p className="text-sm font-medium text-slate-700 dark:text-slate-300">{invoice.customerName}</p>
+                            <span className="text-[10px] text-white uppercase font-bold tracking-wider">Customer</span>
+                            <p className="text-sm font-medium text-white dark:text-white">{invoice.customerName}</p>
                         </div>
                       )}
                       
                       <div>
                           <div className="flex items-center justify-between mb-2">
-                            <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Containers ({invoice.containers?.length || 0})</span>
+                            <span className="text-[10px] text-white uppercase font-bold tracking-wider">Containers ({invoice.containers?.length || 0})</span>
                           </div>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                             {[...invoice.containers]
@@ -924,7 +924,7 @@ export default function Billing({ mode = 'invoices' }: BillingProps) {
                               })
                               .sort((a, b) => (b.price || 0) - (a.price || 0))
                               .map((c, i) => (
-                              <div key={i} className="flex flex-col p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-800 hover:border-indigo-200 dark:hover:border-indigo-500/20 transition-colors">
+                              <div key={i} className="flex flex-col p-2 rounded-xl bg-black dark:bg-slate-800 border border-white/20 dark:border-slate-800 hover:border-indigo-200 dark:hover:border-indigo-500/20 transition-colors">
                                 <div className="flex items-center justify-between gap-2 mb-1">
                                   <div className="flex items-center gap-1.5 min-w-0">
                                     <Package className="w-3 h-3 text-indigo-500 shrink-0" />
@@ -933,13 +933,13 @@ export default function Billing({ mode = 'invoices' }: BillingProps) {
                                         e.stopPropagation();
                                         setViewHistoryCode(c.code);
                                       }}
-                                      className="text-xs font-bold text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline flex items-center gap-1 text-left min-w-0 flex-1"
+                                      className="text-xs font-bold text-white dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline flex items-center gap-1 text-left min-w-0 flex-1"
                                     >
                                       <span className="whitespace-nowrap">{i + 1}. {c.code}</span>
                                     </button>
                                     {c.type && (
                                       <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider shrink-0 ${
-                                        c.type === 'foreign' ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'
+                                        c.type === 'foreign' ? 'bg-black text-white dark:bg-black0/10 dark:text-white' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'
                                       }`}>
                                         {c.type === 'foreign' ? 'F' : 'L'}
                                       </span>
@@ -956,16 +956,16 @@ export default function Billing({ mode = 'invoices' }: BillingProps) {
                                     </span>
                                   )}
                                   {c.price === 15000 && (
-                                    <span className="text-[8px] bg-amber-500/10 text-amber-500 font-black uppercase px-1 py-0.5 rounded border border-amber-500/20 shadow-sm">
+                                    <span className="text-[8px] bg-black0/10 text-white font-black uppercase px-1 py-0.5 rounded border border-white/40 shadow-sm">
                                       No Top Board
                                     </span>
                                   )}
-                                  {c.note && <p className="text-[10px] text-slate-500 dark:text-slate-400 italic line-clamp-1">{c.note}</p>}
+                                  {c.note && <p className="text-[10px] text-white dark:text-white italic line-clamp-1">{c.note}</p>}
                                 </div>
                               </div>
                             ))}
                             {(!invoice.containers || invoice.containers.length === 0) && (
-                              <div className="col-span-full py-4 text-center text-xs text-slate-400 border border-dashed border-slate-200 rounded-xl">
+                              <div className="col-span-full py-4 text-center text-xs text-white border border-dashed border-white/30 rounded-xl">
                                 No containers assigned to this invoice.
                               </div>
                             )}
@@ -980,10 +980,10 @@ export default function Billing({ mode = 'invoices' }: BillingProps) {
         })}
 
         {filteredInvoices.length === 0 && !loading && (
-          <div className="text-center py-20 bg-slate-50 dark:bg-slate-800/20 rounded-3xl border border-slate-200 border-dashed dark:border-slate-800 flex flex-col items-center">
-            <FileText className="w-12 h-12 text-slate-300 dark:text-slate-700 mb-4" />
-            <p className="font-bold text-slate-600 dark:text-slate-400">No invoices found.</p>
-            <p className="text-sm text-slate-400 mt-1">Start by creating your first billing invoice.</p>
+          <div className="text-center py-20 bg-black dark:bg-slate-800/20 rounded-3xl border border-white/30 border-dashed dark:border-slate-800 flex flex-col items-center">
+            <FileText className="w-12 h-12 text-white dark:text-white mb-4" />
+            <p className="font-bold text-white dark:text-white">No invoices found.</p>
+            <p className="text-sm text-white mt-1">Start by creating your first billing invoice.</p>
           </div>
         )}
         
@@ -995,15 +995,15 @@ export default function Billing({ mode = 'invoices' }: BillingProps) {
       </div>
 
       <Dialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
-        <DialogContent className="max-w-sm bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 text-slate-900 dark:text-slate-100">
+        <DialogContent className="max-w-sm bg-black dark:bg-black border-white/20 dark:border-slate-800 text-white dark:text-white">
           <DialogHeader>
             <DialogTitle>Confirm Deletion</DialogTitle>
-            <DialogDescription className="text-slate-500 dark:text-slate-400">
+            <DialogDescription className="text-white dark:text-white">
               Are you sure you want to delete this invoice? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="pt-4 flex gap-2 sm:justify-end">
-            <Button variant="outline" onClick={() => setDeleteConfirmId(null)} className="bg-transparent border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800">
+            <Button variant="outline" onClick={() => setDeleteConfirmId(null)} className="bg-transparent border-white/30 dark:border-white/50 hover:bg-black dark:hover:bg-slate-800">
               Cancel
             </Button>
             <Button variant="destructive" onClick={() => deleteConfirmId && handleDelete(deleteConfirmId)} className="bg-red-600 hover:bg-red-700 text-white">
@@ -1015,13 +1015,13 @@ export default function Billing({ mode = 'invoices' }: BillingProps) {
       
       {/* History Dialog */}
       <Dialog open={!!viewHistoryCode} onOpenChange={(open) => !open && setViewHistoryCode(null)}>
-        <DialogContent className="sm:max-w-[400px] bg-slate-900 border-slate-800 text-slate-100 max-h-[85vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-[400px] bg-black border-slate-800 text-white max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-white flex items-center gap-2">
               <History className="w-5 h-5 text-indigo-400" />
               Status History
             </DialogTitle>
-            <DialogDescription className="text-slate-400 flex flex-col pt-1">
+            <DialogDescription className="text-white flex flex-col pt-1">
               <span className="font-mono text-indigo-300 text-xs bg-indigo-500/10 px-2 py-1 rounded inline-flex self-start">
                 Code: {viewHistoryCode}
               </span>
@@ -1056,7 +1056,7 @@ export default function Billing({ mode = 'invoices' }: BillingProps) {
 
               if (combinedHistory.length === 0) {
                 return (
-                  <div className="text-center py-6 text-slate-500 text-sm">
+                  <div className="text-center py-6 text-white text-sm">
                     No history found for this container.
                   </div>
                 );
@@ -1065,20 +1065,20 @@ export default function Billing({ mode = 'invoices' }: BillingProps) {
               return combinedHistory.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).map((h: any, i: number) => (
                 <div key={i} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
                   {/* Timeline icon */}
-                  <div className="flex items-center justify-center w-4 h-4 rounded-full border-4 border-slate-900 bg-slate-400 group-[.is-active]:bg-indigo-500 text-slate-500 group-[.is-active]:text-indigo-50 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10 translate-x-[2px] md:translate-x-0"></div>
+                  <div className="flex items-center justify-center w-4 h-4 rounded-full border-4 border-slate-900 bg-slate-400 group-[.is-active]:bg-indigo-500 text-white group-[.is-active]:text-indigo-50 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10 translate-x-[2px] md:translate-x-0"></div>
                   
                   {/* Card */}
-                  <div className="w-[calc(100%-2.5rem)] md:w-[calc(50%-1.5rem)] p-3 rounded-xl bg-slate-800 border border-slate-700/50 shadow-md transform transition-all group-hover:scale-[1.02]">
+                  <div className="w-[calc(100%-2.5rem)] md:w-[calc(50%-1.5rem)] p-3 rounded-xl bg-slate-800 border border-white/50/50 shadow-md transform transition-all group-hover:scale-[1.02]">
                     <div className="flex flex-wrap items-center justify-between gap-1 mb-1">
                       <span className={`text-xs font-bold uppercase tracking-wider ${
                         h.status === 'active' ? 'text-blue-400' :
-                        h.status === 'repairing' ? 'text-amber-400' :
+                        h.status === 'repairing' ? 'text-white' :
                         h.status === 'Invoiced' ? 'text-purple-400' :
                         'text-emerald-400'
                       }`}>
                         {h.status} {h.platform && <span className="text-white ml-1">@ {h.platform}</span>}
                       </span>
-                      <time className="text-xs font-semibold text-slate-300">
+                      <time className="text-xs font-semibold text-white">
                         {new Date(h.timestamp).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                       </time>
                     </div>
@@ -1092,15 +1092,15 @@ export default function Billing({ mode = 'invoices' }: BillingProps) {
                              <span className="text-[9px] bg-emerald-500 text-white font-black uppercase px-2 py-0.5 rounded">Fully Repaired</span>
                            )}
                            {h.price === 15000 && (
-                             <span className="text-[9px] bg-amber-500 text-white font-black uppercase px-2 py-0.5 rounded">No Top Board</span>
+                             <span className="text-[9px] bg-black0 text-white font-black uppercase px-2 py-0.5 rounded">No Top Board</span>
                            )}
-                           <span className="text-[9px] bg-white/10 text-white font-black px-2 py-0.5 rounded">₱{h.price.toLocaleString()}</span>
+                           <span className="text-[9px] bg-black/10 text-white font-black px-2 py-0.5 rounded">₱{h.price.toLocaleString()}</span>
                          </>
                        )}
                     </div>
 
                     {h.note && (
-                      <p className="text-xs text-slate-300 mt-1 bg-slate-900/50 p-2 rounded-lg italic">
+                      <p className="text-xs text-white mt-1 bg-white/50 p-2 rounded-lg italic">
                         {h.note}
                       </p>
                     )}
@@ -1110,7 +1110,7 @@ export default function Billing({ mode = 'invoices' }: BillingProps) {
             })()}
           </div>
           <DialogFooter className="pt-4 sm:justify-end border-t border-slate-800 mt-6">
-            <Button variant="outline" onClick={() => setViewHistoryCode(null)} className="w-full sm:w-auto bg-transparent border-slate-700 text-slate-300 hover:bg-slate-800">
+            <Button variant="outline" onClick={() => setViewHistoryCode(null)} className="w-full sm:w-auto bg-transparent border-white/50 text-white hover:bg-slate-800">
               Close
             </Button>
           </DialogFooter>
@@ -1119,19 +1119,19 @@ export default function Billing({ mode = 'invoices' }: BillingProps) {
 
       {/* Hidden Export Template - kept off-screen but visible to rendering engines */}
       <div className="fixed -left-[9999px] top-0 pointer-events-none z-[-100]">
-        <div ref={exportRef} className="invoice-export-template bg-white p-10 w-[800px] text-slate-900 font-sans">
+        <div ref={exportRef} className="invoice-export-template bg-black p-10 w-[800px] text-white font-sans">
           {invoiceToExport && (
             <div className="space-y-8">
               {/* Header */}
               <div className="flex justify-between items-start border-b-2 border-slate-900 pb-8">
                 <div>
-                  <h1 className="text-4xl font-black text-slate-900 uppercase tracking-tighter mb-2">{companyInfo.name}</h1>
-                  <p className="text-sm font-medium text-slate-600 uppercase tracking-widest">{companyInfo.address}</p>
-                  <p className="text-sm font-medium text-slate-600 uppercase tracking-widest">{companyInfo.contact}</p>
+                  <h1 className="text-4xl font-black text-white uppercase tracking-tighter mb-2">{companyInfo.name}</h1>
+                  <p className="text-sm font-medium text-white uppercase tracking-widest">{companyInfo.address}</p>
+                  <p className="text-sm font-medium text-white uppercase tracking-widest">{companyInfo.contact}</p>
                 </div>
                 <div className="text-right">
-                  <h2 className="text-5xl font-black text-slate-300 uppercase tracking-tight mb-2">INVOICE</h2>
-                  <div className="text-2xl font-bold text-slate-900">
+                  <h2 className="text-5xl font-black text-white uppercase tracking-tight mb-2">INVOICE</h2>
+                  <div className="text-2xl font-bold text-white">
                     NO: <span className="border-b-2 border-slate-900 font-black">#{invoiceToExport.invoiceNumber}</span>
                   </div>
                 </div>
@@ -1140,19 +1140,19 @@ export default function Billing({ mode = 'invoices' }: BillingProps) {
               {/* Info Rows */}
               <div className="grid grid-cols-2 gap-12 py-4">
                 <div className="space-y-2">
-                  <span className="text-xs font-black text-slate-400 uppercase tracking-widest block">Bill To</span>
-                  <p className="text-2xl font-bold text-slate-900 border-b-2 border-slate-900 pb-2">
+                  <span className="text-xs font-black text-white uppercase tracking-widest block">Bill To</span>
+                  <p className="text-2xl font-bold text-white border-b-2 border-slate-900 pb-2">
                     {invoiceToExport.customerName || 'Walk-in Customer'}
                   </p>
                 </div>
                 <div className="space-y-4">
                   <div className="flex justify-between border-b border-slate-900 pb-1">
-                    <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Date</span>
+                    <span className="text-xs font-black text-white uppercase tracking-widest">Date</span>
                     <span className="font-bold">{format(parseISO(invoiceToExport.date), 'MMMM dd, yyyy')}</span>
                   </div>
                   <div className="flex justify-between border-b border-slate-900 pb-1">
-                    <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Status</span>
-                    <span className="font-black uppercase text-slate-900">{invoiceToExport.status}</span>
+                    <span className="text-xs font-black text-white uppercase tracking-widest">Status</span>
+                    <span className="font-black uppercase text-white">{invoiceToExport.status}</span>
                   </div>
                 </div>
               </div>
@@ -1161,7 +1161,7 @@ export default function Billing({ mode = 'invoices' }: BillingProps) {
               <div className="mt-8">
                 <table className="w-full border-collapse">
                   <thead>
-                    <tr className="border-y-2 border-slate-900 text-slate-900">
+                    <tr className="border-y-2 border-slate-900 text-white">
                       <th className="p-3 text-left text-xs font-black uppercase tracking-widest w-12 text-center">#</th>
                       <th className="p-3 text-left text-xs font-black uppercase tracking-widest">Container Code</th>
                       <th className="p-3 text-left text-xs font-black uppercase tracking-widest w-16 text-center">Videos</th>
@@ -1174,9 +1174,9 @@ export default function Billing({ mode = 'invoices' }: BillingProps) {
                     {[...invoiceToExport.containers]
                       .sort((a, b) => (b.price || 0) - (a.price || 0))
                       .map((c, i) => (
-                      <tr key={i} className="border-b border-slate-200">
-                        <td className="p-4 text-sm font-bold text-slate-400 text-center">{i + 1}</td>
-                        <td className="p-4 text-sm font-bold text-slate-900">{c.code}</td>
+                      <tr key={i} className="border-b border-white/30">
+                        <td className="p-4 text-sm font-bold text-white text-center">{i + 1}</td>
+                        <td className="p-4 text-sm font-bold text-white">{c.code}</td>
                         <td className="p-4 text-center">
                           <div className="flex gap-1 justify-center">
                             {c.hasBV && <span className="text-[7px] border border-slate-300 px-1 font-bold">BV</span>}
@@ -1188,8 +1188,8 @@ export default function Billing({ mode = 'invoices' }: BillingProps) {
                             {c.type === 'foreign' ? 'Foreign' : 'Local'}
                           </span>
                         </td>
-                        <td className="p-4 text-xs text-slate-500 italic">{c.note || '-'}</td>
-                        <td className="p-4 text-right text-sm font-black text-slate-900">
+                        <td className="p-4 text-xs text-white italic">{c.note || '-'}</td>
+                        <td className="p-4 text-right text-sm font-black text-white">
                           ₱{c.price?.toLocaleString()}
                         </td>
                       </tr>
@@ -1202,22 +1202,22 @@ export default function Billing({ mode = 'invoices' }: BillingProps) {
               <div className="mt-12 flex justify-end">
                 <div className="w-80 p-0 border-t-2 border-slate-900">
                    <div className="flex justify-between items-center my-4">
-                     <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Subtotal</span>
-                     <span className="text-lg font-bold text-slate-900">₱{invoiceToExport.totalSum?.toLocaleString()}</span>
+                     <span className="text-xs font-black text-white uppercase tracking-widest">Subtotal</span>
+                     <span className="text-lg font-bold text-white">₱{invoiceToExport.totalSum?.toLocaleString()}</span>
                    </div>
                    <div className="flex justify-between items-center py-4 border-y-2 border-slate-900">
-                     <span className="text-sm font-black text-slate-900 uppercase tracking-widest">Total Amount</span>
-                     <span className="text-3xl font-black text-slate-900 tracking-tighter">₱{invoiceToExport.totalSum?.toLocaleString()}</span>
+                     <span className="text-sm font-black text-white uppercase tracking-widest">Total Amount</span>
+                     <span className="text-3xl font-black text-white tracking-tighter">₱{invoiceToExport.totalSum?.toLocaleString()}</span>
                    </div>
                 </div>
               </div>
 
               {/* Footer Note */}
               <div className="mt-20 text-center">
-                <div className="text-xl font-black uppercase tracking-[0.2em] text-slate-900 border-b-2 border-slate-900 inline-block pb-1">
+                <div className="text-xl font-black uppercase tracking-[0.2em] text-white border-b-2 border-slate-900 inline-block pb-1">
                   Thank You for Your Business
                 </div>
-                <p className="mt-4 text-xs font-medium text-slate-400 uppercase tracking-widest">
+                <p className="mt-4 text-xs font-medium text-white uppercase tracking-widest">
                   This is a computer generated invoice for {companyInfo.name}
                 </p>
               </div>

@@ -20,20 +20,14 @@ walkDir('./src', (file) => {
   let content = fs.readFileSync(file, 'utf8');
   let original = content;
 
-  // Backgrounds to black
+  // Backgrounds to dark
   content = content.replace(/bg-white/g, 'bg-black');
-  content = content.replace(/bg-slate-50/g, 'bg-black');
+  content = content.replace(/bg-slate-100/g, 'bg-slate-800');
+  content = content.replace(/bg-slate-50/g, 'bg-slate-900');
   content = content.replace(/bg-stone-50/g, 'bg-black');
-  content = content.replace(/bg-slate-100/g, 'bg-black');
-  content = content.replace(/bg-amber-50/g, 'bg-black');
-  content = content.replace(/bg-amber-100/g, 'bg-black');
 
   // Text to white
-  content = content.replace(/text-slate-[0-9]{3}/g, 'text-white');
-  content = content.replace(/text-stone-[0-9]{3}/g, 'text-white');
-  content = content.replace(/text-gray-[0-9]{3}/g, 'text-white');
-  content = content.replace(/text-amber-[0-9]{3}/g, 'text-white');
-  content = content.replace(/text-foreground/g, 'text-white');
+  content = content.replace(/text-black/g, 'text-white');
 
   if (content !== original) {
     fs.writeFileSync(file, content, 'utf8');

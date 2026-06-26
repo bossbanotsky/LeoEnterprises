@@ -348,29 +348,29 @@ export default function DailySupplies() {
             </div>
             
             <div className="text-right">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Total Unpaid Debts</span>
+              <span className="text-[10px] font-black text-white uppercase tracking-widest block mb-1">Total Unpaid Debts</span>
               <p className="text-2xl font-black text-rose-400">₱{unpaidDebtsTotal.toLocaleString(undefined, {minimumFractionDigits: 2})}</p>
             </div>
           </div>
           
           <div className="flex justify-between w-full items-center mb-4 flex-wrap gap-4">
             <div className="flex gap-2 flex-wrap items-center">
-              <div className="flex gap-2 bg-slate-900/50 p-1 rounded-xl">
+              <div className="flex gap-2 bg-white/50 p-1 rounded-xl">
                 <button
                   onClick={() => setViewMode('pending')}
-                  className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'pending' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+                  className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'pending' ? 'bg-indigo-600 text-white shadow-lg' : 'text-white hover:text-white'}`}
                 >
                   Pending
                 </button>
                 <button
                   onClick={() => setViewMode('settled')}
-                  className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'settled' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+                  className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'settled' ? 'bg-indigo-600 text-white shadow-lg' : 'text-white hover:text-white'}`}
                 >
                   Settled
                 </button>
                 <button
                   onClick={() => setViewMode('all')}
-                  className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'all' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+                  className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'all' ? 'bg-indigo-600 text-white shadow-lg' : 'text-white hover:text-white'}`}
                 >
                   All
                 </button>
@@ -379,7 +379,7 @@ export default function DailySupplies() {
               <select
                 value={typeFilter}
                 onChange={e => setTypeFilter(e.target.value as any)}
-                className="bg-slate-900/50 text-slate-400 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border border-white/5 focus:outline-none"
+                className="bg-white/50 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border border-white/20 focus:outline-none"
               >
                 <option value="all">All Items</option>
                 <option value="Ice">Ice</option>
@@ -414,7 +414,7 @@ export default function DailySupplies() {
         </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredSupplies.map(supply => (
-          <div key={supply.id} className="bg-slate-900 border border-white/5 p-5 rounded-2xl relative overflow-hidden hover:border-indigo-500/30 transition-all flex flex-col justify-between">
+          <div key={supply.id} className="bg-black border border-white/20 p-5 rounded-2xl relative overflow-hidden hover:border-indigo-500/30 transition-all flex flex-col justify-between">
             {supply.itemType === 'Ice' && <Snowflake className="absolute -right-4 -top-4 w-24 h-24 text-blue-500/5 rotate-12" />}
             {(supply.itemType === 'Water' || supply.itemType === 'Ice & Water') && <Droplets className="absolute -right-4 -top-4 w-24 h-24 text-blue-500/5 rotate-12" />}
             
@@ -422,12 +422,12 @@ export default function DailySupplies() {
               <div className="flex justify-between items-start mb-4 relative z-10">
                 <div>
                   <h3 className="text-lg font-black text-white tracking-tight">{supply.itemType}</h3>
-                  <p className="text-xs font-medium text-slate-300 mt-1 uppercase tracking-normal">{new Date(supply.date.includes('T') ? supply.date : supply.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+                  <p className="text-xs font-medium text-white mt-1 uppercase tracking-normal">{new Date(supply.date.includes('T') ? supply.date : supply.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-xl font-black text-indigo-400 tracking-tighter">₱{supply.totalCost.toLocaleString()}</p>
                   {supply.quantity && (
-                    <p className="text-[10px] text-slate-500 font-bold tracking-widest uppercase">
+                    <p className="text-[10px] text-white font-bold tracking-widest uppercase">
                       Qty: {supply.quantity} {supply.basePrice ? `× ₱${supply.basePrice.toLocaleString()}` : ''}
                     </p>
                   )}
@@ -435,14 +435,14 @@ export default function DailySupplies() {
               </div>
 
               <div className="space-y-3 relative z-10 mb-6">
-                <div className="bg-slate-800/50 p-3 rounded-xl border border-white/5 space-y-2">
-                  <div className="flex justify-between items-center bg-slate-950/30 p-2 rounded-lg">
-                    <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Payment</span>
+                <div className="bg-slate-800/50 p-3 rounded-xl border border-white/20 space-y-2">
+                  <div className="flex justify-between items-center bg-black/30 p-2 rounded-lg">
+                    <span className="text-[9px] font-bold text-white uppercase tracking-widest">Payment</span>
                     <span className="text-[10px] font-black text-white uppercase flex items-center gap-1 text-right">
                       {supply.paymentMethod === 'company' ? (
                         <><CreditCard className="w-3 h-3 text-emerald-400" /> Company Paid</>
                       ) : supply.paymentMethod === 'employee' ? (
-                        <><User className="w-3 h-3 text-amber-400" /> Employee Paid</>
+                        <><User className="w-3 h-3 text-white" /> Employee Paid</>
                       ) : (
                         <><Clock className="w-3 h-3 text-rose-400" /> Debt to {supply.supplierName}</>
                       )}
@@ -451,21 +451,21 @@ export default function DailySupplies() {
 
                   {supply.paymentMethod === 'employee' && (
                     <div className="flex justify-between items-center p-2">
-                      <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Paid By</span>
-                      <span className="text-[10px] font-bold text-amber-400 truncate max-w-[120px]">{getEmployeeName(supply.employeeId)}</span>
+                      <span className="text-[9px] font-bold text-white uppercase tracking-widest">Paid By</span>
+                      <span className="text-[10px] font-bold text-white truncate max-w-[120px]">{getEmployeeName(supply.employeeId)}</span>
                     </div>
                   )}
 
                   {supply.paymentMethod === 'debt' && (
                     <div className="flex justify-between items-center p-2">
-                      <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Owed To</span>
+                      <span className="text-[9px] font-bold text-white uppercase tracking-widest">Owed To</span>
                       <span className="text-[10px] font-bold text-rose-400 truncate max-w-[120px]">{supply.supplierName}</span>
                     </div>
                   )}
 
                   {supply.paymentMethod === 'company' && supply.chargedAccountIds.length > 0 && (
                     <div className="flex justify-between items-start p-2">
-                      <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Charged To</span>
+                      <span className="text-[9px] font-bold text-white uppercase tracking-widest">Charged To</span>
                       <div className="flex flex-col items-end gap-1">
                         {supply.chargedAccountIds.map(accId => {
                           const acc = accounts.find(a => a.id === accId);
@@ -477,14 +477,14 @@ export default function DailySupplies() {
                 </div>
 
                 {supply.notes && (
-                  <p className="text-xs text-slate-400 italic bg-white/5 p-2 rounded-lg border-l-2 border-indigo-500/50">
+                  <p className="text-xs text-white italic bg-white/5 p-2 rounded-lg border-l-2 border-indigo-500/50">
                     "{supply.notes}"
                   </p>
                 )}
               </div>
             </div>
 
-            <div className="flex justify-between items-end relative z-10 pt-4 border-t border-white/5 mt-auto">
+            <div className="flex justify-between items-end relative z-10 pt-4 border-t border-white/20 mt-auto">
               <div>
                 {supply.paymentMethod === 'employee' && (
                   supply.reimbursed ? (
@@ -494,7 +494,7 @@ export default function DailySupplies() {
                       </span>
                       <button 
                         onClick={() => handleUndoReimburse(supply)} 
-                        className="text-[9px] text-slate-500 hover:text-rose-400 hover:bg-slate-800 transition-all font-bold tracking-widest uppercase px-2 py-1 rounded"
+                        className="text-[9px] text-white hover:text-rose-400 hover:bg-slate-800 transition-all font-bold tracking-widest uppercase px-2 py-1 rounded"
                       >
                         Undo
                       </button>
@@ -502,7 +502,7 @@ export default function DailySupplies() {
                   ) : (
                     <button 
                       onClick={() => handleReimburse(supply)}
-                      className="flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-amber-500 bg-amber-500/10 hover:bg-amber-500/20 transition-all px-3 py-1.5 rounded-lg border border-amber-500/20"
+                      className="flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-white bg-black0/10 hover:bg-black0/20 transition-all px-3 py-1.5 rounded-lg border border-white/40"
                     >
                       <DollarSign className="w-3 h-3" /> Process Reimbursement
                     </button>
@@ -516,7 +516,7 @@ export default function DailySupplies() {
                       </span>
                       <button 
                         onClick={() => handleUndoSettleDebt(supply)} 
-                        className="text-[9px] text-slate-500 hover:text-rose-400 hover:bg-slate-800 transition-all font-bold tracking-widest uppercase px-2 py-1 rounded"
+                        className="text-[9px] text-white hover:text-rose-400 hover:bg-slate-800 transition-all font-bold tracking-widest uppercase px-2 py-1 rounded"
                       >
                         Undo
                       </button>
@@ -539,19 +539,19 @@ export default function DailySupplies() {
               <div className="flex gap-1">
                 <button 
                   onClick={() => handleOpenEdit(supply)}
-                  className="p-1.5 text-slate-500 hover:text-indigo-400 hover:bg-indigo-400/10 rounded-lg transition-all"
+                  className="p-1.5 text-white hover:text-indigo-400 hover:bg-indigo-400/10 rounded-lg transition-all"
                 >
                   <Edit2 className="w-4 h-4" />
                 </button>
                 {deleteConfirmId === supply.id ? (
                   <div className="flex bg-rose-500/10 rounded-lg overflow-hidden border border-rose-500/20">
                     <button onClick={() => deleteSupply(supply)} className="px-2 py-1 text-[10px] font-black uppercase text-rose-500 hover:bg-rose-500 hover:text-white transition-all">Confirm</button>
-                    <button onClick={() => setDeleteConfirmId(null)} className="px-2 py-1 text-[10px] font-black uppercase text-slate-400 hover:bg-slate-700 transition-all">Cancel</button>
+                    <button onClick={() => setDeleteConfirmId(null)} className="px-2 py-1 text-[10px] font-black uppercase text-white hover:bg-slate-700 transition-all">Cancel</button>
                   </div>
                 ) : (
                   <button 
                     onClick={() => setDeleteConfirmId(supply.id)}
-                    className="p-1.5 text-slate-500 hover:text-rose-400 hover:bg-rose-400/10 rounded-lg transition-all"
+                    className="p-1.5 text-white hover:text-rose-400 hover:bg-rose-400/10 rounded-lg transition-all"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -561,22 +561,22 @@ export default function DailySupplies() {
           </div>
         ))}
         {filteredSupplies.length === 0 && !loading && (
-           <div className="col-span-full py-12 text-center bg-slate-900 border border-white/5 rounded-3xl">
-              <Droplets className="w-12 h-12 text-slate-700 mx-auto mb-3" />
-              <p className="text-slate-400 font-bold uppercase tracking-widest text-sm">No supply records found</p>
+           <div className="col-span-full py-12 text-center bg-black border border-white/20 rounded-3xl">
+              <Droplets className="w-12 h-12 text-white mx-auto mb-3" />
+              <p className="text-white font-bold uppercase tracking-widest text-sm">No supply records found</p>
            </div>
         )}
       </div>
 
       {isAddOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-white/10 p-8 rounded-3xl w-full max-w-lg shadow-2xl animate-scale-in">
+          <div className="bg-black border border-white/30 p-8 rounded-3xl w-full max-w-lg shadow-2xl animate-scale-in">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-2">
                 {editingSupply ? <Edit2 className="w-5 h-5 text-indigo-400" /> : <Plus className="w-5 h-5 text-indigo-400" />} 
                 {editingSupply ? 'Edit Supply' : 'Record Supply'}
               </h2>
-              <button onClick={() => setIsAddOpen(false)} className="text-slate-500 hover:text-white transition-colors p-2 hover:bg-white/5 rounded-full">
+              <button onClick={() => setIsAddOpen(false)} className="text-white hover:text-white transition-colors p-2 hover:bg-white/5 rounded-full">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -584,22 +584,22 @@ export default function DailySupplies() {
             <form onSubmit={handleSubmit} className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-[10px] uppercase tracking-widest font-bold text-slate-500 ml-1">Date</label>
+                  <label className="text-[10px] uppercase tracking-widest font-bold text-white ml-1">Date</label>
                   <input
                     type="date"
                     required
                     value={formData.date}
                     onChange={e => setFormData({...formData, date: e.target.value})}
-                    className="w-full bg-slate-800/50 border border-white/10 px-3 py-2 rounded-lg text-white text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                    className="w-full bg-slate-800/50 border border-white/30 px-3 py-2 rounded-lg text-white text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] uppercase tracking-widest font-bold text-slate-500 ml-1">Type</label>
+                  <label className="text-[10px] uppercase tracking-widest font-bold text-white ml-1">Type</label>
                   <select
                     required
                     value={formData.itemType}
                     onChange={e => setFormData({...formData, itemType: e.target.value as DailySupply['itemType']})}
-                    className="w-full bg-slate-800/50 border border-white/10 px-3 py-2 rounded-lg text-white text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                    className="w-full bg-slate-800/50 border border-white/30 px-3 py-2 rounded-lg text-white text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
                   >
                     <option value="Ice">Ice</option>
                     <option value="Water">Water</option>
@@ -611,18 +611,18 @@ export default function DailySupplies() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-[10px] uppercase tracking-widest font-bold text-slate-500 ml-1">Quantity</label>
+                  <label className="text-[10px] uppercase tracking-widest font-bold text-white ml-1">Quantity</label>
                   <input
                     type="number"
                     min="1"
                     required
                     value={formData.quantity}
                     onChange={e => setFormData({...formData, quantity: e.target.value === '' ? '' : parseFloat(e.target.value) || 0})}
-                    className="w-full bg-slate-800/50 border border-white/10 px-3 py-2 rounded-lg text-white text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                    className="w-full bg-slate-800/50 border border-white/30 px-3 py-2 rounded-lg text-white text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] uppercase tracking-widest font-bold text-slate-500 ml-1">Base Price / Unit (₱)</label>
+                  <label className="text-[10px] uppercase tracking-widest font-bold text-white ml-1">Base Price / Unit (₱)</label>
                   <input
                     type="number"
                     required
@@ -630,37 +630,37 @@ export default function DailySupplies() {
                     placeholder="0.00"
                     value={formData.basePrice}
                     onChange={e => setFormData({...formData, basePrice: e.target.value === '' ? '' : parseFloat(e.target.value) || 0})}
-                    className="w-full bg-slate-800/50 border border-white/10 px-3 py-2 rounded-lg text-white text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                    className="w-full bg-slate-800/50 border border-white/30 px-3 py-2 rounded-lg text-white text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
                   />
                 </div>
               </div>
 
               <div className="bg-slate-800/30 p-2 px-3 rounded-lg border border-indigo-500/20 flex justify-between items-center">
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Total Cost</span>
+                <span className="text-[10px] font-bold text-white uppercase tracking-widest">Total Cost</span>
                 <span className="text-lg font-black text-indigo-400">₱{totalCost.toLocaleString()}</span>
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] uppercase tracking-widest font-bold text-slate-500 ml-1 mb-1 block">Payment Method</label>
+                <label className="text-[10px] uppercase tracking-widest font-bold text-white ml-1 mb-1 block">Payment Method</label>
                 <div className="grid grid-cols-3 gap-2">
                   <button
                     type="button"
                     onClick={() => setFormData({...formData, paymentMethod: 'company'})}
-                    className={`py-2 px-1 rounded-lg font-black uppercase text-[9px] tracking-wide transition-all border leading-tight ${formData.paymentMethod === 'company' ? 'bg-indigo-600/20 text-indigo-400 border-indigo-500/50 shadow-inner' : 'bg-slate-800/50 text-slate-400 border-white/5 hover:bg-slate-800'}`}
+                    className={`py-2 px-1 rounded-lg font-black uppercase text-[9px] tracking-wide transition-all border leading-tight ${formData.paymentMethod === 'company' ? 'bg-indigo-600/20 text-indigo-400 border-indigo-500/50 shadow-inner' : 'bg-slate-800/50 text-white border-white/20 hover:bg-slate-800'}`}
                   >
                     Paid by<br/>Company
                   </button>
                   <button
                     type="button"
                     onClick={() => setFormData({...formData, paymentMethod: 'employee'})}
-                    className={`py-2 px-1 rounded-lg font-black uppercase text-[9px] tracking-wide transition-all border leading-tight ${formData.paymentMethod === 'employee' ? 'bg-amber-500/20 text-amber-500 border-amber-500/50 shadow-inner' : 'bg-slate-800/50 text-slate-400 border-white/5 hover:bg-slate-800'}`}
+                    className={`py-2 px-1 rounded-lg font-black uppercase text-[9px] tracking-wide transition-all border leading-tight ${formData.paymentMethod === 'employee' ? 'bg-black0/20 text-white border-amber-500/50 shadow-inner' : 'bg-slate-800/50 text-white border-white/20 hover:bg-slate-800'}`}
                   >
                     Paid by<br/>Employee
                   </button>
                   <button
                     type="button"
                     onClick={() => setFormData({...formData, paymentMethod: 'debt'})}
-                    className={`py-2 px-1 rounded-lg font-black uppercase text-[9px] tracking-wide transition-all border leading-tight ${formData.paymentMethod === 'debt' ? 'bg-rose-500/20 text-rose-400 border-rose-500/50 shadow-inner' : 'bg-slate-800/50 text-slate-400 border-white/5 hover:bg-slate-800'}`}
+                    className={`py-2 px-1 rounded-lg font-black uppercase text-[9px] tracking-wide transition-all border leading-tight ${formData.paymentMethod === 'debt' ? 'bg-rose-500/20 text-rose-400 border-rose-500/50 shadow-inner' : 'bg-slate-800/50 text-white border-white/20 hover:bg-slate-800'}`}
                   >
                     Debt to<br/>Supplier
                   </button>
@@ -669,12 +669,12 @@ export default function DailySupplies() {
 
               {formData.paymentMethod === 'employee' ? (
                 <div className="space-y-1 animate-fade-in">
-                  <label className="text-[10px] uppercase tracking-widest font-bold text-slate-500 ml-1">Select Employee</label>
+                  <label className="text-[10px] uppercase tracking-widest font-bold text-white ml-1">Select Employee</label>
                   <select
                     required
                     value={formData.employeeId}
                     onChange={e => setFormData({...formData, employeeId: e.target.value})}
-                    className="w-full bg-slate-800/50 border border-white/10 px-3 py-2 rounded-lg text-white text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
+                    className="w-full bg-slate-800/50 border border-white/30 px-3 py-2 rounded-lg text-white text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
                   >
                     <option value="">-- Choose Employee --</option>
                     {employees.map(e => (
@@ -684,26 +684,26 @@ export default function DailySupplies() {
                 </div>
               ) : formData.paymentMethod === 'debt' ? (
                 <div className="space-y-1 animate-fade-in">
-                  <label className="text-[10px] uppercase tracking-widest font-bold text-slate-500 ml-1">Supplier Name</label>
+                  <label className="text-[10px] uppercase tracking-widest font-bold text-white ml-1">Supplier Name</label>
                   <input
                     type="text"
                     required
                     placeholder="e.g. Ice Delivery Co."
                     value={formData.supplierName}
                     onChange={e => setFormData({...formData, supplierName: e.target.value})}
-                    className="w-full bg-slate-800/50 border border-white/10 px-3 py-2 rounded-lg text-white text-sm focus:ring-2 focus:ring-rose-500 focus:border-transparent outline-none"
+                    className="w-full bg-slate-800/50 border border-white/30 px-3 py-2 rounded-lg text-white text-sm focus:ring-2 focus:ring-rose-500 focus:border-transparent outline-none"
                   />
                 </div>
               ) : null}
 
               <div className="space-y-2">
-                <label className="text-[10px] uppercase tracking-widest font-bold text-slate-500 ml-1 flex justify-between">
+                <label className="text-[10px] uppercase tracking-widest font-bold text-white ml-1 flex justify-between">
                   <span>Charge to Account(s)</span>
                   <span className="text-indigo-400 lowercase font-medium normal-case tracking-normal text-xs">{formData.chargedAccountIds.length > 1 ? 'Split equally' : ''}</span>
                 </label>
-                <div className="max-h-[100px] overflow-y-auto space-y-1 bg-slate-800/30 p-2 rounded-lg border border-white/5 custom-scrollbar">
+                <div className="max-h-[100px] overflow-y-auto space-y-1 bg-slate-800/30 p-2 rounded-lg border border-white/20 custom-scrollbar">
                   {accounts.map(acc => (
-                    <label key={acc.id} className="flex items-center justify-between p-1.5 rounded-md bg-white/5 hover:bg-white/10 cursor-pointer group">
+                    <label key={acc.id} className="flex items-center justify-between p-1.5 rounded-md bg-white/5 hover:bg-black/10 cursor-pointer group">
                       <div className="flex items-center gap-2">
                          <input
                            type="checkbox"
@@ -716,22 +716,22 @@ export default function DailySupplies() {
                            }}
                            className="rounded border-slate-600 bg-slate-800 text-indigo-500"
                          />
-                         <span className="text-sm font-bold text-slate-300 group-hover:text-white transition-colors">{acc.name}</span>
+                         <span className="text-sm font-bold text-white group-hover:text-white transition-colors">{acc.name}</span>
                       </div>
-                      <span className="text-[10px] font-mono text-slate-500">₱{acc.balance.toLocaleString()}</span>
+                      <span className="text-[10px] font-mono text-white">₱{acc.balance.toLocaleString()}</span>
                     </label>
                   ))}
                 </div>
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] uppercase tracking-widest font-bold text-slate-500 ml-1">Notes (Optional)</label>
+                <label className="text-[10px] uppercase tracking-widest font-bold text-white ml-1">Notes (Optional)</label>
                 <input
                   type="text"
                   placeholder="e.g. Bought from new supplier"
                   value={formData.notes}
                   onChange={e => setFormData({...formData, notes: e.target.value})}
-                  className="w-full bg-slate-800/50 border border-white/10 px-3 py-2 rounded-lg text-white text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                  className="w-full bg-slate-800/50 border border-white/30 px-3 py-2 rounded-lg text-white text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
                 />
               </div>
 

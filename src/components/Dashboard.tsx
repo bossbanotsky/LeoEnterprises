@@ -439,16 +439,16 @@ export default function Dashboard() {
           </p>
         </div>
 
-        <div className="bg-transparent p-1 rounded-2xl border border-white/10 shadow-lg flex items-center gap-1 group">
+        <div className="bg-transparent p-1 rounded-2xl border border-white/30 shadow-lg flex items-center gap-1 group">
           <button
             onClick={handlePrevDate}
-            className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-colors text-slate-500"
+            className="p-1.5 hover:bg-black dark:hover:bg-slate-700 rounded-xl transition-colors text-white"
             title="Previous Day"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
 
-          <div className="flex items-center gap-1.5 px-1 py-1 bg-slate-950/40 rounded-xl border border-white/10">
+          <div className="flex items-center gap-1.5 px-1 py-1 bg-black/40 rounded-xl border border-white/30">
             <Calendar className="w-3.5 h-3.5 text-blue-500 ml-1" />
             <Input
               type="date"
@@ -460,7 +460,7 @@ export default function Dashboard() {
 
           <button
             onClick={handleNextDate}
-            className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-colors text-slate-500"
+            className="p-1.5 hover:bg-black dark:hover:bg-slate-700 rounded-xl transition-colors text-white"
             title="Next Day"
           >
             <ChevronRight className="w-4 h-4" />
@@ -470,7 +470,7 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          <div className="bento-card flex-col bg-slate-900/40 p-6 border border-white/10 relative overflow-hidden group shadow-xl">
+          <div className="bento-card flex-col bg-black/40 p-6 border border-white/30 relative overflow-hidden group shadow-xl">
             <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full -mr-16 -mt-16 transition-transform group-hover:scale-150 duration-700"></div>
             <div className="flex items-center gap-3 text-cyan-400 mb-3">
               <div className="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center">
@@ -481,15 +481,15 @@ export default function Dashboard() {
               </span>
             </div>
             <div className="stat-value">
-              {loading ? <Skeleton className="h-10 w-24 bg-white/10" /> : stats.totalEmployees}
+              {loading ? <Skeleton className="h-10 w-24 bg-black/10" /> : stats.totalEmployees}
             </div>
-            <div className="text-[10px] text-slate-300 mt-2 font-black uppercase tracking-[0.2em] italic opacity-90">
+            <div className="text-[10px] text-white mt-2 font-black uppercase tracking-[0.2em] italic opacity-90">
               Active Personnel
             </div>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-            <Interactive className="bento-card flex-col bg-slate-900/40 p-5 border border-emerald-500/20 shadow-xl relative overflow-hidden group hover:border-emerald-500 transition-all cursor-pointer" onClick={() => setSelectedStatus({category: "Present", employeeIds: stats.presentIds})}>
+            <Interactive className="bento-card flex-col bg-black/40 p-5 border border-emerald-500/20 shadow-xl relative overflow-hidden group hover:border-emerald-500 transition-all cursor-pointer" onClick={() => setSelectedStatus({category: "Present", employeeIds: stats.presentIds})}>
               <div className="flex items-center gap-2 text-emerald-400 mb-2">
                 <CheckCircle className="w-4 h-4" />
                 <span className="text-[9px] font-black uppercase tracking-[0.2em] leading-none italic">
@@ -497,11 +497,11 @@ export default function Dashboard() {
                 </span>
               </div>
               <div className="stat-value text-emerald-400">
-                {loading ? <Skeleton className="h-9 w-16 bg-white/10" /> : stats.present}
+                {loading ? <Skeleton className="h-9 w-16 bg-black/10" /> : stats.present}
               </div>
             </Interactive>
 
-            <Interactive className="bento-card flex-col bg-slate-900/40 p-5 border border-sky-500/20 shadow-xl relative overflow-hidden group hover:border-sky-500 transition-all cursor-pointer" onClick={() => setSelectedStatus({category: "Undertime", employeeIds: stats.utIds})}>
+            <Interactive className="bento-card flex-col bg-black/40 p-5 border border-sky-500/20 shadow-xl relative overflow-hidden group hover:border-sky-500 transition-all cursor-pointer" onClick={() => setSelectedStatus({category: "Undertime", employeeIds: stats.utIds})}>
               <div className="flex items-center gap-2 text-sky-400 mb-2">
                 <Clock className="w-4 h-4" />
                 <span className="text-[9px] font-black uppercase tracking-[0.2em] leading-none italic">
@@ -509,11 +509,11 @@ export default function Dashboard() {
                 </span>
               </div>
               <div className="stat-value text-sky-400">
-                {loading ? <Skeleton className="h-9 w-16 bg-white/10" /> : stats.ut}
+                {loading ? <Skeleton className="h-9 w-16 bg-black/10" /> : stats.ut}
               </div>
             </Interactive>
 
-            <Interactive className="bento-card flex-col bg-slate-900/40 p-5 border border-indigo-500/20 shadow-xl relative overflow-hidden group hover:border-indigo-500 transition-all cursor-pointer" onClick={() => setSelectedStatus({category: "Half-Day", employeeIds: stats.hdIds})}>
+            <Interactive className="bento-card flex-col bg-black/40 p-5 border border-indigo-500/20 shadow-xl relative overflow-hidden group hover:border-indigo-500 transition-all cursor-pointer" onClick={() => setSelectedStatus({category: "Half-Day", employeeIds: stats.hdIds})}>
               <div className="flex items-center gap-2 text-indigo-400 mb-2">
                 <Clock className="w-4 h-4" />
                 <span className="text-[9px] font-black uppercase tracking-[0.2em] leading-none italic">
@@ -521,11 +521,11 @@ export default function Dashboard() {
                 </span>
               </div>
               <div className="stat-value text-indigo-400">
-                {loading ? <Skeleton className="h-9 w-16 bg-white/10" /> : stats.hd}
+                {loading ? <Skeleton className="h-9 w-16 bg-black/10" /> : stats.hd}
               </div>
             </Interactive>
 
-            <div className="bento-card flex-col bg-slate-900/40 p-5 border border-blue-500/20 shadow-xl relative overflow-hidden group">
+            <div className="bento-card flex-col bg-black/40 p-5 border border-blue-500/20 shadow-xl relative overflow-hidden group">
               <div className="flex items-center gap-2 text-blue-400 mb-2">
                 <Clock className="w-4 h-4" />
                 <span className="text-[9px] font-black uppercase tracking-[0.2em] leading-none italic">
@@ -538,25 +538,25 @@ export default function Dashboard() {
                 ) : (
                   <>
                     {stats.ot.toFixed(1)}{" "}
-                    <span className="text-sm font-bold text-slate-300">h</span>
+                    <span className="text-sm font-bold text-white">h</span>
                   </>
                 )}
               </div>
             </div>
 
-            <Interactive className="bento-card flex-col bg-slate-900/40 p-5 border border-amber-500/20 shadow-xl relative overflow-hidden group hover:border-amber-500 transition-all cursor-pointer" onClick={() => setSelectedStatus({category: "Pakyaw", employeeIds: stats.pakyawIds})}>
-              <div className="flex items-center gap-2 text-amber-400 mb-2">
+            <Interactive className="bento-card flex-col bg-black/40 p-5 border border-white/40 shadow-xl relative overflow-hidden group hover:border-amber-500 transition-all cursor-pointer" onClick={() => setSelectedStatus({category: "Pakyaw", employeeIds: stats.pakyawIds})}>
+              <div className="flex items-center gap-2 text-white mb-2">
                 <Hammer className="w-4 h-4" />
                 <span className="text-[9px] font-black uppercase tracking-[0.2em] leading-none italic">
                   Pakyaw
                 </span>
               </div>
-              <div className="stat-value text-amber-400">
-                {loading ? <Skeleton className="h-9 w-16 bg-white/10" /> : stats.pakyaw}
+              <div className="stat-value text-white">
+                {loading ? <Skeleton className="h-9 w-16 bg-black/10" /> : stats.pakyaw}
               </div>
             </Interactive>
 
-            <Interactive className="bento-card flex-col bg-slate-900/40 p-5 border border-rose-500/20 shadow-xl relative overflow-hidden group hover:border-rose-500 transition-all cursor-pointer" onClick={() => setSelectedStatus({category: "Absent", employeeIds: stats.absentIds})}>
+            <Interactive className="bento-card flex-col bg-black/40 p-5 border border-rose-500/20 shadow-xl relative overflow-hidden group hover:border-rose-500 transition-all cursor-pointer" onClick={() => setSelectedStatus({category: "Absent", employeeIds: stats.absentIds})}>
               <div className="flex items-center gap-2 text-rose-400 mb-2">
                 <XCircle className="w-4 h-4" />
                 <span className="text-[9px] font-black uppercase tracking-[0.2em] leading-none italic">
@@ -564,13 +564,13 @@ export default function Dashboard() {
                 </span>
               </div>
               <div className="stat-value text-rose-400">
-                {loading ? <Skeleton className="h-9 w-16 bg-white/10" /> : stats.absent}
+                {loading ? <Skeleton className="h-9 w-16 bg-black/10" /> : stats.absent}
               </div>
             </Interactive>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bento-card flex-col bg-slate-900/40 p-6 border border-emerald-500/30 relative overflow-hidden group min-h-[160px] justify-center text-center md:text-left shadow-[0_0_50px_rgba(16,185,129,0.1)]">
+            <div className="bento-card flex-col bg-black/40 p-6 border border-emerald-500/30 relative overflow-hidden group min-h-[160px] justify-center text-center md:text-left shadow-[0_0_50px_rgba(16,185,129,0.1)]">
               <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-[40px] -mr-16 -mt-16 group-hover:bg-emerald-500/20 transition-all duration-700"></div>
               <div className="flex items-center gap-3 text-emerald-400 mb-2 relative z-10 justify-center md:justify-start">
                 <PhilippinePeso className="w-5 h-5" />
@@ -580,7 +580,7 @@ export default function Dashboard() {
               </div>
               <div className="stat-value leading-none">
                 {loading ? (
-                  <Skeleton className="h-10 w-48 bg-white/10" />
+                  <Skeleton className="h-10 w-48 bg-black/10" />
                 ) : (
                   <>
                     ₱{" "}
@@ -591,15 +591,15 @@ export default function Dashboard() {
                   </>
                 )}
               </div>
-              <div className="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em] italic mt-3 relative z-10 bg-white/5 inline-block px-4 py-1.5 rounded-full border border-white/10 mx-auto md:ml-0">
+              <div className="text-[10px] font-black text-white uppercase tracking-[0.3em] italic mt-3 relative z-10 bg-white/5 inline-block px-4 py-1.5 rounded-full border border-white/30 mx-auto md:ml-0">
                 {format(parseISO(startDate), "MMM dd")} -{" "}
                 {format(parseISO(endDate), "MMM dd")}
               </div>
             </div>
 
-              <div className="bento-card flex-col bg-slate-900/40 p-6 border border-white/10 space-y-4 shadow-xl">
+              <div className="bento-card flex-col bg-black/40 p-6 border border-white/30 space-y-4 shadow-xl">
               <div className="flex items-center justify-between">
-                <h3 className="text-xs font-black uppercase tracking-[0.3em] text-slate-300 flex items-center gap-2 italic">
+                <h3 className="text-xs font-black uppercase tracking-[0.3em] text-white flex items-center gap-2 italic">
                   <Calendar className="w-4 h-4 text-blue-400" /> Period
                 </h3>
               </div>
@@ -613,7 +613,7 @@ export default function Dashboard() {
                   localStorage.setItem("payrollStartDate", val);
                   window.dispatchEvent(new Event("payrollDateChange"));
                 }}
-                className="h-9 text-xs rounded-xl bg-slate-950/40 border-white/10 text-white [color-scheme:dark]"
+                className="h-9 text-xs rounded-xl bg-black/40 border-white/30 text-white [color-scheme:dark]"
               />
               <span className="text-white/40 font-black uppercase tracking-widest text-[9px]">to</span>
               <Input
@@ -625,13 +625,13 @@ export default function Dashboard() {
                   localStorage.setItem("payrollEndDate", val);
                   window.dispatchEvent(new Event("payrollDateChange"));
                 }}
-                className="h-9 text-xs rounded-xl bg-slate-950/40 border-white/10 text-white [color-scheme:dark]"
+                className="h-9 text-xs rounded-xl bg-black/40 border-white/30 text-white [color-scheme:dark]"
               />
             </div>
             </div>
           </div>
 
-          <div className="bento-card flex-col bg-slate-900/40 p-6 border border-white/10 shadow-xl">
+          <div className="bento-card flex-col bg-black/40 p-6 border border-white/30 shadow-xl">
             <div className="flex flex-col gap-4 mb-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-bold uppercase tracking-widest text-cyan-400">
@@ -644,12 +644,12 @@ export default function Dashboard() {
 
               <div className="flex flex-wrap gap-2">
                 {[
-                  { id: "all", label: "All", color: "bg-white/5 border-white/10" },
+                  { id: "all", label: "All", color: "bg-white/5 border-white/30" },
                   { id: "present", label: "Present", color: "text-emerald-400 border-emerald-500/20 bg-emerald-500/5" },
                   { id: "absent", label: "Absent", color: "text-rose-400 border-rose-500/20 bg-rose-500/5" },
                   { id: "hd", label: "Half-Day", color: "text-indigo-400 border-indigo-500/20 bg-indigo-500/5" },
                   { id: "ut", label: "UT", color: "text-sky-400 border-sky-500/20 bg-sky-500/5" },
-                  { id: "pakyaw", label: "Pakyaw", color: "text-amber-400 border-amber-500/20 bg-amber-500/5" },
+                  { id: "pakyaw", label: "Pakyaw", color: "text-white border-white/40 bg-black0/5" },
                 ].map((f) => (
                   <button
                     key={f.id}
@@ -657,7 +657,7 @@ export default function Dashboard() {
                     className={`px-3 py-1.5 rounded-xl border text-[9px] font-black uppercase tracking-widest transition-all ${
                       statusFilter === f.id
                         ? "bg-blue-500 text-white border-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.3)]"
-                        : `${f.color} hover:bg-white/10`
+                        : `${f.color} hover:bg-black/10`
                     }`}
                   >
                     {f.label}
@@ -683,7 +683,7 @@ export default function Dashboard() {
                   .map((emp) => (
                   <Interactive
                     key={emp.id}
-                    className="p-3 bg-white/5 hover:bg-white/10 rounded-xl flex items-center justify-between border border-white/5 hover:border-blue-500/50 transition-all duration-300"
+                    className="p-3 bg-white/5 hover:bg-black/10 rounded-xl flex items-center justify-between border border-white/20 hover:border-blue-500/50 transition-all duration-300"
                     onClick={() => setSelectedEmployeeProj(emp)}
                   >
                     <div className="flex items-center gap-3">
@@ -726,7 +726,7 @@ export default function Dashboard() {
         </div>
 
         {/* Announcements Preview */}
-        <div className="bento-card flex-col bg-slate-900/40 backdrop-blur-md p-6 border border-white/10 shadow-2xl h-full">
+        <div className="bento-card flex-col bg-black/40 backdrop-blur-md p-6 border border-white/30 shadow-2xl h-full">
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-2">
               <Megaphone className="w-4 h-4 text-blue-500" />
@@ -756,14 +756,14 @@ export default function Dashboard() {
               recentAnnouncements.map((ann, idx) => (
                 <div
                   key={ann.id}
-                  className={`group flex flex-col gap-1 pb-4 transition-all hover:translate-x-1 ${idx !== recentAnnouncements.length - 1 ? "border-b border-white/5" : ""}`}
+                  className={`group flex flex-col gap-1 pb-4 transition-all hover:translate-x-1 ${idx !== recentAnnouncements.length - 1 ? "border-b border-white/20" : ""}`}
                 >
                   <div className="flex items-center justify-between">
                     <h4 className="font-black text-xs text-white uppercase italic tracking-tight line-clamp-1 group-hover:text-blue-400 transition-colors">
                       {ann.title}
                     </h4>
                     {isPast(parseISO(ann.expiresAt)) && (
-                      <span className="text-[7px] bg-white/5 text-white/30 px-1.5 py-0.5 rounded font-black uppercase tracking-widest border border-white/5">
+                      <span className="text-[7px] bg-white/5 text-white/30 px-1.5 py-0.5 rounded font-black uppercase tracking-widest border border-white/20">
                         Archived
                       </span>
                     )}
@@ -784,7 +784,7 @@ export default function Dashboard() {
             )}
 
             <Link to="/admin-dashboard/announcements" className="block">
-              <button className="w-full mt-2 h-10 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-blue-400 hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-all flex items-center justify-center gap-2 text-slate-400 hover:text-blue-600 text-[10px] font-bold uppercase tracking-widest">
+              <button className="w-full mt-2 h-10 rounded-xl border-2 border-dashed border-white/30 dark:border-white/50 hover:border-blue-400 hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-all flex items-center justify-center gap-2 text-white hover:text-blue-600 text-[10px] font-bold uppercase tracking-widest">
                 <Plus className="w-3.5 h-3.5" />
                 Post New Notice
               </button>
@@ -798,14 +798,14 @@ export default function Dashboard() {
         open={!!selectedEmployeeProj}
         onOpenChange={(open) => !open && setSelectedEmployeeProj(null)}
       >
-        <DialogContent className="sm:max-w-[500px] border-slate-200 dark:border-slate-800">
+        <DialogContent className="sm:max-w-[500px] border-white/30 dark:border-slate-800">
           <DialogHeader>
             <DialogTitle>Projection Breakdown</DialogTitle>
           </DialogHeader>
 
           {selectedEmployeeProj && (
             <div className="space-y-4 pt-2 relative">
-              <div className="flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
+              <div className="flex items-center gap-3 border-b border-white/20 dark:border-slate-800 pb-4">
                 <div className="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900 flex items-center justify-center font-bold text-blue-600 dark:text-blue-400 overflow-hidden shadow-sm">
                   {selectedEmployeeProj.photoURL ? (
                     <img
@@ -818,32 +818,32 @@ export default function Dashboard() {
                   )}
                 </div>
                 <div>
-                  <h3 className="font-bold text-lg text-slate-900 dark:text-white">
+                  <h3 className="font-bold text-lg text-white dark:text-white">
                     {selectedEmployeeProj.fullName}
                   </h3>
-                  <p className="text-xs text-slate-500 uppercase tracking-widest">
+                  <p className="text-xs text-white uppercase tracking-widest">
                     {selectedEmployeeProj.position || "Staff"}
                   </p>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div className="p-3 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800">
+                <div className="p-3 bg-black dark:bg-black rounded-xl border border-white/20 dark:border-slate-800">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                    <span className="text-sm font-medium text-white dark:text-white">
                       Present
                     </span>
-                    <span className="font-bold text-slate-900 dark:text-white">
+                    <span className="font-bold text-white dark:text-white">
                       {selectedEmployeeProj.presentDays} days
                     </span>
                   </div>
                 </div>
-                <div className="p-3 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800">
+                <div className="p-3 bg-black dark:bg-black rounded-xl border border-white/20 dark:border-slate-800">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                    <span className="text-sm font-medium text-white dark:text-white">
                       Half Days
                     </span>
-                    <span className="font-bold text-slate-900 dark:text-white">
+                    <span className="font-bold text-white dark:text-white">
                       {selectedEmployeeProj.hdDays} days
                     </span>
                   </div>
@@ -864,7 +864,7 @@ export default function Dashboard() {
                     </span>
                   </div>
                 </div>
-                <div className="p-3 bg-amber-50 dark:bg-amber-950/20 rounded-xl border border-amber-100 dark:border-amber-900/30 text-amber-900 dark:text-amber-400">
+                <div className="p-3 bg-black dark:bg-amber-950/20 rounded-xl border border-amber-100 dark:border-amber-900/30 text-white dark:text-white">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">Pakyaw</span>
                     <span className="font-bold">
@@ -928,7 +928,7 @@ export default function Dashboard() {
               </div>
 
               <div className="space-y-2">
-                <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+                <h4 className="text-xs font-bold text-white uppercase tracking-widest">
                   Attendance Log
                 </h4>
                 <div className="max-h-[180px] overflow-y-auto space-y-1 pr-1 custom-scrollbar">
@@ -952,7 +952,7 @@ export default function Dashboard() {
                         return (
                           <div
                             key={att.id}
-                            className="flex items-center justify-between p-2 bg-white dark:bg-slate-900 rounded-lg border border-slate-100 dark:border-slate-800 text-[11px]"
+                            className="flex items-center justify-between p-2 bg-black dark:bg-black rounded-lg border border-white/20 dark:border-slate-800 text-[11px]"
                           >
                             <div className="flex items-center gap-2">
                               <div
@@ -964,19 +964,19 @@ export default function Dashboard() {
                                       : att.status === "ut"
                                         ? "bg-orange-400"
                                         : att.status === "pakyaw"
-                                          ? "bg-amber-500"
+                                          ? "bg-black0"
                                           : "bg-red-500"
                                 }`}
                               ></div>
-                              <span className="font-medium text-slate-700 dark:text-slate-300">
+                              <span className="font-medium text-white dark:text-white">
                                 {format(parseISO(att.date), "MMM dd, yyyy")}
                                 {(isPresent || isHD || isUT) && att.timeIn && (
-                                  <span className="block text-[9px] text-slate-400 font-normal">
+                                  <span className="block text-[9px] text-white font-normal">
                                     {att.timeIn} - {att.timeOut || "--:--"}
                                   </span>
                                 )}
                                 {att.status === "pakyaw" && att.jobName && (
-                                  <span className="block text-[9px] text-amber-600 font-bold italic">
+                                  <span className="block text-[9px] text-white font-bold italic">
                                     Project: {att.jobName}
                                   </span>
                                 )}
@@ -995,7 +995,7 @@ export default function Dashboard() {
                         );
                       })
                   ) : (
-                    <div className="text-center py-4 text-xs text-slate-400 border border-dashed rounded-xl">
+                    <div className="text-center py-4 text-xs text-white border border-dashed rounded-xl">
                       No logs found
                     </div>
                   )}
@@ -1011,7 +1011,7 @@ export default function Dashboard() {
         open={!!selectedStatus.category}
         onOpenChange={(open) => !open && setSelectedStatus({ category: null, employeeIds: [] })}
       >
-        <DialogContent className="sm:max-w-[400px] border-slate-200 dark:border-slate-800">
+        <DialogContent className="sm:max-w-[400px] border-white/30 dark:border-slate-800">
           <DialogHeader>
             <DialogTitle>Employees: {selectedStatus.category}</DialogTitle>
           </DialogHeader>
@@ -1024,8 +1024,8 @@ export default function Dashboard() {
               const pakyawAtts = empAtts.filter(a => a.status === 'pakyaw');
               
               return (
-                <div key={emp.id} className="p-3 bg-slate-50 dark:bg-slate-900 rounded-xl flex items-center gap-3 border border-slate-100 dark:border-slate-800">
-                  <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden flex items-center justify-center font-bold text-slate-500 text-xs shrink-0">
+                <div key={emp.id} className="p-3 bg-black dark:bg-black rounded-xl flex items-center gap-3 border border-white/20 dark:border-slate-800">
+                  <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden flex items-center justify-center font-bold text-white text-xs shrink-0">
                     {emp.photoURL ? (
                       <img
                         src={emp.photoURL}
@@ -1038,17 +1038,17 @@ export default function Dashboard() {
                   </div>
                   <div className="flex-1 flex justify-between items-center gap-2">
                     <div className="min-w-0">
-                      <div className="font-bold text-sm text-slate-900 dark:text-white truncate">
+                      <div className="font-bold text-sm text-white dark:text-white truncate">
                         {emp.fullName}
                       </div>
-                      <div className="text-[10px] text-slate-500 truncate">
+                      <div className="text-[10px] text-white truncate">
                         {emp.position || "Staff"}
                       </div>
                     </div>
                     {empAtts.length > 0 && (
                       <div className="text-right shrink-0 flex flex-col items-end gap-1">
                         {empAtts[0] && (empAtts[0].timeIn || empAtts[0].timeOut) && (
-                          <div className="text-[10px] font-bold text-slate-600 dark:text-slate-300">
+                          <div className="text-[10px] font-bold text-white dark:text-white">
                             {format(parseISO(`${selectedDate}T${empAtts[0].timeIn || '00:00'}`), "h:mm a")} - {empAtts[0].timeOut ? format(parseISO(`${selectedDate}T${empAtts[0].timeOut}`), "h:mm a") : 'No out'}
                           </div>
                         )}
@@ -1057,7 +1057,7 @@ export default function Dashboard() {
                             const job = pakyawJobs.find(j => j.id === a.pakyawJobId);
                             if (!job) return null;
                             return (
-                                <span key={a.id} className="text-[9px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded whitespace-nowrap">
+                                <span key={a.id} className="text-[9px] font-bold text-white bg-black dark:bg-amber-900/30 px-1.5 py-0.5 rounded whitespace-nowrap">
                                   {job.containerNumber ? `[${job.containerNumber}] ` : ''}{job.description}
                                 </span>
                             );
@@ -1082,7 +1082,7 @@ export default function Dashboard() {
               );
             })}
             {selectedStatus.employeeIds.length === 0 && (
-              <div className="text-center py-8 text-xs text-slate-400">
+              <div className="text-center py-8 text-xs text-white">
                 No employees found in this category.
               </div>
             )}

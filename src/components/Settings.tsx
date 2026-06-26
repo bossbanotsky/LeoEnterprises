@@ -96,13 +96,13 @@ export default function Settings() {
 
   return (
     <div className="h-full flex flex-col">
-      <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">Settings</h1>
+      <h1 className="text-2xl font-bold text-white dark:text-white mb-6">Settings</h1>
 
       <div className="space-y-6 flex-1 overflow-y-auto pb-6 pr-1">
         {/* Profile Section */}
         <div className="relative group">
           <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl blur opacity-20 group-hover:opacity-30 transition duration-1000 group-hover:duration-200"></div>
-          <div className="relative bento-card flex-col bg-white dark:bg-slate-800 p-0 overflow-hidden border-slate-200 dark:border-slate-700 shadow-sm">
+          <div className="relative bento-card flex-col bg-black dark:bg-slate-800 p-0 overflow-hidden border-white/30 dark:border-white/50 shadow-sm">
             <div className="p-6 flex items-center gap-5">
               <div className="relative">
                 <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" id="profile-picture-upload-admin" />
@@ -123,10 +123,10 @@ export default function Settings() {
                 <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 border-4 border-white dark:border-slate-800 rounded-full"></div>
               </div>
               <div className="flex-1 min-w-0">
-                <h2 className="font-bold text-slate-900 dark:text-white text-xl truncate">{user?.email}</h2>
+                <h2 className="font-bold text-white dark:text-white text-xl truncate">{user?.email}</h2>
                 <div className="flex items-center gap-2 mt-1">
                   <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-[10px] font-bold uppercase tracking-wider rounded-md">Admin</span>
-                  <span className="text-xs text-slate-500 dark:text-slate-400">{companyInfo.name}</span>
+                  <span className="text-xs text-white dark:text-white">{companyInfo.name}</span>
                 </div>
               </div>
             </div>
@@ -135,10 +135,10 @@ export default function Settings() {
 
         {/* Organization Section */}
         <div className="space-y-3">
-          <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">Organization</h3>
-          <div className="bento-card flex-col bg-white dark:bg-slate-800 p-0 overflow-hidden border-slate-200 dark:border-slate-700 shadow-sm">
+          <h3 className="text-xs font-bold text-white dark:text-white uppercase tracking-widest ml-1">Organization</h3>
+          <div className="bento-card flex-col bg-black dark:bg-slate-800 p-0 overflow-hidden border-white/30 dark:border-white/50 shadow-sm">
             <div 
-              className="p-4 flex items-center justify-between border-b border-slate-100 dark:border-slate-700/50 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors group"
+              className="p-4 flex items-center justify-between border-b border-white/20 dark:border-white/50/50 cursor-pointer hover:bg-black dark:hover:bg-slate-700/30 transition-colors group"
               onClick={() => {
                 setCompanyForm(companyInfo);
                 setShowCompanyDialog(true);
@@ -149,45 +149,45 @@ export default function Settings() {
                   <Building2 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div>
-                  <span className="block font-semibold text-slate-900 dark:text-white">Company Info</span>
-                  <span className="text-[10px] text-slate-500 dark:text-slate-400">Business details & branding</span>
+                  <span className="block font-semibold text-white dark:text-white">Company Info</span>
+                  <span className="text-[10px] text-white dark:text-white">Business details & branding</span>
                 </div>
               </div>
-              <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-blue-500 transition-colors" />
+              <ChevronRight className="w-5 h-5 text-white group-hover:text-blue-500 transition-colors" />
             </div>
-            <div className="p-4 flex items-center justify-between border-b border-slate-100 dark:border-slate-700/50 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors group">
+            <div className="p-4 flex items-center justify-between border-b border-white/20 dark:border-white/50/50 cursor-pointer hover:bg-black dark:hover:bg-slate-700/30 transition-colors group">
               <div className="flex items-center gap-4">
                 <div className="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center group-hover:scale-110 transition-transform">
                   <SettingsIcon className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                 </div>
                 <div>
-                  <span className="block font-semibold text-slate-900 dark:text-white">Payroll Settings</span>
-                  <span className="text-[10px] text-slate-500 dark:text-slate-400">Rates, taxes & deductions</span>
+                  <span className="block font-semibold text-white dark:text-white">Payroll Settings</span>
+                  <span className="text-[10px] text-white dark:text-white">Rates, taxes & deductions</span>
                 </div>
               </div>
-              <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-purple-500 transition-colors" />
+              <ChevronRight className="w-5 h-5 text-white group-hover:text-purple-500 transition-colors" />
             </div>
-            <div className="p-4 flex items-center justify-between cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors group">
+            <div className="p-4 flex items-center justify-between cursor-pointer hover:bg-black dark:hover:bg-slate-700/30 transition-colors group">
               <div className="flex items-center gap-4">
                 <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center group-hover:scale-110 transition-transform">
                   <Shield className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                 </div>
                 <div>
-                  <span className="block font-semibold text-slate-900 dark:text-white">User Roles</span>
-                  <span className="text-[10px] text-slate-500 dark:text-slate-400">Permissions & access control</span>
+                  <span className="block font-semibold text-white dark:text-white">User Roles</span>
+                  <span className="text-[10px] text-white dark:text-white">Permissions & access control</span>
                 </div>
               </div>
-              <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-emerald-500 transition-colors" />
+              <ChevronRight className="w-5 h-5 text-white group-hover:text-emerald-500 transition-colors" />
             </div>
           </div>
         </div>
 
         {/* System Section */}
         <div className="space-y-3">
-          <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">Security</h3>
-          <div className="bento-card flex-col bg-white dark:bg-slate-800 p-0 overflow-hidden border-slate-200 dark:border-slate-700 shadow-sm">
+          <h3 className="text-xs font-bold text-white dark:text-white uppercase tracking-widest ml-1">Security</h3>
+          <div className="bento-card flex-col bg-black dark:bg-slate-800 p-0 overflow-hidden border-white/30 dark:border-white/50 shadow-sm">
             <div 
-              className="p-4 flex items-center justify-between cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors group"
+              className="p-4 flex items-center justify-between cursor-pointer hover:bg-black dark:hover:bg-slate-700/30 transition-colors group"
               onClick={() => {
                 setPasswordSuccess(false);
                 setPasswordError(null);
@@ -201,33 +201,33 @@ export default function Settings() {
                   <Lock className="w-5 h-5 text-rose-600 dark:text-rose-400" />
                 </div>
                 <div>
-                  <span className="block font-semibold text-slate-900 dark:text-white">Security & Password</span>
-                  <span className="text-[10px] text-slate-500 dark:text-slate-400">Set or change your login password</span>
+                  <span className="block font-semibold text-white dark:text-white">Security & Password</span>
+                  <span className="text-[10px] text-white dark:text-white">Set or change your login password</span>
                 </div>
               </div>
-              <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-rose-500 transition-colors" />
+              <ChevronRight className="w-5 h-5 text-white group-hover:text-rose-500 transition-colors" />
             </div>
           </div>
         </div>
 
         {/* System Section */}
         <div className="space-y-3">
-          <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">System</h3>
-          <div className="bento-card flex-col bg-white dark:bg-slate-800 p-0 overflow-hidden border-slate-200 dark:border-slate-700 shadow-sm">
+          <h3 className="text-xs font-bold text-white dark:text-white uppercase tracking-widest ml-1">System</h3>
+          <div className="bento-card flex-col bg-black dark:bg-slate-800 p-0 overflow-hidden border-white/30 dark:border-white/50 shadow-sm">
             <div 
-              className="p-4 flex items-center justify-between border-b border-slate-100 dark:border-slate-700/50 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors group"
+              className="p-4 flex items-center justify-between border-b border-white/20 dark:border-white/50/50 cursor-pointer hover:bg-black dark:hover:bg-slate-700/30 transition-colors group"
               onClick={() => navigate('/admin-dashboard/settings/logs')}
             >
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                <div className="w-10 h-10 rounded-xl bg-black dark:bg-amber-900/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <AlertCircle className="w-5 h-5 text-white dark:text-white" />
                 </div>
                 <div>
-                  <span className="block font-semibold text-slate-900 dark:text-white">Logs & Errors</span>
-                  <span className="text-[10px] text-slate-500 dark:text-slate-400">System health & audit trails</span>
+                  <span className="block font-semibold text-white dark:text-white">Logs & Errors</span>
+                  <span className="text-[10px] text-white dark:text-white">System health & audit trails</span>
                 </div>
               </div>
-              <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-amber-500 transition-colors" />
+              <ChevronRight className="w-5 h-5 text-white group-hover:text-white transition-colors" />
             </div>
           </div>
         </div>
@@ -241,7 +241,7 @@ export default function Settings() {
             <LogOut className="w-5 h-5 mr-3" />
             Sign Out of Account
           </Button>
-          <p className="text-center text-[10px] text-slate-400 dark:text-slate-600 mt-4 uppercase tracking-[0.2em]">
+          <p className="text-center text-[10px] text-white dark:text-white mt-4 uppercase tracking-[0.2em]">
             {companyInfo.name} v1.0.4
           </p>
         </div>
@@ -249,53 +249,53 @@ export default function Settings() {
 
       {/* Company Info Dialog */}
       <Dialog open={showCompanyDialog} onOpenChange={setShowCompanyDialog}>
-        <DialogContent className="sm:max-w-[425px] p-0 overflow-hidden bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-3xl">
-          <div className="p-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-between items-center">
+        <DialogContent className="sm:max-w-[425px] p-0 overflow-hidden bg-black dark:bg-black border-white/30 dark:border-slate-800 rounded-3xl">
+          <div className="p-6 border-b border-white/20 dark:border-slate-800 bg-black dark:bg-slate-800/50 flex justify-between items-center">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center">
                 <Building2 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
               </div>
-              <DialogTitle className="text-xl font-bold text-slate-900 dark:text-white">Company Info</DialogTitle>
+              <DialogTitle className="text-xl font-bold text-white dark:text-white">Company Info</DialogTitle>
             </div>
             <DialogClose className="rounded-full p-2 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
-              <X className="w-5 h-5 text-slate-500" />
+              <X className="w-5 h-5 text-white" />
             </DialogClose>
           </div>
           
           <div className="p-6 space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="companyName" className="text-xs font-bold text-slate-500 uppercase tracking-widest">Company Name</Label>
+              <Label htmlFor="companyName" className="text-xs font-bold text-white uppercase tracking-widest">Company Name</Label>
               <Input
                 id="companyName"
                 value={companyForm.name}
                 onChange={(e) => setCompanyForm({ ...companyForm, name: e.target.value })}
-                className="h-12 rounded-xl bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 focus:bg-white dark:focus:bg-slate-900"
+                className="h-12 rounded-xl bg-black dark:bg-slate-800 border-white/30 dark:border-white/50 focus:bg-black dark:focus:bg-black"
                 placeholder="e.g. Leo Enterprises"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="companyAddress" className="text-xs font-bold text-slate-500 uppercase tracking-widest">Business Address</Label>
+              <Label htmlFor="companyAddress" className="text-xs font-bold text-white uppercase tracking-widest">Business Address</Label>
               <Input
                 id="companyAddress"
                 value={companyForm.address}
                 onChange={(e) => setCompanyForm({ ...companyForm, address: e.target.value })}
-                className="h-12 rounded-xl bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 focus:bg-white dark:focus:bg-slate-900"
+                className="h-12 rounded-xl bg-black dark:bg-slate-800 border-white/30 dark:border-white/50 focus:bg-black dark:focus:bg-black"
                 placeholder="Complete Business Address"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="companyContact" className="text-xs font-bold text-slate-500 uppercase tracking-widest">Contact Info</Label>
+              <Label htmlFor="companyContact" className="text-xs font-bold text-white uppercase tracking-widest">Contact Info</Label>
               <Input
                 id="companyContact"
                 value={companyForm.contact}
                 onChange={(e) => setCompanyForm({ ...companyForm, contact: e.target.value })}
-                className="h-12 rounded-xl bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 focus:bg-white dark:focus:bg-slate-900"
+                className="h-12 rounded-xl bg-black dark:bg-slate-800 border-white/30 dark:border-white/50 focus:bg-black dark:focus:bg-black"
                 placeholder="Phone or Email"
               />
             </div>
           </div>
 
-          <div className="p-6 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800">
+          <div className="p-6 bg-black dark:bg-slate-800/50 border-t border-white/20 dark:border-slate-800">
             <Button
               className="w-full h-12 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold"
               disabled={isSaving || !companyForm.name.trim()}
@@ -323,16 +323,16 @@ export default function Settings() {
 
       {/* Password Change Dialog */}
       <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
-        <DialogContent className="sm:max-w-[425px] p-0 overflow-hidden bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-3xl">
-          <div className="p-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-between items-center">
+        <DialogContent className="sm:max-w-[425px] p-0 overflow-hidden bg-black dark:bg-black border-white/30 dark:border-slate-800 rounded-3xl">
+          <div className="p-6 border-b border-white/20 dark:border-slate-800 bg-black dark:bg-slate-800/50 flex justify-between items-center">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-rose-100 dark:bg-rose-900/40 flex items-center justify-center">
                 <Lock className="w-5 h-5 text-rose-600 dark:text-rose-400" />
               </div>
-              <DialogTitle className="text-xl font-bold text-slate-900 dark:text-white">Security</DialogTitle>
+              <DialogTitle className="text-xl font-bold text-white dark:text-white">Security</DialogTitle>
             </div>
             <DialogClose className="rounded-full p-2 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
-              <X className="w-5 h-5 text-slate-500" />
+              <X className="w-5 h-5 text-white" />
             </DialogClose>
           </div>
           
@@ -343,12 +343,12 @@ export default function Settings() {
                   <CheckCircle2 className="w-10 h-10" />
                 </div>
                 <h3 className="text-lg font-bold">Password Updated!</h3>
-                <p className="text-sm text-slate-500">You can now use this password to sign in via email.</p>
+                <p className="text-sm text-white">You can now use this password to sign in via email.</p>
                 <Button onClick={() => setShowPasswordDialog(false)} className="rounded-xl px-8">Got it</Button>
               </div>
             ) : (
               <>
-                <p className="text-xs text-slate-500 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
+                <p className="text-xs text-white bg-black dark:bg-slate-800/50 p-3 rounded-xl border border-white/20 dark:border-slate-800">
                   Setting a password allows you to log in using your email address ({user?.email}) in the standard sign-in form.
                 </p>
                 
@@ -359,22 +359,22 @@ export default function Settings() {
                 )}
 
                 <div className="space-y-2">
-                  <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">New Password</Label>
+                  <Label className="text-xs font-bold text-white uppercase tracking-widest">New Password</Label>
                   <Input
                     type="password"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    className="h-12 rounded-xl bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700"
+                    className="h-12 rounded-xl bg-black dark:bg-slate-800 border-white/30 dark:border-white/50"
                     placeholder="Min. 6 characters"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Confirm Password</Label>
+                  <Label className="text-xs font-bold text-white uppercase tracking-widest">Confirm Password</Label>
                   <Input
                     type="password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="h-12 rounded-xl bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700"
+                    className="h-12 rounded-xl bg-black dark:bg-slate-800 border-white/30 dark:border-white/50"
                     placeholder="Repeat new password"
                   />
                 </div>
@@ -383,9 +383,9 @@ export default function Settings() {
           </div>
 
           {!passwordSuccess && (
-            <div className="p-6 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800">
+            <div className="p-6 bg-black dark:bg-slate-800/50 border-t border-white/20 dark:border-slate-800">
               <Button
-                className="w-full h-12 rounded-xl bg-slate-900 dark:bg-blue-600 hover:bg-black text-white font-bold"
+                className="w-full h-12 rounded-xl bg-black dark:bg-blue-600 hover:bg-black text-white font-bold"
                 disabled={isChangingPassword || newPassword.length < 6 || newPassword !== confirmPassword}
                 onClick={async () => {
                   try {

@@ -88,16 +88,16 @@ export default function ServiceDetail() {
   return (
     <div className="min-h-screen bg-transparent">
       {/* Dynamic Header */}
-      <nav className="fixed top-0 w-full z-50 bg-slate-900/60 backdrop-blur-md border-b border-border">
+      <nav className="fixed top-0 w-full z-50 bg-black/95 border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 bg-amber-600 rounded-xl flex items-center justify-center group-hover:rotate-6 transition-transform">
-              <span className="text-white font-black">LP</span>
+            <div className="w-10 h-10 bg-black rounded-lg flex items-center justify-center shrink-0 overflow-hidden border border-white/30 p-0.5 group-hover:rotate-6 transition-transform">
+              <img src="/src/assets/images/lp_logo_final_1781661072015.jpg" alt="L&P Logo" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
             </div>
-            <span className="font-bold text-foreground uppercase italic tracking-tighter">L & P</span>
+            <span className="font-bold text-white uppercase italic tracking-tighter">L & P</span>
           </Link>
           <Link to="/">
-            <Button variant="ghost" className="flex items-center gap-2 text-stone-500 font-bold hover:text-foreground uppercase tracking-widest text-xs">
+            <Button variant="ghost" className="flex items-center gap-2 text-white font-bold hover:text-white uppercase tracking-widest text-xs">
               <ArrowLeft className="w-4 h-4" /> Back to home
             </Button>
           </Link>
@@ -116,7 +116,7 @@ export default function ServiceDetail() {
               <div className="w-16 h-16 rounded-2xl bg-blue-600/10 flex items-center justify-center mb-10">
                 <Icon className="w-8 h-8 text-blue-600" />
               </div>
-              <h1 className="text-4xl lg:text-7xl font-bold text-foreground tracking-[-0.04em] leading-[0.95] mb-8 uppercase italic">
+              <h1 className="text-4xl lg:text-7xl font-bold text-white tracking-[-0.04em] leading-[0.95] mb-8 uppercase italic">
                 {service.title}
               </h1>
               <p className="text-xl text-[#6b7280] font-medium leading-relaxed mb-12 tracking-tight">
@@ -129,7 +129,7 @@ export default function ServiceDetail() {
                      <div className="w-6 h-6 rounded-full bg-blue-600/10 flex items-center justify-center text-blue-600">
                        <ChevronRight className="w-4 h-4" />
                      </div>
-                     <span className="text-foreground font-bold tracking-tight uppercase italic text-sm">{detail}</span>
+                     <span className="text-white font-bold tracking-tight uppercase italic text-sm">{detail}</span>
                    </div>
                  ))}
               </div>
@@ -147,7 +147,7 @@ export default function ServiceDetail() {
                 className="w-full h-full object-cover"
                 referrerPolicy="no-referrer"
               />
-              <div className="absolute inset-0 bg-slate-900/10" />
+              <div className="absolute inset-0 bg-black/10" />
             </motion.div>
           </div>
         </div>
@@ -160,22 +160,22 @@ export default function ServiceDetail() {
              <div className="flex items-center gap-4">
                 <ShieldCheck className="w-8 h-8 text-blue-600" />
                 <div className="flex flex-col">
-                  <span className="text-slate-900 font-bold uppercase italic tracking-tighter">Certified Quality</span>
-                  <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Global Standards</span>
+                  <span className="text-white font-bold uppercase italic tracking-tighter">Certified Quality</span>
+                  <span className="text-xs font-bold text-white uppercase tracking-widest">Global Standards</span>
                 </div>
              </div>
              <div className="flex items-center gap-4">
                 <Clock className="w-8 h-8 text-blue-600" />
                 <div className="flex flex-col">
-                  <span className="text-slate-900 font-bold uppercase italic tracking-tighter">24/7 Support</span>
-                  <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Always Online</span>
+                  <span className="text-white font-bold uppercase italic tracking-tighter">24/7 Support</span>
+                  <span className="text-xs font-bold text-white uppercase tracking-widest">Always Online</span>
                 </div>
              </div>
              <div className="flex items-center gap-4">
                 <Settings className="w-8 h-8 text-blue-600" />
                 <div className="flex flex-col">
-                  <span className="text-slate-900 font-bold uppercase italic tracking-tighter">Modern Fleet</span>
-                  <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Latest Tech</span>
+                  <span className="text-white font-bold uppercase italic tracking-tighter">Modern Fleet</span>
+                  <span className="text-xs font-bold text-white uppercase tracking-widest">Latest Tech</span>
                 </div>
              </div>
           </div>
@@ -187,10 +187,10 @@ export default function ServiceDetail() {
         <div className="max-w-7xl mx-auto px-4">
           <div className="mb-20">
             <h2 className="text-[11px] font-bold text-blue-600 uppercase tracking-[4px] mb-6">Visual Proof</h2>
-            <h3 className="text-4xl lg:text-6xl font-bold text-slate-900 tracking-[-0.04em] uppercase italic">Service Showcase.</h3>
+            <h3 className="text-4xl lg:text-6xl font-bold text-white tracking-[-0.04em] uppercase italic">Service Showcase.</h3>
           </div>
           
-          <div className="rounded-[50px] bg-slate-50/50 border border-slate-100 p-8 md:p-12">
+          <div className="rounded-[50px] bg-white/50 border border-white/20 p-8 md:p-12">
             <ErrorBoundary>
               <GalleryViewer category={service.category as Category} isAdminView={false} />
             </ErrorBoundary>
@@ -202,7 +202,7 @@ export default function ServiceDetail() {
       </section>
 
       {/* Footer CTA */}
-      <section className="py-24 bg-slate-950 text-white text-center px-4">
+      <section className="py-24 bg-black text-white text-center px-4">
         <h2 className="text-3xl md:text-5xl font-bold uppercase italic tracking-tighter mb-8">Ready to Start Your Project?</h2>
         <Link to="/#contact">
           <Button className="rounded-full bg-blue-600 hover:bg-blue-700 text-white font-bold h-16 px-10 text-lg uppercase tracking-tighter italic">
@@ -211,8 +211,8 @@ export default function ServiceDetail() {
         </Link>
       </section>
 
-      <footer className="py-12 bg-slate-950 border-t border-white/5 text-center">
-          <p className="text-slate-500 text-[10px] font-bold uppercase tracking-[4px]">L & P Trading and Services © 2026</p>
+      <footer className="py-12 bg-black border-t border-white/20 text-center">
+          <p className="text-white text-[10px] font-bold uppercase tracking-[4px]">L & P Trading and Services © 2026</p>
       </footer>
     </div>
   );

@@ -8,6 +8,7 @@ import { Skeleton } from './ui/Skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
+import { EmptyState } from './ui/EmptyState';
 
 export default function GalleryViewer({ category, isAdminView = false }: { category: Category, isAdminView?: boolean }) {
   const [images, setImages] = useState<{ id: string, imageUrl: string, albumId?: string }[]>([]);
@@ -242,7 +243,7 @@ export default function GalleryViewer({ category, isAdminView = false }: { categ
       <div className={isAdminView ? "py-4" : "py-12"}>
         <h4 className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] mb-6">{category} Gallery</h4>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          <Skeleton count={4} className="aspect-square w-full rounded-2xl bg-white/5 border border-white/10" />
+          <Skeleton count={4} className="aspect-square w-full rounded-2xl bg-white/5 border border-white/30" />
         </div>
       </div>
     );
@@ -253,7 +254,11 @@ export default function GalleryViewer({ category, isAdminView = false }: { categ
       return (
         <div className="py-4">
           <h4 className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] mb-3">{category}</h4>
-          <div className="text-white/30 text-[11px] font-bold uppercase tracking-widest italic">No images currently in this category.</div>
+          <EmptyState 
+            icon={FolderImage}
+            title="No Images Found"
+            description="There are no images currently in this category."
+          />
         </div>
       );
     }
@@ -283,7 +288,7 @@ export default function GalleryViewer({ category, isAdminView = false }: { categ
         {isAdminView && images.length > 0 && (
           <button 
             onClick={() => { setIsSelectionMode(!isSelectionMode); setSelectedIds([]); }}
-            className={`px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${isSelectionMode ? 'bg-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.4)]' : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10 border border-white/10'}`}
+            className={`px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${isSelectionMode ? 'bg-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.4)]' : 'bg-white/5 text-white/60 hover:text-white hover:bg-black/10 border border-white/30'}`}
           >
             {isSelectionMode ? 'Cancel Selection' : 'Select Multiple'}
           </button>
@@ -300,20 +305,20 @@ export default function GalleryViewer({ category, isAdminView = false }: { categ
 
           return (
             <div key={album.id} className="space-y-6">
-              <div className="bg-white/5 border border-white/10 p-5 sm:p-8 rounded-[32px] relative group backdrop-blur-2xl shadow-2xl overflow-hidden">
+              <div className="bg-white/5 border border-white/30 p-5 sm:p-8 rounded-[32px] relative group backdrop-blur-2xl shadow-2xl overflow-hidden">
                 <div className="absolute inset-0 bg-blue-600/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
                 {isAdminView && !isEditing && (
                   <div className="absolute top-4 right-4 flex gap-2">
                     <button 
                       onClick={() => handleEditAlbum(album)}
-                      className="p-2.5 bg-slate-950/80 border border-white/10 text-blue-400 hover:bg-blue-600 hover:text-white rounded-xl shadow-xl transition-all"
+                      className="p-2.5 bg-black/80 border border-white/30 text-blue-400 hover:bg-blue-600 hover:text-white rounded-xl shadow-xl transition-all"
                       title="Edit Album"
                     >
                       <Edit3 size={16} />
                     </button>
                     <button 
                       onClick={() => setItemToDelete({ id: album.id, type: 'album', name: album.title })}
-                      className="p-2.5 bg-slate-950/80 border border-white/10 text-red-400 hover:bg-red-600 hover:text-white rounded-xl shadow-xl transition-all"
+                      className="p-2.5 bg-black/80 border border-white/30 text-red-400 hover:bg-red-600 hover:text-white rounded-xl shadow-xl transition-all"
                       title="Delete Album"
                     >
                       <Trash2 size={16} />
@@ -328,7 +333,7 @@ export default function GalleryViewer({ category, isAdminView = false }: { categ
                         value={editAlbumTitle}
                         onChange={(e) => setEditAlbumTitle(e.target.value)}
                         placeholder="Album Title"
-                        className="font-black text-xl h-14 bg-white/5 border-white/10 text-white rounded-2xl italic uppercase tracking-tighter"
+                        className="font-black text-xl h-14 bg-white/5 border-white/30 text-white rounded-2xl italic uppercase tracking-tighter"
                         autoFocus
                       />
                     </div>
@@ -337,7 +342,7 @@ export default function GalleryViewer({ category, isAdminView = false }: { categ
                         value={editAlbumDesc}
                         onChange={(e) => setEditAlbumDesc(e.target.value)}
                         placeholder="Description (Optional)"
-                        className="w-full rounded-2xl border border-white/10 bg-white/5 p-4 min-h-[100px] text-sm text-white focus:ring-2 focus:ring-blue-500/20 placeholder:text-white/20"
+                        className="w-full rounded-2xl border border-white/30 bg-white/5 p-4 min-h-[100px] text-sm text-white focus:ring-2 focus:ring-blue-500/20 placeholder:text-white/20"
                       />
                     </div>
                     <div className="flex gap-3">
@@ -361,7 +366,7 @@ export default function GalleryViewer({ category, isAdminView = false }: { categ
                       </div>
                     </div>
                     {album.description && (
-                      <p className="text-xs font-bold text-white/60 mt-3 max-w-3xl leading-relaxed italic border-l-2 border-white/10 pl-4 py-1">
+                      <p className="text-xs font-bold text-white/60 mt-3 max-w-3xl leading-relaxed italic border-l-2 border-white/30 pl-4 py-1">
                         {album.description}
                       </p>
                     )}
@@ -377,7 +382,7 @@ export default function GalleryViewer({ category, isAdminView = false }: { categ
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
                       onClick={() => handleImageClick(img.imageUrl, img.id)} 
-                      className={`relative aspect-square rounded-[24px] overflow-hidden cursor-pointer hover:scale-[1.05] transition-all duration-300 group border border-white/10 ${selectedIds.includes(img.id) ? 'ring-4 ring-blue-500 shadow-[0_0_30px_rgba(37,99,235,0.4)]' : 'shadow-xl'}`}
+                      className={`relative aspect-square rounded-[24px] overflow-hidden cursor-pointer hover:scale-[1.05] transition-all duration-300 group border border-white/30 ${selectedIds.includes(img.id) ? 'ring-4 ring-blue-500 shadow-[0_0_30px_rgba(37,99,235,0.4)]' : 'shadow-xl'}`}
                     >
                       <img src={img.imageUrl} alt={category} className="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-110" referrerPolicy="no-referrer" />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-out pointer-events-none" />
@@ -385,7 +390,7 @@ export default function GalleryViewer({ category, isAdminView = false }: { categ
                         <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-all transform translate-x-4 group-hover:translate-x-0 z-10">
                           <button 
                             onClick={(e) => handleQuickMove(img.id, e)}
-                            className="p-2.5 bg-slate-900/80 hover:bg-blue-600 text-white rounded-xl shadow-2xl backdrop-blur-md transition-all border border-white/10"
+                            className="p-2.5 bg-black/80 hover:bg-blue-600 text-white rounded-xl shadow-2xl backdrop-blur-md transition-all border border-white/30"
                             title="Move to Album"
                           >
                             <FolderInput size={16} />
@@ -395,7 +400,7 @@ export default function GalleryViewer({ category, isAdminView = false }: { categ
                               e.stopPropagation();
                               setItemToDelete({ id: img.id, type: 'image' });
                             }}
-                            className="p-2.5 bg-red-600/80 hover:bg-red-600 text-white rounded-xl shadow-2xl backdrop-blur-md transition-all border border-white/10"
+                            className="p-2.5 bg-red-600/80 hover:bg-red-600 text-white rounded-xl shadow-2xl backdrop-blur-md transition-all border border-white/30"
                             title="Delete Image"
                           >
                             <Trash2 size={16} />
@@ -403,15 +408,15 @@ export default function GalleryViewer({ category, isAdminView = false }: { categ
                         </div>
                       )}
                       {isAdminView && isSelectionMode && (
-                        <div className="absolute top-3 left-3 p-2 bg-white/95 rounded-xl shadow-2xl z-20 transform transition-transform active:scale-90" onClick={(e) => toggleSelection(img.id, e)}>
-                           {selectedIds.includes(img.id) ? <CheckSquare className="text-blue-600 w-6 h-6" /> : <Square className="text-slate-400 w-6 h-6" />}
+                        <div className="absolute top-3 left-3 p-2 bg-black/95 rounded-xl shadow-2xl z-20 transform transition-transform active:scale-90" onClick={(e) => toggleSelection(img.id, e)}>
+                           {selectedIds.includes(img.id) ? <CheckSquare className="text-blue-600 w-6 h-6" /> : <Square className="text-white w-6 h-6" />}
                         </div>
                       )}
                     </motion.div>
                   ))}
                 </div>
                : 
-                <div className="py-8 text-center border-2 border-dashed border-white/5 rounded-[30px] w-full">
+                <div className="py-8 text-center border-2 border-dashed border-white/20 rounded-[30px] w-full">
                   <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.3em]">No images in this album</p>
                 </div>
               }
@@ -436,7 +441,7 @@ export default function GalleryViewer({ category, isAdminView = false }: { categ
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   onClick={() => handleImageClick(img.imageUrl, img.id)} 
-                  className={`relative aspect-square rounded-[24px] overflow-hidden cursor-pointer hover:scale-[1.05] transition-all duration-300 group border border-white/10 ${selectedIds.includes(img.id) ? 'ring-4 ring-blue-500 shadow-[0_0_30px_rgba(37,99,235,0.4)]' : 'shadow-xl'}`}
+                  className={`relative aspect-square rounded-[24px] overflow-hidden cursor-pointer hover:scale-[1.05] transition-all duration-300 group border border-white/30 ${selectedIds.includes(img.id) ? 'ring-4 ring-blue-500 shadow-[0_0_30px_rgba(37,99,235,0.4)]' : 'shadow-xl'}`}
                 >
                   <img src={img.imageUrl} alt={category} className="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-110" referrerPolicy="no-referrer" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-out pointer-events-none" />
@@ -444,7 +449,7 @@ export default function GalleryViewer({ category, isAdminView = false }: { categ
                     <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-all transform translate-x-4 group-hover:translate-x-0 z-10">
                       <button 
                         onClick={(e) => handleQuickMove(img.id, e)}
-                        className="p-2.5 bg-slate-900/80 hover:bg-blue-600 text-white rounded-xl shadow-2xl backdrop-blur-md transition-all border border-white/10"
+                        className="p-2.5 bg-black/80 hover:bg-blue-600 text-white rounded-xl shadow-2xl backdrop-blur-md transition-all border border-white/30"
                         title="Move to Album"
                       >
                         <FolderInput size={16} />
@@ -454,7 +459,7 @@ export default function GalleryViewer({ category, isAdminView = false }: { categ
                           e.stopPropagation();
                           setItemToDelete({ id: img.id, type: 'image' });
                         }}
-                        className="p-2.5 bg-red-600/80 hover:bg-red-600 text-white rounded-xl shadow-2xl backdrop-blur-md transition-all border border-white/10"
+                        className="p-2.5 bg-red-600/80 hover:bg-red-600 text-white rounded-xl shadow-2xl backdrop-blur-md transition-all border border-white/30"
                         title="Delete Image"
                       >
                         <Trash2 size={16} />
@@ -462,8 +467,8 @@ export default function GalleryViewer({ category, isAdminView = false }: { categ
                     </div>
                   )}
                   {isAdminView && isSelectionMode && (
-                     <div className="absolute top-3 left-3 p-2 bg-white/95 rounded-xl shadow-2xl z-20 transform transition-transform active:scale-90" onClick={(e) => toggleSelection(img.id, e)}>
-                        {selectedIds.includes(img.id) ? <CheckSquare className="text-blue-600 w-6 h-6" /> : <Square className="text-slate-400 w-6 h-6" />}
+                     <div className="absolute top-3 left-3 p-2 bg-black/95 rounded-xl shadow-2xl z-20 transform transition-transform active:scale-90" onClick={(e) => toggleSelection(img.id, e)}>
+                        {selectedIds.includes(img.id) ? <CheckSquare className="text-blue-600 w-6 h-6" /> : <Square className="text-white w-6 h-6" />}
                      </div>
                   )}
                 </motion.div>
@@ -479,7 +484,7 @@ export default function GalleryViewer({ category, isAdminView = false }: { categ
              initial={{ y: 50, opacity: 0 }}
              animate={{ y: 0, opacity: 1 }}
              exit={{ y: 50, opacity: 0 }}
-             className="fixed bottom-24 md:bottom-10 left-1/2 -translate-x-1/2 w-[92%] md:w-auto bg-slate-900 border border-slate-700 text-white p-2 rounded-2xl shadow-2xl flex items-center justify-between gap-1 md:gap-2 z-[60] pointer-events-auto"
+             className="fixed bottom-24 md:bottom-10 left-1/2 -translate-x-1/2 w-[92%] md:w-auto bg-black border border-white/50 text-white p-2 rounded-2xl shadow-2xl flex items-center justify-between gap-1 md:gap-2 z-[60] pointer-events-auto"
           >
             <div className="flex items-center font-bold px-2 md:px-4 text-sm md:text-base whitespace-nowrap">
               <span>{selectedIds.length} <span className="hidden sm:inline">selected</span></span>
@@ -515,15 +520,15 @@ export default function GalleryViewer({ category, isAdminView = false }: { categ
         setShowMoveModal(open);
         if (!open && !isSelectionMode) setSelectedIds([]);
       }}>
-        <DialogContent className="sm:max-w-md border-slate-200">
+        <DialogContent className="sm:max-w-md border-white/30">
           <DialogHeader>
             <DialogTitle>Move {selectedIds.length} Images</DialogTitle>
           </DialogHeader>
           
           <div className="space-y-6 py-4">
             <div>
-              <label className="block text-xs font-black uppercase text-slate-400 mb-2">Select Destination Album</label>
-              <select value={targetAlbumId} onChange={(e) => setTargetAlbumId(e.target.value)} className="w-full h-12 rounded-xl border border-slate-200 px-4 focus:ring-2 focus:ring-blue-500/20">
+              <label className="block text-xs font-black uppercase text-white mb-2">Select Destination Album</label>
+              <select value={targetAlbumId} onChange={(e) => setTargetAlbumId(e.target.value)} className="w-full h-12 rounded-xl border border-white/30 px-4 focus:ring-2 focus:ring-blue-500/20">
                 <option value="">-- Select Album --</option>
                 <option value="none" className="font-bold">❌ No Album (Uncategorized)</option>
                 <option value="new" className="font-bold text-blue-600">✨ + Create New Album</option>
@@ -534,23 +539,23 @@ export default function GalleryViewer({ category, isAdminView = false }: { categ
             </div>
 
             {targetAlbumId === 'new' && (
-               <div className="space-y-4 p-4 bg-slate-50 border border-slate-100 rounded-2xl">
+               <div className="space-y-4 p-4 bg-black border border-white/20 rounded-2xl">
                  <div>
-                   <label className="block text-xs font-black uppercase text-slate-400 mb-2">New Album Title</label>
+                   <label className="block text-xs font-black uppercase text-white mb-2">New Album Title</label>
                    <Input 
                      placeholder="e.g. Door to door for cargo" 
                      value={newAlbumTitle}
                      onChange={e => setNewAlbumTitle(e.target.value)}
-                     className="bg-white"
+                     className="bg-black"
                    />
                  </div>
                  <div>
-                   <label className="block text-xs font-black uppercase text-slate-400 mb-2">Description</label>
+                   <label className="block text-xs font-black uppercase text-white mb-2">Description</label>
                    <textarea 
                      placeholder="Optional description..." 
                      value={newAlbumDesc}
                      onChange={e => setNewAlbumDesc(e.target.value)}
-                     className="w-full rounded-xl border border-slate-200 p-3 min-h-[80px] text-sm focus:ring-2 focus:ring-blue-500/20 bg-white"
+                     className="w-full rounded-xl border border-white/30 p-3 min-h-[80px] text-sm focus:ring-2 focus:ring-blue-500/20 bg-black"
                    />
                  </div>
                </div>
@@ -574,7 +579,7 @@ export default function GalleryViewer({ category, isAdminView = false }: { categ
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/90"
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90"
             onClick={() => setSelectedImage(null)}
           >
             <button className="absolute top-8 right-8 text-white"><X size={32} /></button>
@@ -586,12 +591,12 @@ export default function GalleryViewer({ category, isAdminView = false }: { categ
       {/* Custom Confirmation Modal */}
       {itemToDelete && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]">
-          <div className="bg-slate-900 border border-white/10 p-8 rounded-3xl w-full max-sm shadow-2xl text-center">
+          <div className="bg-black border border-white/30 p-8 rounded-3xl w-full max-sm shadow-2xl text-center">
             <div className="w-16 h-16 bg-rose-500/10 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-4">
               <Trash2 className="w-8 h-8" />
             </div>
             <h2 className="text-xl font-bold text-white mb-2 tracking-tight">Confirm Deletion</h2>
-            <p className="text-slate-400 text-sm mb-8 leading-relaxed">
+            <p className="text-white text-sm mb-8 leading-relaxed">
               {itemToDelete.type === 'bulk' && Array.isArray(itemToDelete.id)
                 ? `Are you sure you want to delete ${itemToDelete.id.length} selected images?`
                 : itemToDelete.type === 'album'

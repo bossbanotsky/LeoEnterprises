@@ -464,7 +464,7 @@ export default function EmployeeDashboard() {
           <h1 className="text-4xl md:text-5xl font-black text-white tracking-tighter leading-none uppercase italic">
              Hello, {userData?.fullName?.split(' ')[0]}
           </h1>
-          <p className="text-slate-300 text-[10px] font-black uppercase tracking-[0.3em] mt-2 italic opacity-90">
+          <p className="text-white text-[10px] font-black uppercase tracking-[0.3em] mt-2 italic opacity-90">
             Portal Access • {companyInfo.name}
           </p>
         </div>
@@ -474,7 +474,7 @@ export default function EmployeeDashboard() {
       {(activeAnnouncements.length > 0 || pastAnnouncements.length > 0) && (
         <section className="space-y-3">
           <div className="flex items-center justify-between px-1">
-            <h3 className="text-xs font-bold text-slate-300 uppercase tracking-widest flex items-center gap-2">
+            <h3 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
               <Megaphone className="w-3.5 h-3.5 text-blue-500" /> Notifications
             </h3>
             {unreadCount > 0 && (
@@ -487,7 +487,7 @@ export default function EmployeeDashboard() {
             {activeAnnouncements.map(ann => {
               const hasViewed = ann.viewedBy.includes(user?.uid || '');
               return (
-                <div key={ann.id} className={`bento-card flex-col p-5 relative overflow-hidden transition-all border border-white/10 ${
+                <div key={ann.id} className={`bento-card flex-col p-5 relative overflow-hidden transition-all border border-white/30 ${
                   !hasViewed ? 'bg-blue-500/10 border-blue-500/30 ring-1 ring-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0.1)]' : 'bg-transparent shadow-xl'
                 }`}>
                   <div className={`absolute left-0 top-0 bottom-0 w-1 ${
@@ -501,10 +501,10 @@ export default function EmployeeDashboard() {
                           <span className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)] animate-pulse"></span>
                         )}
                       </div>
-                      <p className="text-sm text-slate-300 leading-relaxed font-medium">
+                      <p className="text-sm text-white leading-relaxed font-medium">
                         {ann.message}
                       </p>
-                      <div className="flex items-center gap-3 mt-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                      <div className="flex items-center gap-3 mt-3 text-[10px] font-bold text-white uppercase tracking-widest">
                         <span className="text-cyan-400">By {ann.authorName}</span>
                         <span>•</span>
                         <span>{format(parseISO(ann.createdAt), 'MMMM dd, yyyy, h:mm a')}</span>
@@ -530,15 +530,15 @@ export default function EmployeeDashboard() {
             {pastAnnouncements.length > 0 && (
               <div className="pt-2">
                  <details className="group">
-                   <summary className="text-[10px] font-bold text-slate-300 uppercase tracking-widest cursor-pointer hover:text-slate-200 transition-colors list-none flex items-center gap-2 px-1">
+                   <summary className="text-[10px] font-bold text-white uppercase tracking-widest cursor-pointer hover:text-white transition-colors list-none flex items-center gap-2 px-1">
                      <ChevronRight className="w-3 h-3 group-open:rotate-90 transition-transform" />
                      Past Notices ({pastAnnouncements.length})
                    </summary>
                    <div className="space-y-2 mt-3 pl-1 opacity-60">
                      {pastAnnouncements.map(ann => (
-                       <div key={ann.id} className="bg-slate-100/50 dark:bg-slate-900/30 p-3 rounded-xl border border-slate-200/50 dark:border-slate-800/50">
-                         <h5 className="font-bold text-slate-800 dark:text-slate-200 text-xs">{ann.title}</h5>
-                         <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">{ann.message}</p>
+                       <div key={ann.id} className="bg-white/50 dark:bg-black/30 p-3 rounded-xl border border-white/30/50 dark:border-slate-800/50">
+                         <h5 className="font-bold text-white dark:text-white text-xs">{ann.title}</h5>
+                         <p className="text-[11px] text-white line-clamp-1 mt-0.5">{ann.message}</p>
                        </div>
                      ))}
                    </div>
@@ -552,15 +552,15 @@ export default function EmployeeDashboard() {
       {/* Header Profile */}
       <div className="relative group">
         <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl blur opacity-20 transition duration-1000"></div>
-        <div className="relative bento-card flex-col bg-slate-900/40 p-6 overflow-hidden border border-white/10 shadow-xl">
+        <div className="relative bento-card flex-col bg-black/40 p-6 overflow-hidden border border-white/30 shadow-xl">
           <div className="flex items-center gap-5 relative z-10">
             <Button
               variant="outline"
               size="icon"
-              className="absolute top-0 right-0 h-8 w-8 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border-none shadow-sm"
+              className="absolute top-0 right-0 h-8 w-8 rounded-full bg-black dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border-none shadow-sm"
               onClick={handleOpenProfileEdit}
             >
-              <UserPen className="h-4 w-4 text-slate-500" />
+              <UserPen className="h-4 w-4 text-white" />
             </Button>
             <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-2xl flex items-center justify-center font-bold text-3xl shadow-lg overflow-hidden">
               {employee.photoURL ? (
@@ -582,21 +582,21 @@ export default function EmployeeDashboard() {
                 </span>
                 <span className="text-xs text-white/60 font-medium tracking-tight">ID: {employee.customId || employee.id.slice(0, 8)}</span>
                 {employee.sex && (
-                  <span className="text-[10px] text-white/70 font-bold tracking-wider px-2 py-0.5 bg-white/5 rounded border border-white/10 uppercase">{employee.sex}</span>
+                  <span className="text-[10px] text-white/70 font-bold tracking-wider px-2 py-0.5 bg-white/5 rounded border border-white/30 uppercase">{employee.sex}</span>
                 )}
                 {employee.civilStatus && (
-                  <span className="text-[10px] text-white/70 font-bold tracking-wider px-2 py-0.5 bg-white/5 rounded border border-white/10 uppercase">{employee.civilStatus}</span>
+                  <span className="text-[10px] text-white/70 font-bold tracking-wider px-2 py-0.5 bg-white/5 rounded border border-white/30 uppercase">{employee.civilStatus}</span>
                 )}
               </div>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4 mt-6">
-            <div className="bg-white/5 p-3 rounded-xl border border-white/10 overflow-hidden">
-              <div className="text-[10px] text-slate-300 uppercase font-bold tracking-wider mb-1 truncate">Daily Salary</div>
+            <div className="bg-white/5 p-3 rounded-xl border border-white/30 overflow-hidden">
+              <div className="text-[10px] text-white uppercase font-bold tracking-wider mb-1 truncate">Daily Salary</div>
               <div className="text-xl sm:text-2xl font-black text-white tracking-tight leading-none truncate">₱{employee.dailySalary.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
             </div>
-            <div className="bg-white/5 p-3 rounded-xl border border-white/10 overflow-hidden">
-              <div className="text-[10px] text-slate-300 uppercase font-bold tracking-wider mb-1 truncate">Hourly Rate</div>
+            <div className="bg-white/5 p-3 rounded-xl border border-white/30 overflow-hidden">
+              <div className="text-[10px] text-white uppercase font-bold tracking-wider mb-1 truncate">Hourly Rate</div>
               <div className="text-xl sm:text-2xl font-black text-white tracking-tight leading-none truncate">₱{employee.hourlyRate.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
             </div>
           </div>
@@ -606,7 +606,7 @@ export default function EmployeeDashboard() {
       {/* Attendance Section */}
       <section className="space-y-3">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 px-1">
-          <h3 className="text-xs font-bold text-slate-300 dark:text-slate-200 uppercase tracking-widest flex items-center gap-2">
+          <h3 className="text-xs font-bold text-white dark:text-white uppercase tracking-widest flex items-center gap-2">
             <Clock className="w-3.5 h-3.5" /> Attendance
           </h3>
           <div className="flex gap-2 items-center w-full sm:w-auto">
@@ -614,21 +614,21 @@ export default function EmployeeDashboard() {
               type="date" 
               value={startDate} 
               onChange={e => setStartDate(e.target.value)}
-              className="h-8 text-[10px] flex-1 sm:w-28 rounded-lg bg-white/5 border-white/10"
+              className="h-8 text-[10px] flex-1 sm:w-28 rounded-lg bg-white/5 border-white/30"
             />
             <span className="text-white/40 text-[10px] uppercase font-bold">to</span>
             <Input 
               type="date" 
               value={endDate} 
               onChange={e => setEndDate(e.target.value)}
-              className="h-8 text-[10px] flex-1 sm:w-28 rounded-lg bg-white/5 border-white/10"
+              className="h-8 text-[10px] flex-1 sm:w-28 rounded-lg bg-white/5 border-white/30"
             />
           </div>
         </div>
-        <div className="bento-card flex-col bg-slate-900/40 p-0 overflow-hidden border border-white/10 shadow-xl">
+        <div className="bento-card flex-col bg-black/40 p-0 overflow-hidden border border-white/30 shadow-xl">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="bg-slate-50 dark:bg-slate-900/50 text-[10px] font-bold text-slate-300 uppercase tracking-wider">
+              <thead className="bg-black dark:bg-white/50 text-[10px] font-bold text-white uppercase tracking-wider">
                 <tr>
                   <th className="px-4 py-3">Date</th>
                   <th className="px-4 py-3">Status</th>
@@ -655,12 +655,12 @@ export default function EmployeeDashboard() {
 
                   return (
                     <tr key={date}>
-                      <td className="px-4 py-3 font-medium text-slate-900 dark:text-white whitespace-nowrap">{format(dateObj, 'EEE, MMM dd')}</td>
+                      <td className="px-4 py-3 font-medium text-white dark:text-white whitespace-nowrap">{format(dateObj, 'EEE, MMM dd')}</td>
                       <td className="px-4 py-3">
                         <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
                           displayStatus === 'present' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
                           displayStatus === 'absent' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
-                          displayStatus === 'ut' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
+                          displayStatus === 'ut' ? 'bg-black text-white dark:bg-amber-900/30 dark:text-white' :
                           displayStatus === 'hd' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' :
                           'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
                         }`}>
@@ -673,7 +673,7 @@ export default function EmployeeDashboard() {
                       <td className="px-4 py-3 text-center text-[10px] font-mono text-white">
                         {att.timeOut || '—'}
                       </td>
-                      <td className="px-4 py-3 text-right text-slate-500 dark:text-slate-400 font-medium font-mono text-xs">
+                      <td className="px-4 py-3 text-right text-white dark:text-white font-medium font-mono text-xs">
                         {displayHours}h{(att.otHours || 0) > 0 && <span className="text-emerald-500 ml-1">+{att.otHours}h</span>}
                       </td>
                     </tr>
@@ -681,7 +681,7 @@ export default function EmployeeDashboard() {
                 })}
                 {dateRange.length === 0 && (
                   <tr>
-                    <td colSpan={3} className="px-4 py-10 text-center text-slate-400">Invalid date range selected</td>
+                    <td colSpan={3} className="px-4 py-10 text-center text-white">Invalid date range selected</td>
                   </tr>
                 )}
               </tbody>
@@ -692,7 +692,7 @@ export default function EmployeeDashboard() {
 
       {/* Payslips Section */}
       <section className="space-y-3">
-        <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-2">
+        <h3 className="text-xs font-bold text-white dark:text-white uppercase tracking-widest ml-1 flex items-center gap-2">
           <FileText className="w-3.5 h-3.5" /> Recent Payslips
         </h3>
         <div className="space-y-3">
@@ -701,29 +701,29 @@ export default function EmployeeDashboard() {
           ) : (
             <>
               {pendingPayrolls.map(pay => (
-                <Interactive key={pay.id} className="bento-card flex-row  bg-slate-900/40 p-4 border border-white/10 shadow-xl relative overflow-hidden">
+                <Interactive key={pay.id} className="bento-card flex-row  bg-black/40 p-4 border border-white/30 shadow-xl relative overflow-hidden">
                   <div className="absolute top-0 right-0 bg-yellow-100 text-yellow-700 text-[9px] font-bold px-2 py-0.5 rounded-bl-lg uppercase tracking-wider">Unpaid</div>
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
                       <CreditCard className="w-5 h-5" />
                     </div>
                     <div>
-                      <div className="font-bold text-slate-900 dark:text-white text-sm">
+                      <div className="font-bold text-white dark:text-white text-sm">
                         {format(parseISO(pay.startDate), 'MMMM dd, yyyy')} - {format(parseISO(pay.endDate), 'MMMM dd, yyyy')}
                       </div>
-                      <div className="text-[10px] text-slate-500 dark:text-slate-400">Generated on {format(parseISO(pay.generatedAt), 'MMMM dd, yyyy, h:mm a')}</div>
+                      <div className="text-[10px] text-white dark:text-white">Generated on {format(parseISO(pay.generatedAt), 'MMMM dd, yyyy, h:mm a')}</div>
                     </div>
                   </div>
                   <div className="text-right">
                     <div className="text-sm font-black text-blue-600 dark:text-blue-400">₱{pay.totalPay.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
-                    <Button variant="outline" size="sm" className="mt-2 h-7 text-xs bg-transparent dark:border-slate-700 dark:text-slate-300" onClick={() => setSelectedPayslip({ ...pay, employee })}>
+                    <Button variant="outline" size="sm" className="mt-2 h-7 text-xs bg-transparent dark:border-white/50 dark:text-white" onClick={() => setSelectedPayslip({ ...pay, employee })}>
                       View Full
                     </Button>
                   </div>
                 </Interactive>
               ))}
               {pendingPayrolls.length === 0 && (
-                <div className="text-center py-6 text-slate-400 text-sm">No recent unpaid payslips</div>
+                <div className="text-center py-6 text-white text-sm">No recent unpaid payslips</div>
               )}
             </>
           )}
@@ -734,13 +734,13 @@ export default function EmployeeDashboard() {
       {archivedPayrolls.length > 0 && (
         <section className="space-y-3">
           <div className="flex items-center justify-between px-1">
-            <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center gap-2">
+            <h3 className="text-xs font-bold text-white dark:text-white uppercase tracking-widest flex items-center gap-2">
               <Briefcase className="w-3.5 h-3.5" /> Payslip History (Paid)
             </h3>
             <Button 
               size="sm" 
               variant="outline" 
-              className="h-7 gap-1.5 rounded-lg border-white/10 text-white hover:bg-white/10 font-bold text-[9px] uppercase tracking-widest bg-white/5"
+              className="h-7 gap-1.5 rounded-lg border-white/30 text-white hover:bg-black/10 font-bold text-[9px] uppercase tracking-widest bg-white/5"
               onClick={async () => {
                 if (archivedPayrolls.length === 0) return;
                 setIsExporting(true);
@@ -815,7 +815,7 @@ export default function EmployeeDashboard() {
           </div>
           <div className="space-y-3">
             {archivedPayrolls.map(pay => (
-              <div key={pay.id} className="bento-card flex-row items-center justify-between bg-slate-50 dark:bg-slate-900/50 p-4 border-slate-200 dark:border-slate-700 shadow-sm opacity-90 relative overflow-hidden">
+              <div key={pay.id} className="bento-card flex-row items-center justify-between bg-black dark:bg-white/50 p-4 border-white/30 dark:border-white/50 shadow-sm opacity-90 relative overflow-hidden">
                 <div className="absolute top-0 right-0 bg-green-100 text-green-700 text-[9px] font-bold px-2 py-0.5 rounded-bl-lg uppercase tracking-wider">Paid</div>
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-blue-500/10 text-cyan-400 flex items-center justify-center shrink-0 border border-blue-500/20">
@@ -830,7 +830,7 @@ export default function EmployeeDashboard() {
                 </div>
                 <div className="text-right">
                   <div className="text-sm font-black text-white">₱{pay.totalPay.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
-                  <Button variant="ghost" size="sm" className="mt-2 h-7 text-[10px] font-black uppercase tracking-widest bg-white/5 hover:bg-white/10 text-white/80 border border-white/10" onClick={() => setSelectedPayslip({ ...pay, employee })}>
+                  <Button variant="ghost" size="sm" className="mt-2 h-7 text-[10px] font-black uppercase tracking-widest bg-white/5 hover:bg-black/10 text-white/80 border border-white/30" onClick={() => setSelectedPayslip({ ...pay, employee })}>
                     View Slip
                   </Button>
                 </div>
@@ -842,12 +842,12 @@ export default function EmployeeDashboard() {
 
       {/* Cash Advances */}
       <section className="space-y-3 pb-8">
-        <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-2">
+        <h3 className="text-xs font-bold text-white dark:text-white uppercase tracking-widest ml-1 flex items-center gap-2">
           <Wallet className="w-3.5 h-3.5" /> Outstanding Debts
         </h3>
         <div className="space-y-3">
           {cashAdvances.map(ca => (
-                <div key={ca.id} className="bento-card flex-row  bg-slate-900/40 p-4 border border-white/10 shadow-xl">
+                <div key={ca.id} className="bento-card flex-row  bg-black/40 p-4 border border-white/30 shadow-xl">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-orange-500/10 text-orange-400 flex items-center justify-center shrink-0 border border-orange-500/20">
                   <Wallet className="w-4 h-4" />
@@ -860,23 +860,23 @@ export default function EmployeeDashboard() {
             </div>
           ))}
           {cashAdvances.length === 0 && (
-            <div className="text-center py-6 text-slate-400 text-sm">No cash advance records</div>
+            <div className="text-center py-6 text-white text-sm">No cash advance records</div>
           )}
         </div>
       </section>
 
       {/* Payslip Dialog */}
       <Dialog open={!!selectedPayslip} onOpenChange={(open) => !open && setSelectedPayslip(null)}>
-        <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden bg-white rounded-2xl w-[95vw] max-w-lg mx-auto border-none shadow-2xl">
-          <div className="p-2 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 backdrop-blur-sm sticky top-0 z-10">
-            <DialogTitle className="flex items-center gap-2 text-slate-900 font-black uppercase italic tracking-tight text-sm">
+        <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden bg-black rounded-2xl w-[95vw] max-w-lg mx-auto border-none shadow-2xl">
+          <div className="p-2 border-b border-white/20 flex justify-between items-center bg-white/50 backdrop-blur-sm sticky top-0 z-10">
+            <DialogTitle className="flex items-center gap-2 text-white font-black uppercase italic tracking-tight text-sm">
               <FileText className="w-3.5 h-3.5 text-blue-600" />
               Payslip
             </DialogTitle>
             <Button 
               size="sm" 
               variant="outline" 
-              className="h-8 gap-1.5 rounded-xl border-slate-200 text-slate-600 hover:bg-green-50 hover:text-green-600 hover:border-green-200 transition-all font-bold text-[10px] uppercase tracking-widest"
+              className="h-8 gap-1.5 rounded-xl border-white/30 text-white hover:bg-green-50 hover:text-green-600 hover:border-green-200 transition-all font-bold text-[10px] uppercase tracking-widest"
               onClick={handlePrint}
               disabled={isExporting}
             >
@@ -886,7 +886,7 @@ export default function EmployeeDashboard() {
             <Button 
               size="sm" 
               variant="outline" 
-              className="h-8 gap-1.5 rounded-xl border-slate-200 text-slate-600 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-all font-bold text-[10px] uppercase tracking-widest"
+              className="h-8 gap-1.5 rounded-xl border-white/30 text-white hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-all font-bold text-[10px] uppercase tracking-widest"
               onClick={handleExportPDF}
               disabled={isExporting}
             >
@@ -898,7 +898,7 @@ export default function EmployeeDashboard() {
           {selectedPayslip && (
             <div 
               ref={payslipRef}
-              className="p-3 max-h-[90vh] overflow-y-auto payslip-mockup bg-white font-sans text-[10px]" 
+              className="p-3 max-h-[90vh] overflow-y-auto payslip-mockup bg-black font-sans text-[10px]" 
               style={{ backgroundColor: '#ffffff' }}
             >
               <div className="flex justify-between border-b border-slate-900 pb-2 mb-2">
@@ -906,12 +906,12 @@ export default function EmployeeDashboard() {
                   <div className="inline-flex items-center gap-1 px-1 py-0.5 bg-blue-600 text-white text-[7px] font-black uppercase tracking-[0.1em] rounded mb-1">
                     Official
                   </div>
-                  <h2 className="text-xl font-black text-slate-900 leading-none italic uppercase">PAYSLIP</h2>
-                  <div className="text-[9px] font-bold text-slate-400 mt-1 uppercase tracking-tight">
-                    Pay Period: <span className="text-slate-900">{format(parseISO(selectedPayslip.startDate), 'MM/dd')} - {format(parseISO(selectedPayslip.endDate), 'MM/dd/yy')}</span>
+                  <h2 className="text-xl font-black text-white leading-none italic uppercase">PAYSLIP</h2>
+                  <div className="text-[9px] font-bold text-white mt-1 uppercase tracking-tight">
+                    Pay Period: <span className="text-white">{format(parseISO(selectedPayslip.startDate), 'MM/dd')} - {format(parseISO(selectedPayslip.endDate), 'MM/dd/yy')}</span>
                   </div>
                   <div className="flex items-center gap-2 mt-2">
-                    <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center font-bold text-lg overflow-hidden shrink-0 border border-slate-200">
+                    <div className="w-10 h-10 bg-black rounded-lg flex items-center justify-center font-bold text-lg overflow-hidden shrink-0 border border-white/30">
                       {selectedPayslip.employee.photoURL ? (
                         <img src={selectedPayslip.employee.photoURL} alt={selectedPayslip.employee.fullName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                       ) : (
@@ -919,7 +919,7 @@ export default function EmployeeDashboard() {
                       )}
                     </div>
                     <div>
-                      <div className="text-lg font-black text-slate-900 uppercase tracking-tight leading-none italic">{selectedPayslip.employee.fullName}</div>
+                      <div className="text-lg font-black text-white uppercase tracking-tight leading-none italic">{selectedPayslip.employee.fullName}</div>
                       <div className="text-[8px] font-bold text-blue-600 mt-0.5 uppercase tracking-wider flex items-center gap-1">
                         {selectedPayslip.employee.customId && <span>#{selectedPayslip.employee.customId}</span>}
                         <span>{selectedPayslip.employee.position || 'Staff'}</span>
@@ -929,7 +929,7 @@ export default function EmployeeDashboard() {
                 </div>
                 <div className="text-right flex flex-col justify-between items-end">
                   <div className="text-right">
-                    <div className="text-[8px] font-black text-slate-400 mb-0.5 uppercase tracking-widest flex items-center justify-end gap-1">
+                    <div className="text-[8px] font-black text-white mb-0.5 uppercase tracking-widest flex items-center justify-end gap-1">
                       {calculatePaidAmount(selectedPayslip) >= selectedPayslip.totalPay ? (
                         <>
                           <CheckCircle className="w-2.5 h-2.5 text-emerald-500 fill-emerald-500/20" />
@@ -943,14 +943,14 @@ export default function EmployeeDashboard() {
                       ₱{(selectedPayslip.totalPay - (selectedPayslip.carryOverToNext || 0) - calculatePaidAmount(selectedPayslip)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </div>
                     {calculatePaidAmount(selectedPayslip) > 0 && calculatePaidAmount(selectedPayslip) < selectedPayslip.totalPay && (
-                      <div className="text-[8px] font-black text-slate-400 mt-1 uppercase tracking-tight">
+                      <div className="text-[8px] font-black text-white mt-1 uppercase tracking-tight">
                         Payroll Total: ₱{selectedPayslip.totalPay.toLocaleString()}
                       </div>
                     )}
                   </div>
                   <div className="text-right mt-auto">
-                    <div className="text-[9px] font-black text-slate-900 uppercase italic leading-none">{companyInfo.name}</div>
-                    {companyInfo.address && <div className="text-[7px] text-slate-400 mt-0.5 font-medium max-w-[100px] leading-tight ml-auto truncate">{companyInfo.address}</div>}
+                    <div className="text-[9px] font-black text-white uppercase italic leading-none">{companyInfo.name}</div>
+                    {companyInfo.address && <div className="text-[7px] text-white mt-0.5 font-medium max-w-[100px] leading-tight ml-auto truncate">{companyInfo.address}</div>}
                   </div>
                 </div>
               </div>
@@ -958,13 +958,13 @@ export default function EmployeeDashboard() {
               <div className="grid grid-cols-2 gap-3 font-sans">
                 <div className="space-y-2">
                   <div>
-                    <h3 className="text-[9px] font-black text-slate-900 border-b border-slate-900 pb-1 mb-2 uppercase flex justify-between items-center">
+                    <h3 className="text-[9px] font-black text-white border-b border-slate-900 pb-1 mb-2 uppercase flex justify-between items-center">
                       Earnings Breakdown <span>Total (₱)</span>
                     </h3>
                     
                     <div className="space-y-1">
                       {/* Regular Days row with breakdown */}
-                      <div className="bg-slate-50 p-2 rounded-lg border border-slate-100 space-y-1.5">
+                      <div className="bg-black p-2 rounded-lg border border-white/20 space-y-1.5">
                         <div className="flex items-center justify-between">
                            <div className="flex items-center gap-1.5">
                               {selectedPayslip.isAttendancePaid && (
@@ -973,54 +973,54 @@ export default function EmployeeDashboard() {
                                   PAID
                                 </div>
                               )}
-                              <span className="text-slate-900 font-black text-[8px] uppercase">Attendance Pay</span>
+                              <span className="text-white font-black text-[8px] uppercase">Attendance Pay</span>
                            </div>
-                           <span className="font-black text-slate-900">₱{(selectedPayslip.regularPay || 0).toFixed(2)}</span>
+                           <span className="font-black text-white">₱{(selectedPayslip.regularPay || 0).toFixed(2)}</span>
                         </div>
                         
-                        <div className="space-y-1.5 pl-4 pt-1 border-t border-slate-200/50">
+                        <div className="space-y-1.5 pl-4 pt-1 border-t border-white/30/50">
                            {selectedPayslip.totalPresent > 0 && (
                              <div className="flex justify-between items-center">
                                <div className="flex flex-col">
-                                 <span className="text-[7px] font-bold text-slate-600 uppercase">Present</span>
-                                 <span className="text-[6px] text-slate-400">{selectedPayslip.totalPresent}d × ₱{(selectedPayslip.baseRate || 0).toFixed(0)}</span>
+                                 <span className="text-[7px] font-bold text-white uppercase">Present</span>
+                                 <span className="text-[6px] text-white">{selectedPayslip.totalPresent}d × ₱{(selectedPayslip.baseRate || 0).toFixed(0)}</span>
                                </div>
-                               <span className="text-[7px] font-bold text-slate-900">₱{(selectedPayslip.presentEarnings || 0).toFixed(2)}</span>
+                               <span className="text-[7px] font-bold text-white">₱{(selectedPayslip.presentEarnings || 0).toFixed(2)}</span>
                              </div>
                            )}
                            {selectedPayslip.totalHalfDays > 0 && (
                              <div className="flex justify-between items-center">
                                <div className="flex flex-col">
                                  <span className="text-[7px] font-bold text-indigo-600 uppercase">Half-Day</span>
-                                 <span className="text-[6px] text-slate-400">{selectedPayslip.totalHalfDays}d × ₱{((selectedPayslip.baseRate || 0) / 2).toFixed(0)}</span>
+                                 <span className="text-[6px] text-white">{selectedPayslip.totalHalfDays}d × ₱{((selectedPayslip.baseRate || 0) / 2).toFixed(0)}</span>
                                </div>
-                               <span className="text-[7px] font-bold text-slate-900">₱{(selectedPayslip.hdEarnings || 0).toFixed(2)}</span>
+                               <span className="text-[7px] font-bold text-white">₱{(selectedPayslip.hdEarnings || 0).toFixed(2)}</span>
                              </div>
                            )}
                            {selectedPayslip.totalUndertimeDays > 0 && (
                              <div className="flex justify-between items-center">
                                <div className="flex flex-col">
-                                 <span className="text-[7px] font-bold text-amber-600 uppercase">Undertime</span>
-                                 <span className="text-[6px] text-slate-400">
+                                 <span className="text-[7px] font-bold text-white uppercase">Undertime</span>
+                                 <span className="text-[6px] text-white">
                                    {(((selectedPayslip.totalUndertimeDays || 0) * 8) - (selectedPayslip.totalUndertimeHours || 0)).toFixed(1)}h worked × ₱{((selectedPayslip.baseRate || 0) / 8).toFixed(2)}
                                  </span>
                                </div>
-                               <span className="text-[7px] font-bold text-slate-900">₱{(selectedPayslip.utEarnings || 0).toFixed(2)}</span>
+                               <span className="text-[7px] font-bold text-white">₱{(selectedPayslip.utEarnings || 0).toFixed(2)}</span>
                              </div>
                            )}
                            {selectedPayslip.totalAbsent > 0 && (
                              <div className="flex justify-between items-center">
                                <div className="flex flex-col">
                                  <span className="text-[7px] font-bold text-rose-500 uppercase">Absent</span>
-                                 <span className="text-[6px] text-slate-400">{selectedPayslip.totalAbsent}d × ₱0</span>
+                                 <span className="text-[6px] text-white">{selectedPayslip.totalAbsent}d × ₱0</span>
                                </div>
-                               <span className="text-[7px] font-bold text-slate-900">₱0.00</span>
+                               <span className="text-[7px] font-bold text-white">₱0.00</span>
                              </div>
                            )}
 
-                           <div className="pt-1 mt-1 border-t border-slate-200/50 flex justify-between items-center">
-                             <span className="text-[7px] font-black text-slate-500 uppercase">Attendance Subtotal</span>
-                             <span className="text-[8px] font-black text-slate-900">₱{(selectedPayslip.regularPay || 0).toFixed(2)}</span>
+                           <div className="pt-1 mt-1 border-t border-white/30/50 flex justify-between items-center">
+                             <span className="text-[7px] font-black text-white uppercase">Attendance Subtotal</span>
+                             <span className="text-[8px] font-black text-white">₱{(selectedPayslip.regularPay || 0).toFixed(2)}</span>
                            </div>
                         </div>
                       </div>
@@ -1075,8 +1075,8 @@ export default function EmployeeDashboard() {
                       )}
 
                       <div className="flex justify-between items-center border-t-2 border-slate-900 pt-1.5 mt-1.5">
-                        <span className="text-slate-900 font-black uppercase text-[9px] italic">Gross Earnings Total</span>
-                        <span className="text-slate-900 font-black text-[11px] italic">₱{(selectedPayslip.totalEarnings || selectedPayslip.totalGrossPay || 0).toFixed(2)}</span>
+                        <span className="text-white font-black uppercase text-[9px] italic">Gross Earnings Total</span>
+                        <span className="text-white font-black text-[11px] italic">₱{(selectedPayslip.totalEarnings || selectedPayslip.totalGrossPay || 0).toFixed(2)}</span>
                       </div>
                     </div>
                   </div>
@@ -1084,7 +1084,7 @@ export default function EmployeeDashboard() {
 
                 <div className="space-y-2">
                   <div>
-                    <h3 className="text-[9px] font-black text-red-600 border-b border-slate-100 pb-1 mb-1.5 uppercase flex justify-between">
+                    <h3 className="text-[9px] font-black text-red-600 border-b border-white/20 pb-1 mb-1.5 uppercase flex justify-between">
                       Deductions <span>₱</span>
                     </h3>
                     <div className="space-y-1.5 text-[10px]">
@@ -1110,19 +1110,19 @@ export default function EmployeeDashboard() {
                       ))}
 
                       {selectedPayslip.carryOverToNext > 0 && (
-                        <div className="flex justify-between items-center bg-amber-50 p-1.5 rounded-lg border border-amber-100">
-                          <span className="text-amber-700 font-bold text-[7px] uppercase tracking-tighter">Transferred to Next</span>
-                          <span className="font-black text-amber-700">-{(selectedPayslip.carryOverToNext || 0).toFixed(2)}</span>
+                        <div className="flex justify-between items-center bg-black p-1.5 rounded-lg border border-amber-100">
+                          <span className="text-white font-bold text-[7px] uppercase tracking-tighter">Transferred to Next</span>
+                          <span className="font-black text-white">-{(selectedPayslip.carryOverToNext || 0).toFixed(2)}</span>
                         </div>
                       )}
 
                       {selectedPayslip.cashAdvanceDeduction === 0 && !selectedPayslip.isAttendancePaid && (!selectedPayslip.pakyawItems || !selectedPayslip.pakyawItems.some((i: any) => i.isPaid)) && (selectedPayslip.carryOverToNext === 0 || !selectedPayslip.carryOverToNext) && (
-                        <div className="p-2 border border-dashed border-slate-100 rounded-md text-center">
-                          <span className="text-[7px] text-slate-300 uppercase font-black">None</span>
+                        <div className="p-2 border border-dashed border-white/20 rounded-md text-center">
+                          <span className="text-[7px] text-white uppercase font-black">None</span>
                         </div>
                       )}
 
-                      <div className="flex justify-between items-center border-t border-slate-100 pt-1 mt-1">
+                      <div className="flex justify-between items-center border-t border-white/20 pt-1 mt-1">
                          <span className="text-red-600 font-black uppercase text-[9px]">Total Ded</span>
                          <span className="text-red-600 font-black text-[11px] font-mono italic">
                            -{( (selectedPayslip.cashAdvanceDeduction || 0) + calculatePaidAmount(selectedPayslip) + (selectedPayslip.carryOverToNext || 0) ).toFixed(2)}
@@ -1135,23 +1135,23 @@ export default function EmployeeDashboard() {
               
               {/* Compact Attendance Logs */}
               {selectedPayslip.dailyAttendanceLog && (
-                <div className="mt-3 pt-2 border-t border-slate-100 font-sans">
+                <div className="mt-3 pt-2 border-t border-white/20 font-sans">
                   <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-1">
                     {selectedPayslip.dailyAttendanceLog.map((log: any, i: number) => (
                       <div key={i} className={`py-1 rounded border flex flex-col items-center justify-center text-center ${
                         log.status === 'present' ? 'bg-emerald-50/30 border-emerald-100/50' :
                         log.status === 'absent' ? 'bg-rose-50/30 border-rose-100/50' :
                         log.status === 'halfday' ? 'bg-indigo-50/30 border-indigo-100/50' :
-                        log.status === 'undertime' ? 'bg-amber-50/30 border-amber-100/50' :
-                        'bg-slate-50/30 border-slate-100/50'
+                        log.status === 'undertime' ? 'bg-black/30 border-amber-100/50' :
+                        'bg-black/30 border-white/20/50'
                       }`}>
-                        <div className="text-[7px] font-bold text-slate-400 uppercase tracking-tighter">
+                        <div className="text-[7px] font-bold text-white uppercase tracking-tighter">
                           {format(parseISO(log.date), 'MM/dd')}
                         </div>
                         <div className={`text-[7px] font-black uppercase ${
                           log.status === 'present' ? 'text-emerald-600' :
                           log.status === 'absent' ? 'text-rose-600' :
-                          'text-slate-400'
+                          'text-white'
                         }`}>
                           {log.status === 'pakyaw' ? 'PK' : log.status.charAt(0).toUpperCase()}
                         </div>
@@ -1161,13 +1161,13 @@ export default function EmployeeDashboard() {
                 </div>
               )}
               
-              <div className="mt-3 pt-2 border-t border-slate-100 flex justify-between items-end">
-                <div className="text-[8px] text-slate-400">
+              <div className="mt-3 pt-2 border-t border-white/20 flex justify-between items-end">
+                <div className="text-[8px] text-white">
                   ID: {selectedPayslip.id.substring(0, 8)}
                 </div>
                 <div className="flex flex-col items-end">
                   <div className="w-20 h-px bg-slate-300 mb-1"></div>
-                  <div className="text-[7px] font-black text-slate-400 uppercase">Signed</div>
+                  <div className="text-[7px] font-black text-white uppercase">Signed</div>
                 </div>
               </div>
             </div>
@@ -1177,7 +1177,7 @@ export default function EmployeeDashboard() {
 
       {/* Profile Edit Dialog */}
       <Dialog open={isProfileEditOpen} onOpenChange={setIsProfileEditOpen}>
-        <DialogContent className="sm:max-w-[450px] p-0 overflow-hidden bg-white dark:bg-slate-900 border-0 shadow-2xl rounded-2xl">
+        <DialogContent className="sm:max-w-[450px] p-0 overflow-hidden bg-black dark:bg-black border-0 shadow-2xl rounded-2xl">
           <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-white">
             <DialogHeader>
               <DialogTitle className="text-xl font-bold flex items-center gap-2">
@@ -1191,28 +1191,28 @@ export default function EmployeeDashboard() {
           </div>
           <div className="p-6 overflow-y-auto max-h-[60vh] space-y-4">
             <div className="space-y-4">
-              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Profile Picture</h4>
+              <h4 className="text-xs font-bold text-white uppercase tracking-widest">Profile Picture</h4>
               <div className="flex items-center gap-4">
                 <div 
-                  className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-xl overflow-hidden flex items-center justify-center border border-slate-200 dark:border-slate-700 shrink-0 cursor-pointer hover:border-blue-400 transition-colors group relative"
+                  className="w-16 h-16 bg-black dark:bg-slate-800 rounded-xl overflow-hidden flex items-center justify-center border border-white/30 dark:border-white/50 shrink-0 cursor-pointer hover:border-blue-400 transition-colors group relative"
                   onClick={() => fileInputRef.current?.click()}
                 >
                   {profileData.photoURL ? (
                     <img src={profileData.photoURL} alt="Preview" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                   ) : (
-                    <User className="w-8 h-8 text-slate-300" />
+                    <User className="w-8 h-8 text-white" />
                   )}
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                     <Upload className="w-5 h-5 text-white" />
                   </div>
                   {isUploading && (
-                    <div className="absolute inset-0 bg-white/60 dark:bg-slate-900/60 flex items-center justify-center">
+                    <div className="absolute inset-0 bg-black/60 dark:bg-black/60 flex items-center justify-center">
                       <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
                     </div>
                   )}
                 </div>
                 <div className="flex-1 space-y-1">
-                  <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Image Source</Label>
+                  <Label className="text-[10px] font-bold text-white uppercase tracking-wider">Image Source</Label>
                   <div className="flex flex-col gap-2">
                     <input 
                       type="file" 
@@ -1226,7 +1226,7 @@ export default function EmployeeDashboard() {
                       variant="outline" 
                       size="sm" 
                       onClick={() => fileInputRef.current?.click()}
-                      className="rounded-xl h-9 text-xs gap-2 border-slate-200 dark:border-slate-700"
+                      className="rounded-xl h-9 text-xs gap-2 border-white/30 dark:border-white/50"
                     >
                       <Upload className="w-3.5 h-3.5" />
                       Upload Photo
@@ -1236,7 +1236,7 @@ export default function EmployeeDashboard() {
                         placeholder="Or paste image URL..."
                         value={profileData.photoURL?.startsWith('data:') ? 'Image Uploaded' : (profileData.photoURL || '')} 
                         onChange={e => setProfileData(prev => ({ ...prev, photoURL: e.target.value }))}
-                        className="rounded-xl border-slate-200 bg-slate-50 focus:bg-white text-[10px] h-8 truncate"
+                        className="rounded-xl border-white/30 bg-black focus:bg-black text-[10px] h-8 truncate"
                         disabled={profileData.photoURL?.startsWith('data:')}
                       />
                       {profileData.photoURL?.startsWith('data:') && (
@@ -1255,20 +1255,20 @@ export default function EmployeeDashboard() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
-                <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Birthday</Label>
+                <Label className="text-xs font-bold text-white uppercase tracking-wider">Birthday</Label>
                 <Input 
                   type="date" 
                   value={profileData.birthday || ''} 
                   onChange={e => setProfileData(prev => ({ ...prev, birthday: e.target.value }))}
-                  className="rounded-xl border-slate-200 bg-slate-50 focus:bg-white"
+                  className="rounded-xl border-white/30 bg-black focus:bg-black"
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Sex</Label>
+                <Label className="text-xs font-bold text-white uppercase tracking-wider">Sex</Label>
                 <select 
                   value={profileData.sex || ''} 
                   onChange={e => setProfileData(prev => ({ ...prev, sex: e.target.value as any }))}
-                  className="flex h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex h-10 w-full rounded-xl border border-white/30 bg-black px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <option value="" disabled>Select</option>
                   <option value="Male">Male</option>
@@ -1279,11 +1279,11 @@ export default function EmployeeDashboard() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
-                <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Civil Status</Label>
+                <Label className="text-xs font-bold text-white uppercase tracking-wider">Civil Status</Label>
                 <select 
                   value={profileData.civilStatus || ''} 
                   onChange={e => setProfileData(prev => ({ ...prev, civilStatus: e.target.value as any }))}
-                  className="flex h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex h-10 w-full rounded-xl border border-white/30 bg-black px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <option value="" disabled>Select</option>
                   <option value="Single">Single</option>
@@ -1294,18 +1294,18 @@ export default function EmployeeDashboard() {
                 </select>
               </div>
               <div className="space-y-1">
-                <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Religion</Label>
+                <Label className="text-xs font-bold text-white uppercase tracking-wider">Religion</Label>
                 <Input 
                   placeholder="e.g. Catholic"
                   value={profileData.religion || ''} 
                   onChange={e => setProfileData(prev => ({ ...prev, religion: e.target.value }))}
-                  className="rounded-xl border-slate-200 bg-slate-50 focus:bg-white"
+                  className="rounded-xl border-white/30 bg-black focus:bg-black"
                 />
               </div>
             </div>
 
-            <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-4">
-              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Government IDs</h4>
+            <div className="pt-4 border-t border-white/20 dark:border-slate-800 space-y-4">
+              <h4 className="text-xs font-bold text-white uppercase tracking-widest">Government IDs</h4>
               
               <div className="space-y-1">
                 <Label className="text-xs font-black text-white/70 uppercase tracking-widest">SSS Number</Label>
@@ -1313,7 +1313,7 @@ export default function EmployeeDashboard() {
                   placeholder="XX-XXXXXXX-X"
                   value={profileData.sssNumber || ''} 
                   onChange={e => setProfileData(prev => ({ ...prev, sssNumber: e.target.value }))}
-                  className="rounded-xl border-white/10 bg-white/5 focus:bg-white/10 text-white"
+                  className="rounded-xl border-white/30 bg-white/5 focus:bg-black/10 text-white"
                 />
               </div>
               
@@ -1323,7 +1323,7 @@ export default function EmployeeDashboard() {
                   placeholder="XX-XXXXXXXXX-X"
                   value={profileData.philhealthNumber || ''} 
                   onChange={e => setProfileData(prev => ({ ...prev, philhealthNumber: e.target.value }))}
-                  className="rounded-xl border-white/10 bg-white/5 focus:bg-white/10 text-white"
+                  className="rounded-xl border-white/30 bg-white/5 focus:bg-black/10 text-white"
                 />
               </div>
 
@@ -1333,7 +1333,7 @@ export default function EmployeeDashboard() {
                   placeholder="XXXX-XXXX-XXXX"
                   value={profileData.pagibigNumber || ''} 
                   onChange={e => setProfileData(prev => ({ ...prev, pagibigNumber: e.target.value }))}
-                  className="rounded-xl border-white/10 bg-white/5 focus:bg-white/10 text-white"
+                  className="rounded-xl border-white/30 bg-white/5 focus:bg-black/10 text-white"
                 />
               </div>
 
@@ -1343,51 +1343,51 @@ export default function EmployeeDashboard() {
                   placeholder="XXX-XXX-XXX-000"
                   value={profileData.tinNumber || ''} 
                   onChange={e => setProfileData(prev => ({ ...prev, tinNumber: e.target.value }))}
-                  className="rounded-xl border-white/10 bg-white/5 focus:bg-white/10 text-white"
+                  className="rounded-xl border-white/30 bg-white/5 focus:bg-black/10 text-white"
                 />
               </div>
             </div>
 
-            <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-4">
-              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest">In Case of Emergency</h4>
+            <div className="pt-4 border-t border-white/20 dark:border-slate-800 space-y-4">
+              <h4 className="text-xs font-bold text-white uppercase tracking-widest">In Case of Emergency</h4>
               
               <div className="space-y-1">
-                <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Contact Name</Label>
+                <Label className="text-xs font-bold text-white uppercase tracking-wider">Contact Name</Label>
                 <Input 
                   placeholder="Full Name"
                   value={profileData.emergencyContactName || ''} 
                   onChange={e => setProfileData(prev => ({ ...prev, emergencyContactName: e.target.value }))}
-                  className="rounded-xl border-slate-200 bg-slate-50 focus:bg-white"
+                  className="rounded-xl border-white/30 bg-black focus:bg-black"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Relation</Label>
+                  <Label className="text-xs font-bold text-white uppercase tracking-wider">Relation</Label>
                   <Input 
                     placeholder="e.g. Spouse"
                     value={profileData.emergencyContactRelation || ''} 
                     onChange={e => setProfileData(prev => ({ ...prev, emergencyContactRelation: e.target.value }))}
-                    className="rounded-xl border-slate-200 bg-slate-50 focus:bg-white"
+                    className="rounded-xl border-white/30 bg-black focus:bg-black"
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Contact Phone</Label>
+                  <Label className="text-xs font-bold text-white uppercase tracking-wider">Contact Phone</Label>
                   <Input 
                     placeholder="0917XXXXXXX"
                     value={profileData.emergencyContactPhone || ''} 
                     onChange={e => setProfileData(prev => ({ ...prev, emergencyContactPhone: e.target.value }))}
-                    className="rounded-xl border-slate-200 bg-slate-50 focus:bg-white"
+                    className="rounded-xl border-white/30 bg-black focus:bg-black"
                   />
                 </div>
               </div>
             </div>
 
-            <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-3">
-              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Security</h4>
+            <div className="pt-4 border-t border-white/20 dark:border-slate-800 space-y-3">
+              <h4 className="text-xs font-bold text-white uppercase tracking-widest">Security</h4>
               <Button 
                 variant="outline" 
-                className="w-full rounded-xl border-slate-200 dark:border-slate-700 h-11 justify-start gap-3"
+                className="w-full rounded-xl border-white/30 dark:border-white/50 h-11 justify-start gap-3"
                 onClick={() => {
                   setPasswordSuccess(false);
                   setPasswordError(null);
@@ -1402,7 +1402,7 @@ export default function EmployeeDashboard() {
             </div>
           </div>
           
-          <div className="p-4 bg-slate-50 dark:bg-slate-800/50 flex justify-end gap-2 border-t border-slate-100 dark:border-slate-800">
+          <div className="p-4 bg-black dark:bg-slate-800/50 flex justify-end gap-2 border-t border-white/20 dark:border-slate-800">
             <Button variant="outline" onClick={() => setIsProfileEditOpen(false)} className="rounded-xl">Cancel</Button>
             <Button onClick={handleSaveProfile} disabled={isSavingProfile} className="rounded-xl bg-blue-600 hover:bg-blue-700 min-w-24">
               {isSavingProfile ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save Profile'}
@@ -1412,12 +1412,12 @@ export default function EmployeeDashboard() {
       </Dialog>
 
       <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
-        <DialogContent className="sm:max-w-[400px] p-0 overflow-hidden bg-white dark:bg-slate-900 border-0 shadow-2xl rounded-2xl">
-          <div className="bg-slate-900 p-6 text-white flex justify-between items-center">
+        <DialogContent className="sm:max-w-[400px] p-0 overflow-hidden bg-black dark:bg-black border-0 shadow-2xl rounded-2xl">
+          <div className="bg-black p-6 text-white flex justify-between items-center">
             <h3 className="font-bold flex items-center gap-2">
               <Lock className="w-4 h-4" /> Security Settings
             </h3>
-            <Button variant="ghost" size="icon" onClick={() => setShowPasswordDialog(false)} className="text-white hover:bg-white/10">
+            <Button variant="ghost" size="icon" onClick={() => setShowPasswordDialog(false)} className="text-white hover:bg-black/10">
               <X className="w-4 h-4" />
             </Button>
           </div>
@@ -1427,7 +1427,7 @@ export default function EmployeeDashboard() {
                 <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto text-green-600 font-bold">✓</div>
                 <div>
                   <h4 className="font-bold">Password Updated</h4>
-                  <p className="text-xs text-slate-500 mt-1">You can now login with your email and password.</p>
+                  <p className="text-xs text-white mt-1">You can now login with your email and password.</p>
                 </div>
                 <Button onClick={() => setShowPasswordDialog(false)} className="w-full rounded-xl">Close</Button>
               </div>
@@ -1444,7 +1444,7 @@ export default function EmployeeDashboard() {
                 )}
 
                 <div className="space-y-2">
-                  <Label className="text-[10px] uppercase font-bold text-slate-500">New Password</Label>
+                  <Label className="text-[10px] uppercase font-bold text-white">New Password</Label>
                   <Input 
                     type="password" 
                     value={newPassword}
@@ -1454,7 +1454,7 @@ export default function EmployeeDashboard() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-[10px] uppercase font-bold text-slate-500">Confirm New Password</Label>
+                  <Label className="text-[10px] uppercase font-bold text-white">Confirm New Password</Label>
                   <Input 
                     type="password" 
                     value={confirmPassword}

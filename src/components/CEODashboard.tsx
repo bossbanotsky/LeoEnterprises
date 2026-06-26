@@ -561,71 +561,71 @@ export default function CEODashboard() {
             <span className="w-2 h-10 bg-cyan-500 rounded-full shadow-[0_0_20px_rgba(6,182,212,0.6)]"></span>
             Executive Dashboard
           </h1>
-          <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em] mt-2 ml-5 italic opacity-80">
+          <p className="text-white text-[10px] font-black uppercase tracking-[0.3em] mt-2 ml-5 italic opacity-80">
             L & P Trading and Services • Operational Status
           </p>
         </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bento-card flex-col bg-slate-900/40 p-6 border border-white/10 shadow-xl overflow-hidden relative group">
+        <div className="bento-card flex-col bg-black/40 p-6 border border-white/30 shadow-xl overflow-hidden relative group">
           <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/10 rounded-full -mr-12 -mt-12 group-hover:scale-125 transition-transform duration-500"></div>
           <div className="flex items-center gap-3 text-cyan-400 mb-2 relative z-10">
             <Users className="w-5 h-5" />
             <span className="text-[10px] font-black uppercase tracking-[0.3em] italic">Total Workforce</span>
           </div>
           <div className="stat-value relative z-10 text-white">
-            {loading ? <Skeleton className="h-10 w-20 bg-white/10" /> : employees.filter((e) => e.role !== "ceo" && e.role !== "admin").length}
+            {loading ? <Skeleton className="h-10 w-20 bg-black/10" /> : employees.filter((e) => e.role !== "ceo" && e.role !== "admin").length}
           </div>
         </div>
-        <div className="bento-card flex-col bg-slate-900/40 p-6 border border-white/10 relative overflow-hidden group shadow-xl">
+        <div className="bento-card flex-col bg-black/40 p-6 border border-white/30 relative overflow-hidden group shadow-xl">
           <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-[40px] -mr-16 -mt-16 group-hover:bg-emerald-500/20 transition-all duration-700"></div>
           <div className="flex items-center gap-3 text-emerald-400 mb-2 relative z-10">
             <PhilippinePeso className="w-5 h-5" />
             <span className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-400 italic">Upcoming Payroll Projection</span>
           </div>
           <div className="stat-value relative z-10 text-emerald-400">
-            {loading ? <Skeleton className="h-10 w-48 bg-white/10" /> : <>₱ {projection.grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</>}
+            {loading ? <Skeleton className="h-10 w-48 bg-black/10" /> : <>₱ {projection.grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</>}
           </div>
         </div>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bento-card flex-col bg-slate-900/40 border border-white/10 shadow-xl overflow-visible">
+        <div className="bento-card flex-col bg-black/40 border border-white/30 shadow-xl overflow-visible">
             {/* Projection content ... */}
         </div>
-        <div className="bento-card flex-col bg-slate-900/40 border border-white/10 shadow-xl">
+        <div className="bento-card flex-col bg-black/40 border border-white/30 shadow-xl">
           <div className="flex justify-between items-center mb-4">
             <h3 className="font-bold text-white flex items-center gap-2">
-              <FileText className="w-4 h-4 text-slate-400" /> Payroll History
+              <FileText className="w-4 h-4 text-white" /> Payroll History
             </h3>
             <div className="flex flex-col gap-2">
               <div className="flex gap-2">
-                  <input type="date" value={startDate} onChange={e => { setStartDate(e.target.value); localStorage.setItem("payrollStartDate", e.target.value); }} className="bg-slate-800 text-white text-[10px] p-1 rounded border border-white/10" />
-                  <input type="date" value={endDate} onChange={e => { setEndDate(e.target.value); localStorage.setItem("payrollEndDate", e.target.value); }} className="bg-slate-800 text-white text-[10px] p-1 rounded border border-white/10" />
+                  <input type="date" value={startDate} onChange={e => { setStartDate(e.target.value); localStorage.setItem("payrollStartDate", e.target.value); }} className="bg-slate-800 text-white text-[10px] p-1 rounded border border-white/30" />
+                  <input type="date" value={endDate} onChange={e => { setEndDate(e.target.value); localStorage.setItem("payrollEndDate", e.target.value); }} className="bg-slate-800 text-white text-[10px] p-1 rounded border border-white/30" />
               </div>
               <div className="flex gap-2">
-                <Button size="sm" variant="outline" className={`h-7 gap-1.5 rounded-lg border-white/10 text-white font-bold text-[9px] uppercase tracking-widest ${statusFilter === 'all' ? 'bg-blue-600' : 'bg-white/5'}`} onClick={() => setStatusFilter('all')}>All</Button>
-                <Button size="sm" variant="outline" className={`h-7 gap-1.5 rounded-lg border-white/10 text-white font-bold text-[9px] uppercase tracking-widest ${statusFilter === 'paid' ? 'bg-blue-600' : 'bg-white/5'}`} onClick={() => setStatusFilter('paid')}>Paid</Button>
-                <Button size="sm" variant="outline" className={`h-7 gap-1.5 rounded-lg border-white/10 text-white font-bold text-[9px] uppercase tracking-widest ${statusFilter === 'pending' ? 'bg-blue-600' : 'bg-white/5'}`} onClick={() => setStatusFilter('pending')}>Pending</Button>
+                <Button size="sm" variant="outline" className={`h-7 gap-1.5 rounded-lg border-white/30 text-white font-bold text-[9px] uppercase tracking-widest ${statusFilter === 'all' ? 'bg-blue-600' : 'bg-white/5'}`} onClick={() => setStatusFilter('all')}>All</Button>
+                <Button size="sm" variant="outline" className={`h-7 gap-1.5 rounded-lg border-white/30 text-white font-bold text-[9px] uppercase tracking-widest ${statusFilter === 'paid' ? 'bg-blue-600' : 'bg-white/5'}`} onClick={() => setStatusFilter('paid')}>Paid</Button>
+                <Button size="sm" variant="outline" className={`h-7 gap-1.5 rounded-lg border-white/30 text-white font-bold text-[9px] uppercase tracking-widest ${statusFilter === 'pending' ? 'bg-blue-600' : 'bg-white/5'}`} onClick={() => setStatusFilter('pending')}>Pending</Button>
               </div>
             </div>
-            <Button size="sm" variant="outline" className="h-7 gap-1.5 rounded-lg border-white/10 text-white font-bold text-[9px] uppercase tracking-widest bg-white/5" onClick={handleBulkExportHistory} disabled={isExporting || filteredPayrolls.length === 0}>
+            <Button size="sm" variant="outline" className="h-7 gap-1.5 rounded-lg border-white/30 text-white font-bold text-[9px] uppercase tracking-widest bg-white/5" onClick={handleBulkExportHistory} disabled={isExporting || filteredPayrolls.length === 0}>
                 {isExporting ? <Loader2 className="w-3 h-3 animate-spin"/> : <Upload className="w-3 h-3 rotate-180"/>} Bulk Export
             </Button>
           </div>
           <div className="space-y-2 max-h-[500px] overflow-y-auto no-scrollbar pr-2">
             {filteredPayrolls.length === 0 ? (
-              <div className="text-center py-8 text-sm text-slate-500">No payrolls found.</div>
+              <div className="text-center py-8 text-sm text-white">No payrolls found.</div>
             ) : (
               groupedPayrolls.map(([dateKey, payrolls]) => (
-                <div key={dateKey} className="space-y-4 bg-slate-900/20 p-4 rounded-xl border border-slate-800">
-                  <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest sticky top-0 bg-slate-950/80 backdrop-blur py-1 z-10 flex items-center gap-2">
+                <div key={dateKey} className="space-y-4 bg-black/20 p-4 rounded-xl border border-slate-800">
+                  <h3 className="text-[11px] font-black text-white uppercase tracking-widest sticky top-0 bg-black/80 backdrop-blur py-1 z-10 flex items-center gap-2">
                     <Calendar className="w-3 h-3"/>
                     {format(parseISO(dateKey), "MMMM d, yyyy")}
                   </h3>
                   
                   {payrolls.pending.length > 0 && (
                     <div className="space-y-2">
-                       <h4 className="text-[9px] font-bold text-amber-500 uppercase">Pending</h4>
+                       <h4 className="text-[9px] font-bold text-white uppercase">Pending</h4>
                        {payrolls.pending.map((pr) => (
                           <PayrollCard key={pr.id} pr={pr} employees={employees} setSelectedPayslip={setSelectedPayslip} />
                        ))}
@@ -652,7 +652,7 @@ export default function CEODashboard() {
           <DialogHeader>
             <DialogTitle>Payslip Details - {selectedPayslip?.employee?.fullName}</DialogTitle>
           </DialogHeader>
-          <div ref={payslipRef} className="payslip-mockup bg-white p-6 rounded-lg text-slate-800">
+          <div ref={payslipRef} className="payslip-mockup bg-black p-6 rounded-lg text-white">
              <div className="border-b pb-4 mb-4">
                 <h2 className="text-2xl font-bold uppercase italic">Payslip</h2>
                 <p className="text-sm"><strong>Employee:</strong> {selectedPayslip?.employee?.fullName}</p>
@@ -677,7 +677,7 @@ export default function CEODashboard() {
                    <span>₱{selectedPayslip?.totalPay.toLocaleString()}</span>
                 </div>
              </div>
-             <p className="text-xs text-slate-500 mt-6">Generated at: {selectedPayslip?.generatedAt}</p>
+             <p className="text-xs text-white mt-6">Generated at: {selectedPayslip?.generatedAt}</p>
           </div>
           <div className="flex gap-2">
             <Button onClick={handleExportPDF} disabled={isExporting}>Export PDF</Button>
@@ -693,7 +693,7 @@ function PayrollCard({ pr, employees, setSelectedPayslip }: any) {
   const emp = employees.find((e: any) => e.id === pr.employeeId);
   return (
     <div
-      className="p-3 bg-slate-950/30 rounded-lg border border-slate-800 hover:border-slate-600 transition-colors cursor-pointer"
+      className="p-3 bg-black/30 rounded-lg border border-slate-800 hover:border-slate-600 transition-colors cursor-pointer"
       onClick={() => setSelectedPayslip({ ...pr, employee: emp })}
     >
       <div className="flex justify-between items-center">

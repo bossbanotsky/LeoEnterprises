@@ -5,6 +5,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { ContainerRepair, Invoice } from "../types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "./ui/dialog";
 import { Button } from "./ui/button";
+import { EmptyState } from "./ui/EmptyState";
 import { Loader2, Plus, Wrench, Edit, Trash2, LayoutGrid, List, ArrowUpDown } from "lucide-react";
 import { useToast } from "../contexts/ToastContext";
 
@@ -387,14 +388,14 @@ export default function ContainerRepairList() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row gap-4 sm:justify-between sm:items-center bg-slate-900/40 p-6 rounded-2xl border border-white/5 shadow-xl">
+      <div className="flex flex-col sm:flex-row gap-4 sm:justify-between sm:items-center bg-black/40 p-6 rounded-2xl border border-white/20 shadow-xl">
         <div className="flex flex-wrap sm:flex-nowrap items-center gap-4">
           <div className="w-12 h-12 shrink-0 bg-indigo-500/10 text-indigo-400 rounded-xl flex items-center justify-center border border-indigo-500/20 shadow-inner">
             <Wrench className="w-6 h-6" />
           </div>
           <div>
             <h2 className="text-xl font-bold text-white tracking-tight">Container Repair</h2>
-            <p className="text-sm text-slate-400 mt-1">Manage local and foreign container repairs.</p>
+            <p className="text-sm text-white mt-1">Manage local and foreign container repairs.</p>
           </div>
         </div>
         <Button onClick={handleOpenAdd} className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg border border-indigo-500/50">
@@ -403,8 +404,8 @@ export default function ContainerRepairList() {
       </div>
 
       {selectedIds.length > 0 && (
-        <div className="flex items-center gap-4 bg-slate-800/50 p-4 rounded-xl border border-white/10">
-            <span className="text-sm text-slate-300">{selectedIds.length} container(s) selected</span>
+        <div className="flex items-center gap-4 bg-slate-800/50 p-4 rounded-xl border border-white/30">
+            <span className="text-sm text-white">{selectedIds.length} container(s) selected</span>
             <Button onClick={() => handleBulkStatusChange('active')} className="bg-slate-700 hover:bg-slate-600">Mark Active</Button>
             <Button onClick={() => handleBulkStatusChange('repairing')} className="bg-amber-600 hover:bg-amber-700">Mark Repairing</Button>
             <Button onClick={() => handleBulkStatusChange('repaired')} className="bg-emerald-600 hover:bg-emerald-700">Mark Repaired</Button>
@@ -412,13 +413,13 @@ export default function ContainerRepairList() {
         </div>
       )}
 
-      <div className="bg-slate-900/40 p-4 rounded-xl border border-white/5 flex flex-wrap gap-4 items-center">
+      <div className="bg-black/40 p-4 rounded-xl border border-white/20 flex flex-wrap gap-4 items-center">
         <input 
           type="text"
           placeholder="Search by code..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="bg-slate-950 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-indigo-500 flex-1 min-w-[200px]"
+          className="bg-black border border-white/30 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-indigo-500 flex-1 min-w-[200px]"
         />
         
         <select 
@@ -427,7 +428,7 @@ export default function ContainerRepairList() {
             setTypeFilter(e.target.value as 'all' | 'local' | 'foreign');
             setForeignSubType('all');
           }}
-          className="bg-slate-950 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          className="bg-black border border-white/30 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
         >
           <option value="all">All Types</option>
           <option value="local">Local</option>
@@ -438,7 +439,7 @@ export default function ContainerRepairList() {
           <select 
             value={foreignSubType}
             onChange={(e) => setForeignSubType(e.target.value as 'all' | 'no-local' | 'has-foreign')}
-            className="bg-slate-950 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="bg-black border border-white/30 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
           >
             <option value="all">Any Foreign</option>
             <option value="no-local">No Local Code</option>
@@ -447,11 +448,11 @@ export default function ContainerRepairList() {
         )}
       </div>
 
-      <div className="flex border-b border-white/10 mt-6 relative overflow-x-auto pb-1 custom-scrollbar w-full">
+      <div className="flex border-b border-white/30 mt-6 relative overflow-x-auto pb-1 custom-scrollbar w-full">
         <button
           onClick={() => setActiveTab('active')}
           className={`px-3 py-2 text-[10px] sm:text-xs font-bold uppercase tracking-widest rounded-t-lg transition-colors flex items-center gap-2 whitespace-nowrap min-w-max ${
-            activeTab === 'active' ? 'bg-indigo-500/20 text-indigo-400 border-b-2 border-indigo-400' : 'text-slate-400 hover:text-white hover:bg-white/5'
+            activeTab === 'active' ? 'bg-indigo-500/20 text-indigo-400 border-b-2 border-indigo-400' : 'text-white hover:text-white hover:bg-white/5'
           }`}
         >
           Waiting List
@@ -459,7 +460,7 @@ export default function ContainerRepairList() {
         <button
           onClick={() => setActiveTab('repairing')}
           className={`px-3 py-2 text-[10px] sm:text-xs font-bold uppercase tracking-widest rounded-t-lg transition-colors flex items-center gap-2 whitespace-nowrap min-w-max ${
-            activeTab === 'repairing' ? 'bg-amber-500/20 text-amber-500 border-b-2 border-amber-500' : 'text-slate-400 hover:text-white hover:bg-white/5'
+            activeTab === 'repairing' ? 'bg-black0/20 text-white border-b-2 border-amber-500' : 'text-white hover:text-white hover:bg-white/5'
           }`}
         >
           Repairing
@@ -467,22 +468,22 @@ export default function ContainerRepairList() {
         <button
           onClick={() => setActiveTab('repaired')}
           className={`px-3 py-2 text-[10px] sm:text-xs font-bold uppercase tracking-widest rounded-t-lg transition-colors flex items-center gap-2 whitespace-nowrap min-w-max ${
-            activeTab === 'repaired' ? 'bg-emerald-500/20 text-emerald-500 border-b-2 border-emerald-500' : 'text-slate-400 hover:text-white hover:bg-white/5'
+            activeTab === 'repaired' ? 'bg-emerald-500/20 text-emerald-500 border-b-2 border-emerald-500' : 'text-white hover:text-white hover:bg-white/5'
           }`}
         >
           Repaired
         </button>
         {activeTab === 'repairing' && (
-          <div className="ml-auto flex bg-slate-950/50 rounded-lg p-1 border border-white/5 self-center">
+          <div className="ml-auto flex bg-white/50 rounded-lg p-1 border border-white/20 self-center">
             <button
               onClick={() => setViewMode('list')}
-              className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-indigo-600 text-white shadow-lg shrink-0' : 'text-slate-500 hover:text-slate-300'}`}
+              className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-indigo-600 text-white shadow-lg shrink-0' : 'text-white hover:text-white'}`}
             >
               <List className="w-4 h-4" />
             </button>
             <button
               onClick={() => setViewMode('platform')}
-              className={`p-1.5 rounded-md transition-all ${viewMode === 'platform' ? 'bg-indigo-600 text-white shadow-lg shrink-0' : 'text-slate-500 hover:text-slate-300'}`}
+              className={`p-1.5 rounded-md transition-all ${viewMode === 'platform' ? 'bg-indigo-600 text-white shadow-lg shrink-0' : 'text-white hover:text-white'}`}
             >
               <LayoutGrid className="w-4 h-4" />
             </button>
@@ -491,7 +492,7 @@ export default function ContainerRepairList() {
         {activeTab === 'repaired' && (
           <button
               onClick={() => setRepairedSortOrder(repairedSortOrder === 'asc' ? 'desc' : 'asc')}
-              className="ml-auto flex items-center gap-1.5 px-3 py-1.5 bg-slate-950/50 hover:bg-slate-950 rounded-lg border border-white/5 text-[10px] sm:text-xs font-black uppercase tracking-widest text-emerald-400 transition-colors"
+              className="ml-auto flex items-center gap-1.5 px-3 py-1.5 bg-white/50 hover:bg-black rounded-lg border border-white/20 text-[10px] sm:text-xs font-black uppercase tracking-widest text-emerald-400 transition-colors"
           >
             <ArrowUpDown className="w-3 h-3" />
             {repairedSortOrder === 'asc' ? 'Oldest First' : 'Newest First'}
@@ -504,22 +505,22 @@ export default function ContainerRepairList() {
           {PLATFORMS.map(p => {
             const containerOnPlatform = filteredContainers.find(c => c.platform === p);
             return (
-              <div key={p} className={`bg-slate-900/40 p-4 sm:p-6 rounded-3xl border-2 transition-all min-h-[140px] flex flex-col justify-between ${containerOnPlatform ? 'border-amber-500/30 bg-amber-500/5' : 'border-dashed border-white/5'}`}>
+              <div key={p} className={`bg-black/40 p-4 sm:p-6 rounded-3xl border-2 transition-all min-h-[140px] flex flex-col justify-between ${containerOnPlatform ? 'border-amber-500/30 bg-black0/5' : 'border-dashed border-white/20'}`}>
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className={`text-sm sm:text-xl font-black italic tracking-tighter ${containerOnPlatform ? 'text-amber-500' : 'text-slate-700'}`}>{p}</h3>
+                  <h3 className={`text-sm sm:text-xl font-black italic tracking-tighter ${containerOnPlatform ? 'text-white' : 'text-white'}`}>{p}</h3>
                   {containerOnPlatform && (
                     <div className="flex items-center gap-1 sm:gap-2">
                       <input 
                         type="checkbox" 
                         checked={selectedIds.includes(containerOnPlatform.id)} 
                         onChange={() => toggleSelect(containerOnPlatform.id)} 
-                        className="w-4 h-4 rounded border-slate-700 bg-slate-800 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                        className="w-4 h-4 rounded border-white/50 bg-slate-800 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
                       />
                       <Button 
                         variant="ghost" 
                         size="icon" 
                         onClick={() => handleOpenEdit(containerOnPlatform)}
-                        className="h-6 w-6 sm:h-8 sm:w-8 p-0 text-slate-400 hover:text-white hover:bg-white/5"
+                        className="h-6 w-6 sm:h-8 sm:w-8 p-0 text-white hover:text-white hover:bg-white/5"
                       >
                         <Edit className="w-3 h-3 sm:w-4 sm:h-4" />
                       </Button>
@@ -532,21 +533,21 @@ export default function ContainerRepairList() {
                     <p className="text-xs sm:text-base font-black text-white leading-none truncate" title={containerOnPlatform.type === 'foreign' ? containerOnPlatform.foreignCode : containerOnPlatform.localCode}>
                       {containerOnPlatform.type === 'foreign' ? containerOnPlatform.foreignCode : containerOnPlatform.localCode}
                     </p>
-                    <p className="text-[8px] sm:text-[10px] text-slate-500 font-bold uppercase tracking-widest truncate">
+                    <p className="text-[8px] sm:text-[10px] text-white font-bold uppercase tracking-widest truncate">
                       {containerOnPlatform.localCode && containerOnPlatform.type === 'foreign' && `Local: ${containerOnPlatform.localCode}`}
                     </p>
                     <div className="mt-2 flex items-center gap-1 sm:gap-1.5 flex-wrap">
-                       <span className="text-[7px] sm:text-[8px] font-black bg-slate-800 text-slate-300 px-1 sm:px-1.5 py-0.5 rounded border border-white/10 uppercase tracking-widest">
+                       <span className="text-[7px] sm:text-[8px] font-black bg-slate-800 text-white px-1 sm:px-1.5 py-0.5 rounded border border-white/30 uppercase tracking-widest">
                          {containerOnPlatform.type}
                        </span>
-                       <span className="text-[7px] sm:text-[8px] font-black bg-amber-500/20 text-amber-500 px-1 sm:px-1.5 py-0.5 rounded border border-amber-500/30 uppercase tracking-widest">IN REPAIR</span>
+                       <span className="text-[7px] sm:text-[8px] font-black bg-black0/20 text-white px-1 sm:px-1.5 py-0.5 rounded border border-amber-500/30 uppercase tracking-widest">IN REPAIR</span>
                        {containerOnPlatform.hasBV && <span className="text-[7px] sm:text-[8px] font-black bg-indigo-500/20 text-indigo-400 px-1 py-0.5 rounded border border-indigo-500/30">BV</span>}
                        {containerOnPlatform.hasAV && <span className="text-[7px] sm:text-[8px] font-black bg-emerald-500/20 text-emerald-500 px-1 py-0.5 rounded border border-emerald-500/30">AV</span>}
                     </div>
                   </div>
                 ) : (
-                  <div className="flex-1 flex flex-col items-center justify-center border border-dashed border-white/5 rounded-2xl bg-slate-950/30 mt-2">
-                    <p className="text-[8px] sm:text-[10px] font-black text-slate-600 uppercase tracking-widest">AVAILABLE</p>
+                  <div className="flex-1 flex flex-col items-center justify-center border border-dashed border-white/20 rounded-2xl bg-black/30 mt-2">
+                    <p className="text-[8px] sm:text-[10px] font-black text-white uppercase tracking-widest">AVAILABLE</p>
                   </div>
                 )}
               </div>
@@ -554,7 +555,7 @@ export default function ContainerRepairList() {
           })}
         </div>
       ) : (
-        <div className="bg-slate-900/40 border border-white/5 rounded-2xl shadow-xl overflow-hidden">
+        <div className="bg-black/40 border border-white/20 rounded-2xl shadow-xl overflow-hidden">
           {loading ? (
 
           <div className="flex justify-center items-center h-48">
@@ -564,7 +565,7 @@ export default function ContainerRepairList() {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-slate-950/50 text-slate-400 border-b border-white/5 uppercase tracking-wider text-[10px] font-black">
+                <tr className="bg-white/50 text-white border-b border-white/20 uppercase tracking-wider text-[10px] font-black">
                   <th className="p-4 w-10"><input type="checkbox" checked={selectedIds.length === filteredContainers.length && filteredContainers.length > 0} onChange={toggleSelectAll} /></th>
                   <th className="p-4">Type</th>
                   <th className="p-4">Platform</th>
@@ -576,11 +577,15 @@ export default function ContainerRepairList() {
                   <th className="p-4">Created Date</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5 text-sm text-slate-300">
+              <tbody className="divide-y divide-white/5 text-sm text-white">
                 {filteredContainers.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="p-8 text-center text-slate-500">
-                      No containers found.
+                    <td colSpan={6} className="p-4">
+                      <EmptyState 
+                        icon={Wrench}
+                        title="No Containers Found"
+                        description="There are no container repair records matching your criteria."
+                      />
                     </td>
                   </tr>
                 ) : (
@@ -589,7 +594,7 @@ export default function ContainerRepairList() {
                       <td className="p-4"><input type="checkbox" checked={selectedIds.includes(c.id)} onChange={() => toggleSelect(c.id)} /></td>
                       <td className="p-4 font-bold" onClick={() => handleOpenEdit(c)}>
                         <span className={`px-2 py-1 rounded text-xs uppercase tracking-widest ${
-                          c.type === 'foreign' ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20' : 
+                          c.type === 'foreign' ? 'bg-black0/10 text-white border border-white/40' : 
                           'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'
                         }`}>
                           {c.type}
@@ -601,13 +606,13 @@ export default function ContainerRepairList() {
                             {c.platform}
                           </span>
                         ) : (
-                          <span className="text-slate-600 font-bold text-[10px] uppercase tracking-widest">-</span>
+                          <span className="text-white font-bold text-[10px] uppercase tracking-widest">-</span>
                         )}
                       </td>
                       <td className="p-4" onClick={() => handleOpenEdit(c)}>
                          <div className="flex gap-1">
-                            <div className={`w-5 h-5 rounded flex items-center justify-center text-[8px] font-bold border ${c.hasBV ? 'bg-indigo-500/20 border-indigo-500/40 text-indigo-400' : 'bg-slate-800 border-slate-700 text-slate-600'}`} title="Before Video">BV</div>
-                            <div className={`w-5 h-5 rounded flex items-center justify-center text-[8px] font-bold border ${c.hasAV ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400' : 'bg-slate-800 border-slate-700 text-slate-600'}`} title="After Video">AV</div>
+                            <div className={`w-5 h-5 rounded flex items-center justify-center text-[8px] font-bold border ${c.hasBV ? 'bg-indigo-500/20 border-indigo-500/40 text-indigo-400' : 'bg-slate-800 border-white/50 text-white'}`} title="Before Video">BV</div>
+                            <div className={`w-5 h-5 rounded flex items-center justify-center text-[8px] font-bold border ${c.hasAV ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400' : 'bg-slate-800 border-white/50 text-white'}`} title="After Video">AV</div>
                          </div>
                       </td>
                       <td className="p-4 group-hover:text-white transition-colors whitespace-nowrap" onClick={() => handleOpenEdit(c)}>{c.type === 'foreign' ? c.foreignCode || "-" : c.localCode || "-"}</td>
@@ -620,7 +625,7 @@ export default function ContainerRepairList() {
                             inv.containers.some(ic => ic.code === containerCode)
                           );
                           
-                          if (!linkedInvoice) return <span className="text-slate-600">-</span>;
+                          if (!linkedInvoice) return <span className="text-white">-</span>;
                           
                           return (
                             <div className="flex flex-col gap-1">
@@ -630,7 +635,7 @@ export default function ContainerRepairList() {
                                <span className={`text-[8px] font-black uppercase px-1 py-0.5 rounded text-center ${
                                   linkedInvoice.status === 'paid' ? 'bg-green-500/10 text-green-500' :
                                   linkedInvoice.status === 'billing' ? 'bg-indigo-500/10 text-indigo-400' :
-                                  'bg-amber-500/10 text-amber-500'
+                                  'bg-black0/10 text-white'
                                }`}>
                                  {linkedInvoice.status}
                                </span>
@@ -639,7 +644,7 @@ export default function ContainerRepairList() {
                         })()}
                       </td>
                       <td className="p-4 max-w-[200px] truncate group-hover:text-white transition-colors" onClick={() => handleOpenEdit(c)} title={c.note || ""}>{c.note || "-"}</td>
-                      <td className="p-4 text-slate-200 text-xs font-semibold whitespace-nowrap" onClick={() => handleOpenEdit(c)}>{new Date(c.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</td>
+                      <td className="p-4 text-white text-xs font-semibold whitespace-nowrap" onClick={() => handleOpenEdit(c)}>{new Date(c.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</td>
                     </tr>
                   ))
                 )}
@@ -651,42 +656,42 @@ export default function ContainerRepairList() {
       )}
 
       <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-        <DialogContent className="max-w-md bg-slate-900 border-slate-800 text-slate-100">
+        <DialogContent className="max-w-md bg-black border-slate-800 text-white">
           <DialogHeader>
             <DialogTitle>{editingId ? "Edit" : "Add"} Container Repair</DialogTitle>
-            <DialogDescription className="text-slate-400">{editingId ? "Edit an existing" : "Add a new"} local or foreign container</DialogDescription>
+            <DialogDescription className="text-white">{editingId ? "Edit an existing" : "Add a new"} local or foreign container</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleCreate} className="space-y-2.5 pt-1">
             <div className="space-y-0.5">
-              <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Container Type</label>
+              <label className="text-[9px] font-black text-white uppercase tracking-widest">Container Type</label>
               <div className="flex gap-4">
                 <label className="flex items-center gap-1.5 cursor-pointer">
-                  <input type="radio" checked={formData.type === 'local'} onChange={() => setFormData({...formData, type: 'local'})} className="w-3 h-3 text-indigo-600 focus:ring-indigo-500 bg-slate-800 border-slate-700" />
-                  <span className="text-[10px] uppercase font-bold text-slate-400">Local</span>
+                  <input type="radio" checked={formData.type === 'local'} onChange={() => setFormData({...formData, type: 'local'})} className="w-3 h-3 text-indigo-600 focus:ring-indigo-500 bg-slate-800 border-white/50" />
+                  <span className="text-[10px] uppercase font-bold text-white">Local</span>
                 </label>
                 <label className="flex items-center gap-1.5 cursor-pointer">
-                  <input type="radio" checked={formData.type === 'foreign'} onChange={() => setFormData({...formData, type: 'foreign'})} className="w-3 h-3 text-indigo-600 focus:ring-indigo-500 bg-slate-800 border-slate-700" />
-                  <span className="text-[10px] uppercase font-bold text-slate-400">Foreign</span>
+                  <input type="radio" checked={formData.type === 'foreign'} onChange={() => setFormData({...formData, type: 'foreign'})} className="w-3 h-3 text-indigo-600 focus:ring-indigo-500 bg-slate-800 border-white/50" />
+                  <span className="text-[10px] uppercase font-bold text-white">Foreign</span>
                 </label>
               </div>
             </div>
 
             {formData.type === 'foreign' && (
               <div className="space-y-0.5">
-                <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Foreign Code *</label>
+                <label className="text-[9px] font-black text-white uppercase tracking-widest">Foreign Code *</label>
                 <input
                   type="text"
                   required
                   value={formData.foreignCode}
                   onChange={(e) => setFormData({...formData, foreignCode: e.target.value.toUpperCase()})}
-                  className="w-full bg-slate-950 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
+                  className="w-full bg-black border border-white/30 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
                   placeholder="Enter foreign code"
                 />
               </div>
             )}
 
             <div className="space-y-0.5">
-              <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">
+              <label className="text-[9px] font-black text-white uppercase tracking-widest">
                 Local Code {formData.type === 'local' ? '*' : '(Optional)'}
               </label>
               <input
@@ -694,24 +699,24 @@ export default function ContainerRepairList() {
                 required={formData.type === 'local'}
                 value={formData.localCode}
                 onChange={(e) => setFormData({...formData, localCode: e.target.value.toUpperCase()})}
-                className="w-full bg-slate-950 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
+                className="w-full bg-black border border-white/30 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
                 placeholder="Enter local code"
               />
             </div>
 
             <div className="space-y-0.5">
-              <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Status</label>
+              <label className="text-[9px] font-black text-white uppercase tracking-widest">Status</label>
               <div className="flex gap-4">
                 <label className="flex items-center gap-1.5 cursor-pointer">
-                  <input type="radio" checked={formData.status === 'active'} onChange={() => setFormData({...formData, status: 'active'})} className="w-3 h-3 text-indigo-500 focus:ring-indigo-500 bg-slate-800 border-slate-700" />
+                  <input type="radio" checked={formData.status === 'active'} onChange={() => setFormData({...formData, status: 'active'})} className="w-3 h-3 text-indigo-500 focus:ring-indigo-500 bg-slate-800 border-white/50" />
                   <span className="text-[9px] text-indigo-400 font-black uppercase tracking-widest">Active</span>
                 </label>
                 <label className="flex items-center gap-1.5 cursor-pointer">
-                  <input type="radio" checked={formData.status === 'repairing'} onChange={() => setFormData({...formData, status: 'repairing'})} className="w-3 h-3 text-amber-500 focus:ring-amber-500 bg-slate-800 border-slate-700" />
-                  <span className="text-[9px] text-amber-500 font-black uppercase tracking-widest">Repairing</span>
+                  <input type="radio" checked={formData.status === 'repairing'} onChange={() => setFormData({...formData, status: 'repairing'})} className="w-3 h-3 text-white focus:ring-amber-500 bg-slate-800 border-white/50" />
+                  <span className="text-[9px] text-white font-black uppercase tracking-widest">Repairing</span>
                 </label>
                 <label className="flex items-center gap-1.5 cursor-pointer">
-                  <input type="radio" checked={formData.status === 'repaired'} onChange={() => setFormData({...formData, status: 'repaired'})} className="w-3 h-3 text-emerald-500 focus:ring-emerald-500 bg-slate-800 border-slate-700" />
+                  <input type="radio" checked={formData.status === 'repaired'} onChange={() => setFormData({...formData, status: 'repaired'})} className="w-3 h-3 text-emerald-500 focus:ring-emerald-500 bg-slate-800 border-white/50" />
                   <span className="text-[9px] text-emerald-500 font-black uppercase tracking-widest">Repaired</span>
                 </label>
               </div>
@@ -719,14 +724,14 @@ export default function ContainerRepairList() {
 
             {formData.status === 'repairing' && (
               <div className="space-y-1.5">
-                <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Assign Platform</label>
+                <label className="text-[9px] font-black text-white uppercase tracking-widest">Assign Platform</label>
                 <div className="grid grid-cols-4 gap-1">
                   {PLATFORMS.map(p => (
                     <button
                       key={p}
                       type="button"
                       onClick={() => setFormData({...formData, platform: p})}
-                      className={`py-1 rounded-lg text-[10px] font-black transition-all border ${formData.platform === p ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-slate-950 border-white/10 text-slate-500 hover:text-white'}`}
+                      className={`py-1 rounded-lg text-[10px] font-black transition-all border ${formData.platform === p ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-black border-white/30 text-white hover:text-white'}`}
                     >
                       {p}
                     </button>
@@ -734,7 +739,7 @@ export default function ContainerRepairList() {
                   <button
                     type="button"
                     onClick={() => setFormData({...formData, platform: null})}
-                    className={`py-1 px-2 rounded-lg text-[10px] font-black transition-all border col-span-2 ${formData.platform === null ? 'bg-slate-700 border-slate-600 text-white' : 'bg-slate-950 border-white/10 text-slate-500'}`}
+                    className={`py-1 px-2 rounded-lg text-[10px] font-black transition-all border col-span-2 ${formData.platform === null ? 'bg-slate-700 border-slate-600 text-white' : 'bg-black border-white/30 text-white'}`}
                   >
                     None
                   </button>
@@ -743,41 +748,41 @@ export default function ContainerRepairList() {
             )}
 
             <div className="space-y-0.5">
-              <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Video Tracking</label>
+              <label className="text-[9px] font-black text-white uppercase tracking-widest">Video Tracking</label>
               <div className="grid grid-cols-2 gap-4">
-                <label className="flex items-center gap-2 cursor-pointer p-2 rounded-lg bg-slate-950/50 border border-white/5 hover:bg-slate-950 transition-colors">
-                  <input type="checkbox" checked={formData.hasBV} onChange={(e) => setFormData({...formData, hasBV: e.target.checked})} className="w-4 h-4 rounded border-slate-700 bg-slate-800 text-indigo-600 focus:ring-indigo-500" />
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Before Video (BV)</span>
+                <label className="flex items-center gap-2 cursor-pointer p-2 rounded-lg bg-white/50 border border-white/20 hover:bg-black transition-colors">
+                  <input type="checkbox" checked={formData.hasBV} onChange={(e) => setFormData({...formData, hasBV: e.target.checked})} className="w-4 h-4 rounded border-white/50 bg-slate-800 text-indigo-600 focus:ring-indigo-500" />
+                  <span className="text-[10px] font-black text-white uppercase tracking-widest">Before Video (BV)</span>
                 </label>
-                <label className="flex items-center gap-2 cursor-pointer p-2 rounded-lg bg-slate-950/50 border border-white/5 hover:bg-slate-950 transition-colors">
-                  <input type="checkbox" checked={formData.hasAV} onChange={(e) => setFormData({...formData, hasAV: e.target.checked})} className="w-4 h-4 rounded border-slate-700 bg-slate-800 text-emerald-600 focus:ring-emerald-500" />
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">After Video (AV)</span>
+                <label className="flex items-center gap-2 cursor-pointer p-2 rounded-lg bg-white/50 border border-white/20 hover:bg-black transition-colors">
+                  <input type="checkbox" checked={formData.hasAV} onChange={(e) => setFormData({...formData, hasAV: e.target.checked})} className="w-4 h-4 rounded border-white/50 bg-slate-800 text-emerald-600 focus:ring-emerald-500" />
+                  <span className="text-[10px] font-black text-white uppercase tracking-widest">After Video (AV)</span>
                 </label>
               </div>
             </div>
 
             <div className="space-y-0.5">
-              <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Note (Optional)</label>
+              <label className="text-[9px] font-black text-white uppercase tracking-widest">Note (Optional)</label>
               <textarea
                 value={formData.note}
                 onChange={(e) => setFormData({...formData, note: e.target.value})}
-                className="w-full bg-slate-950 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-indigo-500/50 min-h-[50px] resize-none"
+                className="w-full bg-black border border-white/30 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-indigo-500/50 min-h-[50px] resize-none"
                 placeholder="Enter notes..."
               />
             </div>
 
             {editingId && containers.find(c => c.id === editingId)?.history && (
               <div className="mt-4 space-y-2">
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-white/5 block pb-1">Activity Log</label>
+                <label className="text-[10px] font-black text-white uppercase tracking-widest border-b border-white/20 block pb-1">Activity Log</label>
                 <div className="space-y-2 max-h-[120px] overflow-y-auto pr-2 custom-scrollbar">
                   {containers.find(c => c.id === editingId)?.history?.slice().reverse().map((h, i) => (
-                    <div key={i} className="relative pl-3 border-l border-white/10 py-0.5">
+                    <div key={i} className="relative pl-3 border-l border-white/30 py-0.5">
                       <div className="absolute -left-[4px] top-1.5 w-1.5 h-1.5 rounded-full bg-slate-700 border border-slate-900" />
                       <div className="flex justify-between items-start gap-2">
                         <div className="flex flex-col">
                            <span className={`text-[8px] font-black uppercase tracking-tighter ${
                              h.status === 'active' ? 'text-indigo-400' :
-                             h.status === 'repairing' ? 'text-amber-500' :
+                             h.status === 'repairing' ? 'text-white' :
                              'text-emerald-500'
                            }`}>
                              {h.status} {h.platform && <span className="text-white ml-1">@ {h.platform}</span>}
@@ -786,9 +791,9 @@ export default function ContainerRepairList() {
                               {h.hasBV && <span className="text-[7px] font-bold bg-indigo-500/10 text-indigo-400 px-1 rounded">BV</span>}
                               {h.hasAV && <span className="text-[7px] font-bold bg-emerald-500/10 text-emerald-400 px-1 rounded">AV</span>}
                            </div>
-                           {h.note && <p className="text-[9px] text-slate-400 italic">"{h.note}"</p>}
+                           {h.note && <p className="text-[9px] text-white italic">"{h.note}"</p>}
                         </div>
-                        <span className="text-[10px] text-slate-300 font-medium whitespace-nowrap text-right">
+                        <span className="text-[10px] text-white font-medium whitespace-nowrap text-right">
                           {new Date(h.timestamp).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} {new Date(h.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
                         </span>
                       </div>
@@ -805,7 +810,7 @@ export default function ContainerRepairList() {
                 </Button>
               ) : <div />}
               <div className="flex gap-2">
-                <Button type="button" variant="outline" onClick={() => setIsAddOpen(false)} className="bg-transparent border-slate-700 hover:bg-slate-800 text-slate-300">
+                <Button type="button" variant="outline" onClick={() => setIsAddOpen(false)} className="bg-transparent border-white/50 hover:bg-slate-800 text-white">
                   Cancel
                 </Button>
                 <Button type="submit" disabled={isAdding} className="bg-indigo-600 hover:bg-indigo-700 text-white">
@@ -818,15 +823,15 @@ export default function ContainerRepairList() {
       </Dialog>
 
       <Dialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
-        <DialogContent className="max-w-sm bg-slate-900 border-slate-800 text-slate-100">
+        <DialogContent className="max-w-sm bg-black border-slate-800 text-white">
           <DialogHeader>
             <DialogTitle>Confirm Deletion</DialogTitle>
-            <DialogDescription className="text-slate-400">
+            <DialogDescription className="text-white">
               Are you sure you want to delete this container repair? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="pt-4 flex gap-2 sm:justify-end">
-            <Button variant="outline" onClick={() => setDeleteConfirmId(null)} className="bg-transparent border-slate-700 hover:bg-slate-800 text-slate-300">
+            <Button variant="outline" onClick={() => setDeleteConfirmId(null)} className="bg-transparent border-white/50 hover:bg-slate-800 text-white">
               Cancel
             </Button>
             <Button variant="destructive" onClick={() => deleteConfirmId && handleDelete(deleteConfirmId)} className="bg-red-600 hover:bg-red-700 text-white">

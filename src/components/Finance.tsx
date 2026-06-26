@@ -7,6 +7,7 @@ import { recordTransaction } from '../services/financeService';
 import { Wallet, Plus, ArrowUpRight, ArrowDownRight, Banknote, Building2, CreditCard, Edit2, Trash2, X, FileText, User, Receipt, Search, PlusCircle } from 'lucide-react';
 import { Account, Transaction, Invoice, Payroll, CashAdvance } from '../types';
 import DailySupplies from './DailySupplies';
+import { EmptyState } from './ui/EmptyState';
 
 export default function Finance() {
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -211,7 +212,7 @@ export default function Finance() {
       <header className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-black text-white uppercase tracking-tight">Finance</h1>
-          <p className="text-slate-400">Master ledger and financial overview</p>
+          <p className="text-white">Master ledger and financial overview</p>
         </div>
         <div className="flex gap-2">
           <button 
@@ -238,28 +239,28 @@ export default function Finance() {
       </header>
 
       {/* Tabs Section */}
-      <div className="flex gap-1 p-1 bg-slate-950/50 border border-white/5 rounded-xl max-w-full overflow-x-auto custom-scrollbar scroll-smooth snap-x">
+      <div className="flex gap-1 p-1 bg-white/50 border border-white/20 rounded-xl max-w-full overflow-x-auto custom-scrollbar scroll-smooth snap-x">
         <button
           onClick={() => setActiveTab('all')}
-          className={`snap-start shrink-0 px-2 sm:px-3 py-1.5 rounded-lg text-[8px] sm:text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === 'all' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}
+          className={`snap-start shrink-0 px-2 sm:px-3 py-1.5 rounded-lg text-[8px] sm:text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === 'all' ? 'bg-indigo-600 text-white shadow-lg' : 'text-white hover:text-white hover:bg-white/5'}`}
         >
           All
         </button>
         <button
           onClick={() => setActiveTab('container')}
-          className={`snap-start shrink-0 px-2 sm:px-3 py-1.5 rounded-lg text-[8px] sm:text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === 'container' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}
+          className={`snap-start shrink-0 px-2 sm:px-3 py-1.5 rounded-lg text-[8px] sm:text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === 'container' ? 'bg-indigo-600 text-white shadow-lg' : 'text-white hover:text-white hover:bg-white/5'}`}
         >
           Container
         </button>
         <button
           onClick={() => setActiveTab('junkshop')}
-          className={`snap-start shrink-0 px-2 sm:px-3 py-1.5 rounded-lg text-[8px] sm:text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === 'junkshop' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}
+          className={`snap-start shrink-0 px-2 sm:px-3 py-1.5 rounded-lg text-[8px] sm:text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === 'junkshop' ? 'bg-indigo-600 text-white shadow-lg' : 'text-white hover:text-white hover:bg-white/5'}`}
         >
           Junkshop
         </button>
         <button
           onClick={() => setActiveTab('supplies')}
-          className={`snap-start shrink-0 px-2 sm:px-3 py-1.5 rounded-lg text-[8px] sm:text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === 'supplies' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}
+          className={`snap-start shrink-0 px-2 sm:px-3 py-1.5 rounded-lg text-[8px] sm:text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === 'supplies' ? 'bg-indigo-600 text-white shadow-lg' : 'text-white hover:text-white hover:bg-white/5'}`}
         >
           Daily Supplies
         </button>
@@ -271,20 +272,20 @@ export default function Finance() {
         <>
           {/* Account Overview Cards */}
           {filteredAccounts.length === 0 ? (
-        <div className="bg-indigo-600/10 border border-indigo-500/20 p-8 rounded-3xl text-center">
-            <Wallet className="w-12 h-12 text-indigo-400 mx-auto mb-4" />
-            <h2 className="text-xl font-bold text-white mb-2">No accounts for this department</h2>
-            <p className="text-slate-400 max-w-md mx-auto mb-6">Create an account or select another department to view financial movements.</p>
-            <button onClick={() => {
-              setNewAccount({ name: '', type: 'cash', balance: 0, isDefault: false, department: activeTab === 'all' ? 'other' : activeTab as any });
-              setIsAddAccountOpen(true);
-            }} className="bg-indigo-600 text-white px-6 py-2 rounded-xl font-bold hover:bg-indigo-500 transition-all">
-                Create First Account
-            </button>
-        </div>
-      ) : (
+            <EmptyState 
+              icon={Wallet}
+              title="No Accounts for this Department"
+              description="Create an account or select another department to view financial movements."
+              actionLabel="Create First Account"
+              onAction={() => {
+                setNewAccount({ name: '', type: 'cash', balance: 0, isDefault: false, department: activeTab === 'all' ? 'other' : activeTab as any });
+                setIsAddAccountOpen(true);
+              }}
+              className="col-span-full mt-4"
+            />
+          ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-gradient-to-br from-indigo-600 to-blue-700 p-6 rounded-3xl border border-white/10 shadow-lg">
+          <div className="bg-gradient-to-br from-indigo-600 to-blue-700 p-6 rounded-3xl border border-white/30 shadow-lg">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-white/70 text-[10px] font-black uppercase tracking-widest">
                   {activeTab === 'all' ? 'Consolidated Net Worth' : `${activeTab} Net Worth`}
@@ -293,16 +294,16 @@ export default function Finance() {
               </div>
               <p className="text-3xl font-black text-white tracking-tight">₱{totalBalance.toLocaleString(undefined, {minimumFractionDigits: 2})}</p>
           </div>
-          <div className="bg-slate-900/50 p-6 rounded-3xl border border-white/5">
+          <div className="bg-white/50 p-6 rounded-3xl border border-white/20">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-slate-400 text-[10px] font-black uppercase tracking-widest">Inflow</h3>
+                <h3 className="text-white text-[10px] font-black uppercase tracking-widest">Inflow</h3>
                 <ArrowUpRight className="w-4 h-4 text-emerald-400" />
               </div>
               <p className="text-2xl font-black text-white tracking-tight text-emerald-400">₱{totalIncome.toLocaleString(undefined, {minimumFractionDigits: 2})}</p>
           </div>
-          <div className="bg-slate-900/50 p-6 rounded-3xl border border-white/5">
+          <div className="bg-white/50 p-6 rounded-3xl border border-white/20">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-slate-400 text-[10px] font-black uppercase tracking-widest">Outflow</h3>
+                <h3 className="text-white text-[10px] font-black uppercase tracking-widest">Outflow</h3>
                 <ArrowDownRight className="w-4 h-4 text-rose-400" />
               </div>
               <p className="text-2xl font-black text-white tracking-tight text-rose-400">₱{totalExpense.toLocaleString(undefined, {minimumFractionDigits: 2})}</p>
@@ -314,7 +315,7 @@ export default function Finance() {
       {filteredAccounts.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {filteredAccounts.map(acc => (
-            <div key={acc.id} className="bg-slate-900/80 p-5 rounded-2xl border border-white/5 hover:border-indigo-500/30 transition-all">
+            <div key={acc.id} className="bg-black/80 p-5 rounded-2xl border border-white/20 hover:border-indigo-500/30 transition-all">
                 <div className='flex items-center justify-between mb-3'>
                   <div className="flex items-center gap-2">
                     <div className={`p-2 rounded-lg ${acc.type === 'cash' ? 'bg-emerald-500/10 text-emerald-400' : acc.type === 'bank' ? 'bg-blue-500/10 text-blue-400' : 'bg-purple-500/10 text-purple-400'}`}>
@@ -329,10 +330,10 @@ export default function Finance() {
                   </div>
                   <div className="flex items-center gap-1">
                     {acc.isDefault && <span className="text-[8px] bg-indigo-500 text-white px-1.5 py-0.5 rounded font-black">DEFAULT</span>}
-                    <button onClick={() => openEdit(acc)} className="p-1 hover:bg-white/10 rounded text-slate-400 hover:text-white">
+                    <button onClick={() => openEdit(acc)} className="p-1 hover:bg-black/10 rounded text-white hover:text-white">
                       <Edit2 className="w-3 h-3" />
                     </button>
-                    <button onClick={() => setItemToDelete({ id: acc.id, type: 'account' })} className="p-1 hover:bg-rose-500/10 rounded text-slate-400 hover:text-rose-400">
+                    <button onClick={() => setItemToDelete({ id: acc.id, type: 'account' })} className="p-1 hover:bg-rose-500/10 rounded text-white hover:text-rose-400">
                       <Trash2 className="w-3 h-3" />
                     </button>
                   </div>
@@ -344,18 +345,18 @@ export default function Finance() {
       )}
       
       {/* Transaction List */}
-      <div className="bg-slate-900/50 p-6 rounded-3xl border border-white/5">
+      <div className="bg-white/50 p-6 rounded-3xl border border-white/20">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-bold text-white">
             {activeTab === 'all' ? 'Recent Transactions' : activeTab === 'container' ? 'Container Movements' : 'Junkshop Movements'}
           </h2>
-          <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{filteredTransactions.length} entries</span>
+          <span className="text-[10px] font-black text-white uppercase tracking-widest">{filteredTransactions.length} entries</span>
         </div>
         <div className="space-y-4">
           {filteredTransactions.map(t => (
             <div 
               key={t.id} 
-              className={`flex flex-col sm:flex-row justify-between items-start sm:items-center bg-slate-800/30 p-4 rounded-xl transition-all gap-3 group ${t.referenceId ? 'cursor-pointer hover:bg-slate-800/50 border border-transparent hover:border-white/10' : ''}`}
+              className={`flex flex-col sm:flex-row justify-between items-start sm:items-center bg-slate-800/30 p-4 rounded-xl transition-all gap-3 group ${t.referenceId ? 'cursor-pointer hover:bg-slate-800/50 border border-transparent hover:border-white/30' : ''}`}
             >
               <div onClick={() => handleTransactionClick(t)} className="flex-1">
                 <div className='flex items-center gap-2'>
@@ -365,9 +366,9 @@ export default function Finance() {
                       {t.department}
                     </span>
                   )}
-                  {t.referenceId && <span className='text-[10px] bg-white/10 text-white/50 px-1.5 py-0.5 rounded uppercase font-black tracking-tighter'>Details Available</span>}
+                  {t.referenceId && <span className='text-[10px] bg-black/10 text-white/50 px-1.5 py-0.5 rounded uppercase font-black tracking-tighter'>Details Available</span>}
                 </div>
-                <p className='text-xs text-slate-300 font-medium mt-0.5'>{t.category} • {new Date(t.date.includes('T') ? t.date : t.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+                <p className='text-xs text-white font-medium mt-0.5'>{t.category} • {new Date(t.date.includes('T') ? t.date : t.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
               </div>
               <div className="flex items-center gap-4">
                 <p className={`text-sm font-bold ${t.type === 'income' ? 'text-emerald-400' : 'text-rose-400'} whitespace-nowrap`}>
@@ -375,7 +376,7 @@ export default function Finance() {
                 </p>
                 <button 
                   onClick={(e) => { e.stopPropagation(); setItemToDelete({ id: t.id, type: 'transaction', transaction: t }); }}
-                  className="p-2 bg-white/5 hover:bg-rose-500/10 rounded-lg text-slate-500 hover:text-rose-400 transition-all"
+                  className="p-2 bg-white/5 hover:bg-rose-500/10 rounded-lg text-white hover:text-rose-400 transition-all"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -388,7 +389,7 @@ export default function Finance() {
       {/* Transaction Detail Modal */}
       {selectedTransaction && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-slate-900 border border-white/10 p-8 rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
+          <div className="bg-black border border-white/30 p-8 rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
             <div className="flex justify-between items-start mb-6">
               <div className="flex items-center gap-3">
                 <div className={`p-3 rounded-2xl ${selectedTransaction.type === 'income' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`}>
@@ -396,11 +397,11 @@ export default function Finance() {
                 </div>
                 <div>
                   <h2 className='text-2xl font-black text-white tracking-tight uppercase'>{selectedTransaction.category} Detail</h2>
-                  <p className="text-slate-400 text-sm">{selectedTransaction.description}</p>
+                  <p className="text-white text-sm">{selectedTransaction.description}</p>
                 </div>
               </div>
-              <button onClick={() => setSelectedTransaction(null)} className="p-2 hover:bg-white/10 rounded-xl transition-all">
-                <X className="text-slate-400" />
+              <button onClick={() => setSelectedTransaction(null)} className="p-2 hover:bg-black/10 rounded-xl transition-all">
+                <X className="text-white" />
               </button>
             </div>
 
@@ -412,14 +413,14 @@ export default function Finance() {
             ) : detailData ? (
               <div className="space-y-6">
                 <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
-                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Account</p>
+                  <div className="bg-white/5 p-4 rounded-2xl border border-white/20">
+                    <p className="text-[10px] font-black text-white uppercase tracking-widest mb-1">Account</p>
                     <p className="text-white font-bold text-sm tracking-tight">
                       {accounts.find(a => a.id === selectedTransaction.accountId)?.name || 'Unknown Account'}
                     </p>
                   </div>
-                  <div className="bg-white/5 p-4 rounded-2xl border border-white/5 text-right">
-                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Department</p>
+                  <div className="bg-white/5 p-4 rounded-2xl border border-white/20 text-right">
+                    <p className="text-[10px] font-black text-white uppercase tracking-widest mb-1">Department</p>
                     <span className="text-[10px] bg-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded font-black uppercase tracking-widest">
                       {selectedTransaction.department || 'Other'}
                     </span>
@@ -429,13 +430,13 @@ export default function Finance() {
                 {selectedTransaction.category === 'Billing' && (
                   <>
                     <div className="grid grid-cols-2 gap-4">
-                      <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
-                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Invoice Info</p>
+                      <div className="bg-white/5 p-4 rounded-2xl border border-white/20">
+                        <p className="text-[10px] font-black text-white uppercase tracking-widest mb-1">Invoice Info</p>
                         <p className="text-white font-bold tracking-tight">#{detailData.invoiceNumber}</p>
-                        <p className="text-slate-400 text-xs truncate">{detailData.customerName || 'No Customer Name'}</p>
+                        <p className="text-white text-xs truncate">{detailData.customerName || 'No Customer Name'}</p>
                       </div>
-                      <div className="bg-white/5 p-4 rounded-2xl text-right border border-white/5">
-                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Total Amount</p>
+                      <div className="bg-white/5 p-4 rounded-2xl text-right border border-white/20">
+                        <p className="text-[10px] font-black text-white uppercase tracking-widest mb-1">Total Amount</p>
                         <p className="text-emerald-400 text-lg font-black tracking-tight">₱{detailData.totalSum?.toLocaleString(undefined, {minimumFractionDigits: 2})}</p>
                       </div>
                     </div>
@@ -444,10 +445,10 @@ export default function Finance() {
                       <h3 className="text-[10px] font-black text-white uppercase tracking-widest mb-3 px-1">Attached Containers</h3>
                       <div className="space-y-2">
                         {detailData.containers?.map((c: any, i: number) => (
-                          <div key={i} className="bg-white/5 p-3 rounded-xl flex justify-between items-center border border-white/5">
+                          <div key={i} className="bg-white/5 p-3 rounded-xl flex justify-between items-center border border-white/20">
                             <div>
                               <p className="text-white font-bold text-sm tracking-tight">{c.code}</p>
-                              {c.note && <p className="text-slate-500 text-[10px] italic">{c.note}</p>}
+                              {c.note && <p className="text-white text-[10px] italic">{c.note}</p>}
                             </div>
                             <div className="text-right">
                               <p className="text-white font-bold text-sm">₱{c.price.toLocaleString()}</p>
@@ -462,22 +463,22 @@ export default function Finance() {
 
                 {selectedTransaction.category === 'Payroll' && (
                   <>
-                    <div className="bg-white/5 p-5 rounded-2x border border-white/5 space-y-4">
-                      <div className="flex justify-between items-center pb-2 border-b border-white/5">
-                        <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">Employee</p>
+                    <div className="bg-white/5 p-5 rounded-2x border border-white/20 space-y-4">
+                      <div className="flex justify-between items-center pb-2 border-b border-white/20">
+                        <p className="text-white text-[10px] font-black uppercase tracking-widest">Employee</p>
                         <p className="text-white font-bold text-xs">{employees.find(e => e.id === detailData.employeeId)?.fullName || 'Unknown Employee'}</p>
                       </div>
-                      <div className="flex justify-between items-center pb-2 border-b border-white/5">
-                        <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">Pay Period</p>
+                      <div className="flex justify-between items-center pb-2 border-b border-white/20">
+                        <p className="text-white text-[10px] font-black uppercase tracking-widest">Pay Period</p>
                         <p className="text-white font-bold text-xs">{detailData.startDate} — {detailData.endDate}</p>
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Gross Pay</p>
+                          <p className="text-[10px] font-black text-white uppercase tracking-widest mb-1">Gross Pay</p>
                           <p className="text-white font-bold">₱{detailData.totalGrossPay?.toLocaleString()}</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Deductions</p>
+                          <p className="text-[10px] font-black text-white uppercase tracking-widest mb-1">Deductions</p>
                           <p className="text-rose-400 font-bold">₱{detailData.cashAdvanceDeduction?.toLocaleString()}</p>
                         </div>
                       </div>
@@ -499,8 +500,8 @@ export default function Finance() {
                         <h3 className="text-[10px] font-black text-white uppercase tracking-widest mb-2 px-1">Pakyaw Jobs Included</h3>
                         <div className="space-y-1">
                           {detailData.pakyawItems.map((item: any, i: number) => (
-                            <div key={i} className="flex justify-between text-xs bg-white/5 p-3 rounded-xl border border-white/5">
-                              <span className="text-slate-400">{item.description}</span>
+                            <div key={i} className="flex justify-between text-xs bg-white/5 p-3 rounded-xl border border-white/20">
+                              <span className="text-white">{item.description}</span>
                               <span className="text-white font-bold tracking-tight">₱{item.amount.toLocaleString()}</span>
                             </div>
                           ))}
@@ -512,18 +513,18 @@ export default function Finance() {
 
                 {selectedTransaction.category === 'Cash Advance' && (
                   <div className="space-y-4">
-                    <div className="bg-white/5 p-4 rounded-2xl border border-white/5 flex justify-between items-center mb-4">
-                        <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">Employee</p>
+                    <div className="bg-white/5 p-4 rounded-2xl border border-white/20 flex justify-between items-center mb-4">
+                        <p className="text-white text-[10px] font-black uppercase tracking-widest">Employee</p>
                         <p className="text-white font-bold text-xs">{employees.find(e => e.id === detailData.employeeId)?.fullName || 'Unknown Employee'}</p>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
-                      <div className="bg-white/5 p-5 rounded-2xl border border-white/5">
-                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Original Amount</p>
+                      <div className="bg-white/5 p-5 rounded-2xl border border-white/20">
+                        <p className="text-[10px] font-black text-white uppercase tracking-widest mb-1">Original Amount</p>
                         <p className="text-white text-xl font-black tracking-tight">₱{detailData.amount?.toLocaleString()}</p>
                       </div>
-                      <div className="bg-white/5 p-5 rounded-2xl border border-white/5">
-                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Remaining Balance</p>
-                        <p className={`text-xl font-black tracking-tight ${detailData.remainingBalance === 0 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                      <div className="bg-white/5 p-5 rounded-2xl border border-white/20">
+                        <p className="text-[10px] font-black text-white uppercase tracking-widest mb-1">Remaining Balance</p>
+                        <p className={`text-xl font-black tracking-tight ${detailData.remainingBalance === 0 ? 'text-emerald-400' : 'text-white'}`}>
                           ₱{detailData.remainingBalance?.toLocaleString()}
                         </p>
                       </div>
@@ -534,10 +535,10 @@ export default function Finance() {
                         <h3 className="text-[10px] font-black text-white uppercase tracking-widest mb-3 px-1">Repayment History</h3>
                         <div className="space-y-2">
                           {detailData.deductions.map((d: any, i: number) => (
-                            <div key={i} className="flex flex-wrap gap-2 justify-between items-center text-xs bg-white/5 p-3 rounded-xl border border-white/5 hover:bg-white/10 transition-all">
+                            <div key={i} className="flex flex-wrap gap-2 justify-between items-center text-xs bg-white/5 p-3 rounded-xl border border-white/20 hover:bg-black/10 transition-all">
                               <div className="flex items-center gap-2">
-                                <Receipt className="w-3 h-3 text-slate-400" />
-                                <span className="text-slate-200 font-medium font-sans">Payroll Deduction • {new Date(d.date.includes('T') ? d.date : d.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                                <Receipt className="w-3 h-3 text-white" />
+                                <span className="text-white font-medium font-sans">Payroll Deduction • {new Date(d.date.includes('T') ? d.date : d.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
                               </div>
                               <span className="text-emerald-400 font-bold tracking-tight">-₱{d.amount.toLocaleString()}</span>
                             </div>
@@ -549,28 +550,19 @@ export default function Finance() {
                 )}
               </div>
             ) : (
-              <div className="text-center py-12 space-y-6 bg-white/5 rounded-3xl border border-white/5">
-                <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto">
-                    <Search className="w-8 h-8 text-slate-600" />
-                </div>
-                <div>
-                  <p className="text-slate-500 font-bold mb-1">Document Archive Not Found</p>
-                  <p className="text-slate-600 text-[10px] font-mono mb-4">REF: {selectedTransaction.referenceId}</p>
-                  <button 
-                    onClick={() => {
-                      setItemToDelete({ id: selectedTransaction.id, type: 'transaction', transaction: selectedTransaction });
-                      setSelectedTransaction(null);
-                    }}
-                    className="flex items-center gap-2 px-4 py-2 bg-rose-600/20 text-rose-400 rounded-xl hover:bg-rose-600/30 transition-all mx-auto text-xs font-bold"
-                  >
-                    <Trash2 className="w-4 h-4" /> Remove Orphaned Entry
-                  </button>
-                  <p className="text-[10px] text-slate-600 mt-4 max-w-[200px] mx-auto italic">This record exists in Finance but its source document (Payroll or Cash Advance) was already deleted.</p>
-                </div>
-              </div>
+              <EmptyState 
+                icon={Search}
+                title="Document Archive Not Found"
+                description={`REF: ${selectedTransaction.referenceId}\nThis record exists in Finance but its source document (Payroll or Cash Advance) was already deleted.`}
+                actionLabel="Remove Orphaned Entry"
+                onAction={() => {
+                  setItemToDelete({ id: selectedTransaction.id, type: 'transaction', transaction: selectedTransaction });
+                  setSelectedTransaction(null);
+                }}
+              />
             )}
-            <div className="mt-8 pt-6 border-t border-white/5">
-                <button onClick={() => setSelectedTransaction(null)} className="w-full py-3 bg-white/5 text-white font-bold rounded-2xl uppercase tracking-widest text-[10px] hover:bg-white/10 transition-all">
+            <div className="mt-8 pt-6 border-t border-white/20">
+                <button onClick={() => setSelectedTransaction(null)} className="w-full py-3 bg-white/5 text-white font-bold rounded-2xl uppercase tracking-widest text-[10px] hover:bg-black/10 transition-all">
                     Close Details
                 </button>
             </div>
@@ -581,10 +573,10 @@ export default function Finance() {
       {/* Manual Transaction Modal */}
       {isTransactionModalOpen && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-slate-900 border border-white/10 p-8 rounded-3xl w-full max-w-md shadow-2xl">
+          <div className="bg-black border border-white/30 p-8 rounded-3xl w-full max-w-md shadow-2xl">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-black text-white uppercase tracking-tight">Record Financial Entry</h2>
-              <button onClick={() => setIsTransactionModalOpen(false)} className="text-slate-500 hover:text-white">
+              <button onClick={() => setIsTransactionModalOpen(false)} className="text-white hover:text-white">
                 <X />
               </button>
             </div>
@@ -594,28 +586,28 @@ export default function Finance() {
                 <button
                   type="button"
                   onClick={() => setManualTransaction({ ...manualTransaction, type: 'expense' })}
-                  className={`py-3 rounded-xl font-black uppercase text-[10px] tracking-widest transition-all ${manualTransaction.type === 'expense' ? 'bg-rose-500 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+                  className={`py-3 rounded-xl font-black uppercase text-[10px] tracking-widest transition-all ${manualTransaction.type === 'expense' ? 'bg-rose-500 text-white shadow-lg' : 'text-white hover:text-white'}`}
                 >
                   Expense
                 </button>
                 <button
                   type="button"
                   onClick={() => setManualTransaction({ ...manualTransaction, type: 'income' })}
-                  className={`py-3 rounded-xl font-black uppercase text-[10px] tracking-widest transition-all ${manualTransaction.type === 'income' ? 'bg-emerald-500 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+                  className={`py-3 rounded-xl font-black uppercase text-[10px] tracking-widest transition-all ${manualTransaction.type === 'income' ? 'bg-emerald-500 text-white shadow-lg' : 'text-white hover:text-white'}`}
                 >
                   Income
                 </button>
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 tracking-[0.2em]">Select Account(s)</label>
-                <div className="space-y-2 max-h-[150px] overflow-y-auto p-3 bg-slate-800 rounded-xl border border-white/5">
+                <label className="text-[10px] font-black text-white uppercase tracking-widest ml-1 tracking-[0.2em]">Select Account(s)</label>
+                <div className="space-y-2 max-h-[150px] overflow-y-auto p-3 bg-slate-800 rounded-xl border border-white/20">
                    {filteredAccounts.map(acc => (
-                     <label key={acc.id} className="flex items-center justify-between p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-all cursor-pointer group">
+                     <label key={acc.id} className="flex items-center justify-between p-2 rounded-lg bg-white/5 hover:bg-black/10 transition-all cursor-pointer group">
                        <div className="flex items-center gap-2">
                          <input 
                            type="checkbox"
-                           className="w-4 h-4 rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-indigo-500"
+                           className="w-4 h-4 rounded border-white/50 bg-black text-indigo-600 focus:ring-indigo-500"
                            checked={manualTransaction.accountIds.includes(acc.id)}
                            onChange={(e) => {
                              const ids = e.target.checked 
@@ -626,7 +618,7 @@ export default function Finance() {
                          />
                          <span className="text-sm font-bold text-white group-hover:text-indigo-400 transition-colors">{acc.name}</span>
                        </div>
-                       <span className="text-[10px] font-mono text-slate-400">₱{acc.balance.toLocaleString()}</span>
+                       <span className="text-[10px] font-mono text-white">₱{acc.balance.toLocaleString()}</span>
                      </label>
                    ))}
                 </div>
@@ -636,33 +628,33 @@ export default function Finance() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Department</label>
+                <label className="text-[10px] font-black text-white uppercase tracking-widest ml-1">Department</label>
                 <div className="grid grid-cols-4 gap-2">
                   <button
                     type="button"
                     onClick={() => setManualTransaction({ ...manualTransaction, department: 'container' })}
-                    className={`py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all border ${manualTransaction.department === 'container' ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-white/5 text-slate-400 hover:text-white'}`}
+                    className={`py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all border ${manualTransaction.department === 'container' ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-white/20 text-white hover:text-white'}`}
                   >
                     Container
                   </button>
                   <button
                     type="button"
                     onClick={() => setManualTransaction({ ...manualTransaction, department: 'junkshop' })}
-                    className={`py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all border ${manualTransaction.department === 'junkshop' ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-white/5 text-slate-400 hover:text-white'}`}
+                    className={`py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all border ${manualTransaction.department === 'junkshop' ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-white/20 text-white hover:text-white'}`}
                   >
                     Junkshop
                   </button>
                   <button
                     type="button"
                     onClick={() => setManualTransaction({ ...manualTransaction, department: 'supplies' })}
-                    className={`py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all border ${manualTransaction.department === 'supplies' ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-white/5 text-slate-400 hover:text-white'}`}
+                    className={`py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all border ${manualTransaction.department === 'supplies' ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-white/20 text-white hover:text-white'}`}
                   >
                     Supplies
                   </button>
                   <button
                     type="button"
                     onClick={() => setManualTransaction({ ...manualTransaction, department: 'other' })}
-                    className={`py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all border ${manualTransaction.department === 'other' ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-white/5 text-slate-400 hover:text-white'}`}
+                    className={`py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all border ${manualTransaction.department === 'other' ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-white/20 text-white hover:text-white'}`}
                   >
                     Other
                   </button>
@@ -671,23 +663,23 @@ export default function Finance() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Date</label>
+                  <label className="text-[10px] font-black text-white uppercase tracking-widest ml-1">Date</label>
                   <input
                     required
                     type="date"
-                    className="w-full bg-slate-800 border border-white/5 p-3 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                    className="w-full bg-slate-800 border border-white/20 p-3 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                     value={manualTransaction.date}
                     onChange={e => setManualTransaction({ ...manualTransaction, date: e.target.value })}
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Amount</label>
+                  <label className="text-[10px] font-black text-white uppercase tracking-widest ml-1">Amount</label>
                   <input
                     required
                     type="number"
                     step="0.01"
                     placeholder="0.00"
-                    className="w-full bg-slate-800 border border-white/5 p-3 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full bg-slate-800 border border-white/20 p-3 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     value={manualTransaction.amount || ''}
                     onChange={e => setManualTransaction({ ...manualTransaction, amount: parseFloat(e.target.value) })}
                   />
@@ -695,10 +687,10 @@ export default function Finance() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Category</label>
+                <label className="text-[10px] font-black text-white uppercase tracking-widest ml-1">Category</label>
                 <select
                   required
-                  className="w-full bg-slate-800 border border-white/5 p-3 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                  className="w-full bg-slate-800 border border-white/20 p-3 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                   value={manualTransaction.category}
                   onChange={e => setManualTransaction({ ...manualTransaction, category: e.target.value })}
                 >
@@ -716,11 +708,11 @@ export default function Finance() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Description</label>
+                <label className="text-[10px] font-black text-white uppercase tracking-widest ml-1">Description</label>
                 <input
                   type="text"
                   placeholder="e.g. Electricity bill, fuel for truck..."
-                  className="w-full bg-slate-800 border border-white/5 p-3 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full bg-slate-800 border border-white/20 p-3 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   value={manualTransaction.description}
                   onChange={e => setManualTransaction({ ...manualTransaction, description: e.target.value })}
                 />
@@ -737,8 +729,8 @@ export default function Finance() {
         </div>
       )}
       {isAddAccountOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-slate-800 p-6 rounded-2xl w-full max-w-sm shadow-2xl border border-white/10 space-y-4">
+        <div className="fixed inset-0 bg-white/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-slate-800 p-6 rounded-2xl w-full max-w-sm shadow-2xl border border-white/30 space-y-4">
             <h2 className='text-xl font-bold text-white'>{editingId ? 'Edit Account' : 'New Account'}</h2>
             <input 
               className='w-full p-2 bg-slate-700 rounded text-white' 
@@ -763,39 +755,39 @@ export default function Finance() {
               onChange={e => setNewAccount({...newAccount, balance: parseFloat(e.target.value)})} 
             />
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Account Department</label>
+              <label className="text-[10px] font-black text-white uppercase tracking-widest ml-1">Account Department</label>
               <div className="grid grid-cols-4 gap-2">
                 <button
                   type="button"
                   onClick={() => setNewAccount({ ...newAccount, department: 'container' })}
-                  className={`py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all border ${newAccount.department === 'container' ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-white/5 text-slate-400 hover:text-white'}`}
+                  className={`py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all border ${newAccount.department === 'container' ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-white/20 text-white hover:text-white'}`}
                 >
                   Container
                 </button>
                 <button
                   type="button"
                   onClick={() => setNewAccount({ ...newAccount, department: 'junkshop' })}
-                  className={`py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all border ${newAccount.department === 'junkshop' ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-white/5 text-slate-400 hover:text-white'}`}
+                  className={`py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all border ${newAccount.department === 'junkshop' ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-white/20 text-white hover:text-white'}`}
                 >
                   Junkshop
                 </button>
                 <button
                   type="button"
                   onClick={() => setNewAccount({ ...newAccount, department: 'supplies' })}
-                  className={`py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all border ${newAccount.department === 'supplies' ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-white/5 text-slate-400 hover:text-white'}`}
+                  className={`py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all border ${newAccount.department === 'supplies' ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-white/20 text-white hover:text-white'}`}
                 >
                   Supplies
                 </button>
                 <button
                   type="button"
                   onClick={() => setNewAccount({ ...newAccount, department: 'other' })}
-                  className={`py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all border ${newAccount.department === 'other' ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-white/5 text-slate-400 hover:text-white'}`}
+                  className={`py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all border ${newAccount.department === 'other' ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-white/20 text-white hover:text-white'}`}
                 >
                   General
                 </button>
               </div>
             </div>
-            <label className="flex items-center gap-2 text-slate-300">
+            <label className="flex items-center gap-2 text-white">
               <input 
                 type="checkbox" 
                 checked={newAccount.isDefault}
@@ -814,12 +806,12 @@ export default function Finance() {
       {/* Confirmation Modal */}
       {itemToDelete && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-[60]">
-          <div className="bg-slate-900 border border-white/10 p-8 rounded-3xl w-full max-w-sm shadow-2xl text-center">
+          <div className="bg-black border border-white/30 p-8 rounded-3xl w-full max-w-sm shadow-2xl text-center">
             <div className="w-16 h-16 bg-rose-500/10 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-4">
               <Trash2 className="w-8 h-8" />
             </div>
             <h2 className="text-xl font-bold text-white mb-2 tracking-tight">Confirm Deletion</h2>
-            <p className="text-slate-400 text-sm mb-8 leading-relaxed">
+            <p className="text-white text-sm mb-8 leading-relaxed">
               {itemToDelete.type === 'account' 
                 ? 'Are you sure you want to delete this account? Historical transactions will be preserved but the account will no longer be available for new records.'
                 : 'Are you sure you want to delete this transaction? This action will permanently remove the record and reverse the balance impact on the associated account.'

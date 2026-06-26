@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
+import { EmptyState } from './ui/EmptyState';
 import { format, parseISO, startOfWeek, endOfWeek } from 'date-fns';
 
 export default function Pakyaw() {
@@ -234,23 +235,23 @@ export default function Pakyaw() {
     <div className="h-full flex flex-col relative w-full pt-2">
       <div className="mb-4 shrink-0">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Pakyaw Contracts</h1>
+          <h1 className="text-2xl font-bold text-white dark:text-white">Pakyaw Contracts</h1>
           <div className="flex gap-2 items-center text-sm font-semibold">
             <Input
               type="date"
               value={payrollStartDate}
               onChange={(e) => setPayrollStartDate(e.target.value)}
-              className="h-9 w-[130px] rounded-lg bg-white dark:bg-slate-800"
+              className="h-9 w-[130px] rounded-lg bg-black dark:bg-slate-800"
             />
-             <span className="text-slate-400">to</span>
+             <span className="text-white">to</span>
             <Input
               type="date"
               value={payrollEndDate}
               onChange={(e) => setPayrollEndDate(e.target.value)}
-              className="h-9 w-[130px] rounded-lg bg-white dark:bg-slate-800"
+              className="h-9 w-[130px] rounded-lg bg-black dark:bg-slate-800"
             />
           </div>
-          <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl shrink-0">
+          <div className="flex bg-black dark:bg-slate-800 p-1 rounded-xl shrink-0">
             <Button 
               variant={viewMode === 'active' ? 'secondary' : 'ghost'} 
               className="h-8 text-[11px] px-3 rounded-lg font-bold"
@@ -264,10 +265,10 @@ export default function Pakyaw() {
           </div>
         </div>
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white" />
           <Input 
             placeholder="Search container / job name..." 
-            className="pl-10 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl h-12"
+            className="pl-10 bg-black dark:bg-slate-800 border-white/30 dark:border-white/50 rounded-xl h-12"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -276,33 +277,33 @@ export default function Pakyaw() {
 
       <div className="flex-1 overflow-y-auto space-y-3 pb-20 w-full pr-1">
         {groupedEmployees.map(({ employee, jobs }) => (
-          <div key={employee.id} className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
+          <div key={employee.id} className="bg-black dark:bg-slate-800 rounded-2xl border border-white/30 dark:border-slate-800 overflow-hidden shadow-sm">
             <button 
               onClick={() => toggleEmployee(employee.id)}
-              className="w-full flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="w-full flex items-center justify-between p-4 bg-black dark:bg-slate-800/80 hover:bg-black dark:hover:bg-slate-800 transition-colors"
             >
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-lg">
                   {employee.fullName.charAt(0)}
                 </div>
                 <div className="text-left flex flex-col">
-                  <span className="font-bold text-slate-900 dark:text-white text-base">{employee.fullName}</span>
+                  <span className="font-bold text-white dark:text-white text-base">{employee.fullName}</span>
                   <span className="text-xs text-indigo-600 dark:text-indigo-400 font-bold pt-0.5">
                     {jobs.length} {viewMode === 'active' ? 'active' : 'archived'} contract{jobs.length !== 1 ? 's' : ''}
                   </span>
                 </div>
               </div>
-              <div className="text-slate-400">
+              <div className="text-white">
                 {expandedEmployees.has(employee.id) ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
               </div>
             </button>
             
             {expandedEmployees.has(employee.id) && (
-              <div className="p-3 bg-white dark:bg-slate-900 grid grid-cols-1 gap-3">
+              <div className="p-3 bg-black dark:bg-black grid grid-cols-1 gap-3">
                 {jobs.map(job => {
                   const splitAmount = job.totalPrice / Math.max(1, job.employeeIds.length);
                   return (
-                    <div key={job.id} className="border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 rounded-xl p-4 flex flex-col gap-3 relative overflow-hidden group">
+                    <div key={job.id} className="border border-white/20 dark:border-slate-800 bg-white/50 dark:bg-slate-800/50 rounded-xl p-4 flex flex-col gap-3 relative overflow-hidden group">
                       {job.status === 'completed' && (
                         <div className="absolute top-0 right-0 py-1 px-3 bg-green-500 text-white text-[9px] font-bold uppercase tracking-widest rounded-bl-xl shadow-sm">
                           Completed
@@ -313,19 +314,19 @@ export default function Pakyaw() {
                           <Hammer className="w-5 h-5" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-bold text-slate-900 dark:text-white text-sm leading-tight break-words pr-2">
+                          <h3 className="font-bold text-white dark:text-white text-sm leading-tight break-words pr-2">
                             {job.containerNumber ? <span className="text-indigo-600 dark:text-indigo-400 mr-1.5">[{job.containerNumber}]</span> : null}
                             {job.description}
                           </h3>
-                          <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 flex flex-wrap items-center gap-2">
+                          <div className="text-[11px] text-white dark:text-white mt-1 flex flex-wrap items-center gap-2">
                             <span>{format(parseISO(job.startDate), 'MMMM dd, yyyy')}</span>
                             <span>•</span>
                             <span>{job.employeeIds.length} worker{job.employeeIds.length !== 1 ? 's' : ''}</span>
                           </div>
                           <div className="mt-2.5 flex items-center gap-4">
                              <div>
-                               <div className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-0.5">Total Pay</div>
-                               <div className="font-bold text-slate-900 dark:text-white text-sm">₱{job.totalPrice.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                               <div className="text-[10px] text-white dark:text-white uppercase font-bold tracking-wider mb-0.5">Total Pay</div>
+                               <div className="font-bold text-white dark:text-white text-sm">₱{job.totalPrice.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
                              </div>
                              <div>
                                <div className="text-[10px] text-indigo-500 dark:text-indigo-400 uppercase font-bold tracking-wider mb-0.5">Their Share</div>
@@ -341,7 +342,7 @@ export default function Pakyaw() {
                           return (
                             <button 
                               key={empId}
-                              className="text-xs bg-slate-100 dark:bg-slate-700 rounded-full px-2 py-1 flex items-center gap-1 hover:bg-slate-200 dark:hover:bg-slate-600 transition"
+                              className="text-xs bg-black dark:bg-slate-700 rounded-full px-2 py-1 flex items-center gap-1 hover:bg-slate-200 dark:hover:bg-slate-600 transition"
                               onClick={() => setAttendanceDetail({emp: emp!, job: job})}
                             >
                               <ListChecks className="w-3 h-3" />
@@ -350,7 +351,7 @@ export default function Pakyaw() {
                           );
                         })}
                       </div>
-                      <div className="flex justify-end gap-3 mt-1 pt-3 border-t border-slate-200/60 dark:border-slate-700/60 w-full items-center">
+                      <div className="flex justify-end gap-3 mt-1 pt-3 border-t border-white/30/60 dark:border-white/50/60 w-full items-center">
                         {job.status === 'pending' && (
                           <button 
                             onClick={() => {
@@ -387,13 +388,14 @@ export default function Pakyaw() {
         ))}
         
         {groupedEmployees.length === 0 && (
-          <div className="text-center py-10 text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/20 rounded-2xl border border-slate-200 border-dashed dark:border-slate-800">
-            <Hammer className="w-8 h-8 mx-auto mb-3 text-slate-300 dark:text-slate-600" />
-            <p className="font-medium text-slate-600 dark:text-slate-300">{viewMode === 'active' 
+          <EmptyState 
+            icon={Hammer}
+            title="No Records Found"
+            description={viewMode === 'active' 
               ? 'No pending Pakyaw jobs for this date range.' 
-              : 'No archived Pakyaw jobs for this date range.'}</p>
-            <p className="text-xs mt-1">Try adjusting the dates or search query.</p>
-          </div>
+              : 'No archived Pakyaw jobs for this date range.'}
+            className="col-span-full mt-4"
+          />
         )}
       </div>
 
@@ -407,8 +409,8 @@ export default function Pakyaw() {
         <DialogTrigger render={<button className="absolute bottom-6 right-2 w-14 h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-lg shadow-indigo-600/30 flex items-center justify-center transition-transform active:scale-95 z-10" />}>
           <Plus className="w-6 h-6" />
         </DialogTrigger>
-        <DialogContent className="sm:max-w-[460px] max-h-[85vh] flex flex-col rounded-3xl p-0 overflow-hidden bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
-          <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 shrink-0">
+        <DialogContent className="sm:max-w-[460px] max-h-[85vh] flex flex-col rounded-3xl p-0 overflow-hidden bg-black dark:bg-black border-white/30 dark:border-slate-800">
+          <div className="p-4 border-b border-white/20 dark:border-slate-800 bg-black dark:bg-slate-800/50 shrink-0">
             <DialogTitle className="text-xl font-bold flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center">
                 <Hammer className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
@@ -420,11 +422,11 @@ export default function Pakyaw() {
             <div className="p-4 space-y-4 overflow-y-auto flex-1">
               <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Container Number</Label>
+                <Label className="text-xs font-bold text-white uppercase tracking-widest">Container Number</Label>
                 <select 
                   value={form.containerNumber || ''} 
                   onChange={e => setForm({...form, containerNumber: e.target.value})} 
-                  className="flex h-12 w-full rounded-xl border-none bg-slate-50 dark:bg-slate-800 px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="flex h-12 w-full rounded-xl border-none bg-black dark:bg-slate-800 px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
                   <option value="">Select a container</option>
                   {repairingContainers.map(c => {
@@ -434,34 +436,34 @@ export default function Pakyaw() {
                 </select>
               </div>
               <div className="space-y-2">
-                <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Job Description</Label>
+                <Label className="text-xs font-bold text-white uppercase tracking-widest">Job Description</Label>
                 <Input 
                   required 
                   value={form.description || ''} 
                   onChange={e => setForm({...form, description: e.target.value})} 
                   placeholder="e.g. Grinding"
-                  className="rounded-xl h-12 bg-slate-50 dark:bg-slate-800 border-none focus:ring-indigo-500" 
+                  className="rounded-xl h-12 bg-black dark:bg-slate-800 border-none focus:ring-indigo-500" 
                 />
               </div>
             </div>
             
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Start Date</Label>
+                  <Label className="text-xs font-bold text-white uppercase tracking-widest">Start Date</Label>
                   <Input 
                     required 
                     type="date" 
                     value={form.startDate || ''} 
                     onChange={e => setForm({...form, startDate: e.target.value})} 
-                    className="rounded-xl h-12 bg-slate-50 dark:bg-slate-800 border-none focus:ring-indigo-500" 
+                    className="rounded-xl h-12 bg-black dark:bg-slate-800 border-none focus:ring-indigo-500" 
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Status</Label>
+                  <Label className="text-xs font-bold text-white uppercase tracking-widest">Status</Label>
                   <select
                     value={form.status}
                     onChange={e => setForm({...form, status: e.target.value as 'pending' | 'completed'})}
-                    className="flex h-12 w-full rounded-xl border-none bg-slate-50 dark:bg-slate-800 px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="flex h-12 w-full rounded-xl border-none bg-black dark:bg-slate-800 px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus:ring-2 focus:ring-indigo-500"
                   >
                     <option value="pending">Pending</option>
                     <option value="completed">Completed</option>
@@ -470,14 +472,14 @@ export default function Pakyaw() {
               </div>
 
               <div className="space-y-2">
-                <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Total Price (₱)</Label>
+                <Label className="text-xs font-bold text-white uppercase tracking-widest">Total Price (₱)</Label>
                 <Input 
                   required 
                   type="number" 
                   step="0.01" 
                   value={form.totalPrice || ''} 
                   onChange={e => setForm({...form, totalPrice: e.target.value})} 
-                  className="rounded-xl h-12 bg-slate-50 dark:bg-slate-800 border-none font-bold text-indigo-600 focus:ring-indigo-500" 
+                  className="rounded-xl h-12 bg-black dark:bg-slate-800 border-none font-bold text-indigo-600 focus:ring-indigo-500" 
                 />
               </div>
 
@@ -497,7 +499,7 @@ export default function Pakyaw() {
               )}
 
             <div className="space-y-2 pt-2">
-              <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center justify-between">
+              <Label className="text-xs font-bold text-white uppercase tracking-widest flex items-center justify-between">
                 <span>Select Workers to Split</span>
                 <span className="text-[10px] text-indigo-600 normal-case bg-indigo-50 px-2 py-0.5 rounded-full">
                   Total will divide by {Math.max(1, form.employeeIds.length)}
@@ -512,13 +514,13 @@ export default function Pakyaw() {
                       <div 
                         key={emp.id}
                         onClick={() => toggleEmployeeSelection(emp.id)}
-                        className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${isSelected ? 'bg-indigo-50 border-indigo-200 dark:bg-indigo-900/20 dark:border-indigo-800' : 'bg-white border-slate-200 dark:bg-slate-800/50 dark:border-slate-700/50'}`}
+                        className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${isSelected ? 'bg-indigo-50 border-indigo-200 dark:bg-indigo-900/20 dark:border-indigo-800' : 'bg-black border-white/30 dark:bg-slate-800/50 dark:border-white/50/50'}`}
                       >
-                        <div className={`p-0.5 rounded-md ${isSelected ? 'text-indigo-600' : 'text-slate-300'}`}>
+                        <div className={`p-0.5 rounded-md ${isSelected ? 'text-indigo-600' : 'text-white'}`}>
                           {isSelected ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
                         </div>
                         <div className="flex-1">
-                          <p className={`text-sm font-semibold ${isSelected ? 'text-indigo-900 dark:text-indigo-100' : 'text-slate-700 dark:text-slate-300'}`}>
+                          <p className={`text-sm font-semibold ${isSelected ? 'text-indigo-900 dark:text-indigo-100' : 'text-white dark:text-white'}`}>
                             {emp.fullName}
                           </p>
                         </div>
@@ -530,7 +532,7 @@ export default function Pakyaw() {
 
             </div>
             
-            <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
+            <div className="p-4 border-t border-white/20 dark:border-slate-800 bg-black dark:bg-black shrink-0">
               <Button type="submit" disabled={form.employeeIds.length === 0} className="w-full rounded-xl h-12 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-base shadow-md shadow-indigo-600/20">
                 {editingId ? 'Update Contract' : 'Save & Divide Payment'}
               </Button>
@@ -547,10 +549,10 @@ export default function Pakyaw() {
               {loadingAttendance ? (
                 <p>Loading attendance...</p>
               ) : attendanceRecords.length === 0 ? (
-                <p className="text-slate-500">No attendance records found for this job.</p>
+                <p className="text-white">No attendance records found for this job.</p>
               ) : (
                 attendanceRecords.map(att => (
-                   <div key={att.id} className="p-3 bg-slate-50 rounded-lg text-sm border">
+                   <div key={att.id} className="p-3 bg-black rounded-lg text-sm border">
                      <p>Date: {att.date}</p>
                      <p>Status: {att.status}</p>
                    </div>

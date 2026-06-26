@@ -16,7 +16,7 @@
 
 body {
   background-color: transparent; /* Clean dynamic mesh is handled by BrandBackground */
-  color: var(--text-primary);
+  color: var(--foreground);
   font-family: 'Inter', sans-serif;
   -webkit-tap-highlight-color: transparent;
   min-height: 100vh;
@@ -41,7 +41,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
 }
 
 .bento-card {
-  background: var(--card-bg);
+  background: var(--card);
   border: 1px solid var(--border);
   border-radius: 28px;
   padding: 18px;
@@ -66,9 +66,9 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
   box-shadow: 0 16px 45px rgba(120, 110, 90, 0.14);
 }
 
-.text-primary { color: var(--text-primary); }
-.text-secondary { color: var(--text-secondary); }
-.text-muted { color: var(--text-muted); }
+.text-primary { color: var(--primary); }
+.text-secondary { color: var(--secondary); }
+.text-muted { color: var(--muted); }
 
 .stat-value {
   font-size: 2.5rem;
@@ -85,71 +85,10 @@ button:active {
 .card-title {
   font-size: 0.75rem;
   font-weight: 800;
-  color: var(--text-primary);
+  color: var(--foreground);
   text-transform: uppercase;
   letter-spacing: 0.15em;
   margin-bottom: 12px;
-}
-
-.payslip-mockup {
-  width: 100%;
-  max-width: 900px;
-  min-height: 220px;
-  background: #0f172a;
-  margin: 0 auto;
-  border: 1px solid #1e293b;
-  padding: 15px;
-  display: flex;
-  flex-direction: column;
-  font-size: 0.7rem;
-  position: relative;
-  color: #f1f5f9;
-}
-
-.payslip-mockup * {
-  border-color: #334155 !important;
-}
-
-.payslip-mockup .text-blue-600 { color: #60a5fa !important; }
-.payslip-mockup .text-blue-500 { color: #3b82f6 !important; }
-.payslip-mockup .text-blue-400 { color: #2563eb !important; }
-.payslip-mockup .text-red-600, .payslip-mockup .text-red-500, .payslip-mockup .text-red-400 { color: #f87171 !important; }
-.payslip-mockup .text-green-600, .payslip-mockup .text-emerald-600, .payslip-mockup .text-emerald-500, .payslip-mockup .text-emerald-400 { color: #34d399 !important; }
-.payslip-mockup .text-cyan-400, .payslip-mockup .text-cyan-500, .payslip-mockup .text-cyan-600 { color: #22d3ee !important; }
-.payslip-mockup .text-indigo-400, .payslip-mockup .text-indigo-500, .payslip-mockup .text-indigo-600 { color: #818cf8 !important; }
-.payslip-mockup .text-rose-400, .payslip-mockup .text-rose-500, .payslip-mockup .text-rose-600 { color: #fb7185 !important; }
-.payslip-mockup .text-slate-900 { color: #f1f5f9 !important; }
-.payslip-mockup .text-slate-600 { color: #cbd5e1 !important; }
-.payslip-mockup .text-slate-500 { color: #94a3b8 !important; }
-.payslip-mockup .text-slate-400, .payslip-mockup .text-slate-300, .payslip-mockup .text-slate-200 { color: #64748b !important; }
-.payslip-mockup .bg-white { background-color: #0f172a !important; }
-.payslip-mockup .bg-slate-50 { background-color: #1e293b !important; }
-.payslip-mockup .bg-amber-50 { background-color: #78350f !important; }
-.payslip-mockup .bg-red-50 { background-color: #7f1d1d !important; }
-.payslip-mockup .bg-green-50 { background-color: #064e3b !important; }
-.payslip-mockup .text-amber-700 { color: #f59e0b !important; }
-.payslip-mockup .text-amber-600 { color: #fbbf24 !important; }
-.payslip-mockup .text-amber-500 { color: #fcd34d !important; }
-.payslip-mockup .border-amber-100 { border-color: #92400e !important; }
-.payslip-mockup .border-red-100 { border-color: #7f1d1d !important; }
-.payslip-mockup .border-slate-800 { border-color: #334155 !important; }
-.payslip-mockup .border-slate-200 { border-color: #1e293b !important; }
-
-/* Force themes for payslip so global text color utility classes get light theme colors */
-.payslip-mockup {
-  --background: #ffffff;
-  --foreground: #0f172a;
-  --border: #e2e8f0;
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-muted: #64748b;
-  --card: #ffffff;
-  --card-bg: #ffffff;
-  --primary: #d97706;
-  --danger: #dc2626;
-  --success: #16a34a;
-  --warning: #d97706;
-  --info: #2563eb;
 }
 
 .table-mini { width: 100%; border-collapse: collapse; }
@@ -231,163 +170,40 @@ button:active {
 }
 
 :root {
-    --bg: #141210;
-    --card-bg: rgba(28, 25, 23, 0.35);
+    --background: #000000;
+    --foreground: #ffffff;
+    --card: #000000;
+    --card-foreground: #ffffff;
+    --popover: #000000;
+    --popover-foreground: #ffffff;
+    --primary: #ffffff;
+    --primary-foreground: #000000;
+    --secondary: #1a1a1a;
+    --secondary-foreground: #ffffff;
+    --muted: #1a1a1a;
+    --muted-foreground: #e5e5e5;
     --accent: #f59e0b;
-    --text-primary: #fcfaf7;
-    --text-secondary: #d6d3d1;
-    --text-muted: #a8a29e;
-    --border: rgba(217, 119, 6, 0.2);
-    --success: #10b981;
-    --danger: #ef4444;
-    --warning: #f59e0b;
-    --info: #60a5fa;
+    --accent-foreground: #000000;
+    --destructive: #ef4444;
+    --info: #3b82f6;
+    --border: rgba(255, 255, 255, 0.4);
+    --input: rgba(255, 255, 255, 0.4);
+    --ring: #ffffff;
+    --chart-1: #ffffff;
+    --chart-2: #10b981;
+    --chart-3: #ffffff;
+    --chart-4: #4f46e5;
+    --chart-5: #0d9488;
+    --sidebar: #000000;
+    --sidebar-foreground: #ffffff;
+    --sidebar-primary: #ffffff;
+    --sidebar-primary-foreground: #000000;
+    --sidebar-accent: #1a1a1a;
+    --sidebar-accent-foreground: #ffffff;
+    --sidebar-border: rgba(255, 255, 255, 0.4);
+    --sidebar-ring: #ffffff;
     --radius: 1.25rem;
-    --card-shadow: 0 10px 35px rgba(0, 0, 0, 0.3);
-    color-scheme: dark;
-    --background: #141210;
-    --foreground: #fcfaf7;
-    --card: rgba(28, 25, 23, 0.35);
-    --card-foreground: #fcfaf7;
-    --popover: #1c1917;
-    --popover-foreground: #fcfaf7;
-    --primary: #f59e0b;
-    --primary-foreground: #141210;
-    --secondary: #221f1d;
-    --secondary-foreground: #fcfaf7;
-    --muted: #221f1d;
-    --muted-foreground: #a8a29e;
-    --accent-foreground: #141210;
-    --destructive: #ef4444;
-    --input: rgba(217, 119, 6, 0.15);
-    --ring: #f59e0b;
-    --chart-1: #f59e0b;
-    --chart-2: #10b981;
-    --chart-3: #d97706;
-    --chart-4: #818cf8;
-    --chart-5: #2dd4bf;
-    --sidebar: #1c1917;
-    --sidebar-foreground: #fcfaf7;
-    --sidebar-primary: #f59e0b;
-    --sidebar-primary-foreground: #141210;
-    --sidebar-accent: #221f1d;
-    --sidebar-accent-foreground: #f59e0b;
-    --sidebar-border: rgba(217, 119, 6, 0.15);
-    --sidebar-ring: #f59e0b;
-
-    /* Seamless adaptive reskin colors and contrast anchors */
-    --text-white-override: #ffffff;
-    --bg-slate-900-override: rgba(28, 25, 23, 0.85);
-    --legacy-card-bg: #1c1917;
-    --legacy-card-hover: #221f1d;
-    --legacy-card-border: rgba(217, 119, 6, 0.2);
-    --legacy-card-text: #fcfaf7;
-
-    --legacy-text-muted-1: #a8a29e;
-    --legacy-text-muted-2: #cbd5e1;
-    --legacy-text-muted-3: #cbd5e1;
-
-    --indicator-blue: #f59e0b;
-    --indicator-emerald: #10b981;
-    --indicator-red: #ef4444;
-    --indicator-sky: #38bdf8;
-    --indicator-indigo: #818cf8;
-    --indicator-cyan: #22d3ee; /* Electric Cyan for dark mode */
-
-    --input-scheme-color: dark;
-}
-
-.dark {
-    --background: #141210;
-    --foreground: #fcfaf7;
-    --card: rgba(28, 25, 23, 0.35);
-    --card-foreground: #fcfaf7;
-    --popover: #1c1917;
-    --popover-foreground: #fcfaf7;
-    --primary: #f59e0b;
-    --primary-foreground: #141210;
-    --secondary: #221f1d;
-    --secondary-foreground: #fcfaf7;
-    --muted: #221f1d;
-    --muted-foreground: #a8a29e;
-    --accent: #f59e0b;
-    --accent-foreground: #141210;
-    --destructive: #ef4444;
-    --info: #60a5fa;
-    --border: rgba(217, 119, 6, 0.22);
-    --input: rgba(217, 119, 6, 0.15);
-    --ring: #f59e0b;
-    --chart-1: #f59e0b;
-    --chart-2: #10b981;
-    --chart-3: #d97706;
-    --chart-4: #818cf8;
-    --chart-5: #2dd4bf;
-    --sidebar: #1c1917;
-    --sidebar-foreground: #fcfaf7;
-    --sidebar-primary: #f59e0b;
-    --sidebar-primary-foreground: #141210;
-    --sidebar-accent: #221f1d;
-    --sidebar-accent-foreground: #f59e0b;
-    --sidebar-border: rgba(217, 119, 6, 0.15);
-    --sidebar-ring: #f59e0b;
-
-    /* Seamless adaptive reskin colors and contrast anchors */
-    --text-white-override: #ffffff;
-    --bg-slate-900-override: rgba(28, 25, 23, 0.85);
-    --legacy-card-bg: #1c1917;
-    --legacy-card-hover: #221f1d;
-    --legacy-card-border: rgba(217, 119, 6, 0.2);
-    --legacy-card-text: #fcfaf7;
-
-    --legacy-text-muted-1: #a8a29e;
-    --legacy-text-muted-2: #cbd5e1;
-    --legacy-text-muted-3: #cbd5e1;
-
-    --indicator-blue: #f59e0b;
-    --indicator-emerald: #10b981;
-    --indicator-red: #ef4444;
-    --indicator-sky: #38bdf8;
-    --indicator-indigo: #818cf8;
-    --indicator-cyan: #22d3ee; /* Electric Cyan for dark mode */
-
-    --input-scheme-color: dark;
-}
-
-@layer utilities {
-  .text-amber-800, .text-amber-700, .text-amber-600, .text-amber-500 {
-    color: var(--primary) !important;
-  }
-  .text-blue-700, .text-blue-600, .text-blue-500 {
-    color: var(--info) !important;
-  }
-  .text-red-700, .text-red-600, .text-red-500 {
-    color: var(--danger) !important;
-  }
-  .text-emerald-700, .text-emerald-600, .text-emerald-500 {
-    color: var(--success) !important;
-  }
-  .text-slate-900, .text-slate-800, .text-stone-900, .text-stone-800 {
-    color: var(--foreground) !important;
-  }
-  .text-slate-700, .text-stone-700, .text-slate-600, .text-stone-600 {
-    color: var(--text-secondary) !important;
-  }
-  .text-slate-500, .text-stone-500, .text-slate-400, .text-stone-400, .text-slate-300, .text-stone-300 {
-    color: var(--text-muted) !important;
-  }
-  .border-slate-100, .border-slate-200, .border-stone-100, .border-stone-200, .border-stone-200\/60, .border-slate-700, .border-slate-800, .border-stone-700, .border-stone-800 {
-    border-color: rgba(217, 119, 6, 0.15) !important;
-  }
-  .payroll-preview-dialog {
-    background-color: #0f172a !important;
-  }
-  .no-scrollbar::-webkit-scrollbar {
-    display: none;
-  }
-  .no-scrollbar {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
+    --card-shadow: 0 10px 35px rgba(0, 0, 0, 0.8);
 }
 
 @layer base {
@@ -395,7 +211,7 @@ button:active {
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-transparent text-foreground;
+    @apply bg-background text-foreground;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
@@ -405,10 +221,4 @@ button:active {
     @apply font-sans;
     scroll-behavior: smooth;
   }
-}
-
-/* Standard select/inputs inside bento charts */
-.bento-card select,
-.bento-card input {
-  background-color: transparent;
 }

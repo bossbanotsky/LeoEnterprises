@@ -72,48 +72,48 @@ export default function LoginPage() {
         transition={{ duration: 0.5, ease: "easeOut" }}
         className="w-full max-w-[480px] relative z-10"
       >
-        <div className="bg-slate-900/80 border border-amber-600/15 shadow-[0_20px_50px_rgba(0,0,0,0.3)] backdrop-blur-2xl rounded-[40px] overflow-hidden p-8 sm:p-11">
+        <div className="bg-black/95 border border-white/40 shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-[40px] overflow-hidden p-8 sm:p-11">
           <div className="flex items-center justify-between mb-8">
             <Link to="/">
-              <div className="flex items-center gap-2 group cursor-pointer">
-                <div className="w-9 h-9 bg-amber-600 rounded-xl flex items-center justify-center border border-amber-500/20 shadow-md shadow-amber-600/10">
-                  <LayoutGrid className="w-5 h-5 text-white" />
+              <div className="flex items-center gap-2.5 group cursor-pointer">
+                <div className="w-12 h-12 bg-black rounded-xl flex items-center justify-center border border-white/40 shadow-md overflow-hidden p-0.5">
+                  <img src="/src/assets/images/lp_logo_final_1781661072015.jpg" alt="L&P Logo" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
                 </div>
                 <div className="flex flex-col">
-                  <span className="font-extrabold text-xs tracking-tight text-foreground uppercase italic leading-none">
-                    L & P <span className="text-amber-600">TRADING</span>
+                  <span className="font-extrabold text-xs tracking-tight text-white uppercase italic leading-none">
+                    L & P <span className="text-white">TRADING</span>
                   </span>
-                  <span className="font-bold text-[7px] tracking-wider text-stone-400 uppercase mt-0.5">STAFF TERMINAL</span>
+                  <span className="font-bold text-[7px] tracking-wider text-white uppercase mt-0.5">STAFF TERMINAL</span>
                 </div>
               </div>
             </Link>
             <Link to="/">
-              <Button variant="ghost" className="text-[10px] font-bold text-stone-500 hover:text-foreground uppercase tracking-widest hover:bg-amber-600/5 h-8 px-3 rounded-lg">
+              <Button variant="ghost" className="text-[10px] font-bold text-white hover:text-white uppercase tracking-widest hover:bg-amber-600/5 h-8 px-3 rounded-lg">
                 <ArrowLeft className="w-3.5 h-3.5 mr-1" /> Exit
               </Button>
             </Link>
           </div>
 
           <div className="mb-8 text-left">
-            <h1 className="text-3xl font-black text-foreground tracking-tight leading-none mb-2 uppercase">
+            <h1 className="text-3xl font-black text-white tracking-tight leading-none mb-2 uppercase">
               {role === 'admin' ? 'Strategic' : 'Operational'} <br /> 
-              <span className="text-amber-600">Secure Entry.</span>
+              <span className="text-white">Secure Entry.</span>
             </h1>
-            <p className="text-xs font-semibold text-stone-500">Provide official email coordinates to authorize this session.</p>
+            <p className="text-xs font-semibold text-white">Provide official email coordinates to authorize this session.</p>
           </div>
 
-          <div className="bg-slate-800/80 p-1 rounded-2xl mb-8 flex border border-stone-700/50">
+          <div className="bg-slate-800/80 p-1 rounded-2xl mb-8 flex border border-white/40">
             <button 
               type="button"
               onClick={() => setRole('employee')}
-              className={`flex-1 flex items-center justify-center rounded-xl h-10 text-xs font-bold transition-all duration-300 ${role === 'employee' ? 'bg-slate-700 text-foreground shadow-sm' : 'text-stone-500 hover:text-foreground'}`}
+              className={`flex-1 flex items-center justify-center rounded-xl h-10 text-xs font-bold transition-all duration-300 ${role === 'employee' ? 'bg-slate-700 text-white shadow-sm' : 'text-white hover:text-white'}`}
             >
               <User className="w-3.5 h-3.5 mr-1.5" /> Employee Portal
             </button>
             <button 
               type="button"
               onClick={() => setRole('admin')}
-              className={`flex-1 flex items-center justify-center rounded-xl h-10 text-xs font-bold transition-all duration-300 ${role === 'admin' ? 'bg-amber-600 text-white shadow-sm' : 'text-stone-500 hover:text-foreground'}`}
+              className={`flex-1 flex items-center justify-center rounded-xl h-10 text-xs font-bold transition-all duration-300 ${role === 'admin' ? 'bg-amber-600 text-white shadow-sm' : 'text-white hover:text-white'}`}
             >
               <ShieldCheck className="w-3.5 h-3.5 mr-1.5" /> Administrator
             </button>
@@ -127,30 +127,30 @@ export default function LoginPage() {
           
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-1.5">
-              <label className="text-[9px] font-black uppercase text-stone-400 tracking-widest ml-1 text-left block">Identity coordinate</label>
+              <label className="text-[9px] font-black uppercase text-white tracking-widest ml-1 text-left block">Identity coordinate</label>
               <div className="relative">
-                <Mail className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
+                <Mail className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-white" />
                 <Input 
                   type="email" 
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@lptradingandservices.com" 
-                  className="pl-12 h-13 rounded-2xl border-stone-700/50 bg-slate-800/50 focus:bg-slate-800 text-foreground text-sm font-medium transition-all" 
+                  className="pl-12 h-13 rounded-2xl border-white/40 bg-slate-800/50 focus:bg-slate-800 text-white text-sm font-medium transition-all" 
                   required
                 />
               </div>
             </div>
             
             <div className="space-y-1.5">
-              <label className="text-[9px] font-black uppercase text-stone-400 tracking-widest ml-1 text-left block">Security passcode</label>
+              <label className="text-[9px] font-black uppercase text-white tracking-widest ml-1 text-left block">Security passcode</label>
               <div className="relative">
-                <Lock className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
+                <Lock className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-white" />
                 <Input 
                   type="password" 
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••" 
-                  className="pl-12 h-13 rounded-2xl border-stone-700/50 bg-slate-800/50 focus:bg-slate-800 text-foreground text-sm font-medium transition-all" 
+                  className="pl-12 h-13 rounded-2xl border-white/40 bg-slate-800/50 focus:bg-slate-800 text-white text-sm font-medium transition-all" 
                   required
                 />
               </div>
@@ -178,14 +178,14 @@ export default function LoginPage() {
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-stone-700/60"></div>
                 </div>
-                <div className="relative bg-slate-900 px-3 text-[9px] font-black text-stone-400 uppercase tracking-widest">Single Sign On</div>
+                <div className="relative bg-black px-3 text-[9px] font-black text-white uppercase tracking-widest">Single Sign On</div>
               </div>
 
               <Button 
                 onClick={handleGoogleLogin} 
                 type="button"
                 variant="ghost"
-                className="w-full h-12 rounded-2xl flex items-center justify-center border border-stone-700/50 bg-slate-800/30 hover:bg-slate-800 transition-all font-bold uppercase tracking-widest text-[9px] text-foreground"
+                className="w-full h-12 rounded-2xl flex items-center justify-center border border-white/40 bg-slate-800/30 hover:bg-slate-800 transition-all font-bold uppercase tracking-widest text-[9px] text-white"
                 disabled={isLoading}
               >
                 <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 mr-2 shrink-0">

@@ -50,10 +50,10 @@ const AuthRedirect = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-6 text-center">
         <div className="bg-card p-8 rounded-3xl shadow-xl max-w-md w-full border border-border">
-          <div className="w-16 h-16 bg-amber-600/20 text-amber-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+          <div className="w-16 h-16 bg-amber-600/20 text-white rounded-2xl flex items-center justify-center mx-auto mb-4">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></svg>
           </div>
-          <h2 className="text-xl font-black text-foreground mb-2">Account Pending</h2>
+          <h2 className="text-xl font-black text-white mb-2">Account Pending</h2>
           <p className="text-muted-foreground mb-6 text-sm">
             Your email ({user.email}) has been verified, but it hasn't been linked to an employee or CEO profile yet. Please ask your system administrator to add this exact email to the Staff Dashboard.
           </p>

@@ -130,14 +130,14 @@ export default function CameraCapture({ onCapture, onClose }: CameraCaptureProps
       <div className="absolute top-0 inset-x-0 p-4 flex justify-between items-center z-30 pointer-events-none">
         <button 
           onClick={() => { stopCamera(); onClose(); }}
-          className="p-3 bg-black/40 text-white rounded-full backdrop-blur-md border border-white/10 active:scale-95 transition-all pointer-events-auto"
+          className="p-3 bg-black/40 text-white rounded-full backdrop-blur-md border border-white/30 active:scale-95 transition-all pointer-events-auto"
         >
           <X className="w-5 h-5" />
         </button>
       </div>
 
       {/* Camera Viewport */}
-      <div className="flex-1 relative bg-slate-950 overflow-hidden flex items-center justify-center">
+      <div className="flex-1 relative bg-black overflow-hidden flex items-center justify-center">
         {error ? (
           <div className="flex flex-col items-center justify-center p-8 text-center w-full h-full relative z-10">
             <div className="w-16 h-16 bg-rose-500/10 rounded-full flex items-center justify-center mb-6">
@@ -146,7 +146,7 @@ export default function CameraCapture({ onCapture, onClose }: CameraCaptureProps
             <p className="text-white font-black text-sm mb-8 leading-relaxed max-w-xs">{error}</p>
             <button 
               onClick={startCamera}
-              className="px-8 py-3 bg-white text-slate-900 rounded-xl font-black uppercase text-[10px] tracking-widest active:scale-95 transition-all"
+              className="px-8 py-3 bg-black text-white rounded-xl font-black uppercase text-[10px] tracking-widest active:scale-95 transition-all"
             >
               Retry Camera
             </button>
@@ -183,23 +183,23 @@ export default function CameraCapture({ onCapture, onClose }: CameraCaptureProps
           <div className="flex items-center justify-center w-full max-w-sm">
             {!capturedImage ? (
               <div className="relative">
-                <div className="absolute -inset-6 bg-white/10 rounded-full blur-3xl animate-pulse" />
+                <div className="absolute -inset-6 bg-black/10 rounded-full blur-3xl animate-pulse" />
                 <button 
                   onClick={capturePhoto}
                   disabled={!stream || isStarting}
-                  className="relative w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-[0_0_50px_rgba(255,255,255,0.3)] active:scale-90 transition-all disabled:opacity-20 z-10"
+                  className="relative w-20 h-20 bg-black rounded-full flex items-center justify-center shadow-[0_0_50px_rgba(255,255,255,0.3)] active:scale-90 transition-all disabled:opacity-20 z-10"
                 >
                   <div className="w-16 h-16 rounded-full border-[6px] border-slate-950 flex items-center justify-center">
-                    <Camera className="w-8 h-8 text-slate-950" />
+                    <Camera className="w-8 h-8 text-white" />
                   </div>
                 </button>
               </div>
             ) : (
               <div className="flex flex-col gap-4 w-full">
-                <div className="flex gap-4 bg-black/60 backdrop-blur-xl p-4 rounded-[40px] border border-white/10 shadow-2xl">
+                <div className="flex gap-4 bg-black/60 backdrop-blur-xl p-4 rounded-[40px] border border-white/30 shadow-2xl">
                   <button 
                     onClick={handleRetake}
-                    className="flex-1 flex items-center justify-center gap-2 h-14 bg-white/10 text-white rounded-3xl font-black uppercase text-[10px] tracking-widest border border-white/20 active:scale-95 transition-all"
+                    className="flex-1 flex items-center justify-center gap-2 h-14 bg-black/10 text-white rounded-3xl font-black uppercase text-[10px] tracking-widest border border-white/20 active:scale-95 transition-all"
                   >
                     <RefreshCw className="w-5 h-5" />
                     Retake

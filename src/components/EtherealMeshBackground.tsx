@@ -19,7 +19,7 @@ export default function EtherealMeshBackground() {
   return (
     <div 
       ref={containerRef}
-      className="fixed inset-0 pointer-events-none z-0 overflow-hidden bg-slate-50 dark:bg-slate-950"
+      className="fixed inset-0 pointer-events-none z-0 overflow-hidden bg-black dark:bg-black"
       style={{ '--mouse-x': '50%', '--mouse-y': '50%' } as any}
     >
       {/* Animated Mesh Blobs - Reduced blur for better mobile performance */}

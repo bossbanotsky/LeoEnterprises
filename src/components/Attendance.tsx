@@ -9,6 +9,7 @@ import { ChevronDown, ChevronUp, Check, X, ChevronLeft, ChevronRight, Calendar, 
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Skeleton } from './ui/Skeleton';
+import { EmptyState } from './ui/EmptyState';
 import { motion, AnimatePresence } from 'motion/react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import CameraCapture from './CameraCapture';
@@ -755,20 +756,20 @@ export default function Attendance() {
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <button 
             onClick={() => setShowExportModal(true)}
-            className="hidden sm:flex items-center gap-2 px-4 py-2 bg-white/10 text-white border border-white/20 font-black uppercase tracking-widest text-[10px] rounded-xl shadow-xl hover:bg-white/20 transition-all"
+            className="hidden sm:flex items-center gap-2 px-4 py-2 bg-black/10 text-white border border-white/20 font-black uppercase tracking-widest text-[10px] rounded-xl shadow-xl hover:bg-black/20 transition-all"
           >
             <Download className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Export Report</span>
           </button>
-          <div className="flex bg-transparent p-1 rounded-xl border border-white/10 flex-1 sm:flex-none">
+          <div className="flex bg-transparent p-1 rounded-xl border border-white/30 flex-1 sm:flex-none">
             <button 
-              className={`flex-1 sm:px-6 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${activeTab === 'mark' ? 'bg-white/10 text-white shadow-xl border border-white/20' : 'text-white/40 hover:text-white'}`}
+              className={`flex-1 sm:px-6 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${activeTab === 'mark' ? 'bg-black/10 text-white shadow-xl border border-white/20' : 'text-white/40 hover:text-white'}`}
               onClick={() => setActiveTab('mark')}
             >
               Mark
             </button>
             <button 
-              className={`flex-1 sm:px-6 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${activeTab === 'report' ? 'bg-white/10 text-white shadow-xl border border-white/20' : 'text-white/40 hover:text-white'}`}
+              className={`flex-1 sm:px-6 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${activeTab === 'report' ? 'bg-black/10 text-white shadow-xl border border-white/20' : 'text-white/40 hover:text-white'}`}
               onClick={() => setActiveTab('report')}
             >
               Report
@@ -776,7 +777,7 @@ export default function Attendance() {
           </div>
           <button 
             onClick={() => setShowExportModal(true)}
-            className="sm:hidden flex items-center justify-center p-2 bg-white text-slate-900 rounded-xl shadow-lg"
+            className="sm:hidden flex items-center justify-center p-2 bg-black text-white rounded-xl shadow-lg"
           >
             <Download className="w-5 h-5" />
           </button>
@@ -786,14 +787,14 @@ export default function Attendance() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 shrink-0">
         <div className="flex gap-2">
           {activeTab === 'mark' ? (
-            <div className="bg-white/5 p-2 rounded-2xl border border-white/10 shadow-2xl flex items-center gap-1 flex-1 group">
+            <div className="bg-white/5 p-2 rounded-2xl border border-white/30 shadow-2xl flex items-center gap-1 flex-1 group">
               <button 
                 onClick={handlePrevDate}
-                className="p-2.5 hover:bg-white/10 rounded-xl transition-all text-white/50 hover:text-white"
+                className="p-2.5 hover:bg-black/10 rounded-xl transition-all text-white/50 hover:text-white"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
-              <div className="flex-1 bg-slate-950/40 px-3 py-2 rounded-xl flex items-center gap-2 border border-white/5">
+              <div className="flex-1 bg-black/40 px-3 py-2 rounded-xl flex items-center gap-2 border border-white/20">
                 <div className="w-1 h-6 bg-blue-600 rounded-full shadow-[0_0_10px_rgba(37,99,235,0.5)]" />
                 <div className="flex flex-col flex-1">
                   <span className="text-[8px] font-black text-blue-400 uppercase tracking-widest leading-none mb-1">Selected Date</span>
@@ -807,27 +808,27 @@ export default function Attendance() {
               </div>
               <button 
                 onClick={handleNextDate}
-                className="p-2.5 hover:bg-white/10 rounded-xl transition-all text-white/50 hover:text-white"
+                className="p-2.5 hover:bg-black/10 rounded-xl transition-all text-white/50 hover:text-white"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-2 bg-transparent p-3 rounded-xl border border-white/10 shadow-xl flex-1 text-white">
+            <div className="grid grid-cols-2 gap-2 bg-transparent p-3 rounded-xl border border-white/30 shadow-xl flex-1 text-white">
               <div className="space-y-1">
                 <Label className="text-[9px] font-black text-blue-400 uppercase tracking-[0.2em] mb-1 block leading-none">Start Date</Label>
-                <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="rounded-lg h-10 w-full font-black bg-slate-950/50 border border-white/10 text-white text-sm focus:ring-2 focus:ring-blue-500/20 [color-scheme:dark]" />
+                <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="rounded-lg h-10 w-full font-black bg-white/50 border border-white/30 text-white text-sm focus:ring-2 focus:ring-blue-500/20 [color-scheme:dark]" />
               </div>
               <div className="space-y-1">
                 <Label className="text-[9px] font-black text-blue-400 uppercase tracking-[0.2em] mb-1 block leading-none">End Date</Label>
-                <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="rounded-lg h-10 w-full font-black bg-slate-950/50 border border-white/10 text-white text-sm focus:ring-2 focus:ring-blue-500/20 [color-scheme:dark]" />
+                <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="rounded-lg h-10 w-full font-black bg-white/50 border border-white/30 text-white text-sm focus:ring-2 focus:ring-blue-500/20 [color-scheme:dark]" />
               </div>
             </div>
           )}
         </div>
         
-        <div className="bg-white/5 p-2 rounded-2xl border border-white/10 shadow-2xl flex items-center gap-1 group">
-           <div className="flex-1 bg-slate-950/40 px-3 py-2 rounded-xl flex items-center gap-2 border border-white/5">
+        <div className="bg-white/5 p-2 rounded-2xl border border-white/30 shadow-2xl flex items-center gap-1 group">
+           <div className="flex-1 bg-black/40 px-3 py-2 rounded-xl flex items-center gap-2 border border-white/20">
             <div className="w-1 h-6 bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
             <div className="flex flex-col flex-1">
               <span className="text-[8px] font-black text-emerald-400 uppercase tracking-widest leading-none mb-1">Search Employee</span>
@@ -859,7 +860,7 @@ export default function Attendance() {
               className={`whitespace-nowrap px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-[0.15em] border transition-all duration-300 ${
                 statusFilter === f.id 
                 ? 'bg-blue-600 text-white border-blue-500 shadow-[0_0_20px_rgba(37,99,235,0.3)]' 
-                : 'bg-white/5 text-white/40 border-white/10 hover:border-white/20 hover:text-white/60'
+                : 'bg-white/5 text-white/40 border-white/30 hover:border-white/20 hover:text-white/60'
               }`}
             >
               {f.label}
@@ -876,7 +877,7 @@ export default function Attendance() {
         ) : activeTab === 'mark' ? (
           <div className="grid grid-cols-1 gap-3">
             {/* Daily Proof Section */}
-            <div className="bg-slate-900 border border-white/5 rounded-[32px] mb-4 overflow-hidden shadow-2xl relative">
+            <div className="bg-black border border-white/20 rounded-[32px] mb-4 overflow-hidden shadow-2xl relative">
               <div className="absolute top-0 right-0 p-6 opacity-5 pointer-events-none">
                 <Camera className="w-16 h-16 text-white" />
               </div>
@@ -896,7 +897,7 @@ export default function Attendance() {
                         <ChevronDown className="w-4 h-4 text-white/40" />
                       </motion.div>
                     </h3>
-                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tight mt-0.5">Verification requirement for current shift</p>
+                    <p className="text-[10px] text-white font-bold uppercase tracking-tight mt-0.5">Verification requirement for current shift</p>
                   </div>
                   
                   {dailyProof?.photoUrl && (
@@ -919,7 +920,7 @@ export default function Attendance() {
                     >
                       <div className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-5 relative z-10">
                         <div className="space-y-4">
-                          <div className="relative group/photo aspect-video bg-white/5 border border-white/10 rounded-2xl overflow-hidden shadow-inner cursor-pointer">
+                          <div className="relative group/photo aspect-video bg-white/5 border border-white/30 rounded-2xl overflow-hidden shadow-inner cursor-pointer">
                             {dailyProof?.photoUrl ? (
                               <>
                                 <img 
@@ -929,10 +930,10 @@ export default function Attendance() {
                                   onClick={() => setShowProofPhoto(true)}
                                 />
                                 <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/photo:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 z-10" onClick={(e) => { e.stopPropagation(); setShowProofPhoto(true); }}>
-                                  <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center border border-white/20 shadow-2xl">
+                                  <div className="w-12 h-12 bg-black/20 rounded-full flex items-center justify-center border border-white/20 shadow-2xl">
                                     <FileText className="w-6 h-6 text-white" />
                                   </div>
-                                  <span className="text-[10px] font-black text-white uppercase tracking-[0.2em] bg-black/40 px-3 py-1 rounded-full border border-white/5">Tap to View</span>
+                                  <span className="text-[10px] font-black text-white uppercase tracking-[0.2em] bg-black/40 px-3 py-1 rounded-full border border-white/20">Tap to View</span>
                                 </div>
                               </>
                             ) : (
@@ -940,7 +941,7 @@ export default function Attendance() {
                                 onClick={(e) => { e.stopPropagation(); setShowCamera(true); }}
                                 className="w-full h-full flex flex-col items-center justify-center gap-3 hover:bg-white/5 transition-colors"
                               >
-                                <div className="w-14 h-14 bg-white/5 text-white/40 rounded-full flex items-center justify-center border border-white/10 border-dashed group-hover:scale-110 transition-transform">
+                                <div className="w-14 h-14 bg-white/5 text-white/40 rounded-full flex items-center justify-center border border-white/30 border-dashed group-hover:scale-110 transition-transform">
                                   <Camera className="w-7 h-7" />
                                 </div>
                                 <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">No photo uploaded yet</span>
@@ -953,7 +954,7 @@ export default function Attendance() {
                               <>
                                 <button 
                                   onClick={() => setShowCamera(true)}
-                                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-white/5 text-white rounded-xl font-black uppercase text-[10px] tracking-widest border border-white/10 hover:bg-white/10 transition-all"
+                                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-white/5 text-white rounded-xl font-black uppercase text-[10px] tracking-widest border border-white/30 hover:bg-black/10 transition-all"
                                 >
                                   <RefreshCw className="w-4 h-4 text-white/60" />
                                   Update Photo
@@ -982,18 +983,18 @@ export default function Attendance() {
                                 initial={{ opacity: 0, scale: 0.95 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 exit={{ opacity: 0, scale: 0.95 }}
-                                className="absolute inset-0 z-50 bg-slate-950/90 flex flex-col items-center justify-center p-6 text-center"
+                                className="absolute inset-0 z-50 bg-black/90 flex flex-col items-center justify-center p-6 text-center"
                               >
                                 <div className="w-16 h-16 bg-rose-500/10 rounded-full flex items-center justify-center mb-4">
                                   <X className="w-8 h-8 text-rose-500" />
                                 </div>
                                 <h4 className="text-sm font-black text-white uppercase tracking-widest italic mb-2">Delete Photo?</h4>
-                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight mb-6 max-w-[200px]">This action cannot be undone. The proof photo will be removed from the record.</p>
+                                <p className="text-[10px] text-white font-bold uppercase tracking-tight mb-6 max-w-[200px]">This action cannot be undone. The proof photo will be removed from the record.</p>
                                 
                                 <div className="flex gap-3 w-full max-w-[240px]">
                                   <button 
                                     onClick={() => setShowDeleteConfirm(false)}
-                                    className="flex-1 h-12 bg-white/5 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest border border-white/10 active:scale-95 transition-all"
+                                    className="flex-1 h-12 bg-white/5 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest border border-white/30 active:scale-95 transition-all"
                                   >
                                     Cancel
                                   </button>
@@ -1022,12 +1023,12 @@ export default function Attendance() {
                                 value={photographerName}
                                 onChange={(e) => setPhotographerName(e.target.value)}
                                 onBlur={() => handleSaveProof()}
-                                className="h-12 pl-12 bg-white/5 border-white/10 text-white text-sm font-bold rounded-2xl focus:ring-blue-500/20 focus:bg-white/10 transition-all"
+                                className="h-12 pl-12 bg-white/5 border-white/30 text-white text-sm font-bold rounded-2xl focus:ring-blue-500/20 focus:bg-black/10 transition-all"
                               />
                             </div>
                           </div>
 
-                          <div className="p-4 bg-white/[0.02] border border-white/5 rounded-2xl space-y-2">
+                          <div className="p-4 bg-black/[0.02] border border-white/20 rounded-2xl space-y-2">
                             <h4 className="text-[10px] font-black text-white/40 uppercase tracking-widest flex items-center gap-2">
                               <MapPin className="w-3.5 h-3.5" />
                               Site Information
@@ -1047,7 +1048,7 @@ export default function Attendance() {
                               value={proofNotes}
                               onChange={(e) => setProofNotes(e.target.value)}
                               onBlur={() => handleSaveProof()}
-                              className="flex-1 min-h-[100px] bg-white/5 border border-white/10 text-white text-xs font-medium p-3 rounded-2xl focus:ring-2 focus:ring-blue-500/20 resize-none placeholder:text-white/10"
+                              className="flex-1 min-h-[100px] bg-white/5 border border-white/30 text-white text-xs font-medium p-3 rounded-2xl focus:ring-2 focus:ring-blue-500/20 resize-none placeholder:text-white/10"
                             />
                             {isSavingProof && (
                               <div className="text-[8px] font-black text-blue-400 uppercase tracking-widest text-right mt-1 animate-pulse">
@@ -1086,23 +1087,16 @@ export default function Attendance() {
             </div>
 
             {employees.length === 0 && (
-              <div className="py-12 flex flex-col items-center justify-center text-center px-6 bg-white/[0.02] border border-white/5 rounded-[40px] mt-2">
-                <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-4">
-                  <User className="w-8 h-8 text-white/20" />
-                </div>
-                <h4 className="text-sm font-black text-white uppercase tracking-widest italic mb-2">No Employees Found</h4>
-                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tight max-w-[200px]">
-                  {statusFilter !== 'all' 
-                    ? `No one is marked as "${statusFilter}" on this date.` 
-                    : "No matches found for your search term."}
-                </p>
-                <button 
-                  onClick={() => { setStatusFilter('all'); setSearchTerm(''); }}
-                  className="mt-6 px-6 py-2 bg-white/5 text-white rounded-xl text-[10px] font-black uppercase tracking-widest border border-white/10 hover:bg-white/10 transition-all"
-                >
-                  Show All Employees
-                </button>
-              </div>
+              <EmptyState 
+                icon={User}
+                title="No Employees Found"
+                description={statusFilter !== 'all' 
+                  ? `No one is marked as "${statusFilter}" on this date.` 
+                  : "No matches found for your search term."}
+                actionLabel="Show All Employees"
+                onAction={() => { setStatusFilter('all'); setSearchTerm(''); }}
+                className="col-span-full mt-4"
+              />
             )}
 
             {employees.map(emp => {
@@ -1110,7 +1104,7 @@ export default function Attendance() {
               const hasPakyaw = atts.some(a => a.status === 'pakyaw');
               
               return (
-                <div key={emp.id} className="bg-slate-900/40 p-4 rounded-3xl border border-white/5 transition-colors hover:bg-slate-800/60">
+                <div key={emp.id} className="bg-black/40 p-4 rounded-3xl border border-white/20 transition-colors hover:bg-slate-800/60">
                   <div 
                     className="flex items-center justify-between mb-4 cursor-pointer" 
                     onClick={() => setExpandedEmp(expandedEmp === emp.id ? null : emp.id)}
@@ -1126,14 +1120,14 @@ export default function Attendance() {
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
                           <h3 className="font-bold text-white truncate">{emp.fullName}</h3>
-                          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">₱{emp.dailySalary}/d</span>
+                          <span className="text-[10px] text-white font-bold uppercase tracking-tight">₱{emp.dailySalary}/d</span>
                         </div>
                         <div className="flex gap-1 mt-0.5">
                           {atts.length > 0 ? (
                             atts.map((a, i) => (
                               <span key={`${a.id || 'new'}_${i}`} className={`text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-widest ${
                                 a.status === 'present' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
-                                a.status === 'pakyaw' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
+                                a.status === 'pakyaw' ? 'bg-black0/20 text-white border border-amber-500/30' :
                                 a.status === 'hd' ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30' :
                                 a.status === 'ut' ? 'bg-sky-500/20 text-sky-400 border border-sky-500/30' :
                                 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
@@ -1159,7 +1153,7 @@ export default function Attendance() {
                               }) ? `₱${calculateDailyPay(emp, `${emp.id}_${singleDate}`).toLocaleString()}` : 'IN PROGRESS')
                             : `₱${calculateDailyPay(emp, `${emp.id}_${singleDate}`).toLocaleString()}`}
                         </div>
-                        <div className="text-[8px] text-slate-500 uppercase font-black tracking-widest leading-none">
+                        <div className="text-[8px] text-white uppercase font-black tracking-widest leading-none">
                           {hasPakyaw ? 'PAKYAW CONTRACT' : 'EARNED TODAY'}
                         </div>
                       </div>
@@ -1178,7 +1172,7 @@ export default function Attendance() {
                         return (
                           <div 
                             key={`${att.id || 'new'}_${idx}`} 
-                            className="pt-4 border-t border-white/5 bg-white/5 p-3 rounded-2xl relative group/card"
+                            className="pt-4 border-t border-white/20 bg-white/5 p-3 rounded-2xl relative group/card"
                             onClick={(e) => e.stopPropagation()}
                           >
                             <button 
@@ -1200,7 +1194,7 @@ export default function Attendance() {
                                       type="time" 
                                       value={att?.timeIn || '07:00'} 
                                       onChange={e => handleAttendanceChange(emp.id, singleDate, 'timeIn', e.target.value, att.id)} 
-                                      className="h-8 rounded-lg bg-white/5 border border-white/10 font-mono text-xs p-2 text-white [color-scheme:dark]" 
+                                      className="h-8 rounded-lg bg-white/5 border border-white/30 font-mono text-xs p-2 text-white [color-scheme:dark]" 
                                     />
                                   </div>
                                   <div className="space-y-1">
@@ -1209,16 +1203,16 @@ export default function Attendance() {
                                       type="time" 
                                       value={att?.timeOut || '16:00'} 
                                       onChange={e => handleAttendanceChange(emp.id, singleDate, 'timeOut', e.target.value, att.id)} 
-                                      className="h-8 rounded-lg bg-white/5 border border-white/10 font-mono text-xs p-2 text-white [color-scheme:dark]" 
+                                      className="h-8 rounded-lg bg-white/5 border border-white/30 font-mono text-xs p-2 text-white [color-scheme:dark]" 
                                     />
                                   </div>
                                 </div>
-                                <div className="flex items-center gap-2 p-2 bg-slate-950/40 rounded-xl border border-white/5">
-                                  <div className="flex-1 text-center border-r border-white/10">
+                                <div className="flex items-center gap-2 p-2 bg-black/40 rounded-xl border border-white/20">
+                                  <div className="flex-1 text-center border-r border-white/30">
                                     <div className="text-[8px] font-black text-white/40 uppercase tracking-widest">Regular</div>
                                     <div className="text-xs font-black text-white">{att.regularHours || 0}h</div>
                                   </div>
-                                  <div className="flex-1 text-center border-r border-white/10">
+                                  <div className="flex-1 text-center border-r border-white/30">
                                     <div className="text-[8px] font-black text-emerald-400 uppercase tracking-widest">OT</div>
                                     <div className="text-xs font-black text-emerald-400">{(att.otHours || 0).toFixed(1)}h</div>
                                   </div>
@@ -1229,11 +1223,11 @@ export default function Attendance() {
                             {isPakyaw && (
                               <div className="space-y-3 mb-4">
                                 <div>
-                                   <Label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">Assigned Pakyaw Job</Label>
+                                   <Label className="text-[9px] font-bold text-white uppercase tracking-wider mb-1 block">Assigned Pakyaw Job</Label>
                                    <select 
                                      value={att?.pakyawJobId || ''} 
                                      onChange={(e) => handleAttendanceChange(emp.id, singleDate, 'pakyawJobId', e.target.value, att.id)} 
-                                     className="w-full h-9 px-3 rounded-xl border-0 bg-slate-950/40 text-white text-xs font-semibold focus:ring-2 focus:ring-blue-500/20"
+                                     className="w-full h-9 px-3 rounded-xl border-0 bg-black/40 text-white text-xs font-semibold focus:ring-2 focus:ring-blue-500/20"
                                    >
                                     <option value="">-- Select Job --</option>
                                     {pakyawJobs
@@ -1244,9 +1238,9 @@ export default function Attendance() {
                                 </div>
 
                                 {att.pakyawJobId && (
-                                   <div className="flex items-center justify-between p-2 bg-amber-500/10 rounded-xl border border-amber-500/20">
-                                      <span className="text-[9px] font-bold text-amber-400 uppercase tracking-wider">Pakyaw Share</span>
-                                      <span className="text-sm font-black text-amber-300">
+                                   <div className="flex items-center justify-between p-2 bg-black0/10 rounded-xl border border-white/40">
+                                      <span className="text-[9px] font-bold text-white uppercase tracking-wider">Pakyaw Share</span>
+                                      <span className="text-sm font-black text-white">
                                         {(() => {
                                           const job = pakyawJobs.find(j => j.id === att.pakyawJobId);
                                           return job ? `₱${(job.totalPrice / (job.employeeIds.length || 1)).toLocaleString()}` : '₱0';
@@ -1260,31 +1254,31 @@ export default function Attendance() {
                             <div className="grid grid-cols-5 gap-1.5 mt-auto">
                               <button 
                                 onClick={() => handleAttendanceChange(emp.id, singleDate, 'status', 'present', att.id)} 
-                                className={`py-2 text-[8px] rounded-lg font-black uppercase tracking-widest transition-all border ${att.status === 'present' ? 'bg-emerald-600 text-white border-emerald-500/50 shadow-lg' : 'bg-white/5 text-white/40 border-white/10'}`}
+                                className={`py-2 text-[8px] rounded-lg font-black uppercase tracking-widest transition-all border ${att.status === 'present' ? 'bg-emerald-600 text-white border-emerald-500/50 shadow-lg' : 'bg-white/5 text-white/40 border-white/30'}`}
                               >
                                 Present
                               </button>
                               <button 
                                 onClick={() => handleAttendanceChange(emp.id, singleDate, 'status', 'hd', att.id)} 
-                                className={`py-2 text-[8px] rounded-lg font-black uppercase tracking-widest transition-all border ${att.status === 'hd' ? 'bg-indigo-600 text-white border-indigo-500/50 shadow-lg' : 'bg-white/5 text-white/40 border-white/10'}`}
+                                className={`py-2 text-[8px] rounded-lg font-black uppercase tracking-widest transition-all border ${att.status === 'hd' ? 'bg-indigo-600 text-white border-indigo-500/50 shadow-lg' : 'bg-white/5 text-white/40 border-white/30'}`}
                               >
                                 Half Day
                               </button>
                               <button 
                                 onClick={() => handleAttendanceChange(emp.id, singleDate, 'status', 'ut', att.id)} 
-                                className={`py-2 text-[8px] rounded-lg font-black uppercase tracking-widest transition-all border ${att.status === 'ut' ? 'bg-sky-600 text-white border-sky-500/50 shadow-lg' : 'bg-white/5 text-white/40 border-white/10'}`}
+                                className={`py-2 text-[8px] rounded-lg font-black uppercase tracking-widest transition-all border ${att.status === 'ut' ? 'bg-sky-600 text-white border-sky-500/50 shadow-lg' : 'bg-white/5 text-white/40 border-white/30'}`}
                               >
                                 Undertime
                               </button>
                               <button 
                                 onClick={() => handleAttendanceChange(emp.id, singleDate, 'status', 'pakyaw', att.id)} 
-                                className={`py-2 text-[8px] rounded-lg font-black uppercase tracking-widest transition-all border ${att.status === 'pakyaw' ? 'bg-amber-600 text-white border-amber-500/50 shadow-lg' : 'bg-white/5 text-white/40 border-white/10'}`}
+                                className={`py-2 text-[8px] rounded-lg font-black uppercase tracking-widest transition-all border ${att.status === 'pakyaw' ? 'bg-amber-600 text-white border-amber-500/50 shadow-lg' : 'bg-white/5 text-white/40 border-white/30'}`}
                               >
                                 Pakyaw
                               </button>
                                <button 
                                 onClick={() => handleAttendanceChange(emp.id, singleDate, 'status', 'absent', att.id)} 
-                                className={`py-2 text-[8px] rounded-lg font-black uppercase tracking-widest transition-all border ${att.status === 'absent' ? 'bg-rose-600 text-white border-rose-500/50 shadow-lg' : 'bg-white/5 text-white/40 border-white/10'}`}
+                                className={`py-2 text-[8px] rounded-lg font-black uppercase tracking-widest transition-all border ${att.status === 'absent' ? 'bg-rose-600 text-white border-rose-500/50 shadow-lg' : 'bg-white/5 text-white/40 border-white/30'}`}
                               >
                                 Absent
                               </button>
@@ -1314,7 +1308,7 @@ export default function Attendance() {
                     <Calculator className="w-3 h-3" />
                     Period Overview
                   </div>
-                  <span className="text-[10px] font-medium bg-white/20 px-2 py-0.5 rounded-full">
+                  <span className="text-[10px] font-medium bg-black/20 px-2 py-0.5 rounded-full">
                     {format(parseISO(startDate), 'MMMM dd, yyyy')} - {format(parseISO(endDate), 'MMMM dd, yyyy')}
                   </span>
                 </div>
@@ -1333,9 +1327,9 @@ export default function Attendance() {
             
             <div className="space-y-3">
             {employees.map(emp => (
-              <div key={emp.id} className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm hover:border-blue-300 transition-colors">
+              <div key={emp.id} className="bg-black dark:bg-slate-800 rounded-2xl border border-white/30 dark:border-white/50 overflow-hidden shadow-sm hover:border-blue-300 transition-colors">
                 <div 
-                  className="p-4 flex justify-between items-center cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors" 
+                  className="p-4 flex justify-between items-center cursor-pointer hover:bg-black dark:hover:bg-black transition-colors" 
                   onClick={() => setExpandedEmp(expandedEmp === emp.id ? null : emp.id)}
                 >
                   <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -1348,8 +1342,8 @@ export default function Attendance() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <h3 className="font-bold text-slate-900 dark:text-white truncate">{emp.fullName}</h3>
-                        <span className="text-[10px] text-slate-400 font-medium">Rate: ₱{emp.dailySalary}</span>
+                        <h3 className="font-bold text-white dark:text-white truncate">{emp.fullName}</h3>
+                        <span className="text-[10px] text-white font-medium">Rate: ₱{emp.dailySalary}</span>
                       </div>
                       <div className="flex flex-wrap gap-1 mt-1">
                           <span className="text-[8px] font-bold text-emerald-700 bg-emerald-50 dark:bg-emerald-900/20 dark:text-emerald-400 px-1.5 py-0.5 rounded uppercase tracking-wider">
@@ -1364,7 +1358,7 @@ export default function Attendance() {
                               return atts.length === 0 || atts.every(a => a.status === 'absent');
                             }).length} Abs
                           </span>
-                          <span className="text-[8px] font-bold text-amber-700 bg-amber-50 dark:bg-amber-900/20 dark:text-amber-400 px-1.5 py-0.5 rounded uppercase tracking-wider">
+                          <span className="text-[8px] font-bold text-white bg-black dark:bg-amber-900/20 dark:text-white px-1.5 py-0.5 rounded uppercase tracking-wider">
                             {dates.filter(d => {
                               const atts = attendanceData[`${emp.id}_${d}`] || [];
                               return atts.some(a => a.status === 'pakyaw');
@@ -1397,27 +1391,27 @@ export default function Attendance() {
                   <div className="flex items-center gap-2 ml-2 sm:ml-4">
                     <div className="text-right">
                       <div className="text-[11px] sm:text-xs font-black text-blue-600 dark:text-blue-400">₱{calculatePeriodTotal(emp).toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
-                      <div className="text-[8px] text-slate-400 uppercase font-bold tracking-tighter leading-none">Total Period</div>
+                      <div className="text-[8px] text-white uppercase font-bold tracking-tighter leading-none">Total Period</div>
                     </div>
-                    <div className="p-1 sm:p-1.5 bg-slate-50 dark:bg-slate-900 rounded-lg">
-                      {expandedEmp === emp.id ? <ChevronUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400" /> : <ChevronDown className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400" />}
+                    <div className="p-1 sm:p-1.5 bg-black dark:bg-black rounded-lg">
+                      {expandedEmp === emp.id ? <ChevronUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" /> : <ChevronDown className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />}
                     </div>
                   </div>
                 </div>
                 
                 {expandedEmp === emp.id && (
-                  <div className="px-4 pb-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/30">
+                  <div className="px-4 pb-4 border-t border-white/20 dark:border-slate-800 bg-black/30 dark:bg-black/30">
                     {dates.map(date => {
                       const atts = attendanceData[`${emp.id}_${date}`] || [];
                       const hasRecordsDetail = atts.length > 0;
 
                       return (
-                        <div key={date} className="pt-4 first:pt-4 border-b last:border-0 border-slate-100 dark:border-slate-800 pb-4">
+                        <div key={date} className="pt-4 first:pt-4 border-b last:border-0 border-white/20 dark:border-slate-800 pb-4">
                           <div className="flex justify-between items-center mb-3">
-                            <span className="font-bold text-sm text-slate-700 dark:text-slate-200">{format(parseISO(date), 'MMMM dd, yyyy (EEE)')}</span>
+                            <span className="font-bold text-sm text-white dark:text-white">{format(parseISO(date), 'MMMM dd, yyyy (EEE)')}</span>
                             <div className="text-right">
                                <div className="text-[11px] font-black text-blue-600 dark:text-blue-400">₱{calculateDailyPay(emp, `${emp.id}_${date}`).toLocaleString()}</div>
-                               <div className="text-[8px] text-slate-400 uppercase font-bold tracking-tighter leading-none">Day Total</div>
+                               <div className="text-[8px] text-white uppercase font-bold tracking-tighter leading-none">Day Total</div>
                             </div>
                           </div>
 
@@ -1430,27 +1424,27 @@ export default function Attendance() {
                                const isPakyaw_detail = att.status === 'pakyaw';
 
                                return (
-                                 <div key={att.id || attIdx} className="bg-white/50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-100 dark:border-slate-700">
+                                 <div key={att.id || attIdx} className="bg-white/50 dark:bg-slate-800/50 p-3 rounded-xl border border-white/20 dark:border-white/50">
                                    <div className="flex justify-between items-center mb-2">
                                      <div className="flex gap-2 text-[10px] font-bold p-1">
                                         {isPresent_detail && <span className="text-emerald-600">Present</span>}
                                         {isUT_detail && <span className="text-sky-600">Undertime</span>}
                                         {isHD_detail && <span className="text-indigo-600">Half Day</span>}
                                         {isAbs_detail && <span className="text-rose-600">Absent</span>}
-                                        {isPakyaw_detail && <span className="text-amber-600">Pakyaw</span>}
+                                        {isPakyaw_detail && <span className="text-white">Pakyaw</span>}
                                      </div>
-                                     <div className="flex gap-2 text-[10px] font-bold text-slate-500">
+                                     <div className="flex gap-2 text-[10px] font-bold text-white">
                                        {(isPresent_detail || isUT_detail || isHD_detail) && (
                                          <>
                                            <span>{att.timeIn} - {att.timeOut}</span>
-                                           <span className="text-slate-400">({att.regularHours}h {att.otHours ? `+ ${att.otHours}h OT` : ''})</span>
+                                           <span className="text-white">({att.regularHours}h {att.otHours ? `+ ${att.otHours}h OT` : ''})</span>
                                          </>
                                        )}
                                        {att.dailyRate && (
-                                         <span className="text-slate-400 border-l border-slate-200 dark:border-slate-700 pl-2">₱{att.dailyRate}/day</span>
+                                         <span className="text-white border-l border-white/30 dark:border-white/50 pl-2">₱{att.dailyRate}/day</span>
                                        )}
                                        {isPakyaw_detail && (
-                                         <span className="text-amber-600">
+                                         <span className="text-white">
                                           {pakyawJobs.find(j => j.id === att.pakyawJobId) ? 
                                               (pakyawJobs.find(j => j.id === att.pakyawJobId)?.containerNumber ? `[${pakyawJobs.find(j => j.id === att.pakyawJobId)?.containerNumber}] ` : '') + (pakyawJobs.find(j => j.id === att.pakyawJobId)?.description || 'Job Assigned')
                                             : 'Job Assigned'}
@@ -1466,24 +1460,24 @@ export default function Attendance() {
                                    </div>
 
                                    <div className="flex gap-2 mb-2">
-                                     <button onClick={() => handleAttendanceChange(emp.id, date, 'status', 'present', att.id)} className={`flex-1 py-1.5 text-[9px] font-bold rounded-lg ${isPresent_detail ? 'bg-emerald-600 text-white' : 'bg-white dark:bg-slate-800 text-slate-600 border border-slate-200 dark:border-slate-700'}`}>Present</button>
-                                     <button onClick={() => handleAttendanceChange(emp.id, date, 'status', 'pakyaw', att.id)} className={`flex-1 py-1.5 text-[9px] font-bold rounded-lg ${isPakyaw_detail ? 'bg-amber-500 text-white' : 'bg-white dark:bg-slate-800 text-slate-600 border border-slate-200 dark:border-slate-700'}`}>Pakyaw</button>
-                                     <button onClick={() => handleAttendanceChange(emp.id, date, 'status', 'hd', att.id)} className={`flex-1 py-1.5 text-[9px] font-bold rounded-lg ${isHD_detail ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-slate-800 text-slate-600 border border-slate-200 dark:border-slate-700'}`}>HD</button>
-                                     <button onClick={() => handleAttendanceChange(emp.id, date, 'status', 'ut', att.id)} className={`flex-1 py-1.5 text-[9px] font-bold rounded-lg ${isUT_detail ? 'bg-sky-500 text-white' : 'bg-white dark:bg-slate-800 text-slate-600 border border-slate-200 dark:border-slate-700'}`}>UT</button>
-                                     <button onClick={() => handleAttendanceChange(emp.id, date, 'status', 'absent', att.id)} className={`flex-1 py-1.5 text-[9px] font-bold rounded-lg ${isAbs_detail ? 'bg-rose-600 text-white' : 'bg-white dark:bg-slate-800 text-slate-600 border border-slate-200 dark:border-slate-700'}`}>Absent</button>
+                                     <button onClick={() => handleAttendanceChange(emp.id, date, 'status', 'present', att.id)} className={`flex-1 py-1.5 text-[9px] font-bold rounded-lg ${isPresent_detail ? 'bg-emerald-600 text-white' : 'bg-black dark:bg-slate-800 text-white border border-white/30 dark:border-white/50'}`}>Present</button>
+                                     <button onClick={() => handleAttendanceChange(emp.id, date, 'status', 'pakyaw', att.id)} className={`flex-1 py-1.5 text-[9px] font-bold rounded-lg ${isPakyaw_detail ? 'bg-black0 text-white' : 'bg-black dark:bg-slate-800 text-white border border-white/30 dark:border-white/50'}`}>Pakyaw</button>
+                                     <button onClick={() => handleAttendanceChange(emp.id, date, 'status', 'hd', att.id)} className={`flex-1 py-1.5 text-[9px] font-bold rounded-lg ${isHD_detail ? 'bg-indigo-600 text-white' : 'bg-black dark:bg-slate-800 text-white border border-white/30 dark:border-white/50'}`}>HD</button>
+                                     <button onClick={() => handleAttendanceChange(emp.id, date, 'status', 'ut', att.id)} className={`flex-1 py-1.5 text-[9px] font-bold rounded-lg ${isUT_detail ? 'bg-sky-500 text-white' : 'bg-black dark:bg-slate-800 text-white border border-white/30 dark:border-white/50'}`}>UT</button>
+                                     <button onClick={() => handleAttendanceChange(emp.id, date, 'status', 'absent', att.id)} className={`flex-1 py-1.5 text-[9px] font-bold rounded-lg ${isAbs_detail ? 'bg-rose-600 text-white' : 'bg-black dark:bg-slate-800 text-white border border-white/30 dark:border-white/50'}`}>Absent</button>
                                    </div>
 
                                    {(isPresent_detail || isUT_detail || isHD_detail) && (
                                      <div className="grid grid-cols-2 gap-2">
-                                       <Input type="time" value={att?.timeIn || '07:00'} onChange={e => handleAttendanceChange(emp.id, date, 'timeIn', e.target.value, att.id)} className="h-8 text-[10px] font-mono rounded-lg bg-white dark:bg-slate-800 border-0 [color-scheme:dark]" />
-                                       <Input type="time" value={att?.timeOut || '16:00'} onChange={e => handleAttendanceChange(emp.id, date, 'timeOut', e.target.value, att.id)} className="h-8 text-[10px] font-mono rounded-lg bg-white dark:bg-slate-800 border-0 [color-scheme:dark]" />
+                                       <Input type="time" value={att?.timeIn || '07:00'} onChange={e => handleAttendanceChange(emp.id, date, 'timeIn', e.target.value, att.id)} className="h-8 text-[10px] font-mono rounded-lg bg-black dark:bg-slate-800 border-0 [color-scheme:dark]" />
+                                       <Input type="time" value={att?.timeOut || '16:00'} onChange={e => handleAttendanceChange(emp.id, date, 'timeOut', e.target.value, att.id)} className="h-8 text-[10px] font-mono rounded-lg bg-black dark:bg-slate-800 border-0 [color-scheme:dark]" />
                                      </div>
                                    )}
                                    {isPakyaw_detail && (
                                      <select 
                                        value={att?.pakyawJobId || ''} 
                                        onChange={(e) => handleAttendanceChange(emp.id, date, 'pakyawJobId', e.target.value, att.id)} 
-                                       className="w-full h-8 px-2 rounded-lg border-0 bg-white dark:bg-slate-800 text-[10px] font-semibold"
+                                       className="w-full h-8 px-2 rounded-lg border-0 bg-black dark:bg-slate-800 text-[10px] font-semibold"
                                      >
                                       <option value="">-- Select Job --</option>
                                       {pakyawJobs
@@ -1498,7 +1492,7 @@ export default function Attendance() {
                             
                             <button 
                               onClick={() => handleAttendanceChange(emp.id, date, 'status', 'present')}
-                              className="w-full py-2 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl text-[10px] font-bold text-slate-400 hover:text-blue-500 hover:border-blue-200 transition-all flex items-center justify-center gap-2"
+                              className="w-full py-2 border-2 border-dashed border-white/30 dark:border-white/50 rounded-xl text-[10px] font-bold text-white hover:text-blue-500 hover:border-blue-200 transition-all flex items-center justify-center gap-2"
                             >
                               <Plus className="w-3.5 h-3.5" />
                               Add Record
@@ -1518,7 +1512,7 @@ export default function Attendance() {
     
       {/* Proof Photo Modal */}
       <Dialog open={showProofPhoto} onOpenChange={setShowProofPhoto}>
-        <DialogContent className="max-w-2xl bg-black/90 border-white/10 p-0 overflow-hidden">
+        <DialogContent className="max-w-2xl bg-black/90 border-white/30 p-0 overflow-hidden">
           {dailyProof?.photoUrl && (
             <div className="relative aspect-[4/3]">
               <img src={dailyProof.photoUrl} alt="Group Proof" className="w-full h-full object-contain shadow-2xl" />
@@ -1526,14 +1520,14 @@ export default function Attendance() {
                 <p className="text-white font-black uppercase text-xs">Proof for {format(parseISO(singleDate), 'MMMM d, yyyy')}</p>
                 <p className="text-white/60 text-[10px] font-bold uppercase tracking-widest mt-1">Shot by: {dailyProof.photographer || 'Unspecified'}</p>
                 {dailyProof.notes && (
-                  <div className="mt-4 p-3 bg-white/5 rounded-xl border border-white/10">
+                  <div className="mt-4 p-3 bg-white/5 rounded-xl border border-white/30">
                     <p className="text-[10px] font-medium text-white/80 whitespace-pre-wrap">{dailyProof.notes}</p>
                   </div>
                 )}
               </div>
               <button 
                 onClick={() => setShowProofPhoto(false)}
-                className="absolute top-4 right-4 w-10 h-10 bg-black/50 text-white rounded-full flex items-center justify-center border border-white/20"
+                className="absolute top-4 right-4 w-10 h-10 bg-white/50 text-white rounded-full flex items-center justify-center border border-white/20"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1552,32 +1546,32 @@ export default function Attendance() {
 
       {/* Export Options Modal */}
       <Dialog open={showExportModal} onOpenChange={setShowExportModal}>
-        <DialogContent className="sm:max-w-md border-slate-200 dark:border-slate-800">
+        <DialogContent className="sm:max-w-md border-white/30 dark:border-slate-800">
           <DialogHeader>
             <DialogTitle>Export PDF Report</DialogTitle>
           </DialogHeader>
           
           <div className="space-y-6 mt-4">
             <div className="space-y-4 text-sm">
-              <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800">
-                <span className="font-bold text-slate-700 dark:text-slate-300">Period Selected:</span>
+              <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-black dark:bg-black rounded-xl border border-white/20 dark:border-slate-800">
+                <span className="font-bold text-white dark:text-white">Period Selected:</span>
                 <span className="text-blue-600 dark:text-blue-400 font-bold">
                   {activeTab === 'mark' ? format(parseISO(singleDate), 'MMMM d, yyyy') : `${format(parseISO(startDate), 'MMMM d, yyyy')} - ${format(parseISO(endDate), 'MMMM d, yyyy')}`}
                 </span>
               </div>
 
               <div className="space-y-2">
-                <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">Export Scope</Label>
+                <Label className="text-xs font-bold uppercase tracking-wider text-white">Export Scope</Label>
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     onClick={() => setExportScope('bulk')}
-                    className={`py-2 px-3 rounded-lg border font-bold text-xs transition-colors ${exportScope === 'bulk' ? 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-400' : 'bg-white border-slate-200 text-slate-600 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400'}`}
+                    className={`py-2 px-3 rounded-lg border font-bold text-xs transition-colors ${exportScope === 'bulk' ? 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-400' : 'bg-black border-white/30 text-white dark:bg-slate-800 dark:border-white/50 dark:text-white'}`}
                   >
                     Bulk Report
                   </button>
                   <button
                     onClick={() => setExportScope('individual')}
-                    className={`py-2 px-3 rounded-lg border font-bold text-xs transition-colors ${exportScope === 'individual' ? 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-400' : 'bg-white border-slate-200 text-slate-600 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400'}`}
+                    className={`py-2 px-3 rounded-lg border font-bold text-xs transition-colors ${exportScope === 'individual' ? 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-400' : 'bg-black border-white/30 text-white dark:bg-slate-800 dark:border-white/50 dark:text-white'}`}
                   >
                     Per Employee
                   </button>
@@ -1586,11 +1580,11 @@ export default function Attendance() {
 
               {exportScope === 'individual' && (
                 <div className="space-y-2 animate-in fade-in slide-in-from-top-1">
-                  <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">Select Employee</Label>
+                  <Label className="text-xs font-bold uppercase tracking-wider text-white">Select Employee</Label>
                   <select 
                     value={exportEmpId} 
                     onChange={(e) => setExportEmpId(e.target.value)}
-                    className="w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full h-10 px-3 rounded-lg border border-white/30 dark:border-white/50 bg-black dark:bg-black text-sm font-semibold text-white dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="all">All Employees (Separate Pages)</option>
                     {employees.map(emp => (
@@ -1601,11 +1595,11 @@ export default function Attendance() {
               )}
 
               <div className="space-y-2">
-                <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">Attendance Status Filter</Label>
+                <Label className="text-xs font-bold uppercase tracking-wider text-white">Attendance Status Filter</Label>
                 <select 
                   value={exportStatusFilter} 
                   onChange={(e) => setExportStatusFilter(e.target.value)}
-                  className="w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full h-10 px-3 rounded-lg border border-white/30 dark:border-white/50 bg-black dark:bg-black text-sm font-semibold text-white dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="all">All Records (Present & Absent)</option>
                   <option value="present_all">Any Work Done (Exclude Absent)</option>
@@ -1615,7 +1609,7 @@ export default function Attendance() {
                   <option value="pakyaw">Pakyaw Only</option>
                   <option value="absent">Absent Only</option>
                 </select>
-                <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                <p className="text-[10px] text-white dark:text-white">
                   Filters which rows to include in the report based on mark attendance status.
                 </p>
               </div>
@@ -1623,7 +1617,7 @@ export default function Attendance() {
 
             <button 
               onClick={handleExportPDF}
-              className="w-full h-11 bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-bold rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+              className="w-full h-11 bg-black text-white dark:bg-black dark:text-white font-bold rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
             >
               <Download className="w-4 h-4" />
               Download {exportScope === 'bulk' ? 'Bulk Report' : 'Employee Report'}

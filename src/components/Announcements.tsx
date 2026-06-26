@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
+import { EmptyState } from './ui/EmptyState';
 import { format, addDays, isPast, parseISO } from 'date-fns';
 
 export default function Announcements() {
@@ -160,7 +161,7 @@ export default function Announcements() {
                   placeholder="Write your announcement details here..."
                   value={form.message}
                   onChange={e => setForm({...form, message: e.target.value})}
-                  className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-white font-medium"
+                  className="w-full rounded-xl border border-white/30 bg-white/5 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-white font-medium"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -169,13 +170,13 @@ export default function Announcements() {
                   <select 
                     value={form.durationDays}
                     onChange={e => setForm({...form, durationDays: e.target.value})}
-                    className="w-full h-10 rounded-xl border border-white/10 bg-white/5 px-3 text-sm text-white font-bold"
+                    className="w-full h-10 rounded-xl border border-white/30 bg-white/5 px-3 text-sm text-white font-bold"
                   >
-                    <option value="1" className="bg-slate-900">1 Day</option>
-                    <option value="3" className="bg-slate-900">3 Days</option>
-                    <option value="7" className="bg-slate-900">1 Week</option>
-                    <option value="14" className="bg-slate-900">2 Weeks</option>
-                    <option value="30" className="bg-slate-900">1 Month</option>
+                    <option value="1" className="bg-black">1 Day</option>
+                    <option value="3" className="bg-black">3 Days</option>
+                    <option value="7" className="bg-black">1 Week</option>
+                    <option value="14" className="bg-black">2 Weeks</option>
+                    <option value="30" className="bg-black">1 Month</option>
                   </select>
                 </div>
                 <div className="space-y-2">
@@ -183,11 +184,11 @@ export default function Announcements() {
                   <select 
                     value={form.priority}
                     onChange={e => setForm({...form, priority: e.target.value as any})}
-                    className="w-full h-10 rounded-xl border border-white/10 bg-white/5 px-3 text-sm text-white font-bold"
+                    className="w-full h-10 rounded-xl border border-white/30 bg-white/5 px-3 text-sm text-white font-bold"
                   >
-                    <option value="low" className="bg-slate-900">Low</option>
-                    <option value="medium" className="bg-slate-900">Medium</option>
-                    <option value="high" className="bg-slate-900">High</option>
+                    <option value="low" className="bg-black">Low</option>
+                    <option value="medium" className="bg-black">Medium</option>
+                    <option value="high" className="bg-black">High</option>
                   </select>
                 </div>
               </div>
@@ -209,14 +210,17 @@ export default function Announcements() {
           </div>
           <div className="grid gap-4">
             {activeAnnouncements.length === 0 ? (
-              <div className="bg-white/5 border border-dashed border-white/20 rounded-2xl py-12 text-center text-white/40 text-[10px] font-black uppercase tracking-widest italic">
-                No active announcements
-              </div>
+              <EmptyState 
+                icon={Megaphone}
+                title="No Active Announcements"
+                description="There are currently no active announcements broadcasted."
+                className="mt-4"
+              />
             ) : (
               activeAnnouncements.map(ann => (
-                        <div key={ann.id} className="bento-card p-6 group transition-all hover:border-blue-500 relative overflow-hidden bg-slate-900/40 border border-white/10 shadow-2xl">
+                        <div key={ann.id} className="bento-card p-6 group transition-all hover:border-blue-500 relative overflow-hidden bg-black/40 border border-white/30 shadow-2xl">
                           <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${
-                            ann.priority === 'high' ? 'bg-red-500 shadow-[0_0_15px_rgba(239,68,68,0.5)]' : ann.priority === 'medium' ? 'bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.5)]' : 'bg-white/20'
+                            ann.priority === 'high' ? 'bg-red-500 shadow-[0_0_15px_rgba(239,68,68,0.5)]' : ann.priority === 'medium' ? 'bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.5)]' : 'bg-black/20'
                           }`}></div>
                           <div className="flex items-start justify-between gap-4">
                             <div className="flex-1 text-left">
@@ -231,7 +235,7 @@ export default function Announcements() {
                               <p className="text-white text-base mb-6 leading-relaxed font-medium drop-shadow-sm">
                                 {ann.message}
                               </p>
-                              <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-[10px] font-black text-white/50 uppercase tracking-[0.2em] italic border-t border-white/5 pt-4">
+                              <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-[10px] font-black text-white/50 uppercase tracking-[0.2em] italic border-t border-white/20 pt-4">
                                 <div className="flex items-center gap-2">
                                   <Clock className="w-4 h-4 text-blue-500" />
                                   Posted {format(parseISO(ann.createdAt), 'MMM d, h:mm a')}
@@ -275,13 +279,13 @@ export default function Announcements() {
           </div>
           <div className="grid gap-3">
             {pastAnnouncements.map(ann => (
-              <div key={ann.id} className="bg-slate-900/40 p-5 rounded-[24px] flex items-center justify-between border border-white/5 opacity-60 hover:opacity-100 transition-all group overflow-hidden relative">
-                <div className="absolute inset-y-0 left-0 w-1 bg-white/10 group-hover:bg-blue-500/50 transition-colors" />
+              <div key={ann.id} className="bg-black/40 p-5 rounded-[24px] flex items-center justify-between border border-white/20 opacity-60 hover:opacity-100 transition-all group overflow-hidden relative">
+                <div className="absolute inset-y-0 left-0 w-1 bg-black/10 group-hover:bg-blue-500/50 transition-colors" />
                 <div className="text-left">
                   <h4 className="font-black text-white text-base uppercase italic tracking-tight">{ann.title}</h4>
                   <div className="text-[10px] text-white/40 mt-1.5 uppercase font-black tracking-widest italic flex items-center gap-3">
                     <span>Expired {format(parseISO(ann.expiresAt), 'MMM d, yyyy')}</span>
-                    <span className="w-1 h-1 rounded-full bg-white/20" />
+                    <span className="w-1 h-1 rounded-full bg-black/20" />
                     <span className="text-blue-400">Audited by {ann.viewedBy.length}</span>
                   </div>
                 </div>
@@ -306,9 +310,9 @@ export default function Announcements() {
         <DialogContent className="sm:max-w-[450px] rounded-2xl p-0 overflow-hidden">
           {selectedAnnouncement && (
             <>
-              <div className="p-6 bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+              <div className="p-6 bg-black dark:bg-slate-800 border-b border-white/30 dark:border-white/50">
                 <h3 className="font-bold text-lg leading-tight">{selectedAnnouncement.title}</h3>
-                <p className="text-xs text-slate-500 mt-2">
+                <p className="text-xs text-white mt-2">
                   Analytics for this announcement
                 </p>
               </div>
@@ -327,36 +331,36 @@ export default function Announcements() {
                 </div>
 
                 <div className="space-y-4">
-                  <h4 className="text-xs font-bold uppercase tracking-widest text-slate-400">Seen By</h4>
+                  <h4 className="text-xs font-bold uppercase tracking-widest text-white">Seen By</h4>
                   <div className="space-y-2">
                     {getViewers(selectedAnnouncement).map(view => (
-                      <div key={view.id} className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800/50 p-2 rounded-xl">
+                      <div key={view.id} className="flex items-center gap-3 bg-black dark:bg-slate-800/50 p-2 rounded-xl">
                         <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center text-green-600">
                           <CheckCircle2 className="w-4 h-4" />
                         </div>
                         <div className="flex-1">
                           <div className="text-xs font-bold">{view.fullName}</div>
-                          <div className="text-[10px] text-slate-500">{view.position}</div>
+                          <div className="text-[10px] text-white">{view.position}</div>
                         </div>
                       </div>
                     ))}
                     {getViewers(selectedAnnouncement).length === 0 && (
-                      <div className="text-center py-4 text-xs text-slate-500">No views recorded yet.</div>
+                      <div className="text-center py-4 text-xs text-white">No views recorded yet.</div>
                     )}
                   </div>
                 </div>
 
                 <div className="space-y-4">
-                  <h4 className="text-xs font-bold uppercase tracking-widest text-slate-400">Pending Receipt</h4>
+                  <h4 className="text-xs font-bold uppercase tracking-widest text-white">Pending Receipt</h4>
                   <div className="space-y-2">
                     {getUnviewed(selectedAnnouncement).map(notView => (
                       <div key={notView.id} className="flex items-center gap-3 bg-red-50/30 dark:bg-red-900/10 p-2 rounded-xl border border-red-100/30">
-                        <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400">
+                        <div className="w-8 h-8 rounded-lg bg-black flex items-center justify-center text-white">
                           <Clock className="w-4 h-4" />
                         </div>
                         <div className="flex-1">
                           <div className="text-xs font-bold">{notView.fullName}</div>
-                          <div className="text-[10px] text-slate-500">{notView.position}</div>
+                          <div className="text-[10px] text-white">{notView.position}</div>
                         </div>
                       </div>
                     ))}
@@ -371,12 +375,12 @@ export default function Announcements() {
       {/* Custom Confirmation Modal */}
       {deleteId && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-[9999]">
-          <div className="bg-slate-900 border border-white/10 p-8 rounded-3xl w-full max-w-sm shadow-2xl text-center">
+          <div className="bg-black border border-white/30 p-8 rounded-3xl w-full max-w-sm shadow-2xl text-center">
             <div className="w-16 h-16 bg-rose-500/10 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-4">
               <Trash2 className="w-8 h-8" />
             </div>
             <h2 className="text-xl font-bold text-white mb-2 tracking-tight">Confirm Removal</h2>
-            <p className="text-slate-400 text-sm mb-8 leading-relaxed">
+            <p className="text-white text-sm mb-8 leading-relaxed">
               Are you sure you want to remove this announcement? This action will permanently delete it from the board.
             </p>
             <div className="flex gap-3">
