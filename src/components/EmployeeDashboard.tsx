@@ -1412,7 +1412,7 @@ export default function EmployeeDashboard() {
       </Dialog>
 
       <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
-        <DialogContent className="sm:max-w-[400px] p-0 overflow-hidden bg-black dark:bg-black border-0 shadow-2xl rounded-2xl">
+        <DialogContent showCloseButton={false} className="sm:max-w-[400px] p-0 overflow-hidden bg-black dark:bg-black border-0 shadow-2xl rounded-2xl">
           <div className="bg-black p-6 text-white flex justify-between items-center">
             <h3 className="font-bold flex items-center gap-2">
               <Lock className="w-4 h-4" /> Security Settings

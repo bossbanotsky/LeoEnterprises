@@ -113,8 +113,8 @@ export default function LandingPage() {
             <span className="text-[10px] font-extrabold tracking-widest uppercase text-white">Operational Excellence & Upward Growth</span>
           </div>
           
-          <h1 className="text-4xl sm:text-6xl md:text-8xl lg:text-[90px] font-black tracking-tight leading-[1] mb-8 text-white">
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-black via-amber-700 to-amber-800">Trading and</span> <br /> 
+          <h1 className="text-4xl sm:text-6xl md:text-8xl lg:text-[90px] font-black tracking-tight leading-[1] mb-8 text-white animate-fade-in">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-amber-400 to-amber-600">Trading and</span> <br /> 
             <span className="font-light italic text-white">Industrial Prosperity.</span> 
           </h1>
           
@@ -233,7 +233,7 @@ export default function LandingPage() {
                 milestone: "Prospective Prosperity",
                 desc: "Expanded into high-command ERP systems, serving premier industrial clients as Bauan's trusted support core.",
                 icon: Gem,
-                theme: "border-emerald-300 bg-emerald-50 text-emerald-700"
+                theme: "border-emerald-500/30 bg-emerald-950/20 text-white"
               }
             ].map((step, idx) => (
               <div 

@@ -1512,7 +1512,7 @@ export default function Attendance() {
     
       {/* Proof Photo Modal */}
       <Dialog open={showProofPhoto} onOpenChange={setShowProofPhoto}>
-        <DialogContent className="max-w-2xl bg-black/90 border-white/30 p-0 overflow-hidden">
+        <DialogContent showCloseButton={false} className="max-w-2xl bg-black/90 border-white/30 p-0 overflow-hidden">
           {dailyProof?.photoUrl && (
             <div className="relative aspect-[4/3]">
               <img src={dailyProof.photoUrl} alt="Group Proof" className="w-full h-full object-contain shadow-2xl" />

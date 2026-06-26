@@ -119,7 +119,7 @@ export default function ServiceDetail() {
               <h1 className="text-4xl lg:text-7xl font-bold text-white tracking-[-0.04em] leading-[0.95] mb-8 uppercase italic">
                 {service.title}
               </h1>
-              <p className="text-xl text-[#6b7280] font-medium leading-relaxed mb-12 tracking-tight">
+              <p className="text-xl text-zinc-300 font-medium leading-relaxed mb-12 tracking-tight">
                 {service.description}
               </p>
               

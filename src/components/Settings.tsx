@@ -249,7 +249,7 @@ export default function Settings() {
 
       {/* Company Info Dialog */}
       <Dialog open={showCompanyDialog} onOpenChange={setShowCompanyDialog}>
-        <DialogContent className="sm:max-w-[425px] p-0 overflow-hidden bg-black dark:bg-black border-white/30 dark:border-slate-800 rounded-3xl">
+        <DialogContent showCloseButton={false} className="sm:max-w-[425px] p-0 overflow-hidden bg-black dark:bg-black border-white/30 dark:border-slate-800 rounded-3xl">
           <div className="p-6 border-b border-white/20 dark:border-slate-800 bg-black dark:bg-slate-800/50 flex justify-between items-center">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center">
@@ -323,7 +323,7 @@ export default function Settings() {
 
       {/* Password Change Dialog */}
       <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
-        <DialogContent className="sm:max-w-[425px] p-0 overflow-hidden bg-black dark:bg-black border-white/30 dark:border-slate-800 rounded-3xl">
+        <DialogContent showCloseButton={false} className="sm:max-w-[425px] p-0 overflow-hidden bg-black dark:bg-black border-white/30 dark:border-slate-800 rounded-3xl">
           <div className="p-6 border-b border-white/20 dark:border-slate-800 bg-black dark:bg-slate-800/50 flex justify-between items-center">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-rose-100 dark:bg-rose-900/40 flex items-center justify-center">

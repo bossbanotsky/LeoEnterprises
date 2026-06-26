@@ -4,7 +4,7 @@ import { db, handleFirestoreError, OperationType, addAuditLog } from '../firebas
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
 import { Employee } from '../types';
-import { Search, Plus, Briefcase, ChevronRight, Edit2, Trash2, CheckCircle2, Upload, Loader2, User, Key, ShieldCheck } from 'lucide-react';
+import { Search, Plus, Briefcase, ChevronRight, Edit2, Trash2, CheckCircle2, Upload, Loader2, User, Key, ShieldCheck, UsersRound } from 'lucide-react';
 import { createEmployeeAuth } from '../lib/adminAuth';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 import { Button } from './ui/button';
