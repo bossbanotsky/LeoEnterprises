@@ -932,15 +932,15 @@ export default function EmployeeDashboard() {
           </div>
           
           {selectedPayslip && (
-            <div className="overflow-x-auto w-full p-4">
+            <div className="overflow-x-auto w-full p-2 sm:p-4">
               <div 
                 ref={payslipRef}
-                className="min-w-[700px] p-8 payslip-mockup bg-white font-sans text-xs text-slate-900 border border-slate-200 rounded-xl select-none" 
+                className="w-full min-w-[600px] p-4 sm:p-8 payslip-mockup bg-white font-sans text-[10px] sm:text-xs text-slate-900 border border-slate-200 rounded-xl select-none" 
               >
               {/* Header */}
-              <div className="flex justify-between items-start mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-14 h-14 bg-white border border-slate-200 rounded-full flex items-center justify-center overflow-hidden shrink-0">
+              <div className="flex justify-between items-start mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-10 h-10 sm:w-14 sm:h-14 bg-white border border-slate-200 rounded-full flex items-center justify-center overflow-hidden shrink-0">
                     <img 
                       src="/src/assets/images/lp_logo_final_1781661072015.jpg" 
                       alt="L&P Logo" 
@@ -949,87 +949,87 @@ export default function EmployeeDashboard() {
                     />
                   </div>
                   <div>
-                    <h2 className="text-[17px] font-extrabold text-slate-900 tracking-tight leading-none uppercase">
+                    <h2 className="text-[14px] sm:text-[17px] font-extrabold text-slate-900 tracking-tight leading-none uppercase">
                       L&P TRADING AND SERVICES
                     </h2>
-                    <div className="text-[11px] font-semibold text-slate-500 mt-1">
+                    <div className="text-[10px] font-semibold text-slate-500 mt-0.5">
                       Santa Maria, Bauan, Batangas.
                     </div>
-                    <div className="text-[9px] font-medium text-slate-400 mt-0.5">
+                    <div className="text-[8px] font-medium text-slate-400 mt-0.5">
                       Phone: +639946064463 &nbsp;&nbsp; TIN: 000-000-000-000
                     </div>
                   </div>
                 </div>
                 <div className="text-right flex flex-col items-end">
-                  <div className="px-3.5 py-1.5 border border-slate-300 rounded-lg text-slate-800 font-extrabold text-[10px] uppercase tracking-wider">
+                  <div className="px-2 py-1 border border-slate-300 rounded text-slate-800 font-extrabold text-[9px] uppercase tracking-wider">
                     OFFICIAL PAYSLIP
                   </div>
-                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-tight mt-2.5">
+                  <div className="text-[9px] font-bold text-slate-400 uppercase tracking-tight mt-1.5">
                     {format(parseISO(selectedPayslip.generatedAt || selectedPayslip.createdAt || new Date().toISOString()), 'MMMM dd, yyyy')}
                   </div>
                 </div>
               </div>
 
-              <div className="border-b border-slate-200 my-4" />
+              <div className="border-b border-slate-200 my-3" />
 
               {/* Employee and Payroll Period */}
-              <div className="grid grid-cols-3 gap-4 mb-4 text-left">
+              <div className="grid grid-cols-3 gap-2 mb-3 text-left">
                 <div>
-                  <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">EMPLOYEE NAME</div>
-                  <div className="text-[15px] font-extrabold text-slate-950 mt-1 tracking-tight">
+                  <div className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">EMPLOYEE NAME</div>
+                  <div className="text-[12px] font-extrabold text-slate-950 mt-0.5 tracking-tight">
                     {selectedPayslip.employee?.fullName || selectedPayslip.employeeName}
                   </div>
                 </div>
                 <div>
-                  <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">PAYROLL PERIOD</div>
-                  <div className="text-[15px] font-extrabold text-slate-950 mt-1 tracking-tight">
+                  <div className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">PAYROLL PERIOD</div>
+                  <div className="text-[12px] font-extrabold text-slate-950 mt-0.5 tracking-tight">
                     {format(parseISO(selectedPayslip.startDate), 'yyyy-MM-dd')} to {format(parseISO(selectedPayslip.endDate), 'yyyy-MM-dd')}
                   </div>
                 </div>
                 <div>
-                  <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">PERIOD DAYS</div>
-                  <div className="text-[15px] font-extrabold text-slate-950 mt-1 tracking-tight">
+                  <div className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">PERIOD DAYS</div>
+                  <div className="text-[12px] font-extrabold text-slate-950 mt-0.5 tracking-tight">
                     {Math.round((parseISO(selectedPayslip.endDate).getTime() - parseISO(selectedPayslip.startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1} Days
                   </div>
                 </div>
               </div>
 
-              <div className="border-b border-slate-200 my-4" />
+              <div className="border-b border-slate-200 my-3" />
 
               {/* Metrics Card Row */}
-              <div className="grid grid-cols-6 border border-slate-200 rounded-xl bg-slate-50/50 py-3 px-1 mb-5 text-center items-center">
+              <div className="grid grid-cols-6 border border-slate-200 rounded-lg bg-slate-50/50 py-2 px-1 mb-4 text-center items-center">
                 <div>
-                  <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">PRESENT (P)</div>
-                  <div className="text-[18px] font-extrabold text-slate-900 mt-1">{selectedPayslip.totalPresent || 0}</div>
+                  <div className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">P</div>
+                  <div className="text-[14px] font-extrabold text-slate-900 mt-0.5">{selectedPayslip.totalPresent || 0}</div>
                 </div>
                 <div className="border-l border-slate-200">
-                  <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">ABSENT (A)</div>
-                  <div className="text-[18px] font-extrabold text-red-500 mt-1">{selectedPayslip.totalAbsent || 0}</div>
+                  <div className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">A</div>
+                  <div className="text-[14px] font-extrabold text-red-500 mt-0.5">{selectedPayslip.totalAbsent || 0}</div>
                 </div>
                 <div className="border-l border-slate-200">
-                  <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">HALFDAY (HD)</div>
-                  <div className="text-[18px] font-extrabold text-amber-500 mt-1">{selectedPayslip.totalHalfDays || 0}</div>
+                  <div className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">HD</div>
+                  <div className="text-[14px] font-extrabold text-amber-500 mt-0.5">{selectedPayslip.totalHalfDays || 0}</div>
                 </div>
                 <div className="border-l border-slate-200">
-                  <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">UNDERTIME (UT)</div>
-                  <div className="text-[18px] font-extrabold text-amber-500 mt-1">{selectedPayslip.totalUndertimeDays || 0}</div>
+                  <div className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">UT</div>
+                  <div className="text-[14px] font-extrabold text-amber-500 mt-0.5">{selectedPayslip.totalUndertimeDays || 0}</div>
                 </div>
                 <div className="border-l border-slate-200">
-                  <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">OVERTIME (OT)</div>
-                  <div className="text-[18px] font-extrabold text-emerald-600 mt-1 font-mono">
+                  <div className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">OT</div>
+                  <div className="text-[14px] font-extrabold text-emerald-600 mt-0.5 font-mono">
                     {selectedPayslip.totalOtHours ? `${selectedPayslip.totalOtHours}h` : '0h'}
                   </div>
                 </div>
                 <div className="border-l border-slate-200">
-                  <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">BASIC DAILY RATE</div>
-                  <div className="text-[18px] font-extrabold text-slate-900 mt-1">
-                    ₱{(selectedPayslip.employee?.dailySalary || selectedPayslip.baseRate || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  <div className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">DAILY RATE</div>
+                  <div className="text-[14px] font-extrabold text-slate-900 mt-0.5">
+                    ₱{(selectedPayslip.employee?.dailySalary || selectedPayslip.baseRate || 0).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                   </div>
                 </div>
               </div>
 
               {/* Main 2 Column Details */}
-              <div className="grid grid-cols-2 gap-8 text-left">
+              <div className="grid grid-cols-2 gap-4 text-left">
                 {/* Left Column: Earnings */}
                 <div>
                   <div className="flex justify-between items-center font-bold text-[10px] text-slate-900 uppercase tracking-wider border-b border-slate-300 pb-1.5 mb-2.5">
