@@ -95,6 +95,200 @@ button:active {
 .table-mini th { text-align: left; background: #eee; padding: 4px; }
 .table-mini td { border-bottom: 1px solid #eee; padding: 4px; }
 
+/* Custom Styles for pure black-and-white payslip as requested */
+.payslip-mockup,
+.payslip-mockup * {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  border-color: #000000 !important;
+  text-decoration-color: #000000 !important;
+  outline-color: #000000 !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+.payslip-mockup {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  border: 3px double #000000 !important; /* Premium double line border around the entire payslip */
+}
+
+/* Ensure all border elements are crisp solid black lines */
+.payslip-mockup [class*="border"] {
+  border-color: #000000 !important;
+  border-style: solid !important;
+}
+
+/* Ensure background of divs, spans, p tags, th, td etc. are white */
+.payslip-mockup div,
+.payslip-mockup span,
+.payslip-mockup p,
+.payslip-mockup h1,
+.payslip-mockup h2,
+.payslip-mockup h3,
+.payslip-mockup h4,
+.payslip-mockup table,
+.payslip-mockup tr,
+.payslip-mockup td,
+.payslip-mockup th {
+  background-color: #ffffff !important;
+  background-image: none !important;
+  color: #000000 !important;
+}
+
+/* Ensure SVGs or icons are rendered in clean black strokes */
+.payslip-mockup svg,
+.payslip-mockup svg * {
+  stroke: #000000 !important;
+  fill: none !important;
+}
+
+/* Exclude the company logo image so it remains visible with its original colors */
+.payslip-mockup img {
+  background-color: transparent !important;
+  border-color: transparent !important;
+}
+
+/* Mobile optimizations for Tecno Camon 40 Pro and other phones */
+@media (max-width: 768px) {
+  .payslip-mockup {
+    width: 100% !important;
+    max-width: 100% !important;
+    aspect-ratio: auto !important; /* Removes the tall A4 aspect ratio so height is greatly reduced! */
+    height: auto !important;
+    min-height: auto !important;
+    padding: 0 !important;
+    border: 3px double #000000 !important;
+    margin: 0 !important;
+  }
+
+  /* The outer padding in the inner container of the payslip */
+  .payslip-mockup > div {
+    padding: 10px 12px !important; /* Compact padding for small screens */
+  }
+
+  /* Reduce all font sizes globally inside the mockup on mobile */
+  .payslip-mockup,
+  .payslip-mockup * {
+    font-size: 7.5px !important; /* Compact text that perfectly fits mobile screen width */
+    line-height: 1.15 !important;
+    letter-spacing: -0.015em !important;
+  }
+
+  /* Maintain typography hierarchy in the compact layout */
+  .payslip-mockup h2,
+  .payslip-mockup h2 * {
+    font-size: 11px !important;
+    font-weight: 800 !important;
+  }
+  
+  .payslip-mockup h3,
+  .payslip-mockup h3 * {
+    font-size: 9px !important;
+    font-weight: 700 !important;
+  }
+
+  /* Compact spacing for buttons/badges inside mockup */
+  .payslip-mockup .px-2.py-1,
+  .payslip-mockup .px-2.py-1\.5 {
+    padding: 2px 4px !important;
+  }
+
+  /* Reduce element margins to drastically decrease vertical height */
+  .payslip-mockup .mb-6,
+  .payslip-mockup .my-6,
+  .payslip-mockup .mb-4,
+  .payslip-mockup .my-4,
+  .payslip-mockup .mb-3,
+  .payslip-mockup .my-3 {
+    margin-bottom: 4px !important;
+    margin-top: 4px !important;
+  }
+  
+  .payslip-mockup .mt-6,
+  .payslip-mockup .mt-4 {
+    margin-top: 4px !important;
+  }
+
+  /* Reduce spacer helper classes */
+  .payslip-mockup .space-y-2 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 3px !important;
+  }
+
+  .payslip-mockup .space-y-3 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 4px !important;
+  }
+
+  .payslip-mockup .pb-4,
+  .payslip-mockup .pb-3 {
+    padding-bottom: 3px !important;
+  }
+
+  /* Compact metrics grids (P, A, HD, UT, OT, Daily Rate) */
+  .payslip-mockup .grid-cols-6 > div {
+    padding-top: 2px !important;
+    padding-bottom: 2px !important;
+  }
+
+  /* Adjust inline text size utility classes specifically inside mockup */
+  .payslip-mockup .text-[14px],
+  .payslip-mockup .text-sm {
+    font-size: 10px !important;
+  }
+  
+  .payslip-mockup .text-[12px],
+  .payslip-mockup .text-xs {
+    font-size: 8.5px !important;
+  }
+
+  .payslip-mockup .text-[10px],
+  .payslip-mockup .text-[11px] {
+    font-size: 8px !important;
+  }
+
+  .payslip-mockup .text-[8px],
+  .payslip-mockup .text-[9px] {
+    font-size: 6.5px !important;
+  }
+
+  /* Shrink checkmark circles and icons to avoid displacement */
+  .payslip-mockup svg {
+    width: 9px !important;
+    height: 9px !important;
+  }
+
+  .payslip-mockup .h-5.w-5 {
+    width: 12px !important;
+    height: 12px !important;
+  }
+
+  /* Shrink the company logo dimensions */
+  .payslip-mockup img {
+    width: 24px !important;
+    height: 24px !important;
+    max-width: 24px !important;
+    max-height: 24px !important;
+  }
+
+  .payslip-mockup .w-14.h-14,
+  .payslip-mockup .w-10.h-10 {
+    width: 24px !important;
+    height: 24px !important;
+  }
+
+  /* Force padding on inner columns inside mockup to remain compact */
+  .payslip-mockup .p-6,
+  .payslip-mockup .p-12,
+  .payslip-mockup .sm\:p-12 {
+    padding: 8px !important;
+  }
+
+  /* Reduce standard gap distances */
+  .payslip-mockup .gap-4 {
+    gap: 8px !important;
+  }
+}
+
 @media print {
   @page {
     size: A5 landscape;

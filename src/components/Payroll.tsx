@@ -951,9 +951,9 @@ export default function Payroll() {
     setIsExporting(true);
     try {
       const pdf = new jsPDF({
-        orientation: "landscape",
+        orientation: "portrait",
         unit: "mm",
-        format: "a5"
+        format: "a4"
       });
       
       const pdfWidth = pdf.internal.pageSize.getWidth();
@@ -1059,44 +1059,39 @@ export default function Payroll() {
       await new Promise(resolve => setTimeout(resolve, 100));
 
       const canvas = await html2canvas(payslipRef.current, {
-        scale: 2,
+        scale: 3,
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
+        width: 794,
+        height: 1123,
         onclone: (clonedDoc) => {
           const payslip = clonedDoc.querySelector('.payslip-mockup');
           if (payslip) {
             const htmlPayslip = payslip as HTMLElement;
-            htmlPayslip.style.width = '800px';
+            htmlPayslip.style.width = '794px';
+            htmlPayslip.style.height = '1123px';
             htmlPayslip.style.maxWidth = 'none';
             htmlPayslip.style.maxHeight = 'none';
-            htmlPayslip.style.overflow = 'visible';
-            htmlPayslip.style.height = htmlPayslip.scrollHeight + 'px';
-            htmlPayslip.style.padding = '30px';
+            htmlPayslip.style.overflow = 'hidden';
+            htmlPayslip.style.backgroundColor = '#ffffff';
+            htmlPayslip.style.padding = '40px';
+            htmlPayslip.style.margin = '0';
+            htmlPayslip.style.borderRadius = '0';
             
             sanitizeStyles(htmlPayslip);
           }
         }
       });
       
-      const imgData = canvas.toDataURL('image/png');
+      const imgData = canvas.toDataURL('image/png', 1.0);
       const pdf = new jsPDF({
-        orientation: 'landscape',
-        unit: 'mm',
-        format: 'a5'
+        orientation: 'portrait',
+        unit: 'px',
+        format: [794, 1123]
       });
       
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      
-      const imgRatio = canvas.height / canvas.width;
-      const finalWidth = pdfWidth - 10;
-      const finalHeight = finalWidth * imgRatio;
-      
-      const marginX = (pdfWidth - finalWidth) / 2;
-      const marginY = (pdfHeight - finalHeight) / 2;
-
-      pdf.addImage(imgData, 'PNG', marginX, Math.max(5, marginY), finalWidth, Math.min(finalHeight, pdfHeight - 10));
+      pdf.addImage(imgData, 'PNG', 0, 0, 794, 1123);
       pdf.save(`print_payslip_${(selectedPayslip.employee?.fullName || selectedPayslip.employeeName || 'Staff').replace(/\s+/g, '_')}_${startDate}.pdf`);
       
     } catch (error) {
@@ -1114,20 +1109,24 @@ export default function Payroll() {
       await new Promise(resolve => setTimeout(resolve, 100));
 
       const canvas = await html2canvas(payslipRef.current, {
-        scale: 2,
+        scale: 3,
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
+        width: 794,
+        height: 1123,
         onclone: (clonedDoc) => {
           const payslip = clonedDoc.querySelector('.payslip-mockup');
           if (payslip) {
             const htmlPayslip = payslip as HTMLElement;
-            htmlPayslip.style.width = '800px';
+            htmlPayslip.style.width = '794px';
+            htmlPayslip.style.height = '1123px';
             htmlPayslip.style.maxWidth = 'none';
             htmlPayslip.style.maxHeight = 'none';
-            htmlPayslip.style.overflow = 'visible';
-            htmlPayslip.style.height = htmlPayslip.scrollHeight + 'px';
-            htmlPayslip.style.padding = '30px';
+            htmlPayslip.style.overflow = 'hidden';
+            htmlPayslip.style.padding = '40px';
+            htmlPayslip.style.margin = '0';
+            htmlPayslip.style.borderRadius = '0';
 
             sanitizeStyles(htmlPayslip);
           }
@@ -1136,22 +1135,12 @@ export default function Payroll() {
       
       const imgData = canvas.toDataURL('image/png', 1.0);
       const pdf = new jsPDF({
-        orientation: 'landscape',
-        unit: 'mm',
-        format: 'a5'
+        orientation: 'portrait',
+        unit: 'px',
+        format: [794, 1123]
       });
       
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      
-      const imgRatio = canvas.height / canvas.width;
-      const finalWidth = pdfWidth - 10;
-      const finalHeight = finalWidth * imgRatio;
-      
-      const marginX = (pdfWidth - finalWidth) / 2;
-      const marginY = (pdfHeight - finalHeight) / 2;
-
-      pdf.addImage(imgData, 'PNG', marginX, Math.max(5, marginY), finalWidth, Math.min(finalHeight, pdfHeight - 10));
+      pdf.addImage(imgData, 'PNG', 0, 0, 794, 1123);
       pdf.save(`payslip_${(selectedPayslip.employee?.fullName || selectedPayslip.employeeName || 'Staff').replace(/\s+/g, '_')}_${startDate}.pdf`);
     } catch (error) {
       console.error('Error exporting PDF:', error);
@@ -1166,9 +1155,9 @@ export default function Payroll() {
     setIsExporting(true);
     try {
       const pdf = new jsPDF({
-        orientation: 'landscape',
+        orientation: 'portrait',
         unit: 'mm',
-        format: 'a5'
+        format: 'a4'
       });
       
       const pdfWidth = pdf.internal.pageSize.getWidth();
@@ -2913,10 +2902,18 @@ export default function Payroll() {
                     </label>
                   </div>
                 </div>
-                <div 
-                  ref={payslipRef}
-                  className="p-8 payslip-mockup bg-white font-sans text-xs text-slate-900 border border-slate-200 rounded-xl select-none" 
-                >
+                <div className="bg-black/50 p-4 sm:p-10 flex justify-center w-full min-h-[500px] overflow-x-hidden overflow-y-auto">
+                  <div 
+                    ref={payslipRef}
+                    className="bg-white shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)] relative payslip-mockup transition-all duration-300 origin-top"
+                    style={{
+                      width: '100%',
+                      maxWidth: '794px',
+                      aspectRatio: '210 / 297',
+                      minHeight: 'fit-content',
+                    }}
+                  >
+                    <div className="p-6 sm:p-12 h-full flex flex-col font-sans text-slate-900">
               <div className="flex justify-between border-b border-slate-200 pb-3 mb-3">
                 <div>
                   <div className="flex items-center gap-3">
@@ -3306,7 +3303,9 @@ export default function Payroll() {
                   <span>Generated via L&P Payroll System</span>
                 </div>
               </div>
-            </>
+            </div>
+          </div>
+          </>
           )
         )}
         </DialogContent>

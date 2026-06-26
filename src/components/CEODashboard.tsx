@@ -285,23 +285,26 @@ export default function CEODashboard() {
       await new Promise(resolve => setTimeout(resolve, 100));
 
       const canvas = await html2canvas(payslipRef.current, {
-        scale: 2,
+        scale: 3,
         useCORS: true,
         logging: false,
         backgroundColor: "#ffffff",
-        width: payslipRef.current.scrollWidth,
+        width: 794,
+        height: 1123,
         onclone: (clonedDoc) => {
           const payslip = clonedDoc.querySelector('.payslip-mockup');
           if (payslip) {
             const htmlPayslip = payslip as HTMLElement;
-            htmlPayslip.style.width = '800px';
+            htmlPayslip.style.width = '794px';
+            htmlPayslip.style.height = '1123px';
             htmlPayslip.style.maxWidth = 'none';
             htmlPayslip.style.maxHeight = 'none';
-            htmlPayslip.style.overflow = 'visible';
-            htmlPayslip.style.height = 'auto';
+            htmlPayslip.style.overflow = 'hidden';
             htmlPayslip.style.color = '#000000';
             htmlPayslip.style.backgroundColor = '#ffffff';
-            htmlPayslip.style.padding = '30px';
+            htmlPayslip.style.padding = '40px';
+            htmlPayslip.style.margin = '0';
+            htmlPayslip.style.borderRadius = '0';
             
             sanitizeStyles(htmlPayslip);
           }
@@ -310,22 +313,12 @@ export default function CEODashboard() {
 
       const imgData = canvas.toDataURL("image/png", 1.0);
       const pdf = new jsPDF({
-        orientation: "landscape",
-        unit: "mm",
-        format: "a5",
+        orientation: "portrait",
+        unit: "px",
+        format: [794, 1123],
       });
 
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      
-      const imgRatio = canvas.height / canvas.width;
-      const finalWidth = pdfWidth - 10;
-      const finalHeight = finalWidth * imgRatio;
-      
-      const marginX = (pdfWidth - finalWidth) / 2;
-      const marginY = (pdfHeight - finalHeight) / 2;
-      
-      pdf.addImage(imgData, "PNG", marginX, Math.max(5, marginY), finalWidth, Math.min(finalHeight, pdfHeight - 10));
+      pdf.addImage(imgData, "PNG", 0, 0, 794, 1123);
       pdf.save(
         `payslip_${(selectedPayslip.employee?.fullName || 'Employee').replace(/\s+/g, "_")}_${selectedPayslip.startDate}.pdf`,
       );
@@ -343,23 +336,26 @@ export default function CEODashboard() {
       await new Promise(resolve => setTimeout(resolve, 100));
 
       const canvas = await html2canvas(payslipRef.current, {
-        scale: 2,
+        scale: 3,
         useCORS: true,
         logging: false,
         backgroundColor: "#ffffff",
-        width: payslipRef.current.scrollWidth,
+        width: 794,
+        height: 1123,
         onclone: (clonedDoc) => {
           const payslip = clonedDoc.querySelector('.payslip-mockup');
           if (payslip) {
             const htmlPayslip = payslip as HTMLElement;
-            htmlPayslip.style.width = '800px';
+            htmlPayslip.style.width = '794px';
+            htmlPayslip.style.height = '1123px';
             htmlPayslip.style.maxWidth = 'none';
             htmlPayslip.style.maxHeight = 'none';
-            htmlPayslip.style.overflow = 'visible';
-            htmlPayslip.style.height = 'auto';
+            htmlPayslip.style.overflow = 'hidden';
             htmlPayslip.style.color = '#000000';
             htmlPayslip.style.backgroundColor = '#ffffff';
-            htmlPayslip.style.padding = '30px';
+            htmlPayslip.style.padding = '40px';
+            htmlPayslip.style.margin = '0';
+            htmlPayslip.style.borderRadius = '0';
             
             sanitizeStyles(htmlPayslip);
           }
@@ -368,22 +364,12 @@ export default function CEODashboard() {
       
       const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF({
-        orientation: "landscape",
-        unit: "mm",
-        format: "a5",
+        orientation: "portrait",
+        unit: "px",
+        format: [794, 1123],
       });
       
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      
-      const imgRatio = canvas.height / canvas.width;
-      const finalWidth = pdfWidth - 10;
-      const finalHeight = finalWidth * imgRatio;
-      
-      const marginX = (pdfWidth - finalWidth) / 2;
-      const marginY = (pdfHeight - finalHeight) / 2;
-      
-      pdf.addImage(imgData, "PNG", marginX, Math.max(5, marginY), finalWidth, Math.min(finalHeight, pdfHeight - 10));
+      pdf.addImage(imgData, "PNG", 0, 0, 794, 1123);
       pdf.save(`print_payslip_${(selectedPayslip.employee?.fullName || 'Employee').replace(/\s+/g, "_")}_${selectedPayslip.startDate}.pdf`);
     } catch (error) {
       console.error("Error printing PDF:", error);
@@ -661,7 +647,18 @@ export default function CEODashboard() {
             <DialogTitle>Payslip Preview - {selectedPayslip?.employee?.fullName}</DialogTitle>
           </DialogHeader>
           <div className="overflow-x-auto w-full p-2">
-            <div ref={payslipRef} className="payslip-mockup bg-white p-8 rounded-xl text-slate-900 border border-slate-200 shadow-sm min-w-[600px] font-sans">
+           <div className="bg-slate-900/50 p-4 sm:p-10 flex justify-center w-full min-h-[500px] overflow-x-hidden overflow-y-auto">
+             <div 
+                ref={payslipRef}
+                className="bg-white shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)] relative payslip-mockup transition-all duration-300 origin-top"
+                style={{
+                  width: '100%',
+                  maxWidth: '794px',
+                  aspectRatio: '210 / 297',
+                  minHeight: 'fit-content',
+                }}
+             >
+                <div className="p-6 sm:p-12 h-full flex flex-col font-sans text-slate-900">
                <div className="flex justify-between items-start border-b-2 border-slate-900 pb-4 mb-6">
                   <div>
                     <h2 className="text-3xl font-black uppercase italic tracking-tighter text-slate-900">Payslip</h2>
@@ -732,8 +729,10 @@ export default function CEODashboard() {
                   </div>
                   <p className="text-[8px] text-slate-400 font-mono italic tracking-tighter">Generated: {selectedPayslip?.generatedAt || new Date().toISOString()}</p>
                </div>
+               </div>
             </div>
           </div>
+        </div>
           <div className="flex justify-end gap-3 p-4 bg-white border-t border-slate-200 -mx-6 -mb-6">
             <Button variant="outline" onClick={handleExportPDF} disabled={isExporting} className="gap-2">
               {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}

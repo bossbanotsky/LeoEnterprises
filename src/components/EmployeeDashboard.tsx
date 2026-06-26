@@ -360,47 +360,39 @@ export default function EmployeeDashboard() {
       await new Promise(resolve => setTimeout(resolve, 100));
 
       const canvas = await html2canvas(payslipRef.current, {
-        scale: 2,
+        scale: 3, // Higher scale for 300 DPI quality
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
-        width: payslipRef.current.scrollWidth,
-        height: payslipRef.current.scrollHeight,
+        width: 794,
+        height: 1123,
         onclone: (clonedDoc) => {
           const payslip = clonedDoc.querySelector('.payslip-mockup');
           if (payslip) {
             const htmlPayslip = payslip as HTMLElement;
-            htmlPayslip.style.width = '800px';
+            htmlPayslip.style.width = '794px';
+            htmlPayslip.style.height = '1123px';
             htmlPayslip.style.maxWidth = 'none';
             htmlPayslip.style.maxHeight = 'none';
-            htmlPayslip.style.overflow = 'visible';
-            htmlPayslip.style.height = htmlPayslip.scrollHeight + 'px';
+            htmlPayslip.style.overflow = 'hidden';
             htmlPayslip.style.backgroundColor = '#ffffff';
-            htmlPayslip.style.padding = '30px';
+            htmlPayslip.style.padding = '40px';
+            htmlPayslip.style.margin = '0';
+            htmlPayslip.style.borderRadius = '0';
             
             sanitizeStyles(htmlPayslip);
           }
         }
       });
       
-      const imgData = canvas.toDataURL('image/png');
+      const imgData = canvas.toDataURL('image/png', 1.0);
       const pdf = new jsPDF({
-        orientation: 'landscape',
-        unit: 'mm',
-        format: 'a5'
+        orientation: 'portrait',
+        unit: 'px',
+        format: [794, 1123]
       });
       
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      
-      const imgRatio = canvas.height / canvas.width;
-      const finalWidth = pdfWidth - 10;
-      const finalHeight = finalWidth * imgRatio;
-      
-      const marginX = (pdfWidth - finalWidth) / 2;
-      const marginY = (pdfHeight - finalHeight) / 2;
-
-      pdf.addImage(imgData, 'PNG', marginX, Math.max(5, marginY), finalWidth, Math.min(finalHeight, pdfHeight - 10));
+      pdf.addImage(imgData, 'PNG', 0, 0, 794, 1123);
       pdf.save(`print_payslip_${(selectedPayslip.employee?.fullName || selectedPayslip.employeeName || 'unknown').replace(/\s+/g, '_')}_${selectedPayslip.startDate}.pdf`);
       
     } catch (error) {
@@ -418,20 +410,24 @@ export default function EmployeeDashboard() {
       await new Promise(resolve => setTimeout(resolve, 100));
 
       const canvas = await html2canvas(payslipRef.current, {
-        scale: 2,
+        scale: 3,
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
+        width: 794,
+        height: 1123,
         onclone: (clonedDoc) => {
           const payslip = clonedDoc.querySelector('.payslip-mockup');
           if (payslip) {
             const htmlPayslip = payslip as HTMLElement;
-            htmlPayslip.style.width = '800px';
+            htmlPayslip.style.width = '794px';
+            htmlPayslip.style.height = '1123px';
             htmlPayslip.style.maxWidth = 'none';
             htmlPayslip.style.maxHeight = 'none';
-            htmlPayslip.style.overflow = 'visible';
-            htmlPayslip.style.height = htmlPayslip.scrollHeight + 'px';
-            htmlPayslip.style.padding = '30px';
+            htmlPayslip.style.overflow = 'hidden';
+            htmlPayslip.style.padding = '40px';
+            htmlPayslip.style.margin = '0';
+            htmlPayslip.style.borderRadius = '0';
 
             sanitizeStyles(htmlPayslip);
           }
@@ -440,22 +436,12 @@ export default function EmployeeDashboard() {
       
       const imgData = canvas.toDataURL('image/png', 1.0);
       const pdf = new jsPDF({
-        orientation: 'landscape',
-        unit: 'mm',
-        format: 'a5'
+        orientation: 'portrait',
+        unit: 'px',
+        format: [794, 1123]
       });
       
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      
-      const imgRatio = canvas.height / canvas.width;
-      const finalWidth = pdfWidth - 10;
-      const finalHeight = finalWidth * imgRatio;
-      
-      const marginX = (pdfWidth - finalWidth) / 2;
-      const marginY = (pdfHeight - finalHeight) / 2;
-
-      pdf.addImage(imgData, 'PNG', marginX, Math.max(5, marginY), finalWidth, Math.min(finalHeight, pdfHeight - 10));
+      pdf.addImage(imgData, 'PNG', 0, 0, 794, 1123);
       pdf.save(`payslip_${(selectedPayslip.employee?.fullName || selectedPayslip.employeeName || 'unknown').replace(/\s+/g, '_')}_${selectedPayslip.startDate}.pdf`);
     } catch (error) {
       console.error('Error exporting PDF:', error);
@@ -785,9 +771,9 @@ export default function EmployeeDashboard() {
                 setIsExporting(true);
                 try {
                   const pdf = new jsPDF({
-                    orientation: "landscape",
+                    orientation: "portrait",
                     unit: "mm",
-                    format: "a5"
+                    format: "a4"
                   });
                   
                   const pdfWidth = pdf.internal.pageSize.getWidth();
@@ -799,42 +785,33 @@ export default function EmployeeDashboard() {
                     await new Promise(resolve => setTimeout(resolve, i === 0 ? 300 : 800));
                     
                     if (payslipRef.current) {
-                      
                       const canvas = await html2canvas(payslipRef.current, {
                         scale: 2,
                         useCORS: true,
                         logging: false,
                         backgroundColor: '#ffffff',
-                        width: payslipRef.current.scrollWidth,
-                        height: payslipRef.current.scrollHeight,
                         onclone: (clonedDoc) => {
-                          const payslipEl = clonedDoc.querySelector('.payslip-mockup');
+                          const payslipEl = clonedDoc.querySelector('.payslip-mockup') as HTMLElement;
                           if (payslipEl) {
-                            const htmlPayslip = payslipEl as HTMLElement;
-                            htmlPayslip.style.width = '800px';
-                            htmlPayslip.style.maxWidth = 'none';
-                            htmlPayslip.style.maxHeight = 'none';
-                            htmlPayslip.style.overflow = 'visible';
-                            htmlPayslip.style.height = htmlPayslip.scrollHeight + 'px';
-                            htmlPayslip.style.padding = '30px';
-
-                            sanitizeStyles(htmlPayslip);
+                            payslipEl.style.width = '794px';
+                            payslipEl.style.height = '1123px';
+                            payslipEl.style.padding = '40px';
+                            sanitizeStyles(payslipEl);
                           }
                         }
                       });
                       
-                      
                       const imgData = canvas.toDataURL('image/png');
                       const imgRatio = canvas.height / canvas.width;
                       
-                      const finalWidth = pdfWidth - 10;
+                      const finalWidth = pdfWidth - 20;
                       const finalHeight = finalWidth * imgRatio;
                       
                       const marginX = (pdfWidth - finalWidth) / 2;
-                      const marginY = (pdfHeight - finalHeight) / 2;
+                      const marginY = 10;
                       
                       if (i > 0) pdf.addPage();
-                      pdf.addImage(imgData, 'PNG', marginX, Math.max(5, marginY), finalWidth, Math.min(finalHeight, pdfHeight - 10));
+                      pdf.addImage(imgData, 'PNG', marginX, marginY, finalWidth, Math.min(finalHeight, pdfHeight - 20));
                     }
                   }
                   
@@ -906,7 +883,7 @@ export default function EmployeeDashboard() {
 
       {/* Payslip Dialog */}
       <Dialog open={!!selectedPayslip} onOpenChange={(open) => !open && setSelectedPayslip(null)}>
-        <DialogContent className="max-w-4xl w-[95vw] p-0 overflow-hidden bg-black rounded-2xl border border-white/10 shadow-2xl">
+        <DialogContent className="max-w-[850px] w-[98vw] p-0 overflow-hidden bg-slate-900 rounded-2xl border border-white/10 shadow-2xl flex flex-col h-[95vh] sm:h-[90vh]">
           <div className="p-2 border-b border-white/10 flex justify-between items-center bg-slate-900/90 backdrop-blur-sm sticky top-0 z-10">
             <DialogTitle className="flex items-center gap-2 text-white font-black uppercase italic tracking-tight text-sm">
               <FileText className="w-3.5 h-3.5 text-blue-600" />
@@ -937,11 +914,18 @@ export default function EmployeeDashboard() {
           </div>
           
           {selectedPayslip && (
-            <div className="overflow-x-auto w-full p-2 sm:p-4">
-                <div 
-                  ref={payslipRef}
-                  className="w-full min-w-[600px] p-4 sm:p-8 payslip-mockup bg-white font-sans text-[10px] sm:text-xs text-slate-900 border border-slate-200 rounded-xl select-none" 
-                >
+            <div className="flex justify-center w-full bg-slate-900/50 p-4 sm:p-10 overflow-x-hidden overflow-y-auto min-h-[500px]">
+              <div 
+                ref={payslipRef}
+                className="bg-white shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)] relative payslip-mockup transition-all duration-300 origin-top"
+                style={{
+                  width: '100%',
+                  maxWidth: '794px',
+                  aspectRatio: '210 / 297',
+                  minHeight: 'fit-content',
+                }}
+              >
+                <div className="p-6 sm:p-12 h-full flex flex-col font-sans text-slate-900">
               {/* Header */}
               <div className="flex justify-between items-start mb-3">
                 <div className="flex items-center gap-2">
@@ -1294,9 +1278,10 @@ export default function EmployeeDashboard() {
               </div>
             </div>
           </div>
-          )}
-        </DialogContent>
-      </Dialog>
+        </div>
+      )}
+    </DialogContent>
+  </Dialog>
 
       {/* Profile Edit Dialog */}
       <Dialog open={isProfileEditOpen} onOpenChange={setIsProfileEditOpen}>
