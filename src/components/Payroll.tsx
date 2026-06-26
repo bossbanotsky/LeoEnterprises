@@ -1072,7 +1072,7 @@ export default function Payroll() {
             htmlPayslip.style.maxHeight = 'none';
             htmlPayslip.style.overflow = 'visible';
             htmlPayslip.style.height = htmlPayslip.scrollHeight + 'px';
-            htmlPayslip.style.padding = '40px';
+            htmlPayslip.style.padding = '30px';
             
             sanitizeStyles(htmlPayslip);
           }
@@ -1081,39 +1081,23 @@ export default function Payroll() {
       
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF({
-        orientation: 'portrait',
+        orientation: 'landscape',
         unit: 'mm',
-        format: 'a4'
+        format: 'a5'
       });
       
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       
-      if (dupSingleOnA4) {
-        const imgRatio = canvas.height / canvas.width;
-        const maxHalfHeight = (pdfHeight - 30) / 2; // ~133.5mm
-        const finalWidth = Math.min(pdfWidth - 20, maxHalfHeight / imgRatio);
-        const finalHeight = finalWidth * imgRatio;
-        const marginX = (pdfWidth - finalWidth) / 2;
-        
-        // Copy 1 (Top Half)
-        const marginY1 = 10 + (maxHalfHeight - finalHeight) / 2;
-        pdf.addImage(imgData, 'PNG', marginX, marginY1, finalWidth, finalHeight);
-        
-        // cutting line
-        pdf.setDrawColor(220, 220, 220);
-        pdf.setLineWidth(0.15);
-        pdf.line(10, 148.5, pdfWidth - 10, 148.5);
-        
-        // Copy 2 (Bottom Half)
-        const marginY2 = 152 + (maxHalfHeight - finalHeight) / 2;
-        pdf.addImage(imgData, 'PNG', marginX, marginY2, finalWidth, finalHeight);
-      } else {
-        addLongImageToPdf(pdf, imgData, canvas.height, canvas.width, pdfWidth, pdfHeight, true);
-      }
+      const imgRatio = canvas.height / canvas.width;
+      const finalWidth = pdfWidth - 10;
+      const finalHeight = finalWidth * imgRatio;
       
-      pdf.autoPrint();
-      window.open(pdf.output('bloburl'), '_blank');
+      const marginX = (pdfWidth - finalWidth) / 2;
+      const marginY = (pdfHeight - finalHeight) / 2;
+
+      pdf.addImage(imgData, 'PNG', marginX, Math.max(5, marginY), finalWidth, Math.min(finalHeight, pdfHeight - 10));
+      pdf.save(`print_payslip_${(selectedPayslip.employee?.fullName || selectedPayslip.employeeName || 'Staff').replace(/\s+/g, '_')}_${startDate}.pdf`);
       
     } catch (error) {
       console.error('Error printing PDF:', error);
@@ -1143,7 +1127,7 @@ export default function Payroll() {
             htmlPayslip.style.maxHeight = 'none';
             htmlPayslip.style.overflow = 'visible';
             htmlPayslip.style.height = htmlPayslip.scrollHeight + 'px';
-            htmlPayslip.style.padding = '40px';
+            htmlPayslip.style.padding = '30px';
 
             sanitizeStyles(htmlPayslip);
           }
@@ -1152,38 +1136,23 @@ export default function Payroll() {
       
       const imgData = canvas.toDataURL('image/png', 1.0);
       const pdf = new jsPDF({
-        orientation: 'portrait',
+        orientation: 'landscape',
         unit: 'mm',
-        format: 'a4'
+        format: 'a5'
       });
       
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       
-      if (dupSingleOnA4) {
-        const imgRatio = canvas.height / canvas.width;
-        const maxHalfHeight = (pdfHeight - 30) / 2; // ~133.5mm
-        const finalWidth = Math.min(pdfWidth - 20, maxHalfHeight / imgRatio);
-        const finalHeight = finalWidth * imgRatio;
-        const marginX = (pdfWidth - finalWidth) / 2;
-        
-        // Copy 1 (Top Half)
-        const marginY1 = 10 + (maxHalfHeight - finalHeight) / 2;
-        pdf.addImage(imgData, 'PNG', marginX, marginY1, finalWidth, finalHeight);
-        
-        // cutting line
-        pdf.setDrawColor(220, 220, 220);
-        pdf.setLineWidth(0.15);
-        pdf.line(10, 148.5, pdfWidth - 10, 148.5);
-        
-        // Copy 2 (Bottom Half)
-        const marginY2 = 152 + (maxHalfHeight - finalHeight) / 2;
-        pdf.addImage(imgData, 'PNG', marginX, marginY2, finalWidth, finalHeight);
-      } else {
-        addLongImageToPdf(pdf, imgData, canvas.height, canvas.width, pdfWidth, pdfHeight, true);
-      }
+      const imgRatio = canvas.height / canvas.width;
+      const finalWidth = pdfWidth - 10;
+      const finalHeight = finalWidth * imgRatio;
       
-      pdf.save(`payslip_${selectedPayslip.employee.fullName.replace(/\s+/g, '_')}_${startDate}.pdf`);
+      const marginX = (pdfWidth - finalWidth) / 2;
+      const marginY = (pdfHeight - finalHeight) / 2;
+
+      pdf.addImage(imgData, 'PNG', marginX, Math.max(5, marginY), finalWidth, Math.min(finalHeight, pdfHeight - 10));
+      pdf.save(`payslip_${(selectedPayslip.employee?.fullName || selectedPayslip.employeeName || 'Staff').replace(/\s+/g, '_')}_${startDate}.pdf`);
     } catch (error) {
       console.error('Error exporting PDF:', error);
     } finally {
@@ -1197,9 +1166,9 @@ export default function Payroll() {
     setIsExporting(true);
     try {
       const pdf = new jsPDF({
-        orientation: 'portrait',
+        orientation: 'landscape',
         unit: 'mm',
-        format: 'a4'
+        format: 'a5'
       });
       
       const pdfWidth = pdf.internal.pageSize.getWidth();
@@ -1227,7 +1196,7 @@ export default function Payroll() {
                 htmlPayslip.style.maxHeight = 'none';
                 htmlPayslip.style.overflow = 'visible';
                 htmlPayslip.style.height = htmlPayslip.scrollHeight + 'px';
-                htmlPayslip.style.padding = '40px';
+                htmlPayslip.style.padding = '30px';
 
                 sanitizeStyles(htmlPayslip);
               }
@@ -1240,30 +1209,14 @@ export default function Payroll() {
           }
           
           const imgData = canvas.toDataURL('image/png');
-          
-          if (fitTwoPerA4) {
-            const isTop = (i % 2 === 0);
-            if (i > 0 && isTop) {
-              pdf.addPage();
-            }
-            const yOffset = isTop ? 10 : 152;
-            const maxHalfHeight = (pdfHeight - 30) / 2; // ~133.5mm
-            const imgRatio = canvas.height / canvas.width;
-            const finalWidth = Math.min(pdfWidth - 20, maxHalfHeight / imgRatio);
-            const finalHeight = finalWidth * imgRatio;
-            const marginX = (pdfWidth - finalWidth) / 2;
-            const marginY = yOffset + (maxHalfHeight - finalHeight) / 2;
-            
-            pdf.addImage(imgData, 'PNG', marginX, marginY, finalWidth, finalHeight);
-            
-            if (isTop && i < displayedPayrolls.length - 1) {
-              pdf.setDrawColor(220, 220, 220);
-              pdf.setLineWidth(0.15);
-              pdf.line(10, 148.5, pdfWidth - 10, 148.5);
-            }
-          } else {
-            addLongImageToPdf(pdf, imgData, canvas.height, canvas.width, pdfWidth, pdfHeight, i === 0);
-          }
+          const imgRatio = canvas.height / canvas.width;
+          const finalWidth = pdfWidth - 10;
+          const finalHeight = finalWidth * imgRatio;
+          const marginX = (pdfWidth - finalWidth) / 2;
+          const marginY = (pdfHeight - finalHeight) / 2;
+
+          if (i > 0) pdf.addPage();
+          pdf.addImage(imgData, 'PNG', marginX, Math.max(5, marginY), finalWidth, Math.min(finalHeight, pdfHeight - 10));
         }
       }
       

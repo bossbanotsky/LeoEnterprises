@@ -301,7 +301,7 @@ export default function CEODashboard() {
             htmlPayslip.style.height = 'auto';
             htmlPayslip.style.color = '#000000';
             htmlPayslip.style.backgroundColor = '#ffffff';
-            htmlPayslip.style.padding = '40px';
+            htmlPayslip.style.padding = '30px';
             
             sanitizeStyles(htmlPayslip);
           }
@@ -310,21 +310,24 @@ export default function CEODashboard() {
 
       const imgData = canvas.toDataURL("image/png", 1.0);
       const pdf = new jsPDF({
-        orientation: "portrait",
+        orientation: "landscape",
         unit: "mm",
-        format: "a4",
+        format: "a5",
       });
 
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       
       const imgRatio = canvas.height / canvas.width;
-      const finalWidth = pdfWidth - 20;
+      const finalWidth = pdfWidth - 10;
       const finalHeight = finalWidth * imgRatio;
       
-      pdf.addImage(imgData, "PNG", 10, 10, finalWidth, Math.min(finalHeight, pdfHeight - 20));
+      const marginX = (pdfWidth - finalWidth) / 2;
+      const marginY = (pdfHeight - finalHeight) / 2;
+      
+      pdf.addImage(imgData, "PNG", marginX, Math.max(5, marginY), finalWidth, Math.min(finalHeight, pdfHeight - 10));
       pdf.save(
-        `payslip_${selectedPayslip.employee?.fullName.replace(/\s+/g, "_")}_${selectedPayslip.startDate}.pdf`,
+        `payslip_${(selectedPayslip.employee?.fullName || 'Employee').replace(/\s+/g, "_")}_${selectedPayslip.startDate}.pdf`,
       );
     } catch (error) {
       console.error("Error exporting PDF:", error);
@@ -356,7 +359,7 @@ export default function CEODashboard() {
             htmlPayslip.style.height = 'auto';
             htmlPayslip.style.color = '#000000';
             htmlPayslip.style.backgroundColor = '#ffffff';
-            htmlPayslip.style.padding = '40px';
+            htmlPayslip.style.padding = '30px';
             
             sanitizeStyles(htmlPayslip);
           }
@@ -365,21 +368,23 @@ export default function CEODashboard() {
       
       const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF({
-        orientation: "portrait",
+        orientation: "landscape",
         unit: "mm",
-        format: "a4",
+        format: "a5",
       });
       
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       
       const imgRatio = canvas.height / canvas.width;
-      const finalWidth = pdfWidth - 20;
+      const finalWidth = pdfWidth - 10;
       const finalHeight = finalWidth * imgRatio;
       
-      pdf.addImage(imgData, "PNG", 10, 10, finalWidth, Math.min(finalHeight, pdfHeight - 20));
-      pdf.autoPrint();
-      window.open(pdf.output('bloburl'), '_blank');
+      const marginX = (pdfWidth - finalWidth) / 2;
+      const marginY = (pdfHeight - finalHeight) / 2;
+      
+      pdf.addImage(imgData, "PNG", marginX, Math.max(5, marginY), finalWidth, Math.min(finalHeight, pdfHeight - 10));
+      pdf.save(`print_payslip_${(selectedPayslip.employee?.fullName || 'Employee').replace(/\s+/g, "_")}_${selectedPayslip.startDate}.pdf`);
     } catch (error) {
       console.error("Error printing PDF:", error);
     } finally {
@@ -392,9 +397,9 @@ export default function CEODashboard() {
     setIsExporting(true);
     try {
       const pdf = new jsPDF({
-        orientation: "portrait",
+        orientation: "landscape",
         unit: "mm",
-        format: "a4"
+        format: "a5"
       });
       
       const pdfWidth = pdf.internal.pageSize.getWidth();
@@ -448,7 +453,7 @@ export default function CEODashboard() {
                 htmlPayslip.style.maxHeight = 'none';
                 htmlPayslip.style.overflow = 'visible';
                 htmlPayslip.style.height = 'auto';
-                htmlPayslip.style.padding = '40px';
+                htmlPayslip.style.padding = '30px';
 
                 const allElements = [htmlPayslip, ...Array.from(htmlPayslip.querySelectorAll('*'))];
                 allElements.forEach(el => {
@@ -501,9 +506,9 @@ export default function CEODashboard() {
     setIsExporting(true);
     try {
       const pdf = new jsPDF({
-        orientation: "portrait",
+        orientation: "landscape",
         unit: "mm",
-        format: "a4"
+        format: "a5"
       });
       
       const pdfWidth = pdf.internal.pageSize.getWidth();
@@ -526,10 +531,11 @@ export default function CEODashboard() {
               const payslipEl = clonedDoc.querySelector('.payslip-mockup');
               if (payslipEl) {
                 const htmlPayslip = payslipEl as HTMLElement;
+                htmlPayslip.style.width = '800px';
                 htmlPayslip.style.maxWidth = 'none';
                 htmlPayslip.style.maxHeight = 'none';
                 htmlPayslip.style.overflow = 'visible';
-                htmlPayslip.style.padding = '40px';
+                htmlPayslip.style.padding = '30px';
                 sanitizeStyles(htmlPayslip);
               }
             }
@@ -537,11 +543,13 @@ export default function CEODashboard() {
           
           const imgData = canvas.toDataURL('image/png');
           const imgRatio = canvas.height / canvas.width;
-          const finalWidth = pdfWidth - 20;
+          const finalWidth = pdfWidth - 10;
           const finalHeight = finalWidth * imgRatio;
+          const marginX = (pdfWidth - finalWidth) / 2;
+          const marginY = (pdfHeight - finalHeight) / 2;
           
           if (i > 0) pdf.addPage();
-          pdf.addImage(imgData, 'PNG', 10, 10, finalWidth, Math.min(finalHeight, pdfHeight - 20));
+          pdf.addImage(imgData, 'PNG', marginX, Math.max(5, marginY), finalWidth, Math.min(finalHeight, pdfHeight - 10));
         }
       }
       setSelectedPayslip(null);
@@ -648,40 +656,93 @@ export default function CEODashboard() {
       </div>
       {/* Add Dialog here */}
       <Dialog open={!!selectedPayslip} onOpenChange={() => setSelectedPayslip(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-slate-50">
           <DialogHeader>
-            <DialogTitle>Payslip Details - {selectedPayslip?.employee?.fullName}</DialogTitle>
+            <DialogTitle>Payslip Preview - {selectedPayslip?.employee?.fullName}</DialogTitle>
           </DialogHeader>
-          <div ref={payslipRef} className="payslip-mockup bg-black p-6 rounded-lg text-white">
-             <div className="border-b pb-4 mb-4">
-                <h2 className="text-2xl font-bold uppercase italic">Payslip</h2>
-                <p className="text-sm"><strong>Employee:</strong> {selectedPayslip?.employee?.fullName}</p>
-                <p className="text-sm"><strong>Period:</strong> {selectedPayslip?.startDate} to {selectedPayslip?.endDate}</p>
-             </div>
-             
-             <div className="space-y-4">
-                <div>
-                   <h3 className="font-bold border-b pb-1 mb-2">Earnings</h3>
-                   <div className="flex justify-between"><span>Regular Pay:</span><span>₱{selectedPayslip?.regularPay.toLocaleString()}</span></div>
-                   <div className="flex justify-between"><span>OT Pay:</span><span>₱{(selectedPayslip?.otPay || 0).toLocaleString()}</span></div>
-                   <div className="flex justify-between"><span>Pakyaw Pay:</span><span>₱{(selectedPayslip?.totalPakyawPay || 0).toLocaleString()}</span></div>
-                </div>
-                
-                <div>
-                   <h3 className="font-bold border-b pb-1 mb-2">Deductions</h3>
-                   <div className="flex justify-between"><span>Cash Advance:</span><span>₱{(selectedPayslip?.cashAdvanceDeduction || 0).toLocaleString()}</span></div>
-                </div>
-                
-                <div className="border-t pt-4 font-bold text-lg flex justify-between">
-                   <span>Total Pay:</span>
-                   <span>₱{selectedPayslip?.totalPay.toLocaleString()}</span>
-                </div>
-             </div>
-             <p className="text-xs text-white mt-6">Generated at: {selectedPayslip?.generatedAt}</p>
+          <div className="overflow-x-auto w-full p-2">
+            <div ref={payslipRef} className="payslip-mockup bg-white p-8 rounded-xl text-slate-900 border border-slate-200 shadow-sm min-w-[600px] font-sans">
+               <div className="flex justify-between items-start border-b-2 border-slate-900 pb-4 mb-6">
+                  <div>
+                    <h2 className="text-3xl font-black uppercase italic tracking-tighter text-slate-900">Payslip</h2>
+                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">Confidential Payroll Document</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs font-bold text-slate-900">{companyInfo?.name || 'L & P Trading and Services'}</p>
+                    <p className="text-[10px] text-slate-500">{companyInfo?.address || 'Poblacion, Quezon, Bukidnon'}</p>
+                  </div>
+               </div>
+               
+               <div className="grid grid-cols-2 gap-8 mb-8">
+                  <div>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Employee Details</p>
+                    <p className="text-sm font-black text-slate-900 uppercase">{selectedPayslip?.employee?.fullName}</p>
+                    <p className="text-xs text-slate-600">ID: {selectedPayslip?.employeeId?.slice(-6).toUpperCase()}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Payroll Period</p>
+                    <p className="text-sm font-bold text-slate-900">{selectedPayslip?.startDate} to {selectedPayslip?.endDate}</p>
+                  </div>
+               </div>
+
+               <div className="grid grid-cols-2 gap-12">
+                  <div className="space-y-4">
+                     <div>
+                        <h3 className="text-[10px] font-bold text-slate-900 uppercase tracking-wider border-b border-slate-200 pb-2 mb-3">Earnings Breakdown</h3>
+                        <div className="space-y-2 text-xs">
+                          <div className="flex justify-between items-center py-1">
+                            <span className="text-slate-600">Regular Pay:</span>
+                            <span className="font-bold text-slate-900">₱{(selectedPayslip?.regularPay || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                          </div>
+                          <div className="flex justify-between items-center py-1">
+                            <span className="text-slate-600">Overtime Pay:</span>
+                            <span className="font-bold text-slate-900">₱{(selectedPayslip?.otPay || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                          </div>
+                          <div className="flex justify-between items-center py-1">
+                            <span className="text-slate-600">Pakyaw Earnings:</span>
+                            <span className="font-bold text-slate-900">₱{(selectedPayslip?.totalPakyawPay || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                          </div>
+                        </div>
+                     </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                     <div>
+                        <h3 className="text-[10px] font-bold text-slate-900 uppercase tracking-wider border-b border-slate-200 pb-2 mb-3">Deductions</h3>
+                        <div className="space-y-2 text-xs">
+                          <div className="flex justify-between items-center py-1">
+                            <span className="text-slate-600">Cash Advance:</span>
+                            <span className="font-bold text-rose-600">-₱{(selectedPayslip?.cashAdvanceDeduction || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                          </div>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+               
+               <div className="mt-12 pt-6 border-t-4 border-slate-900 flex justify-between items-center">
+                  <span className="text-sm font-black text-slate-900 uppercase tracking-widest">Net Take Home Pay</span>
+                  <span className="text-3xl font-black text-slate-900 tracking-tighter">
+                     ₱{(selectedPayslip?.totalPay || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  </span>
+               </div>
+               
+               <div className="mt-12 flex justify-between items-end">
+                  <div className="w-48 border-t border-slate-300 pt-2">
+                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Authorized Signature</p>
+                  </div>
+                  <p className="text-[8px] text-slate-400 font-mono italic tracking-tighter">Generated: {selectedPayslip?.generatedAt || new Date().toISOString()}</p>
+               </div>
+            </div>
           </div>
-          <div className="flex gap-2">
-            <Button onClick={handleExportPDF} disabled={isExporting}>Export PDF</Button>
-            <Button onClick={handlePrint} disabled={isExporting}>Print</Button>
+          <div className="flex justify-end gap-3 p-4 bg-white border-t border-slate-200 -mx-6 -mb-6">
+            <Button variant="outline" onClick={handleExportPDF} disabled={isExporting} className="gap-2">
+              {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
+              Export PDF
+            </Button>
+            <Button onClick={handlePrint} disabled={isExporting} className="gap-2">
+              {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Printer className="w-4 h-4" />}
+              Print Payslip
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
