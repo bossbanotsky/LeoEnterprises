@@ -901,39 +901,42 @@ export default function EmployeeDashboard() {
 
       {/* Payslip Dialog */}
       <Dialog open={!!selectedPayslip} onOpenChange={(open) => !open && setSelectedPayslip(null)}>
-        <DialogContent className="sm:max-w-[650px] p-0 overflow-hidden bg-black rounded-2xl w-[95vw] mx-auto border border-white/10 shadow-2xl">
+        <DialogContent className="max-w-4xl w-[95vw] p-0 overflow-hidden bg-black rounded-2xl border border-white/10 shadow-2xl">
           <div className="p-2 border-b border-white/10 flex justify-between items-center bg-slate-900/90 backdrop-blur-sm sticky top-0 z-10">
             <DialogTitle className="flex items-center gap-2 text-white font-black uppercase italic tracking-tight text-sm">
               <FileText className="w-3.5 h-3.5 text-blue-600" />
               Payslip
             </DialogTitle>
-            <Button 
-              size="sm" 
-              variant="outline" 
-              className="h-8 gap-1.5 rounded-xl border-white/30 text-white hover:bg-green-500/20 hover:text-green-400 hover:border-green-500/30 transition-all font-bold text-[10px] uppercase tracking-widest"
-              onClick={handlePrint}
-              disabled={isExporting}
-            >
-              {isExporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Printer className="w-3.5 h-3.5" />}
-              {isExporting ? 'Printing...' : 'Print'}
-            </Button>
-            <Button 
-              size="sm" 
-              variant="outline" 
-              className="h-8 gap-1.5 rounded-xl border-white/30 text-white hover:bg-blue-500/20 hover:text-blue-400 hover:border-blue-500/30 transition-all font-bold text-[10px] uppercase tracking-widest"
-              onClick={handleExportPDF}
-              disabled={isExporting}
-            >
-              {isExporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5 rotate-180" />}
-              {isExporting ? 'Exporting...' : 'Export PDF'}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button 
+                size="sm" 
+                variant="outline" 
+                className="h-8 gap-1.5 rounded-xl border-white/30 text-white hover:bg-green-500/20 hover:text-green-400 hover:border-green-500/30 transition-all font-bold text-[10px] uppercase tracking-widest"
+                onClick={handlePrint}
+                disabled={isExporting}
+              >
+                {isExporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Printer className="w-3.5 h-3.5" />}
+                {isExporting ? 'Printing...' : 'Print'}
+              </Button>
+              <Button 
+                size="sm" 
+                variant="outline" 
+                className="h-8 gap-1.5 rounded-xl border-white/30 text-white hover:bg-blue-500/20 hover:text-blue-400 hover:border-blue-500/30 transition-all font-bold text-[10px] uppercase tracking-widest"
+                onClick={handleExportPDF}
+                disabled={isExporting}
+              >
+                {isExporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5 rotate-180" />}
+                {isExporting ? 'Exporting...' : 'Export PDF'}
+              </Button>
+            </div>
           </div>
           
           {selectedPayslip && (
-            <div 
-              ref={payslipRef}
-              className="p-8 payslip-mockup bg-white font-sans text-xs text-slate-900 border border-slate-200 rounded-xl select-none" 
-            >
+            <div className="overflow-x-auto w-full p-4">
+              <div 
+                ref={payslipRef}
+                className="min-w-[700px] p-8 payslip-mockup bg-white font-sans text-xs text-slate-900 border border-slate-200 rounded-xl select-none" 
+              >
               {/* Header */}
               <div className="flex justify-between items-start mb-4">
                 <div className="flex items-center gap-3">
@@ -1285,7 +1288,8 @@ export default function EmployeeDashboard() {
                 <span>Generated via L&P Payroll System</span>
               </div>
             </div>
-            )}
+          </div>
+          )}
         </DialogContent>
       </Dialog>
 
